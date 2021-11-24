@@ -1,11 +1,12 @@
 {
     "compilerOptions": {
-      "target": "ES2015",
+      "target": "es5",
+      "lib": ["es6", "dom"],
+      "types": ["reflect-metadata", "jest"],
       "module": "commonjs",
-      "strict": true,
-      "esModuleInterop": true,
-      "skipLibCheck": true,
-      "forceConsistentCasingInFileNames": true
+      "moduleResolution": "node",
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true
     },
     "$schema": "https://json.schemastore.org/tsconfig",
     "display": "Recommended",
@@ -13,6 +14,8 @@
       "src/index.ts"
     ],
     "include": [
-      "src/**/*.ts"
+      "src/**/*.ts",
+      "src/**/**/*.ts"
+
     ]
   }

@@ -1,16 +1,16 @@
 // Core Dependencies
-//import "reflect-metadata";
+import "reflect-metadata";
 import express = require("express");
 import bodyParser = require('body-parser');
 import cors = require('cors');
 
 
 // Environment
-// @TODO
+import { environment } from "./environment";
 
 
 // Init Express App
-const app = express()
+const app = express();
 
 
 // Configure app to use bodyParser(), this will let us get the data from a POST
@@ -34,10 +34,10 @@ const port = process.env.PORT || 8075;
 
 
 // Routes
-import {TestRoutes} from './components/test/test.route';
+import {ServerRoute} from './modules/server/server.route';
 
 
-app.use('/test', TestRoutes);
+app.use('/server', ServerRoute);
 
 
 
@@ -50,7 +50,7 @@ app.listen(port);
 
 
 // Send Welcome Message
-app.get('/', (req, res) => {
+app.get('/', (req: express.Request, res: express.Response) => {
   res.send("Welcome to Plutus :)");
 })
 
@@ -71,4 +71,14 @@ function logError(err: any, event: string): void {
 
 // Hello World
 console.log('Plutus API Initialized on Port: ' + port);
-console.log('Production: ' + false);
+console.log('Production: ' + environment.production);
+
+
+
+
+/*
+import { appContainer } from "./ioc";
+import { IErrorService } from "./modules/shared/error";
+import { SYMBOLS } from "./symbols";
+const _e = appContainer.get<IErrorService>(SYMBOLS.ErrorService);
+_e.handle();*/

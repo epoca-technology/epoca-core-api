@@ -1,4 +1,4 @@
-import rateLimit from "express-rate-limit";
+import * as rateLimit from "express-rate-limit";
 
 
 // Default Options
