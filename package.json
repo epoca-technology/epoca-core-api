@@ -6,7 +6,7 @@
   "scripts": {
     "start": "clear && node dist/index.js",
     "build": "clear && gulp",
-    "cli-test": "clear && node ./dist/CLI/test-cli.js",
+    "cli-arima": "clear && node ./dist/CLI/forecasting/arima/arima.js",
     "test": "clear && jasmine-ts --config=jasmine/e2e.json"
   },
   "repository": {
@@ -17,6 +17,7 @@
   "license": "ISC",
   "homepage": "https://bitbucket.org/projectplutus/api-dev#readme",
   "dependencies": {
+    "arima": "0.2.2",
     "bignumber.js": "9.0.1",
     "body-parser": "1.19.0",
     "cors": "2.8.5",

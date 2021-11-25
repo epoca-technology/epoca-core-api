@@ -5,6 +5,7 @@ import {Container} from "inversify";
 import { environment } from "../environment";
 
 // Modules
+import { arimaModule } from "../modules/shared/arima";
 import { errorModule } from "../modules/shared/error";
 
 
@@ -17,6 +18,8 @@ const appContainer: Container = new Container({skipBaseClassChecks: true, defaul
 // Load the container
 appContainer.load(
 
+    // Arima
+    arimaModule,
 
     // Error
     errorModule,

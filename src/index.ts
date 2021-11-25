@@ -3,10 +3,14 @@ import "reflect-metadata";
 import express = require("express");
 import bodyParser = require('body-parser');
 import cors = require('cors');
-
+import {BigNumber} from 'bignumber.js';
 
 // Environment
 import { environment } from "./environment";
+
+
+// BigNumber Config
+//BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN, EXPONENTIAL_AT: 32 });
 
 
 // Init Express App
