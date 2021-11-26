@@ -5,13 +5,14 @@ import { SYMBOLS } from "../../../symbols";
 import * as prompt from 'prompt';
 
 // Init class
-import { IArimaService, IArimaPrices, IArimaPricesItem, IArimaForecast } from "../../../modules/shared/arima";
+import { IArimaService, IArimaForecast } from "../../../modules/shared/arima";
 const _arima = appContainer.get<IArimaService>(SYMBOLS.ArimaService);
 
 // Interfaces
 import { IArimaMode, ITimeMode } from "./interfaces";
 
 // Test Data
+import {ICoinGeckoPrices, ICoinGeckoPrice} from './interfaces';
 import {
     DAILY_PRICES_01,
     DAILY_PRICES_02,
@@ -28,7 +29,7 @@ BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN, EXPONENTIAL_AT: 32 });
 // Initialize
 console.log('ARIMA PLAYGROUND');
 console.log('@param timeMode? // Defaults to d3: h1|h2|h3 = Hourly | d1|d2|d3|d4 = Daily | m1|m2|m3 = Monthly');
-console.log('@param windowSize? // Defaults to 90');
+console.log('@param windowSize? // Defaults to 20');
 console.log(' ');
 prompt.start();
 
@@ -42,7 +43,7 @@ const d: {
 } = {
     timeMode: 'd3',
     arimaMode: '0',
-    windowSize: 90,
+    windowSize: 20,
     arimaDust: 0.01
 }
 
@@ -64,9 +65,9 @@ prompt.get(['timeMode', 'windowSize'], async (e: any, data: prompt.Properties) =
     const m: ITimeMode = typeof data.timeMode == "string" && data.timeMode.length ? <ITimeMode>data.timeMode: d.timeMode;
 
     // Init the prices
-    const rawPriceList: IArimaPrices = getRawPrices(m);
-    const initialList: IArimaPrices = rawPriceList.slice(0, windowSize);
-    let processingList: IArimaPrices = initialList.slice();
+    const rawPriceList: ICoinGeckoPrices = getRawPrices(m);
+    const initialList: ICoinGeckoPrices = rawPriceList.slice(0, windowSize);
+    let processingList: ICoinGeckoPrices = initialList.slice();
 
     // Init counts
     let total: number = 0;
@@ -87,7 +88,7 @@ prompt.get(['timeMode', 'windowSize'], async (e: any, data: prompt.Properties) =
     console.log(' ');
     for (let i = windowSize; i < rawPriceList.length; i++) {
         // Init values
-        const item: IArimaPricesItem = rawPriceList[i];
+        const item: ICoinGeckoPrice = rawPriceList[i];
         const date: string = getDateString(item[0]);
         let previousPrice: number = rawPriceList[i - 1][1];
         let currentPrice: number = item[1];
@@ -103,7 +104,7 @@ prompt.get(['timeMode', 'windowSize'], async (e: any, data: prompt.Properties) =
         //const sarima: number = _arima.sarima(priceList);
         //const arima: number = _arima.sarima(getPriceValuesList(processingList));
         //const arimaAlt: number = _arima.arimaAlt(processingList);
-        const forecast: IArimaForecast = _arima.forecastTendency(processingList);
+        const forecast: IArimaForecast = _arima.forecastTendency(getValuesList(1, processingList));
 
 
         // Add the item to the processing list
@@ -151,9 +152,8 @@ prompt.get(['timeMode', 'windowSize'], async (e: any, data: prompt.Properties) =
         } else { neutral +=1 }
 
         // Log item
-        console.log(`${i}) ${date} | ${forecast.result} - ${outcome.toUpperCase()}`);
-        console.log(`Previous Price: ${previousPrice}`);
-        console.log(`Current Price: ${currentPrice}`);
+        console.log(`${i}) ${date} | a: ${forecast.result} | ${outcome.toUpperCase()}`);
+        console.log(`Reality: ${previousPrice} -> ${currentPrice}`);
         console.log(' ');console.log(' ');
     }
     console.log(' ');console.log(' ');
@@ -178,11 +178,11 @@ prompt.get(['timeMode', 'windowSize'], async (e: any, data: prompt.Properties) =
 /**
  * Retrieves the raw prices based on the time.
  * @param mode 
- * @returns IArimaPrices
+ * @returns ICoinGeckoPrices
  */
-function getRawPrices(mode: ITimeMode): IArimaPrices {
+function getRawPrices(mode: ITimeMode): ICoinGeckoPrices {
     // Init price list
-    let list: IArimaPrices;
+    let list: ICoinGeckoPrices;
 
     // Populate the list based on the mode
     switch(mode) {
@@ -217,10 +217,10 @@ function getRawPrices(mode: ITimeMode): IArimaPrices {
 /**
  * Given a list of CoinGecko prices, it will round each one to a maximum of 2 decimals.
  * @param list 
- * @returns IArimaPrices
+ * @returns ICoinGeckoPrices
  */
-/*function roundPrices(list: IArimaPrices): IArimaPrices {
-    let roundedList: IArimaPrices = [];
+/*function roundPrices(list: ICoinGeckoPrices): ICoinGeckoPrices {
+    let roundedList: ICoinGeckoPrices = [];
     for (let item of list) {
         roundedList.push([
             item[0],
@@ -243,7 +243,7 @@ function getRawPrices(mode: ITimeMode): IArimaPrices {
  * @param processingList 
  * @returns number
  */
-/*function getArimaForecast(mode: IArimaMode, processingList: IArimaPrices): number {
+/*function getArimaForecast(mode: IArimaMode, processingList: ICoinGeckoPrices): number {
     switch(mode) {
         case '0':
             return _arima.arima(getPriceValuesList(processingList));
@@ -266,7 +266,7 @@ function getRawPrices(mode: ITimeMode): IArimaPrices {
  * @param list 
  * @returns number[]
  */
-function getValuesList(index: number, list: IArimaPrices): number[] {
+function getValuesList(index: number, list: ICoinGeckoPrices): number[] {
     let priceList: number[] = [];
     for (let item of list) { priceList.push(item[index]) }
     return priceList;

@@ -4,7 +4,7 @@ const timeseries = require("timeseries-analysis");
 import { SYMBOLS } from "../../../symbols";
 import { IErrorService } from "../error";
 import { IArimaForecast, IArimaService } from "./interfaces";
-//import {BigNumber} from 'bignumber.js';
+import {BigNumber} from 'bignumber.js';
 import { IArimaPrices, IArimaForecastedTendency } from "../arima";
 
 
@@ -15,33 +15,160 @@ export class ArimaService implements IArimaService {
     // Inject dependencies
     @inject(SYMBOLS.ErrorService)           private _e: IErrorService;
 
+    // Compact List Config
+    private readonly compactListSize: number = 20;
+
     constructor() {}
 
+    public forecastTendency(numberSeries: number[]): any {
+        // Make sure the last has as many items as the required minimum for compact list size
+        if (typeof numberSeries != "object" || numberSeries.length < 10) {
+            throw new Error(`The number series must contain at least 10 items.`);
+        }
+
+        //numberSeries = this.getCompactNumberSeries(numberSeries);
+
+        //const arima1:number = this.arima(numberSeries, 9, 2, 5);
+        //const arima2:number = this.arima(numberSeries, 7, 1, 3);
+
+
+        return {result: this.getMostDominantResult([
+            //this.arima(numberSeries, 1, 0, 1),
+            //this.arima(numberSeries, 2, 1, 2),
+            //this.arima(numberSeries, 5, 1, 2),
+            //this.arima(numberSeries, 5, 1, 4),
+            //this.arima(numberSeries, 6, 1, 2),
+            this.arima(numberSeries, 7, 1, 3),
+            //this.arima(numberSeries, 8, 1, 4),
+            this.arima(numberSeries, 9, 2, 5),
+            //this.arima(numberSeries, 10, 2, 6),
+        ])};
+    }
 
 
 
+    private getMostDominantResult(results: IArimaForecastedTendency[]): IArimaForecastedTendency {
+        let long: number = 0;
+        let short: number = 0;
+        let neutral: number = 0;
+        for (let r of results) {
+            if (r == 1) {
+                long += 1;
+            } else if (r == -1) {
+                short += 1;
+            } else {
+                neutral += 1;
+            }
+        }
+        if (long >= 2) {
+            return 1;
+        }
+        else if (short >= 2) {
+            return -1;
+        }
+        else { return 0;}
+    }
 
-    public forecastTendency(data: IArimaPrices): IArimaForecast {
-        // Build the price list
-        let priceList: number[] = [];
-        for (let item of data) { priceList.push(item[1]) };
+    /*public forecastTendency(numberSeries: number[]): IArimaForecast {
+        // Make sure the last has as many items as the required minimum for compact list size
+        if (typeof numberSeries != "object" || numberSeries.length < 10) {
+            throw new Error(`The number series must contain at least 10 items.`);
+        }
+
 
         // Perform all analysis
-        const arima: IArimaForecastedTendency = this.arima(priceList);
-        const sarima: IArimaForecastedTendency = this.sarima(priceList);
-        const arimaAlt: IArimaForecastedTendency = this.arimaAlt(data);
+        const arima: IArimaForecastedTendency = this.arima(numberSeries, 6, 1, 8);
+        //const arima: IArimaForecastedTendency = this.sarima(numberSeries);
+        //const arimaAlt: IArimaForecastedTendency = this.arimaAlt(data);
 
-        // Check if there was full consensus
-        const fullConsensus: boolean = arima == sarima && arima == arimaAlt;
 
         // Return the results
         return {
-            result: fullConsensus ? arima: 0,
+            result: arima,
+            arima: arima,
+            sarima: arima
+        };
+    }*/
+
+    /*public forecastTendency(numberSeries: number[]): IArimaForecast {
+        // Make sure the last has as many items as the required minimum for compact list size
+        if (typeof numberSeries != "object" || numberSeries.length < this.compactListSize) {
+            throw new Error(`The number series must contain at least ${this.compactListSize} items.`);
+        }
+
+        // Build the compact number series
+        const compactNumberSeries: number[] = this.getCompactNumberSeries(numberSeries);
+
+        // Perform all analysis
+        const arima: IArimaForecastedTendency = this.arima(numberSeries);
+        const sarima: IArimaForecastedTendency = this.sarima(numberSeries);
+        //const arimaAlt: IArimaForecastedTendency = this.arimaAlt(data);
+
+        // Perform Compact Analysis
+        const compactArima: IArimaForecastedTendency = this.arima(compactNumberSeries);
+        const compactSarima: IArimaForecastedTendency = this.sarima(compactNumberSeries);
+
+        // Return the results
+        return this.getForecastResult(arima, sarima, compactArima, compactSarima);
+    }*/
+
+
+
+
+
+    private getForecastResult(
+        arima: IArimaForecastedTendency,
+        sarima: IArimaForecastedTendency,
+        compactArima: IArimaForecastedTendency,
+        compactSarima: IArimaForecastedTendency
+    ): IArimaForecast {
+        // Init the forecast
+        let forecast: IArimaForecast = {
+            result: 0,
             arima: arima,
             sarima: sarima,
-            arimaAlt: arimaAlt
+            compactArima: compactArima,
+            compactSarima: compactSarima
         }
+
+        // Check if arima and sarima agree
+        if (arima == sarima) {
+            forecast.result = arima;
+        }
+        // Check if there is a match with the compact analysis
+        else {
+            if (arima == compactArima && arima == compactSarima) {
+                forecast.result = arima;
+            }
+            else if (sarima == compactArima && sarima == compactSarima) {
+                forecast.result = sarima;
+            }
+        }
+
+        // Return the final forecast
+        return forecast;
     }
+
+
+
+
+
+
+
+
+    private getCompactNumberSeries(numberSeries: number[]): number[] {
+        let list: number[] = [];
+        const distance: number = new BigNumber(numberSeries.length).dividedBy(this.compactListSize).decimalPlaces(0).toNumber();
+        for (let i = 0; i < numberSeries.length; i += distance) {
+            if (list.length < this.compactListSize) {
+                list.push(numberSeries[i] || numberSeries[numberSeries.length - 1]);
+            }
+        }
+        return list;
+    }
+
+
+
 
 
 
@@ -75,7 +202,7 @@ export class ArimaService implements IArimaService {
 
 
 
-    public arima(data: number[], p?: number, d?: number, q?: number): IArimaForecastedTendency {
+    public arima(data: number[], p: number, d: number, q: number): any {
             // Make sure the provided data is valid and at least 10 items have been provided
             if (typeof data != "object" || data.length < 5) {
                 throw new Error('Arima requires at least 5 items in order to be build the perform the forecast.');
@@ -83,9 +210,9 @@ export class ArimaService implements IArimaService {
 
             // Init Arima
             const arima = new ARIMA({
-                p: p || 7,
-                d: d || 1,
-                q: q || 3,
+                p: p,
+                d: d,
+                q: q,
                 verbose: false
             }).train(data);
             
@@ -98,6 +225,7 @@ export class ArimaService implements IArimaService {
 
             // Return Results
             return this.getForecastedTendency(data[data.length - 1], pred[0]);
+            //return this.getExpectedPercentageChange(data[data.length - 1], pred[0]);
     }
 
 
@@ -276,7 +404,7 @@ export class ArimaService implements IArimaService {
 
 
 
-    /*private getExpectedPercentageChange(lastPrice: number, forecastedPrice: number, maxChange: number = 30): number {
+    private getExpectedPercentageChange(lastPrice: number, forecastedPrice: number, maxChange: number = 30): number {
         // Init result
         let change: number = 0;
 
@@ -293,10 +421,10 @@ export class ArimaService implements IArimaService {
         }
 
         // Limit the result to 10
-        if (change < -(maxChange) || change > maxChange)  return 0;
+        //if (change < -(maxChange) || change > maxChange)  return 0;
 
         // Return the forecasted change
         return change;
-    }*/
+    }
 }
 

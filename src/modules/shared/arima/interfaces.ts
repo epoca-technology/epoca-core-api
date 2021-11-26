@@ -1,6 +1,6 @@
 export interface IArimaService {
-    forecastTendency(data: IArimaPrices): IArimaForecast,
-    arima(data: number[], p?: number, d?: number, q?: number): number,
+    forecastTendency(data: number[]): any,
+    arima(data: number[], p: number, d: number, q: number): number,
     //autoArima(data: number[]): number,
     sarima(
         data: number[], 
@@ -22,8 +22,9 @@ export interface IArimaService {
 export interface IArimaForecast {
     result: IArimaForecastedTendency,
     arima: IArimaForecastedTendency,
-    sarima: IArimaForecastedTendency,
-    arimaAlt: IArimaForecastedTendency
+    sarima?: IArimaForecastedTendency,
+    compactArima?: IArimaForecastedTendency,
+    compactSarima?: IArimaForecastedTendency
 }
 
 export type IArimaForecastedTendency = -1|0|1;
