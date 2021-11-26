@@ -24,7 +24,8 @@
     "express": "4.17.1",
     "express-rate-limit": "5.5.1",
     "inversify": "6.0.1",
-    "reflect-metadata": "0.1.13"
+    "reflect-metadata": "0.1.13",
+    "timeseries-analysis": "1.0.12"
   },
   "devDependencies": {
     "@types/cors": "2.8.12",
