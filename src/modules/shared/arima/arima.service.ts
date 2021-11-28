@@ -1,6 +1,7 @@
 import {inject, injectable} from "inversify";
 const ARIMA = require('arima');
 const timeseries = require("timeseries-analysis");
+const nostradamus = require("nostradamus");
 import { SYMBOLS } from "../../../symbols";
 import { IErrorService } from "../error";
 import { IArimaForecast, IArimaService } from "./interfaces";
@@ -20,7 +21,7 @@ export class ArimaService implements IArimaService {
 
     constructor() {}
 
-    public forecastTendency(numberSeries: number[]): any {
+    public forecastTendency(numberSeries: number[], fullPrices: IArimaPrices): any {
         // Make sure the last has as many items as the required minimum for compact list size
         if (typeof numberSeries != "object" || numberSeries.length < 10) {
             throw new Error(`The number series must contain at least 10 items.`);
@@ -33,15 +34,19 @@ export class ArimaService implements IArimaService {
 
 
         return {result: this.getMostDominantResult([
-            //this.arima(numberSeries, 1, 0, 1),
+            this.sarima(numberSeries, 2, 1, 2),
             //this.arima(numberSeries, 2, 1, 2),
             //this.arima(numberSeries, 5, 1, 2),
             //this.arima(numberSeries, 5, 1, 4),
             //this.arima(numberSeries, 6, 1, 2),
-            this.arima(numberSeries, 7, 1, 3),
+            //this.arima(numberSeries, 7, 1, 3),
             //this.arima(numberSeries, 8, 1, 4),
-            this.arima(numberSeries, 9, 2, 5),
+            //this.arima(numberSeries, 9, 2, 5),
+            //this.sarima(numberSeries, 2, 1, 1),
+            //this.sarima(numberSeries, 9, 2, 5),
             //this.arima(numberSeries, 10, 2, 6),
+            //this.arimaAlt(fullPrices)
+            //this.nostradamus(numberSeries)
         ])};
     }
 
@@ -60,10 +65,10 @@ export class ArimaService implements IArimaService {
                 neutral += 1;
             }
         }
-        if (long >= 2) {
+        if (long >= (results.length)) {
             return 1;
         }
-        else if (short >= 2) {
+        else if (short >= (results.length)) {
             return -1;
         }
         else { return 0;}
@@ -299,6 +304,7 @@ export class ArimaService implements IArimaService {
         }
 
         // Return Results
+        console.log(pred[0]);
         return this.getForecastedTendency(data[data.length - 1], pred[0]);
     }
 
@@ -365,13 +371,38 @@ export class ArimaService implements IArimaService {
         // Return Results
         return this.getForecastedTendency(data[data.length - 1][1], forecast);
         //return forecast;
-}
+    }
 
 
 
 
 
 
+
+
+    public nostradamus(numberSeries: number[]): any {
+        const prediction: any = nostradamus(
+            numberSeries,
+            0.9,  // alpha: overall smoothing component
+            0.8,   // beta: trend smoothing component
+            0.8,   // gamma: seasonal smoothing component
+            4,   // period: # of observations per season
+            1,   // m: # of future observations to forecast
+        );
+        //console.log(prediction);
+        //console.log(prediction.length);
+        let acum: BigNumber = new BigNumber(0);
+        let items: number = 0;
+        for (let p of prediction) {
+            if (p > 0){
+                acum = acum.plus(p);
+                items += 1;
+            }
+        }
+        const nextPrice: number = acum.dividedBy(items).decimalPlaces(2).toNumber();
+        //console.log(acum.dividedBy(items).decimalPlaces(2).toNumber());
+        return this.getForecastedTendency(numberSeries[numberSeries.length - 1], nextPrice);
+    }
 
 
 

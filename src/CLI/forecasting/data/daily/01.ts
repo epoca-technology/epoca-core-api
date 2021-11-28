@@ -1,4 +1,4 @@
-import { ICoinGeckoPrices } from "../../interfaces";
+import { ICoinGeckoPrices } from "../interfaces";
 
 export const DAILY_PRICES_01: ICoinGeckoPrices = [
 	[

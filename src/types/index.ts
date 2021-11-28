@@ -20,3 +20,7 @@ export interface IAPIError {
     code: number,
     message: string
 }
+
+
+
+export type ITendencyForecast = 1|0|-1;

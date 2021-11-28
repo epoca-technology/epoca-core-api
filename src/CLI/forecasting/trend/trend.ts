@@ -5,11 +5,11 @@ import { SYMBOLS } from "../../../symbols";
 import * as prompt from 'prompt';
 
 // Init class
-import { IArimaService, IArimaForecast } from "../../../modules/shared/arima";
-const _arima = appContainer.get<IArimaService>(SYMBOLS.ArimaService);
+//import { ITrendService } from "../../../modules/shared/trend";
+//const _trend: ITrendService = appContainer.get<ITrendService>(SYMBOLS.TrendService);
+import { ITrendForecast, TrendForecast } from "../../../lib/TrendForecast";
 
 // Interfaces
-import { IArimaMode } from "./interfaces";
 
 // Test Data
 import {
@@ -17,22 +17,24 @@ import {
     ICoinGeckoPrices, 
     ICoinGeckoPrice,
     HOURLY_PRICES_01,
+    HOURLY_PRICES_02,
+    HOURLY_PRICES_03,
     DAILY_PRICES_01,
     DAILY_PRICES_02,
     DAILY_PRICES_03,
-    DAILY_PRICES_04
+    DAILY_PRICES_04,
+
 } from '../data';
 
 
 // Init Big Number
 import BigNumber from "bignumber.js";
-BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN, EXPONENTIAL_AT: 32 });
 
 
 // Initialize
-console.log('ARIMA PLAYGROUND');
-console.log('@param timeMode? // Defaults to h1: h1|h2|h3 = Hourly | d1|d2|d3|d4 = Daily | m1|m2|m3 = Monthly');
-console.log('@param windowSize? // Defaults to 40');
+console.log('TREND PLAYGROUND');
+console.log('@param timeMode? // Defaults to h3: h1|h2|h3 = Hourly | d1|d2|d3|d4 = Daily | m1|m2|m3 = Monthly');
+console.log('@param windowSize? // Defaults to 80');
 console.log(' ');
 prompt.start();
 
@@ -40,37 +42,27 @@ prompt.start();
 // Defaults
 const d: {
     timeMode: ITimeMode,
-    arimaMode: IArimaMode,
-    windowSize: number,
-    arimaDust: number
+    windowSize: number
 } = {
-    timeMode: 'h1',
-    arimaMode: '0',
-    windowSize: 40,
-    arimaDust: 0.01
+    timeMode: 'h3',
+    windowSize: 100,
 }
 
 
 prompt.get(['timeMode', 'windowSize'], async (e: any, data: prompt.Properties) => {
     if (e) throw e;
 
-    // Arima Mode
-    //const arimaMode: IArimaMode = typeof data.arimaMode == "string" && data.arimaMode.length ? <IArimaMode>data.arimaMode: d.arimaMode;
-
-    // Arima dust percentage, won't work with values lower than this one
-    //const arimaDust: number = typeof data.arimaDust == "string" && data.arimaDust.length ? Number(data.arimaDust): d.arimaDust;
-
-    // Initial Lot - No trading during these days
-    //const initialCount: number = typeof data.initialCount == "string" && data.initialCount.length ? Number(data.initialCount): d.initialCount;
+    // Init window size
     const windowSize: number = typeof data.windowSize == "string" && data.windowSize.length ? Number(data.windowSize): d.windowSize;
 
-    // Init the mode
+    // Init time mode
     const m: ITimeMode = typeof data.timeMode == "string" && data.timeMode.length ? <ITimeMode>data.timeMode: d.timeMode;
 
     // Init the prices
     const rawPriceList: ICoinGeckoPrices = getRawPrices(m);
     const initialList: ICoinGeckoPrices = rawPriceList.slice(0, windowSize);
     let processingList: ICoinGeckoPrices = initialList.slice();
+
 
     // Init counts
     let total: number = 0;
@@ -82,10 +74,15 @@ prompt.get(['timeMode', 'windowSize'], async (e: any, data: prompt.Properties) =
     console.log(' ');
     console.log(' ');
     console.log('Initial Data:');
-    for (let p of initialList) { console.log(`${new Date(p[0]).toDateString()} | ${p[1]}`); }
+    for (let p of initialList) { console.log(`${getDateString(p[0])} | ${p[1]}`); }
     console.log(' ');
     console.log(' ');
 
+
+    /*const tf: ITrendForecast = new TrendForecast();
+    const forecast: any = tf.forecast(getValuesList(1, processingList));
+    console.log(forecast);
+    return;*/
 
     console.log('Analysis:');
     console.log(' ');
@@ -99,16 +96,9 @@ prompt.get(['timeMode', 'windowSize'], async (e: any, data: prompt.Properties) =
 
 
         // Retrieve Forecast
-        //const timestampList: number[] = getValuesList(0, processingList)
-        //const priceList: number[] = getValuesList(1, processingList);
-
-        //const arima: number = _arima.sarimax(priceList, timestampList);
-        //const arima: number = _arima.arima(priceList);
-        //const sarima: number = _arima.sarima(priceList);
-        //const arima: number = _arima.sarima(getPriceValuesList(processingList));
-        //const arimaAlt: number = _arima.arimaAlt(processingList);
-        const forecast: IArimaForecast = _arima.forecastTendency(getValuesList(1, processingList), processingList);
-
+        const tf: ITrendForecast = new TrendForecast();
+        const forecast: any = tf.forecast(getValuesList(1, processingList));
+        console.log(forecast);
 
         // Add the item to the processing list
         processingList.push(item);
@@ -118,10 +108,6 @@ prompt.get(['timeMode', 'windowSize'], async (e: any, data: prompt.Properties) =
 
 
         // Make sure it isn't the last item in the list
-        //if ((arima > 0 && sarima > 0) || (arima < 0 && sarima < 0)) {
-        //if (i < rawPriceList.length - 1 && ((arima > 0 && sarima > 0 && arimaAlt > 0) || arima < 0 && sarima < 0 && arimaAlt < 0)) {
-        //if (i < rawPriceList.length - 1 && (arima <= -(arimaDust) || arima >= arimaDust)) {
-        //if (arima != 0) {
         if (forecast.result != 0) {
 
             /**
@@ -191,6 +177,12 @@ function getRawPrices(mode: ITimeMode): ICoinGeckoPrices {
     switch(mode) {
         case 'h1':
             list = HOURLY_PRICES_01.slice();
+            break;
+        case 'h2':
+            list = HOURLY_PRICES_02.slice();
+            break;
+        case 'h3':
+            list = HOURLY_PRICES_03.slice();
             break;
         case 'd1':
             list = DAILY_PRICES_01.slice();

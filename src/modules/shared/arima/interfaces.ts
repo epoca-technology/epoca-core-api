@@ -1,5 +1,5 @@
 export interface IArimaService {
-    forecastTendency(data: number[]): any,
+    forecastTendency(data: number[], fullPrices: IArimaPrices): any,
     arima(data: number[], p: number, d: number, q: number): number,
     //autoArima(data: number[]): number,
     sarima(
@@ -13,7 +13,8 @@ export interface IArimaService {
         s?: number
     ): IArimaForecastedTendency,
     //sarimax(priceList: number[], timestampList: number[], p?: number, d?: number, q?: number): IArimaForecastedTendency,
-    arimaAlt(data: IArimaPrices): IArimaForecastedTendency
+    arimaAlt(data: IArimaPrices): IArimaForecastedTendency,
+    nostradamus(numberSeries: number[]): any
 }
 
 

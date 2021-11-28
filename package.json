@@ -6,6 +6,7 @@
   "scripts": {
     "start": "clear && node dist/index.js",
     "build": "clear && gulp",
+    "cli-trend": "clear && node ./dist/CLI/forecasting/trend/trend.js",
     "cli-arima": "clear && node ./dist/CLI/forecasting/arima/arima.js",
     "test": "clear && jasmine-ts --config=jasmine/e2e.json"
   },
@@ -24,6 +25,7 @@
     "express": "4.17.1",
     "express-rate-limit": "5.5.1",
     "inversify": "6.0.1",
+    "nostradamus": "^0.1.0",
     "reflect-metadata": "0.1.13",
     "timeseries-analysis": "1.0.12"
   },
