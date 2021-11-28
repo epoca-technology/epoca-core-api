@@ -7,8 +7,7 @@ import { environment } from "../environment";
 // Modules
 import { trendModule } from "../modules/shared/trend";
 import { arimaModule } from "../modules/shared/arima";
-import { numberModule } from "../modules/shared/number";
-import { errorModule } from "../modules/shared/error";
+import { utilitiesModule } from "../modules/shared/utilities";
 
 
 // Initialize Inversify
@@ -27,11 +26,8 @@ appContainer.load(
     // Arima
     arimaModule,
 
-    // Number
-    numberModule,
-
-    // Error
-    errorModule,
+    // Utilities
+    utilitiesModule,
 );
 
 

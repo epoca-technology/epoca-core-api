@@ -1,11 +1,18 @@
+
 import {injectable} from "inversify";
-import { INumberService } from "./interfaces";
+import { IUtilitiesService } from "./interfaces";
 import {BigNumber} from 'bignumber.js';
 
 @injectable()
-export class NumberService implements INumberService {
+export class UtilitiesService implements IUtilitiesService {
 
 
+
+
+
+
+
+    /* Numbers  */
 
 
 
@@ -64,5 +71,80 @@ export class NumberService implements INumberService {
 
         // Return the forecasted change
         return change;
+    }
+
+
+
+
+
+
+
+
+
+
+    /* List Filtering */
+
+
+
+    /**
+     * Given a list and a key or an index, it will return the filtered version.
+     * @param list 
+     * @param keyOrIndex 
+     * @returns any[]
+     */
+    public filterList(list: any[], keyOrIndex: string|number): any[] {
+        let filteredList: any[] = [];
+        for (let item of list) {
+            filteredList.push(item[keyOrIndex]);
+        }
+        return filteredList
+    }
+
+
+
+
+
+
+
+
+
+
+    /* Error Handling */
+
+
+
+
+
+    /**
+     * Given an error, it will attempt to extract the message.
+     * @param e 
+     * @returns string
+     */
+    public getMessage(e: any): string {
+        // Unknown error
+        const unknownError: string = 'The error message could not be retrieved, find more information in the server logs.';
+
+        // Handle String
+        if (typeof e == "string") {
+            return e;
+        }
+
+        // Handle object and deeper keys
+        else if (typeof e === "object" && e !== null) {
+
+            // Check if the message was provided
+            if (typeof e.message == "string" && e.message.length) {
+                return e.message;
+            }
+
+            // Otherwise, stringify the entire object
+            return JSON.stringify(e);
+        }
+
+        // Unknown error
+        else {
+            console.log(e);
+            return unknownError;
+        }
     }
 }

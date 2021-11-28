@@ -1,7 +1,7 @@
 // Dependencies 
 import "reflect-metadata";
 import { appContainer } from "../../../ioc";
-import { SYMBOLS } from "../../../symbols";
+import { SYMBOLS } from "../../../types";
 import * as prompt from 'prompt';
 
 // Init class

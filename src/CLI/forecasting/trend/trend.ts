@@ -1,7 +1,7 @@
 // Dependencies 
 import "reflect-metadata";
 import { appContainer } from "../../../ioc";
-import { SYMBOLS } from "../../../symbols";
+import { SYMBOLS } from "../../../types";
 import * as prompt from 'prompt';
 
 // Init class
@@ -45,7 +45,7 @@ const d: {
     windowSize: number
 } = {
     timeMode: 'h3',
-    windowSize: 100,
+    windowSize: 200,
 }
 
 
@@ -98,7 +98,7 @@ prompt.get(['timeMode', 'windowSize'], async (e: any, data: prompt.Properties) =
         // Retrieve Forecast
         const tf: ITrendForecast = new TrendForecast();
         const forecast: any = tf.forecast(getValuesList(1, processingList));
-        console.log(forecast);
+        //console.log(forecast);
 
         // Add the item to the processing list
         processingList.push(item);

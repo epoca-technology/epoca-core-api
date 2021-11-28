@@ -1,5 +1,5 @@
 import {ContainerModule, interfaces} from "inversify";
-import { SYMBOLS } from "../../../symbols";
+import { SYMBOLS } from "../../../types";
 import { ArimaService } from "./arima.service";
 import { IArimaService } from "./interfaces";
 

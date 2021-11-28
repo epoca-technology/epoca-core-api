@@ -2,11 +2,10 @@ import {inject, injectable} from "inversify";
 const ARIMA = require('arima');
 const timeseries = require("timeseries-analysis");
 const nostradamus = require("nostradamus");
-import { SYMBOLS } from "../../../symbols";
-import { IErrorService } from "../error";
-import { IArimaForecast, IArimaService } from "./interfaces";
+import { SYMBOLS } from "../../../types";
+import { IArimaForecast, IArimaService, IArimaPrices, IArimaForecastedTendency } from "./interfaces";
 import {BigNumber} from 'bignumber.js';
-import { IArimaPrices, IArimaForecastedTendency } from "../arima";
+import { IUtilitiesService } from "../utilities";
 
 
 
@@ -14,7 +13,7 @@ import { IArimaPrices, IArimaForecastedTendency } from "../arima";
 @injectable()
 export class ArimaService implements IArimaService {
     // Inject dependencies
-    @inject(SYMBOLS.ErrorService)           private _e: IErrorService;
+    @inject(SYMBOLS.UtilitiesService)           private _e: IUtilitiesService;
 
     // Compact List Config
     private readonly compactListSize: number = 20;

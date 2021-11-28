@@ -30,7 +30,7 @@ export class TrendForecast implements ITrendForecast {
         streakRequirement?: number,
         verbose?: boolean
     ) {
-        this.streakRequirement = streakRequirement || 2;
+        this.streakRequirement = streakRequirement || 3;
         this.verbose = verbose == true;
     }
 
@@ -92,10 +92,18 @@ export class TrendForecast implements ITrendForecast {
             return -1;
         }
         else*/ if (
-            this.lastStreak.tendency == -1 && 
-            this.down.activeCount > 0
+            this.down.totalCount > this.up.totalCount &&
+            //this.lastStreak.tendency == -1 && 
+            //(this.lastTendency == -1 || this.lastTendency == 0) &&
+            this.down.activeCount > 0 && this.down.activeCount <= this.down.avgStreakCount +1
         ) {
             return -1;
+        }
+        else if (
+            this.up.totalCount > this.down.totalCount && 
+            this.down.activeCount > 1 && this.down.activeCount <= this.down.avgStreakCount +1
+        ) {
+            
         }
 
         return 0;
@@ -212,7 +220,7 @@ export class TrendForecast implements ITrendForecast {
 
             // Price went up
             if (tendency == 1) {
-                console.log('UP');
+                console.log(`UP: ${price} -> ${nextPrice} (${this.calculatePercentageChange(price, nextPrice)}%)`);
                 // Increase the counter
                 this.up.activeCount += 1;
                 this.up.totalCount += 1;
@@ -223,7 +231,7 @@ export class TrendForecast implements ITrendForecast {
 
             // Price went down
             else if (tendency == -1) {
-                console.log('DOWN');
+                console.log(`DOWN: ${price} -> ${nextPrice} (${this.calculatePercentageChange(price, nextPrice)}%)`);
                 // Increase the counter
                 this.down.activeCount += 1;
                 this.down.totalCount += 1;
@@ -234,7 +242,7 @@ export class TrendForecast implements ITrendForecast {
 
             // Price did not move - Reset both trends
             else {
-                console.log('SIDEWAYS');
+                console.log(`SIDEWAYS: ${this.calculatePercentageChange(price, nextPrice)}`);
                 this.resetTendency(-1);
                 this.resetTendency(1);
             }
@@ -368,5 +376,37 @@ export class TrendForecast implements ITrendForecast {
                 .dividedBy(numberSeries.length)
                 .decimalPlaces(0)
                 .toNumber();
+    }
+
+
+
+
+
+
+
+    /**
+     * Given an old and a new number, it will calculate the % difference between the 2.
+     * @param oldNumber 
+     * @param newNumber 
+     * @returns number
+     */
+     private calculatePercentageChange(oldNumber: number, newNumber: number): number {
+        // Init result
+        let change: number = 0;
+
+        // Handle an increase
+        if (newNumber > oldNumber) {
+            const increase: number = newNumber - oldNumber;
+            change = new BigNumber(increase).dividedBy(oldNumber).times(100).decimalPlaces(2).toNumber();
+        } 
+        
+        // Handle a decrease
+        else if (oldNumber > newNumber){
+            const decrease: number = oldNumber - newNumber;
+            change = new BigNumber(decrease).dividedBy(oldNumber).times(100).times(-1).decimalPlaces(2).toNumber();
+        }
+
+        // Return the forecasted change
+        return change;
     }
 }

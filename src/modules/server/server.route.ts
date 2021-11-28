@@ -1,7 +1,7 @@
 import express = require("express");
 
 // Rate Limits
-import {lowRiskLimit} from '../shared/rate-limit/rate.limit';
+import {lowRiskLimit} from '../shared/utilities';
 
 // Init Route
 const ServerRoute = express.Router();

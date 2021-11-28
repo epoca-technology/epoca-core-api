@@ -1,14 +1,12 @@
 import {inject, injectable} from "inversify";
 import { ITrendService, ITrendForecast, ITrendData } from "./interfaces";
-import { SYMBOLS } from "../../../symbols";
-import { INumberService } from "../number";
-import {BigNumber} from 'bignumber.js';
-import { ITendencyForecast } from "../../../types";
+import { SYMBOLS, ITendencyForecast } from "../../../types";
+import { IUtilitiesService } from "../utilities";
 
 @injectable()
 export class TrendService implements ITrendService {
     // Inject dependencies
-    @inject(SYMBOLS.NumberService)           private _number: INumberService;
+    @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
 
 
     // Configuration
@@ -174,7 +172,7 @@ export class TrendService implements ITrendService {
                 state.up.history.push(state.up.activeCount);
 
                 // Calculate the new avg
-                state.up.avgCount = this._number.calculateAverage(state.up.history, 0);
+                state.up.avgCount = this._utils.calculateAverage(state.up.history, 0);
 
                 // Set as the last streak
                 state.lastStreak = {
@@ -193,7 +191,7 @@ export class TrendService implements ITrendService {
                 state.down.history.push(state.down.activeCount);
 
                 // Calculate the new avg
-                state.down.avgCount = this._number.calculateAverage(state.down.history, 0);
+                state.down.avgCount = this._utils.calculateAverage(state.down.history, 0);
 
                 // Set as the last streak
                 state.lastStreak = {
