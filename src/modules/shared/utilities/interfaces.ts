@@ -13,8 +13,14 @@ export interface IUtilitiesService {
     getRoundingMode(roundUp?: boolean): BigNumber.RoundingMode,
 
     // List Filtering
-    filterList(list: any[], keyOrIndex: string|number): any[],
+    filterList(list: any[], keyOrIndex: string|number, changeFormat?: IFilterListChangeFormat, decimalPlaces?: number): any[],
 
     // Error Handling
     getErrorMessage(e: any): string,
 }
+
+
+
+
+// Format changing
+export type IFilterListChangeFormat = 'toString'|'toNumber';

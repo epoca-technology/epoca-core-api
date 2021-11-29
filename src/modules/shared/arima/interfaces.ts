@@ -1,5 +1,5 @@
 export interface IArimaService {
-    forecastTendency(data: number[], fullPrices: IArimaPrices): any,
+    forecastTendency(data: number[], fullPrices?: IArimaPrices): any,
     arima(data: number[], p: number, d: number, q: number): number,
     //autoArima(data: number[]): number,
     sarima(

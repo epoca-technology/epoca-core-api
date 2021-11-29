@@ -8,7 +8,9 @@
     "build": "clear && gulp",
     "cli-trend": "clear && node ./dist/CLI/forecasting/trend/trend.js",
     "cli-arima": "clear && node ./dist/CLI/forecasting/arima/arima.js",
-    "test": "clear && jasmine-ts --config=jasmine/e2e.json"
+    "test": "clear && jasmine-ts --config=jasmine/e2e.json",
+    "test-utils": "clear && jasmine-ts --config=jasmine/utils.json",
+    "test-forecast": "clear && jasmine-ts --config=jasmine/forecast.json"
   },
   "repository": {
     "type": "git",

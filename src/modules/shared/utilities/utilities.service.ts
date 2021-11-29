@@ -2,6 +2,7 @@
 import {injectable} from "inversify";
 import { IUtilitiesService } from "./interfaces";
 import {BigNumber} from 'bignumber.js';
+import { IFilterListChangeFormat } from ".";
 
 @injectable()
 export class UtilitiesService implements IUtilitiesService {
@@ -180,14 +181,39 @@ export class UtilitiesService implements IUtilitiesService {
      * Given a list and a key or an index, it will return the filtered version.
      * @param list 
      * @param keyOrIndex 
+     * @param changeFormat 
      * @returns any[]
      */
-    public filterList(list: any[], keyOrIndex: string|number): any[] {
+    public filterList(list: any[], keyOrIndex: string|number, changeFormat?: IFilterListChangeFormat, decimalPlaces?: number): any[] {
+        // Init the new list
         let filteredList: any[] = [];
+
+        // Iterate over each item
         for (let item of list) {
-            filteredList.push(item[keyOrIndex]);
+            // Init the item's value
+            let val: any = item[keyOrIndex];
+
+            // Check if the format needs to be changed
+            if (typeof changeFormat == "string" || typeof decimalPlaces == "number") {
+                // Convert the value into a BigNumber Object
+                val = new BigNumber(this.roundNumber(val, decimalPlaces));
+
+                // Push the item based on the desired format
+                if (changeFormat == 'toString') {
+                    filteredList.push(val.toString());
+                } else {
+                    filteredList.push(val.toNumber());
+                }
+            } 
+            
+            // Otherwise, push the raw item
+            else {
+                filteredList.push(val);
+            }
         }
-        return filteredList
+
+        // Return the final list
+        return filteredList;
     }
 
 

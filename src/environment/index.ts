@@ -1,8 +1,19 @@
-import { IEnvironment } from "./interfaces";
+// Interface
+export interface IEnvironment {
+    production: boolean,
+}
+
+
+
+
 
 
 // Initialize the environment
 let environment: IEnvironment;
+
+
+
+
 
 
 try {
@@ -22,6 +33,10 @@ try {
     console.log('Error initializing environment variables:');
     throw e;
 }
+
+
+
+
 
 
 // Export the Environment Variables

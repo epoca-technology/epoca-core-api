@@ -199,6 +199,68 @@ describe('List Filtering:', function() {
 
 
 
+    it('-Can build a new list from a candlestick series with a specific key or index and change its format to a number.', function() {
+        // Init list
+        const series: ICandlestickSeries = [
+            [
+                1638136800000,
+                "56273.23000000",
+                "56729.72000000",
+                "56023.01000000",
+                "56029.82000000",
+                "2427.77250000",
+                1638140399999,
+                "136925605.72282380",
+                86653,
+                "1214.82610000",
+                "68524696.12001700",
+                "0"
+            ],
+            [
+                1638140400000,
+                "56029.81000000",
+                "57445.05000000",
+                "56000.00000000",
+                "57274.88000000",
+                "3468.78753000",
+                1638143999999,
+                "197760088.12035750",
+                97925,
+                "1959.72750000",
+                "111749292.27241160",
+                "0"
+            ],
+            [
+                1638144000000,
+                "57274.89000000",
+                "57495.00000000",
+                "57202.05000000",
+                "57355.71000000",
+                "621.43840000",
+                1638147599999,
+                "35656318.41093860",
+                19094,
+                "313.95947000",
+                "18014843.65910670",
+                "0"
+            ]
+        ];
+
+        // Build the lists
+        const close: number[] = _utils.filterList(series, 4, 'toNumber');
+
+        // Iterate over each item and compare
+        for (let i = 0; i < series.length; i++) {
+            expect(_utils.roundNumber(series[i][4], 2)).toEqual(close[i]);
+            expect(typeof close[i]).toEqual("number");
+        }
+    });
+
+
+
+
+
+
     it('-Can build a new list from object keys.', function() {
         // Init list
         const series: {a: number, b: string, c: string}[] = [

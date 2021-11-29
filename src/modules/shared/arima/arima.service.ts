@@ -20,7 +20,7 @@ export class ArimaService implements IArimaService {
 
     constructor() {}
 
-    public forecastTendency(numberSeries: number[], fullPrices: IArimaPrices): any {
+    public forecastTendency(numberSeries: number[], fullPrices?: IArimaPrices): any {
         // Make sure the last has as many items as the required minimum for compact list size
         if (typeof numberSeries != "object" || numberSeries.length < 10) {
             throw new Error(`The number series must contain at least 10 items.`);
