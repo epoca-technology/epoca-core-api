@@ -10,7 +10,7 @@ import { environment } from "./environment";
 
 
 // BigNumber Config
-//BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN, EXPONENTIAL_AT: 32 });
+BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN, EXPONENTIAL_AT: 32 });
 
 
 // Init Express App
@@ -76,13 +76,3 @@ function logError(err: any, event: string): void {
 // Hello World
 console.log('Plutus API Initialized on Port: ' + port);
 console.log('Production: ' + environment.production);
-
-
-
-
-/*
-import { appContainer } from "./ioc";
-import { IErrorService } from "./modules/shared/error";
-import { SYMBOLS } from "./symbols";
-const _e = appContainer.get<IErrorService>(SYMBOLS.ErrorService);
-_e.handle();*/
