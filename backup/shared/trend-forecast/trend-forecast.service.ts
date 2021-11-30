@@ -19,7 +19,7 @@ export class TrendForecastService implements ITrendForecastService {
         }
 
         return {
-            result: this.arima(this._utils.filterList(series, 4, 'toNumber', 0), 7, 1, 3)
+            result: this.arima(this._utils.filterList(series, 4, 'toNumber', 0), 9, 2, 6)
         }
     }
 

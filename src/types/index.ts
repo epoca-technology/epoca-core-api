@@ -4,20 +4,24 @@
 
  export const SYMBOLS: ISymbols = {
 
-    // Trend
-    TrendForecastService: Symbol.for("TrendForecastService"),
 
-    // Arima
-    ArimaService: Symbol.for("ArimaService"),
+
+
+    // Binance
+    BinanceService: Symbol.for("BinanceService"),
 
     // Utilities
     UtilitiesService: Symbol.for("UtilitiesService"),
+
+    // External Request
+    ExternalRequest: Symbol.for("ExternalRequest"),
 }
 
 export interface ISymbols {
-    TrendForecastService: symbol,
-    ArimaService: symbol,
+
+    BinanceService: symbol,
     UtilitiesService: symbol,
+    ExternalRequest: symbol,
 }
 
 
@@ -35,33 +39,12 @@ export interface ISymbols {
 
 
 
-// API Response
-export interface IAPIResponse {
-    success: boolean,
-    data: any|null,
-    error: IAPIError|null
-}
-
-// API Error
-export interface IAPIError {
-    code: number,
-    message: string
-}
-
-
-
-// Forecasts
-export type ITendencyForecast = 1|0|-1;
-export type ITendencyForecastExtended = 2|1|0|-1|-2;
-
 
 
 
 
 
 /* Prices */
-
-
 
 
 // Candlesticks
@@ -88,3 +71,27 @@ export type IPriceSeriesItem = [
     number, // Timestamp
     number  // Price
 ]
+
+
+
+
+
+
+
+
+
+/* API */
+
+
+// API Response
+export interface IAPIResponse {
+    success: boolean,
+    data: any|null,
+    error: IAPIError|null
+}
+
+// API Error
+export interface IAPIError {
+    code: number,
+    message: string
+}

@@ -14,7 +14,7 @@ Run `npm start` to run the server
 
 ## CLI
 
-Arima Playground:  `npm run cli-arima`
+Latest Candlesticks:  `npm run cli-latest-candlesticks`
 
 
 ## Tests

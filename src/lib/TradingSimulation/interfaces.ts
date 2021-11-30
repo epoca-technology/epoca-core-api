@@ -1,5 +1,5 @@
-import { ITrendForecastResult } from "../../../src/modules/shared/trend-forecast";
-import { ICandlestickTerm } from "../data/candlesticks";
+import { IForecastResult } from "../Forecast";
+import { ICandlestickSeries } from "../../../src/types";
 
 
 // Class
@@ -12,7 +12,7 @@ export interface ITradingSimulation {
 
 // Class Config
 export interface ITradingSimulationConfig {
-    seriesTerm?: ICandlestickTerm,
+    series: ICandlestickSeries,
     windowSize?: number,
     tendencyForecastRequired?: ITendencyForecastRequired,
     meditationMinutes?: number,
@@ -66,14 +66,11 @@ export interface ITradingSimulationResult {
 
 // Position Record
 export interface ITradingSimulationPosition {
-    // State
-    //state: boolean,         // true = open, false = close
-
     // Type
     type: 'long'|'short',
 
     // Forecast Result
-    forecast: ITrendForecastResult,
+    forecast: IForecastResult,
 
     // Open & Close times
     openTime: number,

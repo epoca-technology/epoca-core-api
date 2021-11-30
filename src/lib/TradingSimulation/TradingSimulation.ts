@@ -1,9 +1,12 @@
 import {appContainer} from "../../../src/ioc";
-import { SYMBOLS, ICandlestickSeries, ICandlestickSeriesItem, ITendencyForecastExtended } from "../../../src/types";
+import { SYMBOLS, ICandlestickSeries, ICandlestickSeriesItem } from "../../../src/types";
+import { ITendencyForecastExtended } from "../Forecast";
 import { ITendencyForecastRequired, ITradingSimulation } from "./interfaces";
-import { getHourlyCandlesticksByTerm } from "../data/candlesticks";
 import { ITradingSimulationConfig, ITradingSimulationPosition, ITradingSimulationResult } from "./interfaces";
 import {BigNumber} from "bignumber.js";
+import * as moment from 'moment';
+
+
 
 // Init Utilities Service
 import { IUtilitiesService } from "../../../src/modules/shared/utilities";
@@ -145,9 +148,9 @@ export class TradingSimulation implements ITradingSimulation {
 
 
 
-    constructor(config?: ITradingSimulationConfig) {
+    constructor(config: ITradingSimulationConfig) {
         // Set core properties
-        this.series = config && config.seriesTerm ? getHourlyCandlesticksByTerm(config.seriesTerm): getHourlyCandlesticksByTerm(150);
+        this.series = config.series;
         if (config && config.windowSize) this.windowSize = config.windowSize;
         if (config && config.tendencyForecastRequired) this.tendencyForecastRequired = config.tendencyForecastRequired;
         if (config && typeof config.meditationMinutes == "number") this.meditationMinutes = config.meditationMinutes;
@@ -545,8 +548,7 @@ export class TradingSimulation implements ITradingSimulation {
      * @returns void
      */
     private activateMeditation(closeTimestamp: number): void {
-        const close: Date = new Date(closeTimestamp);
-        this.meditationEnds = close.setMinutes(close.getMinutes() + this.meditationMinutes);
+        this.meditationEnds = moment(closeTimestamp).add(this.meditationMinutes, "minutes").valueOf();
     }
 
 
@@ -582,22 +584,6 @@ export class TradingSimulation implements ITradingSimulation {
 
 
 
-
-
-
-
-
-
-
-    /**
-     * Retrieves the date in a readable format.
-     * @param timestamp 
-     * @returns string
-     */
-    private toDateString(timestamp: number): string {
-        const date: Date = new Date(timestamp);
-        return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
-    }
 
 
 
@@ -669,7 +655,7 @@ export class TradingSimulation implements ITradingSimulation {
         console.log(' ');console.log(' ');
         console.log(`Trading Simulation: ${id}`);
         console.log(`Initial Series (${this.processingSeries.length}):`);
-        for (let s of this.processingSeries) { console.log(`${this.toDateString(s[6])} | ${s[4]}`); }
+        for (let s of this.processingSeries) { console.log(`${_utils.toDateString(s[6])} | ${s[4]}`); }
         console.log(' ');console.log(' ');
     }
 
@@ -685,7 +671,7 @@ export class TradingSimulation implements ITradingSimulation {
      */
     private displayIgnoredWhileMeditating(openTimestamp: number, closeTimestamp: number): void {
         console.log(' ');
-        console.log(`Ignored while meditating: ${this.toDateString(openTimestamp)} - ${this.toDateString(closeTimestamp)}`);
+        console.log(`Ignored while meditating: ${_utils.toDateString(openTimestamp)} - ${_utils.toDateString(closeTimestamp)}`);
         console.log(' ');
     }
 
@@ -702,8 +688,8 @@ export class TradingSimulation implements ITradingSimulation {
      */
     private displayStandingNeutral(item: ICandlestickSeriesItem, forecastResult: ITrendForecastResult): void {
         console.log(' ');
-        console.log(`Neutral on period: ${this.toDateString(item[0])} - ${this.toDateString(item[6])}`);
-        console.log(`Forecast: ${this.toDateString(item[0])} - ${this.toDateString(item[6])}`);
+        console.log(`Neutral on period: ${_utils.toDateString(item[0])} - ${_utils.toDateString(item[6])}`);
+        console.log(`Forecast: ${_utils.toDateString(item[0])} - ${_utils.toDateString(item[6])}`);
         console.log(forecastResult);
         console.log(' ');
     }
@@ -752,7 +738,7 @@ export class TradingSimulation implements ITradingSimulation {
     private displayClosePosition(position: ITradingSimulationPosition): void {
         console.log(' ');
         console.log(`${position.outcome ? 'SUCCESSFUL': 'UNSUCCESSFUL'} ${position.type.toUpperCase()} Position Closed:`);
-        console.log(`${this.toDateString(position.openTime)} - ${this.toDateString(position.closeTime)}`);
+        console.log(`${_utils.toDateString(position.openTime)} - ${_utils.toDateString(position.closeTime)}`);
         console.log(`O: ${position.openPrice} | TP: ${position.takeProfitPrice} | SL: ${position.stopLossPrice}`);
         console.log(`Close Price: ${position.closePrice}`);
         console.log(' ');
@@ -771,7 +757,7 @@ export class TradingSimulation implements ITradingSimulation {
      */
     private displayActionlessStateCheck(currentItem: ICandlestickSeriesItem): void {
         console.log(' ');
-        console.log(`Actionless Check: ${this.toDateString(currentItem[0])} - ${this.toDateString(currentItem[6])}`);
+        console.log(`Actionless Check: ${_utils.toDateString(currentItem[0])} - ${_utils.toDateString(currentItem[6])}`);
         console.log(`O: ${currentItem[1]} | H: ${currentItem[2]} | L: ${currentItem[3]} | C: ${currentItem[4]}`);
         console.log(' ');
     }
@@ -790,7 +776,7 @@ export class TradingSimulation implements ITradingSimulation {
     private displayResult(r: ITradingSimulationResult): void {
         console.log(' ');console.log(' ');
         console.log('SUMMARY');
-        console.log(`Period: ${this.toDateString(r.periodBegins)} - ${this.toDateString(r.periodEnds)}`);
+        console.log(`Period: ${_utils.toDateString(r.periodBegins)} - ${_utils.toDateString(r.periodEnds)}`);
         console.log(`Total Positions: ${r.positions.length}`);
         console.log(`Successful: ${r.successful}`);
         console.log(`Unsuccessful: ${r.unsuccessful}`);
@@ -816,9 +802,9 @@ export class TradingSimulation implements ITradingSimulation {
 
         console.log(' ');
 
-        console.log('TIMES');
-        console.log(`Start: ${this.toDateString(r.start)}`);
-        console.log(`End: ${this.toDateString(r.end)}`);
+        console.log('SIMULATION TIMES');
+        console.log(`Start: ${_utils.toDateString(r.start)}`);
+        console.log(`End: ${_utils.toDateString(r.end)}`);
         console.log(`Duration: ${r.duration} seconds`);
     }
 }
