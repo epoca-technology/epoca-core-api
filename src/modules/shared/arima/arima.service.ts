@@ -33,7 +33,8 @@ export class ArimaService implements IArimaService {
 
 
         return {result: this.getMostDominantResult([
-            this.sarima(numberSeries, 2, 1, 2),
+            //this.sarima(numberSeries, 2, 1, 2),
+            this.arima(numberSeries, 1, 0, 1),
             //this.arima(numberSeries, 2, 1, 2),
             //this.arima(numberSeries, 5, 1, 2),
             //this.arima(numberSeries, 5, 1, 4),

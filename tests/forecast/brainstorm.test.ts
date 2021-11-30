@@ -5,9 +5,8 @@ import {BigNumber} from 'bignumber.js';
 import { ICandlestickSeries, IPriceSeries, SYMBOLS } from "../../src/types";
 
 
-// Init service
-import { IUtilitiesService } from "../../src/modules/shared/utilities";
-const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
+// Trading Simulation
+import {TradingSimulation, ITradingSimulation, ITradingSimulationResult} from "./lib";
 
 
 
@@ -19,8 +18,12 @@ const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 describe('', function() {
 
     it('-', function() {
-
-        
+        const ts: ITradingSimulation = new TradingSimulation({
+            seriesTerm: 1000,
+            windowSize: 60,
+            verbose: true,
+        });
+        const result: ITradingSimulationResult = ts.run();
     });
 
 });

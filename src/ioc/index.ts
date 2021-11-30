@@ -5,7 +5,7 @@ import {Container} from "inversify";
 import { environment } from "../environment";
 
 // Modules
-import { trendModule } from "../modules/shared/trend";
+import { trendForecastModule } from "../modules/shared/trend-forecast";
 import { arimaModule } from "../modules/shared/arima";
 import { utilitiesModule } from "../modules/shared/utilities";
 
@@ -20,8 +20,8 @@ const appContainer: Container = new Container({skipBaseClassChecks: true, defaul
 appContainer.load(
 
 
-    // Trend
-    trendModule,
+    // Trend Forecast
+    trendForecastModule,
 
     // Arima
     arimaModule,

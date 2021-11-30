@@ -37,5 +37,7 @@ export function getHourlyCandlesticksByTerm(term: ICandlestickTerm): ICandlestic
             return HOURLY_CANDLES_500;
         case 1000:
             return HOURLY_CANDLES_1000;
+        default:
+            throw new Error('An invalid candlestick term was provided.');
     }
 }
