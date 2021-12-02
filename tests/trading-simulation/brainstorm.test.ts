@@ -24,9 +24,11 @@ describe('', function() {
     it('-', function() {
         try {
             const ts: ITradingSimulation = new TradingSimulation({
-                series: getCandlestickSeries('1500'),
-                //windowSize: 720, // 1 month
-                windowSize: 60,
+                series: getCandlestickSeries('5000'),
+                windowSize: 720, // 1 month
+                //windowSize: 336, // 14 days
+                //windowSize: 200, // 
+                //windowSize: 60,
                 forecastConfig: {
                     arimaConfig: {
                         verbose: 2
@@ -34,15 +36,14 @@ describe('', function() {
                     verbose: 2
                 },
                 balanceConfig: {
-                    initial: 5000,
-                    leverage: 5,
+                    initial: 1000,
                     borrowInterestPercent: 0.02,
                     tradeFeePercent: 0.04,
                     minimumPositionAmount: 80,
-                    allInMode: false,
                     verbose: 1
                 },
-                takeProfit: 0.5,
+                meditationMinutes: 0,
+                takeProfit: 0.3,
                 stopLoss: 9,
                 verbose: 1,
             });

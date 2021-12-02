@@ -2,6 +2,8 @@ import {appContainer} from "../../ioc";
 import { ICandlestickSeries, SYMBOLS } from "../../../src/types";
 import { IArima, ITendencyForecast, ITendencyForecastExtended, IForecastProviderResult, IArimaConfig } from "./interfaces";
 const ARIMA = require('arima');
+const nostradamus = require("nostradamus");
+const timeseries = require("timeseries-analysis");
 import {BigNumber} from "bignumber.js";
 
 // Init Utilities Service
@@ -21,7 +23,7 @@ export class Arima implements IArima {
 
     // Compact List
     private readonly compactNumberSeries: number[];
-    private readonly compactNumberSeriesSize: number = 20;
+    private readonly compactNumberSeriesSize: number = 30;
 
     
     constructor(series: ICandlestickSeries, config: IArimaConfig) {
@@ -51,10 +53,29 @@ export class Arima implements IArima {
 
 
         return {result: this.getMostDominantResult([
+            /*this.arima(1, 0, 1),
+            this.arima(1, 0, 1, true),
+            this.arima(2, 1, 2),
+            this.arima(2, 1, 2, true),*/
+            
+            /*this.arima(7, 1, 3),
+            this.arima(7, 1, 3, true),*/
+            /*this.autoArima(),
+            this.autoArima(true),*/
+            /*this.arima(9, 2, 5),
+            this.arima(9, 2, 5, true),*/
+            //this.nostradamus(),
+            this.arimaAlt(),
             this.arima(7, 1, 3),
             this.arima(7, 1, 3, true),
-            this.arima(9, 2, 5),
-            this.arima(9, 2, 5, true),
+            //this.arima(2, 1, 1),
+            //this.arima(2, 1, 1, true),
+            //this.arima(9, 2, 5),
+            //this.arima(3, 1, 2, true),
+            //this.arima(7, 1, 3),
+            //this.arima(4, 1, 3, true),
+
+            //this.autoArima(),
 
 
             //this.arima(1, 0, 1),
@@ -89,10 +110,10 @@ export class Arima implements IArima {
                 neutral += 1;
             }
         }
-        if (long >= (results.length -1)) {
+        if (long >= (results.length > 1 ? results.length -1: 1)) {
             return 1;
         }
-        else if (short >= (results.length -1)) {
+        else if (short >= (results.length > 1 ? results.length -1: 1)) {
             return -1;
         }
         else { return 0;}
@@ -113,6 +134,7 @@ export class Arima implements IArima {
             p: p,
             d: d,
             q: q,
+            s: 8,
             verbose: false
         }).train(series);
         
@@ -126,6 +148,77 @@ export class Arima implements IArima {
         // Return Results
         return this.getForecastedTendency(series[series.length - 1], pred[0]);
     }
+
+
+
+
+
+
+
+
+    public autoArima(compact?: boolean): ITendencyForecast {
+        // Init the series
+        const series: number[] = compact ? this.compactNumberSeries: this.numberSeries;
+
+        // Init Arima
+        const arima = new ARIMA({ auto: true, verbose: false }).fit(series)
+        
+        // Predict next value
+        const [pred, errors] = arima.predict(1);
+        if (typeof pred != "object" || !pred.length) {
+            console.log(pred);
+            throw new Error('Arima forecasted an invalid value.');
+        }
+
+        // Return Results
+        return this.getForecastedTendency(series[series.length - 1], pred[0]);
+        //return this.getExpectedPercentageChange(data[data.length - 1], pred[0]);
+    }
+
+
+
+
+
+
+
+
+    public arimaAlt(): ITendencyForecast {
+        const closePrices: number[] = _utils.filterList(this.series, 4, "toNumber", 2);
+        const closeTimes: number[] = _utils.filterList(this.series, 6, "toNumber", 0);
+        let data = [];
+        for (let i = 0; i < closePrices.length; i++) {
+            data.push([
+                closeTimes[i],
+                closePrices[i],
+            ]);
+        }
+
+        // Load data
+        const ts = new timeseries.main(data);
+        //const t = new ts.main(timeseries.sin({cycles:4}));
+
+        // We calculate the AR coefficients of the current points
+        const coeffs = ts.ARMaxEntropy({
+            data:	ts.data.slice()
+        });
+
+        let forecast = 0;	// Init the value at 0.
+        for (var i=0;i<coeffs.length;i++) {	// Loop through the coefficients
+            forecast -= ts.data[(data.length-1)-i][1]*coeffs[i];
+            // Explanation for that line:
+            // t.data contains the current dataset, which is in the format [ [date, value], [date,value], ... ]
+            // For each coefficient, we substract from "forecast" the value of the "N - x" datapoint's value, multiplicated by the coefficient, where N is the last known datapoint value, and x is the coefficient's index.
+        }
+        // Return Results
+        return this.getForecastedTendency(data[data.length - 1][1], forecast);
+        //return forecast;
+    }
+
+
+
+
+
+
 
 
 

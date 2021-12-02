@@ -229,7 +229,8 @@ export class TradingSimulation implements ITradingSimulation {
             // Summary
             initialBalance: this.balance.initial,
             currentBalance: this.balance.current,
-            balanceDifference: this.balance.difference,
+            bank: this.balance.bank.toNumber(),
+            profit: this.balance.bank.plus(this.balance.current).minus(this.balance.initial).toNumber(),
 
             // Fees
             netFee: this.balance.fees.netFee.toNumber(),
@@ -798,7 +799,8 @@ export class TradingSimulation implements ITradingSimulation {
         console.log('BALANCE');
         console.log(`Initial: $${r.initialBalance}`);
         console.log(`Current: $${r.currentBalance}`);
-        console.log(`Difference: $${r.balanceDifference}`);
+        console.log(`Bank: $${r.bank}`);
+        console.log(`Profit: $${r.profit}`);
 
         console.log(' ');
 

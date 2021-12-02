@@ -37,7 +37,7 @@ export interface IBalanceSimulation {
     // Balance
     initial: number,
     current: number,
-    difference: number
+    bank: BigNumber,
     history: IBalanceHistory[],
 
     // Fees Summary
@@ -55,7 +55,6 @@ export interface IBalanceSimulationConfig {
     borrowInterestPercent?: number,
     tradeFeePercent?: number,
     minimumPositionAmount?: number,
-    allInMode?: boolean,
     verbose?: IVerbose,
 }
 
@@ -116,7 +115,8 @@ export interface ITradingSimulationResult {
     // Summary
     initialBalance: number,
     currentBalance: number,
-    balanceDifference: number,
+    bank: number,
+    profit: number,
 
     // Fees
     netFee: number,

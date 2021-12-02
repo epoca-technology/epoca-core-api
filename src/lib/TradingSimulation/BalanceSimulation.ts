@@ -27,15 +27,13 @@ export class BalanceSimulation implements IBalanceSimulation {
      * This is the accumulated balance. 
      * If the allInMode is enabled, it will use this entire balance to open new positions even this
      * number is greater than the initial balance. Otherwise, it will open positions using the initialBalance.
-     * @difference
-     * The current difference between the current & initial balance. It can be a possitive or a negative number.
      * @history
      * This is the history of the balances as positions are closed. The indexes match the TradingSimulation
      * positions list.
      */
+    public bank: BigNumber = new BigNumber(0);
     public readonly initial: number;
     public current: number;
-    public difference: number = 0;
     public history: IBalanceHistory[] = [];
 
 
@@ -60,9 +58,11 @@ export class BalanceSimulation implements IBalanceSimulation {
      * @leverage
      * This is the leverage that will be used when opening positions in order to increase the volatility
      * of the asset.
-     * DEFAULT: 10
+     * This property is dynamically based on the current state of the simulation. While on profit/neutral, it 
+     * will reduce the risk with x5. While losing, it will double the leverage to x10.
+     * DEFAULT: 5
      */
-     private readonly leverage: number = 10;
+     private leverage: number = 5;
 
 
 
@@ -91,15 +91,6 @@ export class BalanceSimulation implements IBalanceSimulation {
     private readonly minimumPositionAmount: number = 80;
 
 
-    /**
-     * @allInMode
-     * If this mode is enabled, it will place the entire available balance into new positions.
-     * Otherwise, it will place amounts that are less than or equal to the initial balance.
-     * DEFAULT: false
-     */
-    private readonly allInMode: boolean;
-
-
 
 
     /**
@@ -126,9 +117,6 @@ export class BalanceSimulation implements IBalanceSimulation {
         // Set Minimum Amount
         if (typeof config.minimumPositionAmount == "number") this.minimumPositionAmount = config.minimumPositionAmount;
 
-        // Set Mode
-        this.allInMode = config.allInMode == true;
-
         // Set Verbosity
         if (typeof config.verbose == "number") this.verbose = config.verbose;
     }
@@ -144,8 +132,8 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     public canOpenPosition(): void {
         if (this.current < this.minimumPositionAmount) {
-            throw new Error(`The simulation has ended because the current balance (${this.current.toString()}) 
-            is inferior to the minimumPositionAmount (${this.minimumPositionAmount}). INSUFFICIENT_BALANCE`);
+            throw new Error(`The current balance (${this.current.toString()}) is less than the minimumPositionAmount.
+            the balance is the bank is: ${this.bank.toNumber()}`);
         }
     }
 
@@ -163,13 +151,12 @@ export class BalanceSimulation implements IBalanceSimulation {
      * @param position 
      */
     public onPositionClose(position: ITradingSimulationPosition): void {
+        // Find the balance that will be placed into the position
+        const positionAmount: number = this.getPositionAmount();
+
         // Init values
         const previous: number = this.current;
         let current: BigNumber = new BigNumber(this.current);
-
-
-        // Find the balance that will be placed into the position
-        const positionAmount: number = this.getPositionAmount();
 
         // Borrow the amount based on leverage
         const borrowedAmount: number = this.getBorrowedAmount(positionAmount);
@@ -181,7 +168,7 @@ export class BalanceSimulation implements IBalanceSimulation {
         // Calculate the open trade fee
         const openTradeFee: number = _utils.calculateFee(borrowedAmount, this.tradeFeePercent, 2, true);
 
-        // Deduct the trade fee from the borrowed amount
+        // Deduct the trade fee from the borrowed amount in order to calculate the correct close trade fee
         //borrowedAmountBN = borrowedAmountBN.minus(openTradeFee);
 
         /* Handle the rest based on the outcome of the position */
@@ -241,9 +228,6 @@ export class BalanceSimulation implements IBalanceSimulation {
         // Deduct the net fee from the current balance
         this.current = current.minus(netFee).toNumber();
 
-        // Update the difference
-        this.difference = new BigNumber(this.current).minus(this.initial).toNumber();
-
         // Add the balance update to history
         this.history.push({
             previous: previous,
@@ -268,7 +252,7 @@ export class BalanceSimulation implements IBalanceSimulation {
         }
 
         // Log it if applies
-        if (this.verbose > 0) this.displayBalanceUpdate();
+        if (this.verbose > 0) this.displayBalanceUpdate(positionAmount);
     }
 
 
@@ -298,20 +282,78 @@ export class BalanceSimulation implements IBalanceSimulation {
      * @returns number
      */
     private getPositionAmount(): number {
-        // Set the entire current balance is allInMode is enabled
-        if (this.allInMode) {
-            return this.current;
-        } 
-        
-        // If the current is greater than the initial, return the initial.
-        else if (this.current > this.initial) {
-            return this.initial;
-        } 
-        
-        // Otherwise, return whatever is left;
-        else {
+        // Check the current status
+        const change: number = _utils.calculatePercentageChange(this.initial, this.current, 0, true);
+
+        /* Handle the percentage change accordingly */
+
+        // If there is less than the starting point, return whatever is left
+        if (change < -50) {
+            // Increment the leverage
+            this.leverage = 10;
+
+            // Return whatever is left
             return this.current;
         }
+
+        else if (change < -30) {
+            // Increment the leverage
+            this.leverage = 8;
+
+            // Return whatever is left
+            return this.current;
+        }
+
+        else if (change < -15) {
+            // Increment the leverage
+            this.leverage = 6;
+
+            // Return whatever is left
+            return this.current;
+        }
+
+        else {
+            // If the change is above 50%, put the savings in the bank and start again
+            if (change >= 20) {
+                // Init savings
+                const savings = new BigNumber(this.current).minus(this.initial);
+
+                // Deduct the savings from the current 
+                this.current = new BigNumber(this.current).minus(savings).toNumber();
+
+                // Add the savings to the bank balance
+                this.bank = this.bank.plus(savings);
+
+                // Log it if applies
+                if (this.verbose > 1) this.displayBankTransaction(savings.toNumber());
+
+                this.leverage = 6;
+
+                // Start all over again
+                return this.initial;
+            }
+    
+            // 
+            else if (change >= 15) {
+                this.leverage = 4;
+                //return _utils.alterNumberByPercentage(this.initial, -10);
+                return this.initial;
+            }
+    
+            // 
+            else if (change >= 10) {
+                this.leverage = 5;
+                //return _utils.alterNumberByPercentage(this.initial, -5);
+                return this.initial;
+            }
+    
+            // 
+            else {
+                this.leverage = 6;
+                return this.initial;
+            }
+        }
+
     }
 
 
@@ -341,15 +383,33 @@ export class BalanceSimulation implements IBalanceSimulation {
 
     /**
      * Displays a summary of a balance update.
+     * @param positionSize
      * @returns void
      */
-    private displayBalanceUpdate(): void {
+    private displayBalanceUpdate(positionSize: number): void {
         // Init the record
         const h: IBalanceHistory = this.history[this.history.length -1];
 
         // Display Fees - Can be silenced once validated
-        console.log(`${h.previous}$ -> ${h.current}$ (${h.current > h.previous ? '+':'-'}${h.difference}$) | Fee: ${h.fee.netFee}$`);
-        if (this.verbose > 1) console.log(`BIF: ${h.fee.borrowInterestFee}$ | OTF: ${h.fee.openTradeFee}$ | CTF: ${h.fee.closeTradeFee}$`);
+        console.log(`Position Size: ${positionSize}$`);
+        console.log(`${h.previous}$ -> ${h.current}$ (${h.current > h.previous ? '+':'-'}${new BigNumber(h.difference).minus(h.fee.netFee).toNumber()}$)`);
+        if (this.verbose > 0 && this.bank.isGreaterThan(0)) console.log(`Bank: ${this.bank.toNumber()}$`);
+        if (this.verbose > 1) console.log(`Fee: ${h.fee.netFee}$ | BIF: ${h.fee.borrowInterestFee}$ | OTF: ${h.fee.openTradeFee}$ | CTF: ${h.fee.closeTradeFee}$`);
+        console.log(' ');
+    }
+
+
+
+
+
+    /**
+     * Displays a bank transaction
+     * @param savings 
+     */
+    private displayBankTransaction(savings: number): void {
+        console.log(' ');
+        console.log(`A total of ${savings}$ has been placed in the bank account.`);
+        //console.log(`Bank Balance: ${this.bank.toNumber()}$`);
         console.log(' ');
     }
 }
