@@ -1,8 +1,8 @@
 import {appContainer} from "../../ioc";
 import { ICandlestickSeries, SYMBOLS } from "../../../src/types";
-import { IArima, ITendencyForecast, ITendencyForecastExtended, IForecastProviderResult } from "./interfaces";
+import { IArima, ITendencyForecast, ITendencyForecastExtended, IForecastProviderResult, IArimaConfig } from "./interfaces";
 const ARIMA = require('arima');
-
+import {BigNumber} from "bignumber.js";
 
 // Init Utilities Service
 import { IUtilitiesService } from "../../../src/modules/shared/utilities";
@@ -17,17 +17,22 @@ export class Arima implements IArima {
 
     // Number series
     private readonly numberSeries: number[];
-    private readonly minItems: number = 200;
+    private readonly minItems: number = 50;
 
-
+    // Compact List
+    private readonly compactNumberSeries: number[];
+    private readonly compactNumberSeriesSize: number = 20;
 
     
-    constructor(series: ICandlestickSeries) {
+    constructor(series: ICandlestickSeries, config: IArimaConfig) {
         // Init the series
         this.series = series;
 
         // Populate the number series with the close prices
         this.numberSeries = _utils.filterList(series, 4, "toNumber", 0);
+
+        // Populate the compact series
+        this.compactNumberSeries = this.getCompactNumberSeries();
     }
     
 
@@ -46,8 +51,13 @@ export class Arima implements IArima {
 
 
         return {result: this.getMostDominantResult([
-            //this.sarima(numberSeries, 2, 1, 2),
-            this.arima(1, 0, 1),
+            this.arima(7, 1, 3),
+            this.arima(7, 1, 3, true),
+            this.arima(9, 2, 5),
+            this.arima(9, 2, 5, true),
+
+
+            //this.arima(1, 0, 1),
             //this.arima(numberSeries, 2, 1, 2),
             //this.arima(numberSeries, 5, 1, 2),
             //this.arima(numberSeries, 5, 1, 4),
@@ -79,10 +89,10 @@ export class Arima implements IArima {
                 neutral += 1;
             }
         }
-        if (long >= (results.length)) {
+        if (long >= (results.length -1)) {
             return 1;
         }
-        else if (short >= (results.length)) {
+        else if (short >= (results.length -1)) {
             return -1;
         }
         else { return 0;}
@@ -94,14 +104,17 @@ export class Arima implements IArima {
 
 
 
-    private arima(p: number, d: number, q: number): any {
+    private arima(p: number, d: number, q: number, compact?: boolean): any {
+        // Init the series
+        const series: number[] = compact ? this.compactNumberSeries: this.numberSeries;
+
         // Init Arima
         const arima = new ARIMA({
             p: p,
             d: d,
             q: q,
             verbose: false
-        }).train(this.numberSeries);
+        }).train(series);
         
         // Predict next value
         const [pred, errors] = arima.predict(1);
@@ -111,7 +124,7 @@ export class Arima implements IArima {
         }
 
         // Return Results
-        return this.getForecastedTendency(this.numberSeries[this.numberSeries.length - 1], pred[0]);
+        return this.getForecastedTendency(series[series.length - 1], pred[0]);
     }
 
 
@@ -128,5 +141,21 @@ export class Arima implements IArima {
         else {
             return 0;
         }
+    }
+
+
+
+
+
+
+    private getCompactNumberSeries(): number[] {
+        let list: number[] = [];
+        const distance: number = new BigNumber(this.numberSeries.length).dividedBy(this.compactNumberSeriesSize).decimalPlaces(0).toNumber();
+        for (let i = 0; i < this.numberSeries.length; i += distance) {
+            if (list.length < this.compactNumberSeriesSize) {
+                list.push(this.numberSeries[i] || this.numberSeries[this.numberSeries.length - 1]);
+            }
+        }
+        return list;
     }
 }

@@ -21,6 +21,6 @@ Latest Candlesticks:  `npm run cli-latest-candlesticks`
 
 End-to-end: `npm run test`
 
-Utilities: `npm run test-utils`
+Trading Simulation: `npm run test-trading-simulation`
 
-Forecast: `npm run test-forecast`
+Utilities: `npm run test-utils`

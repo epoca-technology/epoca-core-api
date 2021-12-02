@@ -1,17 +1,21 @@
-
+import { ICandlestickSeries, IVerbose } from "../../types";
 
 
 
 /* General Analysis */
 
+
+
 // Class
 export interface IForecast {
-    forecast(): IForecastResult
+    forecast(series: ICandlestickSeries): IForecastResult
 }
+
 
 // Config
 export interface IForecastConfig {
-    arimaConfig: IArimaConfig
+    arimaConfig: IArimaConfig,
+    verbose?: IVerbose
 }
 
 
@@ -24,12 +28,16 @@ export interface IForecastResult {
 
 
 
+
+
+
 /* Forecast Provider */
 
 // Parent Class
 export interface IForecastProvider {
     forecast(): IForecastProviderResult
 }
+
 
 
 /* Arima */
@@ -39,13 +47,14 @@ export interface IArima extends IForecastProvider {}
 
 // Config
 export interface IArimaConfig {
-    someValue?: string
+    verbose?: IVerbose
 }
 
 // Result Data
 export interface IArimaResultData {
     superCool?: string
 }
+
 
 
 /* Market State */

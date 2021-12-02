@@ -28,27 +28,29 @@ describe('Number Handling:', function() {
         ];
 
         for (let v of vals) {
-            expect(_utils.increaseNumberByPercent(v.originalNumber, v.percent)).toEqual(v.result);
+            expect(_utils.alterNumberByPercentage(v.originalNumber, v.percent)).toEqual(v.result);
             expect(_utils.calculatePercentageChange(v.originalNumber, v.result)).toEqual(v.percent);
         }
     });
 
 
 
+
     it('-Can decrease numbers by percentage', function() {
         // Init a list of numbers
         const vals: {originalNumber: number, percent: number, result: number}[] = [
-            {originalNumber: 100, percent: 50, result: 50},
-            {originalNumber: 100, percent: 90, result: 10},
-            {originalNumber: 57700, percent: 2, result: 56546},
-            {originalNumber: 56936.63, percent: 35, result: 37008.80},
+            {originalNumber: 100, percent: -50, result: 50},
+            {originalNumber: 100, percent: -90, result: 10},
+            {originalNumber: 57700, percent: -2, result: 56546},
+            {originalNumber: 56936.63, percent: -35, result: 37008.80},
         ];
 
         for (let v of vals) {
-            expect(_utils.decreaseNumberByPercent(v.originalNumber, v.percent)).toEqual(v.result);
-            expect(_utils.calculatePercentageChange(v.originalNumber, v.result)).toEqual(-(v.percent));
+            expect(_utils.alterNumberByPercentage(v.originalNumber, v.percent)).toEqual(v.result);
+            expect(_utils.calculatePercentageChange(v.originalNumber, v.result)).toEqual(v.percent);
         }
     });
+
 
 
 
@@ -66,6 +68,12 @@ describe('Number Handling:', function() {
     });
 
 
+    it('-Can get the percent out of a number total', function() {
+        expect(_utils.getPercentageOutOfTotal(50, 100)).toEqual(50);
+        expect(_utils.getPercentageOutOfTotal(100, 1000)).toEqual(10);
+        expect(_utils.getPercentageOutOfTotal(30, 100)).toEqual(30);
+    });
+
 
     it('-Can round numbers in any format', function() {
         expect(_utils.roundNumber(1.5, 0)).toEqual(1);
@@ -74,6 +82,13 @@ describe('Number Handling:', function() {
         expect(_utils.roundNumber(new BigNumber(1.555), 2)).toEqual(1.55);
     });
 
+
+
+    it('-Can retrieve the correct number of decimals', function() {
+        expect(_utils.getDecimalPlaces()).toEqual(2);
+        expect(_utils.getDecimalPlaces(0)).toEqual(0);
+        expect(_utils.getDecimalPlaces(3)).toEqual(3);
+    });
 
 
 

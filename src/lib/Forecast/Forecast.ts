@@ -1,26 +1,22 @@
 import { ICandlestickSeries } from "../../types";
 import {IArima, IForecastConfig, IForecastResult, IForecast } from "./interfaces";
 import { Arima } from "./Arima";
+import { IArimaConfig, IForecastProviderResult } from ".";
 
 
 
 export class Forecast implements IForecast {
     // Arima
-    private arima: IArima;
-    private arimaResults: IForecastResult;
+    private arimaConfig: IArimaConfig;
     
 
 
 
-    constructor(series: ICandlestickSeries, config?: IForecastConfig) {
-        // Initialize arima's instance
-        this.arima = new Arima(series);
+    constructor(config: IForecastConfig) {
+        // Initialize arima's config
+        this.arimaConfig = config.arimaConfig;
 
-        // Initialize market state's instance
-        // @TODO
 
-        // Initialize TA's instance
-        // @TODO
     }
     
 
@@ -28,8 +24,19 @@ export class Forecast implements IForecast {
 
 
 
-    public forecast(): IForecastResult {
-        
+    /**
+     * Given a series, it will perform all available forecasts and return a unified result.
+     * @param series
+     * @returns IForecastResult
+     */
+    public forecast(series: ICandlestickSeries): IForecastResult {
+        // Initialize Arima
+        //const arima: IArima = new Arima(series, this.arimaConfig);
+        //const arimaResults: IForecastProviderResult = arima.forecast();
+        return {
+            result: Math.random() >= 0.5 ? 1 : -1
+            //result: arimaResults.result
+        }
     }
 
 

@@ -1,20 +1,24 @@
 import {appContainer} from "../../../src/ioc";
-import { SYMBOLS, ICandlestickSeries, ICandlestickSeriesItem } from "../../../src/types";
-import { ITendencyForecastExtended } from "../Forecast";
-import { ITendencyForecastRequired, ITradingSimulation } from "./interfaces";
-import { ITradingSimulationConfig, ITradingSimulationPosition, ITradingSimulationResult } from "./interfaces";
+import { SYMBOLS, ICandlestickSeries, ICandlestickSeriesItem, IVerbose } from "../../types";
+import { IForecast, ITendencyForecastExtended, Forecast, IForecastResult } from "../Forecast";
+import { BalanceSimulation } from "./BalanceSimulation";
+import { 
+    ITendencyForecastRequired, 
+    ITradingSimulation,
+    ITradingSimulationConfig, 
+    ITradingSimulationPosition, 
+    ITradingSimulationResult,
+    IBalanceSimulation
+} from "./interfaces";
 import {BigNumber} from "bignumber.js";
 import * as moment from 'moment';
+
 
 
 
 // Init Utilities Service
 import { IUtilitiesService } from "../../../src/modules/shared/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
-
-// Init Trend Forecast Service
-import { ITrendForecastService, ITrendForecastResult } from "../../../src/modules/shared/trend-forecast";
-const _tf = appContainer.get<ITrendForecastService>(SYMBOLS.TrendForecastService);
 
 
 export class TradingSimulation implements ITradingSimulation {
@@ -35,6 +39,15 @@ export class TradingSimulation implements ITradingSimulation {
     private processingSeries: ICandlestickSeries;
 
 
+
+    // Forecast Class
+    private readonly forecast: IForecast;
+
+
+    // Balance Class
+    private readonly balance: IBalanceSimulation;
+
+
     /**
      * @windowSize
      * The amount of candles that will analyze in order to perform forecasting. 
@@ -52,9 +65,9 @@ export class TradingSimulation implements ITradingSimulation {
     /**
      * @tendencyForecastRequired
      * The requirement for the simulation to open positions.
-     * DEFAULT: {long: 1, short: 1}
+     * DEFAULT: {long: 1, short: -1}
      */
-    private readonly tendencyForecastRequired: ITendencyForecastRequired = {long: 1, short: 1};
+    private readonly tendencyForecastRequired: ITendencyForecastRequired = {long: 1, short: -1};
 
 
     /**
@@ -141,9 +154,9 @@ export class TradingSimulation implements ITradingSimulation {
     /**
      * @verbose
      * Displays additional data of the process for debugging purposes.
-     * DEFAULT: false
+     * DEFAULT: 0
      */
-    private readonly verbose: boolean;
+    private readonly verbose: IVerbose = 0;
 
 
 
@@ -151,17 +164,21 @@ export class TradingSimulation implements ITradingSimulation {
     constructor(config: ITradingSimulationConfig) {
         // Set core properties
         this.series = config.series;
-        if (config && config.windowSize) this.windowSize = config.windowSize;
-        if (config && config.tendencyForecastRequired) this.tendencyForecastRequired = config.tendencyForecastRequired;
-        if (config && typeof config.meditationMinutes == "number") this.meditationMinutes = config.meditationMinutes;
-        this.verbose = config && config.verbose == true;
+        if (config.windowSize) this.windowSize = config.windowSize;
+        if (config.tendencyForecastRequired) this.tendencyForecastRequired = config.tendencyForecastRequired;
+        if (typeof config.meditationMinutes == "number") this.meditationMinutes = config.meditationMinutes;
+        if (typeof config.takeProfit == "number") this.takeProfit = config.takeProfit;
+        if (typeof config.stopLoss == "number") this.stopLoss = config.stopLoss;
+        if (typeof config.verbose == "number") this.verbose = config.verbose;
 
         // Initialize the processing series
         this.processingSeries = this.series.slice(0, this.windowSize);
 
-        // Init trading configuration
-        if (config && typeof config.takeProfit == "number") this.takeProfit = config.takeProfit;
-        if (config && typeof config.stopLoss == "number") this.stopLoss = config.stopLoss;
+        // Initialize the forecast
+        this.forecast = new Forecast(config.forecastConfig);
+
+        // Initialize the balance
+        this.balance = new BalanceSimulation(config.balanceConfig);
     }
 
 
@@ -182,7 +199,7 @@ export class TradingSimulation implements ITradingSimulation {
         const start: number = Date.now();
 
         // Log init - if verbose
-        if (this.verbose) this.displayInit(id);
+        if (this.verbose > 0) this.displayInit(id);
 
         // Execute the simulation
         this.executeSimulation();
@@ -205,19 +222,34 @@ export class TradingSimulation implements ITradingSimulation {
             unsuccessful: this.unsuccessful,
             neutral: this.neutral,
             whileMeditating: this.whileMeditating,
-            successRate: this.getSuccessRate(this.successful, this.positions.length),
+            successRate: _utils.getPercentageOutOfTotal(this.successful, this.positions.length),
+
+            /* Balance */
+
+            // Summary
+            initialBalance: this.balance.initial,
+            currentBalance: this.balance.current,
+            balanceDifference: this.balance.difference,
+
+            // Fees
+            netFee: this.balance.fees.netFee.toNumber(),
+            borrowInterestFee: this.balance.fees.borrowInterestFee.toNumber(),
+            netTradesFee: this.balance.fees.netTradesFee.toNumber(),
+            openTradeFee: this.balance.fees.openTradeFee.toNumber(),
+            closeTradeFee: this.balance.fees.closeTradeFee.toNumber(),
+
 
             // Long Counters
             longsTotal: this.longsTotal,
             successfulLongs: this.successfulLongs,
             unsuccessfulLongs: this.unsuccessfulLongs,
-            longSuccessRate: this.getSuccessRate(this.successfulLongs, this.longsTotal),
+            longSuccessRate: _utils.getPercentageOutOfTotal(this.successfulLongs, this.longsTotal),
 
             // Short Counters
             shortsTotal: this.shortsTotal,
             successfulShorts: this.successfulShorts,
             unsuccessfulShorts: this.unsuccessfulShorts,
-            shortSuccessRate: this.getSuccessRate(this.successfulShorts, this.shortsTotal),
+            shortSuccessRate: _utils.getPercentageOutOfTotal(this.successfulShorts, this.shortsTotal),
 
             // Times
             start: start,
@@ -226,7 +258,7 @@ export class TradingSimulation implements ITradingSimulation {
         }
 
         // Log results - if verbose
-        if (this.verbose) this.displayResult(result);
+        if (this.verbose > 0) this.displayResult(result);
 
         // Return the final results
         return result;
@@ -257,7 +289,7 @@ export class TradingSimulation implements ITradingSimulation {
                 // Check if it is meditating
                 else if (this.isMeditating(currentItem[0])){ 
                     // Log info if applies
-                    if (this.verbose) this.displayIgnoredWhileMeditating(currentItem[0], currentItem[6]);
+                    if (this.verbose > 1) this.displayIgnoredWhileMeditating(currentItem[0], currentItem[6]);
 
                     // Increment the counter
                     this.whileMeditating += 1
@@ -266,7 +298,7 @@ export class TradingSimulation implements ITradingSimulation {
                 // Based on the forecast decision, open a position if applies
                 else {
                     // Retrieve the forecast
-                    const forecast: ITrendForecastResult = _tf.forecast(this.processingSeries, {});
+                    const forecast: IForecastResult = this.forecast.forecast(this.processingSeries);
 
                     // Check if a position can be opened
                     if (this.canOpenPosition(forecast.result)) { this.openPosition(forecast, currentItem) }
@@ -274,7 +306,7 @@ export class TradingSimulation implements ITradingSimulation {
                     // Otherwise, stand neutral
                     else {
                         // Log info if applies
-                        if (this.verbose) this.displayStandingNeutral(currentItem, forecast);
+                        if (this.verbose > 1) this.displayStandingNeutral(currentItem, forecast);
 
                         // Increment Counter
                         this.neutral += 1;
@@ -291,7 +323,7 @@ export class TradingSimulation implements ITradingSimulation {
             // On the last item, close any position that's open regardless of the output.
             else if (this.activePosition) {
                 // Log info
-                if (this.verbose) this.displayEndOfSeriesWithActivePosition();
+                if (this.verbose > 1) this.displayEndOfSeriesWithActivePosition();
 
                 // Close position
                 this.checkPositionState(currentItem, true);
@@ -317,7 +349,7 @@ export class TradingSimulation implements ITradingSimulation {
      * @param currentItem 
      * @returns void
      */
-    private openPosition(forecast: ITrendForecastResult, currentItem: ICandlestickSeriesItem): void {
+    private openPosition(forecast: IForecastResult, currentItem: ICandlestickSeriesItem): void {
         // Activate the position
         this.activePosition = {
             //state: true,
@@ -325,15 +357,15 @@ export class TradingSimulation implements ITradingSimulation {
             forecast: forecast,
             openTime: currentItem[0],
             openPrice: _utils.roundNumber(currentItem[1], 2),
-            takeProfitPrice: forecast.result > 0 ? _utils.increaseNumberByPercent(currentItem[1], this.takeProfit): _utils.decreaseNumberByPercent(currentItem[1], this.takeProfit),
-            stopLossPrice: forecast.result > 0 ? _utils.decreaseNumberByPercent(currentItem[1], this.stopLoss): _utils.increaseNumberByPercent(currentItem[1], this.stopLoss),
+            takeProfitPrice: forecast.result > 0 ? _utils.alterNumberByPercentage(currentItem[1], this.takeProfit): _utils.alterNumberByPercentage(currentItem[1], -(this.takeProfit)),
+            stopLossPrice: forecast.result > 0 ? _utils.alterNumberByPercentage(currentItem[1], -(this.stopLoss)): _utils.alterNumberByPercentage(currentItem[1], this.stopLoss),
         };
 
         // Increment the counter
         if (forecast.result > 0) { this.longsTotal += 1 } else { this.shortsTotal += 1 };
 
         // Log info if applies
-        if (this.verbose) this.displayOpenPosition(this.activePosition);
+        if (this.verbose > 0) this.displayOpenPosition(this.activePosition);
 
         /**
          * Make sure the position remains open in the given period. It is possible for the price to 
@@ -378,19 +410,21 @@ export class TradingSimulation implements ITradingSimulation {
                 const high: BigNumber = new BigNumber(currentItem[2]);
                 const low: BigNumber = new BigNumber(currentItem[3]);
 
+                // Check if the SL Price was hit by the low
+                if (low.isLessThanOrEqualTo(this.activePosition.stopLossPrice)) {
+                    this.closePosition(this.activePosition.stopLossPrice, false, currentItem[6]);
+                }
+                
+                
                 // Check if the TP Price was hit by the high
-                if (high.isGreaterThanOrEqualTo(this.activePosition.takeProfitPrice)) {
+                else if (high.isGreaterThanOrEqualTo(this.activePosition.takeProfitPrice)) {
                     this.closePosition(this.activePosition.takeProfitPrice, true, currentItem[6]);
                 }
 
-                // Check if the SL Price was hit by the low
-                else if (low.isLessThanOrEqualTo(this.activePosition.stopLossPrice)) {
-                    this.closePosition(this.activePosition.stopLossPrice, false, currentItem[6]);
-                }
 
                 // No actions need to be taken - Log if applies
                 else {
-                    if (this.verbose) this.displayActionlessStateCheck(currentItem);
+                    if (this.verbose > 1) this.displayActionlessStateCheck(currentItem);
                 }
             }
         } 
@@ -412,19 +446,21 @@ export class TradingSimulation implements ITradingSimulation {
                 const high: BigNumber = new BigNumber(currentItem[2]);
                 const low: BigNumber = new BigNumber(currentItem[3]);
 
-                // Check if the TP Price was hit by the low
-                if (low.isLessThanOrEqualTo(this.activePosition.takeProfitPrice)) {
-                    this.closePosition(this.activePosition.takeProfitPrice, true, currentItem[6]);
-                }
-
                 // Check if the SL Price was hit by the high
-                else if (high.isGreaterThanOrEqualTo(this.activePosition.stopLossPrice)) {
+                if (high.isGreaterThanOrEqualTo(this.activePosition.stopLossPrice)) {
                     this.closePosition(this.activePosition.stopLossPrice, false, currentItem[6]);
                 }
 
+
+                // Check if the TP Price was hit by the low
+                else if (low.isLessThanOrEqualTo(this.activePosition.takeProfitPrice)) {
+                    this.closePosition(this.activePosition.takeProfitPrice, true, currentItem[6]);
+                }
+
+
                 // No actions need to be taken - Log if applies
                 else {
-                    if (this.verbose) this.displayActionlessStateCheck(currentItem);
+                    if (this.verbose > 1) this.displayActionlessStateCheck(currentItem);
                 }
             }
         }
@@ -475,7 +511,10 @@ export class TradingSimulation implements ITradingSimulation {
         }
 
         // Log it if applies
-        if (this.verbose) this.displayClosePosition(this.activePosition);
+        if (this.verbose > 0) this.displayClosePosition(this.activePosition);
+
+        // Perform Balance Action
+        this.balance.onPositionClose(this.activePosition);
 
         // Remove the active position
         this.activePosition = undefined;
@@ -497,6 +536,9 @@ export class TradingSimulation implements ITradingSimulation {
      * @returns returns boolean
      */
     private canOpenPosition(forecastResult: ITendencyForecastExtended): boolean {
+        // Firstly make sure there is enough balance to open new positions
+        this.balance.canOpenPosition();
+
         // If it is equals or greater than the long requirement it can open a position.
         if (forecastResult >= this.tendencyForecastRequired.long) {
             return true;
@@ -565,29 +607,6 @@ export class TradingSimulation implements ITradingSimulation {
 
 
     /* Misc Helpers */
-
-
-
-
-
-
-
-    /**
-     * Retrieves the success rate based on all the positions that were taken.
-     * @param successful
-     * @param total
-     * @returns number
-     */
-    private getSuccessRate(successful: number, total: number): number {
-        return new BigNumber(successful).times(100).dividedBy(total).decimalPlaces(2).toNumber();
-    }
-
-
-
-
-
-
-
 
 
 
@@ -670,9 +689,7 @@ export class TradingSimulation implements ITradingSimulation {
      * @returns void
      */
     private displayIgnoredWhileMeditating(openTimestamp: number, closeTimestamp: number): void {
-        console.log(' ');
         console.log(`Ignored while meditating: ${_utils.toDateString(openTimestamp)} - ${_utils.toDateString(closeTimestamp)}`);
-        console.log(' ');
     }
 
 
@@ -686,12 +703,10 @@ export class TradingSimulation implements ITradingSimulation {
      * @param forecastResult 
      * @returns void
      */
-    private displayStandingNeutral(item: ICandlestickSeriesItem, forecastResult: ITrendForecastResult): void {
-        console.log(' ');
+    private displayStandingNeutral(item: ICandlestickSeriesItem, forecastResult: IForecastResult): void {
         console.log(`Neutral on period: ${_utils.toDateString(item[0])} - ${_utils.toDateString(item[6])}`);
         console.log(`Forecast: ${_utils.toDateString(item[0])} - ${_utils.toDateString(item[6])}`);
         console.log(forecastResult);
-        console.log(' ');
     }
 
 
@@ -721,7 +736,6 @@ export class TradingSimulation implements ITradingSimulation {
         console.log(`O: ${position.openPrice} | TP: ${position.takeProfitPrice} | SL ${position.stopLossPrice}`);
         /*console.log('Forecast:');
         console.log(position.forecast);*/
-        console.log(' ');
     }
 
 
@@ -736,7 +750,6 @@ export class TradingSimulation implements ITradingSimulation {
      * @returns void
      */
     private displayClosePosition(position: ITradingSimulationPosition): void {
-        console.log(' ');
         console.log(`${position.outcome ? 'SUCCESSFUL': 'UNSUCCESSFUL'} ${position.type.toUpperCase()} Position Closed:`);
         console.log(`${_utils.toDateString(position.openTime)} - ${_utils.toDateString(position.closeTime)}`);
         console.log(`O: ${position.openPrice} | TP: ${position.takeProfitPrice} | SL: ${position.stopLossPrice}`);
@@ -756,10 +769,8 @@ export class TradingSimulation implements ITradingSimulation {
      * @returns void
      */
     private displayActionlessStateCheck(currentItem: ICandlestickSeriesItem): void {
-        console.log(' ');
         console.log(`Actionless Check: ${_utils.toDateString(currentItem[0])} - ${_utils.toDateString(currentItem[6])}`);
         console.log(`O: ${currentItem[1]} | H: ${currentItem[2]} | L: ${currentItem[3]} | C: ${currentItem[4]}`);
-        console.log(' ');
     }
 
 
@@ -777,12 +788,17 @@ export class TradingSimulation implements ITradingSimulation {
         console.log(' ');console.log(' ');
         console.log('SUMMARY');
         console.log(`Period: ${_utils.toDateString(r.periodBegins)} - ${_utils.toDateString(r.periodEnds)}`);
-        console.log(`Total Positions: ${r.positions.length}`);
+        console.log(`Positions: ${r.positions.length}`);
         console.log(`Successful: ${r.successful}`);
         console.log(`Unsuccessful: ${r.unsuccessful}`);
-        console.log(`Neutral: ${r.neutral}`);
-        console.log(`While Meditating: ${r.whileMeditating}`);
         console.log(`Success Rate: ${r.successRate}%`);
+
+        console.log(' ');
+
+        console.log('BALANCE');
+        console.log(`Initial: $${r.initialBalance}`);
+        console.log(`Current: $${r.currentBalance}`);
+        console.log(`Difference: $${r.balanceDifference}`);
 
         console.log(' ');
 
@@ -799,6 +815,21 @@ export class TradingSimulation implements ITradingSimulation {
         console.log(`Successful: ${r.successfulShorts}`);
         console.log(`Unsuccessful: ${r.unsuccessfulShorts}`);
         console.log(`Success Rate: ${r.shortSuccessRate}%`);
+
+        console.log(' ');
+
+        console.log('FEES');
+        console.log(`Net: $${r.netFee}`);
+        console.log(`Borrow Interest: $${r.borrowInterestFee}`);
+        console.log(`Trades Net: $${r.netTradesFee}`);
+        console.log(`Open Trade: $${r.openTradeFee}`);
+        console.log(`Close Trade: $${r.closeTradeFee}`);
+
+        console.log(' ');
+
+        console.log('ACTIONLESS');
+        console.log(`Neutral: ${r.neutral}`);
+        console.log(`While Meditating: ${r.whileMeditating}`);
 
         console.log(' ');
 

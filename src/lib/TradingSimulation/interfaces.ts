@@ -1,5 +1,6 @@
-import { IForecastResult } from "../Forecast";
-import { ICandlestickSeries } from "../../../src/types";
+import { IForecastConfig, IForecastResult } from "../Forecast";
+import { ICandlestickSeries, IVerbose } from "../../../src/types";
+import {BigNumber} from "bignumber.js";
 
 
 // Class
@@ -9,18 +10,85 @@ export interface ITradingSimulation {
 
 
 
-
 // Class Config
 export interface ITradingSimulationConfig {
     series: ICandlestickSeries,
+    forecastConfig: IForecastConfig,
+    balanceConfig: IBalanceSimulationConfig,
     windowSize?: number,
     tendencyForecastRequired?: ITendencyForecastRequired,
     meditationMinutes?: number,
     takeProfit?: number,
     stopLoss?: number,
-    verbose?: boolean
+    verbose?: IVerbose
 }
-export interface ITendencyForecastRequired { long: 1|2,short: 1|2 }
+export interface ITendencyForecastRequired { long: 1|2,short: -1|-2 }
+
+
+
+
+
+
+
+
+
+// Balance Class
+export interface IBalanceSimulation {
+    // Balance
+    initial: number,
+    current: number,
+    difference: number
+    history: IBalanceHistory[],
+
+    // Fees Summary
+    fees: IBalanceSimulationAccumulatedFees,
+
+    // Methods
+    canOpenPosition(): void,
+    onPositionClose(position: ITradingSimulationPosition): void
+}
+
+// Balance Config
+export interface IBalanceSimulationConfig {
+    initial: number,
+    leverage?: number,
+    borrowInterestPercent?: number,
+    tradeFeePercent?: number,
+    minimumPositionAmount?: number,
+    allInMode?: boolean,
+    verbose?: IVerbose,
+}
+
+// History
+export interface IBalanceHistory {
+    previous: number,
+    current: number,
+    difference: number,
+    fee: IBalanceSimulationFees
+}
+
+// Fee Object
+export interface IBalanceSimulationFees {
+    netFee: number,
+    borrowInterestFee: number,
+    netTradesFee: number, // = openTradeFee + closeTradeFee
+    openTradeFee: number,
+    closeTradeFee: number,
+}
+
+// Accumulated Fee Object
+export interface IBalanceSimulationAccumulatedFees {
+    netFee: BigNumber,
+    borrowInterestFee: BigNumber,
+    netTradesFee: BigNumber,
+    openTradeFee: BigNumber,
+    closeTradeFee: BigNumber,
+}
+
+
+
+
+
 
 
 
@@ -42,6 +110,21 @@ export interface ITradingSimulationResult {
     neutral: number,
     whileMeditating: number,
     successRate: number,
+
+    /* Balance */
+
+    // Summary
+    initialBalance: number,
+    currentBalance: number,
+    balanceDifference: number,
+
+    // Fees
+    netFee: number,
+    borrowInterestFee: number,
+    netTradesFee: number,
+    openTradeFee: number,
+    closeTradeFee: number,
+
 
     // Long Counters
     longsTotal: number,

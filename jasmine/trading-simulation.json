@@ -1,6 +1,6 @@
 {
   "spec_dir": "tests",
-  "spec_files": ["forecast/**/*.test.ts"],
+  "spec_files": ["trading-simulation/**/*.test.ts"],
   "helpers": ["helpers/**/*.ts"],
   "oneFailurePerSpec": false,
   "random": true

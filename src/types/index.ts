@@ -1,45 +1,6 @@
 /**
- * Server Symbols
- */
-
- export const SYMBOLS: ISymbols = {
-
-
-
-
-    // Binance
-    BinanceService: Symbol.for("BinanceService"),
-
-    // Utilities
-    UtilitiesService: Symbol.for("UtilitiesService"),
-
-    // External Request
-    ExternalRequest: Symbol.for("ExternalRequest"),
-}
-
-export interface ISymbols {
-
-    BinanceService: symbol,
-    UtilitiesService: symbol,
-    ExternalRequest: symbol,
-}
-
-
-
-
-
-
-
-
-/**
  * Universal Types
  */
-
-
-
-
-
-
 
 
 
@@ -78,6 +39,19 @@ export type IPriceSeriesItem = [
 
 
 
+/**
+ * Verbose Levels
+ * 0: No logs
+ * 1: Important logs
+ * 2: All logs
+ */
+export type IVerbose = 0|1|2;
+
+
+
+
+
+
 
 
 /* API */
@@ -95,3 +69,46 @@ export interface IAPIError {
     code: number,
     message: string
 }
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * API Symbols
+ */
+
+ export const SYMBOLS: ISymbols = {
+
+
+
+
+    // Binance
+    BinanceService: Symbol.for("BinanceService"),
+
+    // Utilities
+    UtilitiesService: Symbol.for("UtilitiesService"),
+
+    // External Request
+    ExternalRequest: Symbol.for("ExternalRequest"),
+}
+
+export interface ISymbols {
+
+    BinanceService: symbol,
+    UtilitiesService: symbol,
+    ExternalRequest: symbol,
+}
+
+
+
+
+
+
