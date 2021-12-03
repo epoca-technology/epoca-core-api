@@ -18,8 +18,6 @@ export interface ITradingSimulationConfig {
     windowSize?: number,
     tendencyForecastRequired?: ITendencyForecastRequired,
     meditationMinutes?: number,
-    takeProfit?: number,
-    stopLoss?: number,
     verbose?: IVerbose
 }
 export interface ITendencyForecastRequired { long: 1|2,short: -1|-2 }
@@ -44,7 +42,7 @@ export interface IBalanceSimulation {
     fees: IBalanceSimulationAccumulatedFees,
 
     // Methods
-    canOpenPosition(): void,
+    getPositionExitParameters(): IPositionExitParameters,
     onPositionClose(position: ITradingSimulationPosition): void
 }
 
@@ -82,6 +80,23 @@ export interface IBalanceSimulationAccumulatedFees {
     netTradesFee: BigNumber,
     openTradeFee: BigNumber,
     closeTradeFee: BigNumber,
+}
+
+// Leverage specifications
+export interface ILeverageSpecs {
+    4: IPositionExitParameters,
+    5: IPositionExitParameters,
+    6: IPositionExitParameters,
+    7: IPositionExitParameters,
+    8: IPositionExitParameters,
+    9: IPositionExitParameters,
+    10: IPositionExitParameters,
+}
+
+// Position exit parameters
+export interface IPositionExitParameters {
+    takeProfit: number,
+    stopLoss: number
 }
 
 

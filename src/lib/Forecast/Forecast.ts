@@ -36,8 +36,9 @@ export class Forecast implements IForecast {
         return {
             //result: Math.random() >= 0.5 ? 1 : -1
             //result: <ITendencyForecastExtended>this.getRandomTendency()
-            result: arimaResults.result
-            //result: arimaResults.result == -1 ? 0: arimaResults.result
+            //result: <ITendencyForecastExtended>Math.floor(Math.random() * (2 - 0 + 1) + 0)
+            //result: arimaResults.result
+            result: arimaResults.result == 1 ? 0: arimaResults.result
         }
     }
 
@@ -45,11 +46,11 @@ export class Forecast implements IForecast {
 
 
     private getRandomTendency () {
-        const val: number = Math.floor(Math.random() * (2 - 0 + 1) + 0);
+        const val: number = Math.floor(Math.random() * 2) + 1;
         if (val == 1){
-            return 0
-        } else {
-            return val;
+            return -1
+        }else {
+            return 0;
         }
     }
 

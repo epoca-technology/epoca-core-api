@@ -8,7 +8,8 @@ import {
     ITradingSimulationConfig, 
     ITradingSimulationPosition, 
     ITradingSimulationResult,
-    IBalanceSimulation
+    IBalanceSimulation,
+    IPositionExitParameters
 } from "./interfaces";
 import {BigNumber} from "bignumber.js";
 import * as moment from 'moment';
@@ -89,16 +90,6 @@ export class TradingSimulation implements ITradingSimulation {
     private whileMeditating: number = 0;
 
 
-    /**
-     * Trading Configuration:
-     * @takeProfit  -> DEFAULT: 1
-     * @stopLoss    -> DEFAULT: 2
-     * These values will be used when opening a position. It will determine both exit prices (profit or loss)
-     */
-    private takeProfit: number = 1;
-    private stopLoss: number = 2;
-
-
 
     /**
      * Positions:
@@ -167,8 +158,6 @@ export class TradingSimulation implements ITradingSimulation {
         if (config.windowSize) this.windowSize = config.windowSize;
         if (config.tendencyForecastRequired) this.tendencyForecastRequired = config.tendencyForecastRequired;
         if (typeof config.meditationMinutes == "number") this.meditationMinutes = config.meditationMinutes;
-        if (typeof config.takeProfit == "number") this.takeProfit = config.takeProfit;
-        if (typeof config.stopLoss == "number") this.stopLoss = config.stopLoss;
         if (typeof config.verbose == "number") this.verbose = config.verbose;
 
         // Initialize the processing series
@@ -351,6 +340,9 @@ export class TradingSimulation implements ITradingSimulation {
      * @returns void
      */
     private openPosition(forecast: IForecastResult, currentItem: ICandlestickSeriesItem): void {
+        // Retrieve the exit parameters
+        const ep: IPositionExitParameters = this.balance.getPositionExitParameters();
+
         // Activate the position
         this.activePosition = {
             //state: true,
@@ -358,8 +350,8 @@ export class TradingSimulation implements ITradingSimulation {
             forecast: forecast,
             openTime: currentItem[0],
             openPrice: _utils.roundNumber(currentItem[1], 2),
-            takeProfitPrice: forecast.result > 0 ? _utils.alterNumberByPercentage(currentItem[1], this.takeProfit): _utils.alterNumberByPercentage(currentItem[1], -(this.takeProfit)),
-            stopLossPrice: forecast.result > 0 ? _utils.alterNumberByPercentage(currentItem[1], -(this.stopLoss)): _utils.alterNumberByPercentage(currentItem[1], this.stopLoss),
+            takeProfitPrice: forecast.result > 0 ? _utils.alterNumberByPercentage(currentItem[1], ep.takeProfit): _utils.alterNumberByPercentage(currentItem[1], -(ep.takeProfit)),
+            stopLossPrice: forecast.result > 0 ? _utils.alterNumberByPercentage(currentItem[1], -(ep.stopLoss)): _utils.alterNumberByPercentage(currentItem[1], ep.stopLoss),
         };
 
         // Increment the counter
@@ -537,9 +529,6 @@ export class TradingSimulation implements ITradingSimulation {
      * @returns returns boolean
      */
     private canOpenPosition(forecastResult: ITendencyForecastExtended): boolean {
-        // Firstly make sure there is enough balance to open new positions
-        this.balance.canOpenPosition();
-
         // If it is equals or greater than the long requirement it can open a position.
         if (forecastResult >= this.tendencyForecastRequired.long) {
             return true;

@@ -65,9 +65,15 @@ export class Arima implements IArima {
             /*this.arima(9, 2, 5),
             this.arima(9, 2, 5, true),*/
             //this.nostradamus(),
-            this.arimaAlt(),
+            //this.arimaAlt(),
+            /*this.arima(3, 1, 2),
+            this.arima(3, 1, 2, true),*/
+            //this.arima(7, 1, 3),
+            //this.arima(8, 1, 4),
             this.arima(7, 1, 3),
-            this.arima(7, 1, 3, true),
+            this.arima(9, 2, 5),
+            //this.arima(2, 1, 1, true),
+            //this.arima(7, 1, 3, true),
             //this.arima(2, 1, 1),
             //this.arima(2, 1, 1, true),
             //this.arima(9, 2, 5),
@@ -89,7 +95,9 @@ export class Arima implements IArima {
             //this.sarima(numberSeries, 2, 1, 1),
             //this.sarima(numberSeries, 9, 2, 5),
             //this.arima(numberSeries, 10, 2, 6),
-            //this.arimaAlt(fullPrices)
+
+            //this.arimaAlt()
+
             //this.nostradamus(numberSeries)
         ])};
     }
@@ -134,19 +142,18 @@ export class Arima implements IArima {
             p: p,
             d: d,
             q: q,
-            s: 8,
             verbose: false
         }).train(series);
         
         // Predict next value
-        const [pred, errors] = arima.predict(1);
+        const [pred, errors] = arima.predict(3);
         if (typeof pred != "object" || !pred.length) {
             console.log(pred);
             throw new Error('Arima forecasted an invalid value.');
         }
 
         // Return Results
-        return this.getForecastedTendency(series[series.length - 1], pred[0]);
+        return this._getForecastedTendency(series[series.length - 1], pred);
     }
 
 
@@ -156,69 +163,24 @@ export class Arima implements IArima {
 
 
 
-    public autoArima(compact?: boolean): ITendencyForecast {
-        // Init the series
-        const series: number[] = compact ? this.compactNumberSeries: this.numberSeries;
 
-        // Init Arima
-        const arima = new ARIMA({ auto: true, verbose: false }).fit(series)
-        
-        // Predict next value
-        const [pred, errors] = arima.predict(1);
-        if (typeof pred != "object" || !pred.length) {
-            console.log(pred);
-            throw new Error('Arima forecasted an invalid value.');
+
+
+
+
+
+
+
+    private _getForecastedTendency(lastPrice: number, forecastedPrices: number[]): ITendencyForecast {
+        const change: number = _utils.calculatePercentageChange(lastPrice, forecastedPrices[forecastedPrices.length - 1], 2, true);
+        if (change >= 0.1 && change <= 20) {
+            return 1;
+        } else if (change >= -20 && change <= -0.1) {
+            return -1
+        } else {
+            return 0;
         }
-
-        // Return Results
-        return this.getForecastedTendency(series[series.length - 1], pred[0]);
-        //return this.getExpectedPercentageChange(data[data.length - 1], pred[0]);
     }
-
-
-
-
-
-
-
-
-    public arimaAlt(): ITendencyForecast {
-        const closePrices: number[] = _utils.filterList(this.series, 4, "toNumber", 2);
-        const closeTimes: number[] = _utils.filterList(this.series, 6, "toNumber", 0);
-        let data = [];
-        for (let i = 0; i < closePrices.length; i++) {
-            data.push([
-                closeTimes[i],
-                closePrices[i],
-            ]);
-        }
-
-        // Load data
-        const ts = new timeseries.main(data);
-        //const t = new ts.main(timeseries.sin({cycles:4}));
-
-        // We calculate the AR coefficients of the current points
-        const coeffs = ts.ARMaxEntropy({
-            data:	ts.data.slice()
-        });
-
-        let forecast = 0;	// Init the value at 0.
-        for (var i=0;i<coeffs.length;i++) {	// Loop through the coefficients
-            forecast -= ts.data[(data.length-1)-i][1]*coeffs[i];
-            // Explanation for that line:
-            // t.data contains the current dataset, which is in the format [ [date, value], [date,value], ... ]
-            // For each coefficient, we substract from "forecast" the value of the "N - x" datapoint's value, multiplicated by the coefficient, where N is the last known datapoint value, and x is the coefficient's index.
-        }
-        // Return Results
-        return this.getForecastedTendency(data[data.length - 1][1], forecast);
-        //return forecast;
-    }
-
-
-
-
-
-
 
 
 

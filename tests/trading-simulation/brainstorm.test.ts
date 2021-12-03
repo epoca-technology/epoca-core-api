@@ -43,8 +43,6 @@ describe('', function() {
                     verbose: 1
                 },
                 meditationMinutes: 0,
-                takeProfit: 0.3,
-                stopLoss: 9,
                 verbose: 1,
             });
             const result: ITradingSimulationResult = ts.run();

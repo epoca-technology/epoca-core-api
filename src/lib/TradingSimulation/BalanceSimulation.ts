@@ -5,7 +5,9 @@ import {
     IBalanceSimulationConfig,
     IBalanceHistory,
     ITradingSimulationPosition,
-    IBalanceSimulationAccumulatedFees
+    IBalanceSimulationAccumulatedFees,
+    ILeverageSpecs,
+    IPositionExitParameters
 } from "./interfaces";
 import {BigNumber} from "bignumber.js";
 
@@ -30,11 +32,14 @@ export class BalanceSimulation implements IBalanceSimulation {
      * @history
      * This is the history of the balances as positions are closed. The indexes match the TradingSimulation
      * positions list.
+     * @currentChange
+     * This is the current change in percentage compared to the initial amount.
      */
     public bank: BigNumber = new BigNumber(0);
     public readonly initial: number;
     public current: number;
     public history: IBalanceHistory[] = [];
+    private currentChange: number = 0;
 
 
 
@@ -56,13 +61,23 @@ export class BalanceSimulation implements IBalanceSimulation {
 
     /**
      * @leverage
-     * This is the leverage that will be used when opening positions in order to increase the volatility
-     * of the asset.
-     * This property is dynamically based on the current state of the simulation. While on profit/neutral, it 
-     * will reduce the risk with x5. While losing, it will double the leverage to x10.
-     * DEFAULT: 5
+     * The leverage is dynamically updated based on the current performance, if it is going well, the leverage
+     * drops in order to reduce risk, otherwise it goes up in order to make a recovery possible.
+     * Starts at: 6
+     * @leverageSpecs
+     * These are the take profit / stop loss specifications based on the current leverage.
      */
-     private leverage: number = 5;
+     private leverage: number = 6;
+     private readonly tp: number = 0.4;
+     private leverageSpecs: ILeverageSpecs = {
+         4:     { takeProfit: this.tp, stopLoss: 22 },
+         5:     { takeProfit: this.tp, stopLoss: 18 },
+         6:     { takeProfit: this.tp, stopLoss: 15 },
+         7:     { takeProfit: this.tp, stopLoss: 13 },
+         8:     { takeProfit: this.tp, stopLoss: 11 },
+         9:     { takeProfit: this.tp, stopLoss: 10 },
+         10:    { takeProfit: this.tp, stopLoss: 9 },
+     }
 
 
 
@@ -126,19 +141,6 @@ export class BalanceSimulation implements IBalanceSimulation {
 
 
 
-    /**
-     * Verifies if there is enough balance to open positions
-     * @returns void
-     */
-    public canOpenPosition(): void {
-        if (this.current < this.minimumPositionAmount) {
-            throw new Error(`The current balance (${this.current.toString()}) is less than the minimumPositionAmount.
-            the balance is the bank is: ${this.bank.toNumber()}`);
-        }
-    }
-
-
-
 
 
 
@@ -151,12 +153,12 @@ export class BalanceSimulation implements IBalanceSimulation {
      * @param position 
      */
     public onPositionClose(position: ITradingSimulationPosition): void {
-        // Find the balance that will be placed into the position
-        const positionAmount: number = this.getPositionAmount();
-
         // Init values
         const previous: number = this.current;
         let current: BigNumber = new BigNumber(this.current);
+
+        // Find the balance that will be placed into the position
+        const positionAmount: number = this.getPositionAmount();
 
         // Borrow the amount based on leverage
         const borrowedAmount: number = this.getBorrowedAmount(positionAmount);
@@ -228,6 +230,9 @@ export class BalanceSimulation implements IBalanceSimulation {
         // Deduct the net fee from the current balance
         this.current = current.minus(netFee).toNumber();
 
+        // Update the change
+        this.currentChange = _utils.calculatePercentageChange(this.initial, this.current, 0, true);
+
         // Add the balance update to history
         this.history.push({
             previous: previous,
@@ -282,78 +287,31 @@ export class BalanceSimulation implements IBalanceSimulation {
      * @returns number
      */
     private getPositionAmount(): number {
-        // Check the current status
-        const change: number = _utils.calculatePercentageChange(this.initial, this.current, 0, true);
+        if (this.currentChange >= 0) { return this.initial; } else { return this.current; }
+    }
 
-        /* Handle the percentage change accordingly */
 
-        // If there is less than the starting point, return whatever is left
-        if (change < -50) {
-            // Increment the leverage
-            this.leverage = 10;
 
-            // Return whatever is left
-            return this.current;
-        }
 
-        else if (change < -30) {
-            // Increment the leverage
-            this.leverage = 8;
 
-            // Return whatever is left
-            return this.current;
-        }
 
-        else if (change < -15) {
-            // Increment the leverage
-            this.leverage = 6;
+    /**
+     * This function will check if a new position can be opened, handle bank deposit if applicable and
+     * setup the new leverage that will be used on the position.
+     * @returns IPositionExitParameters
+     */
+    public getPositionExitParameters(): IPositionExitParameters {
+        // Firslty, make sure that a new position can be opened
+        this.canOpenPosition();
 
-            // Return whatever is left
-            return this.current;
-        }
+        // Check if a bank deposit has to be made
+        if (this.currentChange >= 20) this.makeBankDeposit();
 
-        else {
-            // If the change is above 50%, put the savings in the bank and start again
-            if (change >= 20) {
-                // Init savings
-                const savings = new BigNumber(this.current).minus(this.initial);
+        // Set the current leverage
+        this.leverage = this.getCurrentLeverage();
 
-                // Deduct the savings from the current 
-                this.current = new BigNumber(this.current).minus(savings).toNumber();
-
-                // Add the savings to the bank balance
-                this.bank = this.bank.plus(savings);
-
-                // Log it if applies
-                if (this.verbose > 1) this.displayBankTransaction(savings.toNumber());
-
-                this.leverage = 6;
-
-                // Start all over again
-                return this.initial;
-            }
-    
-            // 
-            else if (change >= 15) {
-                this.leverage = 4;
-                //return _utils.alterNumberByPercentage(this.initial, -10);
-                return this.initial;
-            }
-    
-            // 
-            else if (change >= 10) {
-                this.leverage = 5;
-                //return _utils.alterNumberByPercentage(this.initial, -5);
-                return this.initial;
-            }
-    
-            // 
-            else {
-                this.leverage = 6;
-                return this.initial;
-            }
-        }
-
+        // Return the exit specs
+        return this.leverageSpecs[this.leverage];
     }
 
 
@@ -363,9 +321,78 @@ export class BalanceSimulation implements IBalanceSimulation {
 
 
 
+    /**
+     * Verifies if there is enough balance to open positions
+     * @returns void
+     */
+     private canOpenPosition(): void {
+        if (this.current < this.minimumPositionAmount) {
+            throw new Error(`The current balance (${this.current.toString()}) is less than the minimumPositionAmount. The balance is the bank is: ${this.bank.toNumber()}`);
+        }
+    }
 
 
 
+
+
+    
+    /**
+     * Makes a bank deposit if the amount is equals or greater than 20%.
+     * @returns void
+     */
+    private makeBankDeposit(): void {
+        // Init savings
+        const savings = new BigNumber(this.current).minus(this.initial);
+
+        // Deduct the savings from the current 
+        this.current = new BigNumber(this.current).minus(savings).toNumber();
+
+        // Add the savings to the bank balance
+        this.bank = this.bank.plus(savings);
+
+        // Update the current change
+        this.currentChange = _utils.calculatePercentageChange(this.initial, this.current, 0, true);
+
+        // Log it if applies
+        if (this.verbose > 1) this.displayBankTransaction(savings.toNumber());
+    }
+
+
+
+
+
+
+
+    /**
+     * Based on the current change, it will retrieve the leverage that will be used on the
+     * next position.
+     * @returns 
+     */
+    private getCurrentLeverage(): number {
+        if (this.currentChange <= -50) {
+            return 10;
+        }
+        else if (this.currentChange <= -30) {
+            return 9;
+        }
+        else if (this.currentChange <= -15) {
+            return 8;
+        }
+        else if (this.currentChange <= -5) {
+            return 7;
+        }
+        else if (this.currentChange > -5 && this.currentChange <= 14) {
+            return 6;
+        }
+        else {
+            return 5;
+        }
+    }
+
+
+
+
+    
 
 
 
@@ -391,7 +418,7 @@ export class BalanceSimulation implements IBalanceSimulation {
         const h: IBalanceHistory = this.history[this.history.length -1];
 
         // Display Fees - Can be silenced once validated
-        console.log(`Position Size: ${positionSize}$`);
+        console.log(`Position Size: ${positionSize}$ x${this.leverage}`);
         console.log(`${h.previous}$ -> ${h.current}$ (${h.current > h.previous ? '+':'-'}${new BigNumber(h.difference).minus(h.fee.netFee).toNumber()}$)`);
         if (this.verbose > 0 && this.bank.isGreaterThan(0)) console.log(`Bank: ${this.bank.toNumber()}$`);
         if (this.verbose > 1) console.log(`Fee: ${h.fee.netFee}$ | BIF: ${h.fee.borrowInterestFee}$ | OTF: ${h.fee.openTradeFee}$ | CTF: ${h.fee.closeTradeFee}$`);
@@ -408,8 +435,7 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     private displayBankTransaction(savings: number): void {
         console.log(' ');
-        console.log(`A total of ${savings}$ has been placed in the bank account.`);
-        //console.log(`Bank Balance: ${this.bank.toNumber()}$`);
+        console.log(`A total of ${savings}$ has been placed in the bank account which now has a total of ${this.bank.toNumber()}$.`);
         console.log(' ');
     }
 }
