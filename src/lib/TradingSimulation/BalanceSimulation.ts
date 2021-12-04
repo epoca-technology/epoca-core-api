@@ -67,9 +67,12 @@ export class BalanceSimulation implements IBalanceSimulation {
      * @leverageSpecs
      * These are the take profit / stop loss specifications based on the current leverage.
      */
-     private leverage: number = 6;
+     private leverage: number = 2;
      private readonly tp: number = 0.4;
-     private leverageSpecs: ILeverageSpecs = {
+     // Dangerous levels
+     /*private leverageSpecs: ILeverageSpecs = {
+         2:     { takeProfit: this.tp, stopLoss: 45 },
+         3:     { takeProfit: this.tp, stopLoss: 30 },
          4:     { takeProfit: this.tp, stopLoss: 22 },
          5:     { takeProfit: this.tp, stopLoss: 18 },
          6:     { takeProfit: this.tp, stopLoss: 15 },
@@ -77,7 +80,20 @@ export class BalanceSimulation implements IBalanceSimulation {
          8:     { takeProfit: this.tp, stopLoss: 11 },
          9:     { takeProfit: this.tp, stopLoss: 10 },
          10:    { takeProfit: this.tp, stopLoss: 9 },
-     }
+     }*/
+     private sl = 2.5;
+     // "Safer" levels
+     private leverageSpecs: ILeverageSpecs = {
+        2:     { takeProfit: this.tp, stopLoss: 15 },
+        3:     { takeProfit: this.tp, stopLoss: 10 },
+        4:     { takeProfit: this.tp, stopLoss: 7.5 },
+        5:     { takeProfit: this.tp, stopLoss: 6 },
+        6:     { takeProfit: this.tp, stopLoss: 5 },
+        7:     { takeProfit: this.tp, stopLoss: 4.3 },
+        8:     { takeProfit: this.tp, stopLoss: 3.8 },
+        9:     { takeProfit: this.tp, stopLoss: 3.5 },
+        10:    { takeProfit: this.tp, stopLoss: 3 },
+    }
 
 
 
@@ -305,7 +321,7 @@ export class BalanceSimulation implements IBalanceSimulation {
         this.canOpenPosition();
 
         // Check if a bank deposit has to be made
-        if (this.currentChange >= 20) this.makeBankDeposit();
+        if (this.currentChange >= 15) this.makeBankDeposit();
 
         // Set the current leverage
         this.leverage = this.getCurrentLeverage();
@@ -369,23 +385,38 @@ export class BalanceSimulation implements IBalanceSimulation {
      * @returns 
      */
     private getCurrentLeverage(): number {
-        if (this.currentChange <= -50) {
-            return 10;
+        // If the balance droped 30% stop the simulation
+        if (this.currentChange <= -20) {
+            throw new Error(`
+                Closing Balance: ${this.current.toString()}$ 
+                Bank Balance: ${this.bank.toNumber()}$
+                Profit: ${this.bank.plus(this.current).minus(this.initial)}`);
         }
-        else if (this.currentChange <= -30) {
-            return 9;
+
+        // if the change 
+        if (this.currentChange > -20 && this.currentChange < 0) {
+            return 5;
         }
-        else if (this.currentChange <= -15) {
-            return 8;
-        }
-        else if (this.currentChange <= -5) {
+        /*else if (this.currentChange > -20 && this.currentChange <= -15) {
             return 7;
         }
-        else if (this.currentChange > -5 && this.currentChange <= 14) {
+        else if (this.currentChange > -15 && this.currentChange <= -10) {
             return 6;
         }
+        else if (this.currentChange > -15 && this.currentChange <= -5) {
+            return 6;
+        }
+        else if (this.currentChange > -5 && this.currentChange < 0) {
+            return 6;
+        }*/
+        else if (this.currentChange >= 0 && this.currentChange <= 5) {
+            return 4;
+        }
+        else if (this.currentChange > 5 && this.currentChange <= 10) {
+            return 3;
+        }
         else {
-            return 5;
+            return 2;
         }
     }
 
@@ -438,4 +469,8 @@ export class BalanceSimulation implements IBalanceSimulation {
         console.log(`A total of ${savings}$ has been placed in the bank account which now has a total of ${this.bank.toNumber()}$.`);
         console.log(' ');
     }
+
+
+
+    
 }

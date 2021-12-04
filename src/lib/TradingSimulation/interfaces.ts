@@ -84,13 +84,7 @@ export interface IBalanceSimulationAccumulatedFees {
 
 // Leverage specifications
 export interface ILeverageSpecs {
-    4: IPositionExitParameters,
-    5: IPositionExitParameters,
-    6: IPositionExitParameters,
-    7: IPositionExitParameters,
-    8: IPositionExitParameters,
-    9: IPositionExitParameters,
-    10: IPositionExitParameters,
+    [leverage: number]: IPositionExitParameters
 }
 
 // Position exit parameters

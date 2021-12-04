@@ -1,4 +1,6 @@
 import { ICandlestickSeries, IVerbose } from "../../types";
+import { IArimaConfig, IArimaResultData } from "./Arima";
+import { ITulipResultData } from "./Tulip";
 
 
 
@@ -35,40 +37,16 @@ export interface IForecastResult {
 
 // Parent Class
 export interface IForecastProvider {
-    forecast(): IForecastProviderResult
+    forecast(): Promise<IForecastProviderResult>
 }
 
 
 
-/* Arima */
-
-// Class
-export interface IArima extends IForecastProvider {}
-
-// Config
-export interface IArimaConfig {
-    verbose?: IVerbose
-}
-
-// Result Data
-export interface IArimaResultData {
-    superCool?: string
-}
 
 
 
-/* Market State */
 
-// Class
-// @TODO
 
-// Config
-// @TODO
-
-// Result Data
-export interface IMarketStateResultData {
-    superCool?: string
-}
 
 
 
@@ -76,7 +54,7 @@ export interface IMarketStateResultData {
 // Forecast Provider Result
 export interface IForecastProviderResult {
     result: ITendencyForecastExtended,
-    data?: IArimaResultData|IMarketStateResultData
+    data?: IArimaResultData|ITulipResultData
 }
 
 

@@ -13,7 +13,7 @@ import {TradingSimulation, ITradingSimulation, ITradingSimulationResult} from ".
 
 
 // Series Data
-import {getCandlestickSeries} from './data';
+import {getCandlestickSeries} from '../data';
 
 
 
@@ -24,8 +24,9 @@ describe('', function() {
     it('-', function() {
         try {
             const ts: ITradingSimulation = new TradingSimulation({
-                series: getCandlestickSeries('5000'),
+                series: getCandlestickSeries('10000'),
                 windowSize: 720, // 1 month
+                //windowSize: 336,
                 //windowSize: 336, // 14 days
                 //windowSize: 200, // 
                 //windowSize: 60,
@@ -36,13 +37,13 @@ describe('', function() {
                     verbose: 2
                 },
                 balanceConfig: {
-                    initial: 1000,
+                    initial: 5000,
                     borrowInterestPercent: 0.02,
                     tradeFeePercent: 0.04,
                     minimumPositionAmount: 80,
                     verbose: 1
                 },
-                meditationMinutes: 0,
+                meditationMinutes: 60,
                 verbose: 1,
             });
             const result: ITradingSimulationResult = ts.run();

@@ -1,20 +1,19 @@
 import { ICandlestickSeries } from "../../types";
-import {IArima, IForecastConfig, IForecastResult, IForecast } from "./interfaces";
-import { Arima } from "./Arima";
-import { IArimaConfig, IForecastProviderResult, ITendencyForecastExtended } from ".";
+import {IForecastConfig, IForecastResult, IForecast } from "./interfaces";
+import { IForecastProviderResult, ITendencyForecastExtended } from ".";
 
 
 
 export class Forecast implements IForecast {
     // Arima
-    private arimaConfig: IArimaConfig;
+   // private arimaConfig: IArimaConfig;
     
 
 
 
     constructor(config: IForecastConfig) {
         // Initialize arima's config
-        this.arimaConfig = config.arimaConfig;
+        //this.arimaConfig = config.arimaConfig;
 
 
     }
@@ -31,14 +30,14 @@ export class Forecast implements IForecast {
      */
     public forecast(series: ICandlestickSeries): IForecastResult {
         // Initialize Arima
-        const arima: IArima = new Arima(series, this.arimaConfig);
-        const arimaResults: IForecastProviderResult = arima.forecast();
+        //const arima: IArima = new Arima(series, this.arimaConfig);
+        //onst arimaResults: IForecastProviderResult = arima.forecast();
         return {
-            //result: Math.random() >= 0.5 ? 1 : -1
+            result: Math.random() >= 0.5 ? 1 : -1
             //result: <ITendencyForecastExtended>this.getRandomTendency()
             //result: <ITendencyForecastExtended>Math.floor(Math.random() * (2 - 0 + 1) + 0)
             //result: arimaResults.result
-            result: arimaResults.result == 1 ? 0: arimaResults.result
+            //result: arimaResults.result == -1 ? 0: arimaResults.result
         }
     }
 

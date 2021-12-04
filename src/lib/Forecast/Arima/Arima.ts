@@ -2,8 +2,6 @@ import {appContainer} from "../../ioc";
 import { ICandlestickSeries, SYMBOLS } from "../../../src/types";
 import { IArima, ITendencyForecast, ITendencyForecastExtended, IForecastProviderResult, IArimaConfig } from "./interfaces";
 const ARIMA = require('arima');
-const nostradamus = require("nostradamus");
-const timeseries = require("timeseries-analysis");
 import {BigNumber} from "bignumber.js";
 
 // Init Utilities Service
@@ -23,7 +21,7 @@ export class Arima implements IArima {
 
     // Compact List
     private readonly compactNumberSeries: number[];
-    private readonly compactNumberSeriesSize: number = 30;
+    private readonly compactNumberSeriesSize: number = 90;
 
     
     constructor(series: ICandlestickSeries, config: IArimaConfig) {
@@ -58,8 +56,11 @@ export class Arima implements IArima {
             this.arima(2, 1, 2),
             this.arima(2, 1, 2, true),*/
             
-            /*this.arima(7, 1, 3),
-            this.arima(7, 1, 3, true),*/
+            this.arima(7, 1, 3),
+            this.arima(7, 1, 3, true),
+            this.arima(9, 2, 5),
+            this.arima(9, 2, 5, true),
+
             /*this.autoArima(),
             this.autoArima(true),*/
             /*this.arima(9, 2, 5),
@@ -70,8 +71,10 @@ export class Arima implements IArima {
             this.arima(3, 1, 2, true),*/
             //this.arima(7, 1, 3),
             //this.arima(8, 1, 4),
-            this.arima(7, 1, 3),
-            this.arima(9, 2, 5),
+            /*this.arima(2, 1, 2),
+            this.arima(2, 1, 2, true),
+            this.arima(3, 2, 3),
+            this.arima(3, 2, 3, true),*/
             //this.arima(2, 1, 1, true),
             //this.arima(7, 1, 3, true),
             //this.arima(2, 1, 1),
@@ -146,14 +149,14 @@ export class Arima implements IArima {
         }).train(series);
         
         // Predict next value
-        const [pred, errors] = arima.predict(3);
+        const [pred, errors] = arima.predict(1);
         if (typeof pred != "object" || !pred.length) {
             console.log(pred);
             throw new Error('Arima forecasted an invalid value.');
         }
 
         // Return Results
-        return this._getForecastedTendency(series[series.length - 1], pred);
+        return this.getForecastedTendency(series[series.length - 1], pred[0]);
     }
 
 
@@ -173,9 +176,10 @@ export class Arima implements IArima {
 
     private _getForecastedTendency(lastPrice: number, forecastedPrices: number[]): ITendencyForecast {
         const change: number = _utils.calculatePercentageChange(lastPrice, forecastedPrices[forecastedPrices.length - 1], 2, true);
-        if (change >= 0.1 && change <= 20) {
+        //console.log(change);
+        if (change >= 0) {
             return 1;
-        } else if (change >= -20 && change <= -0.1) {
+        } else if (change < 0) {
             return -1
         } else {
             return 0;

@@ -8,6 +8,7 @@
     "build": "clear && gulp",
     "cli-latest-candlesticks": "clear && node ./dist/CLI/latestCandlesticks/index.js",
     "test": "clear && jasmine-ts --config=jasmine/e2e.json",
+    "test-forecast": "clear && jasmine-ts --config=jasmine/forecast.json",
     "test-trading-simulation": "clear && jasmine-ts --config=jasmine/trading-simulation.json",
     "test-utils": "clear && jasmine-ts --config=jasmine/utils.json"
   },
@@ -28,9 +29,8 @@
     "https": "1.0.0",
     "inversify": "6.0.1",
     "moment": "2.29.1",
-    "nostradamus": "^0.1.0",
     "reflect-metadata": "0.1.13",
-    "timeseries-analysis": "1.0.12"
+    "tulind": "0.8.20"
   },
   "devDependencies": {
     "@types/cors": "2.8.12",

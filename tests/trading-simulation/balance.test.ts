@@ -13,7 +13,7 @@ import {TradingSimulation, ITradingSimulation, ITradingSimulationResult} from ".
 
 
 // Series Data
-import {getCandlestickSeries} from './data';
+import {getCandlestickSeries} from '../data';
 
 
 
