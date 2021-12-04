@@ -26,12 +26,8 @@ export type ICandlestickSeriesItem = [
 ]
 
 
-// Price Series
-export type IPriceSeries = IPriceSeriesItem[];
-export type IPriceSeriesItem = [
-    number, // Timestamp
-    number  // Price
-]
+
+
 
 
 

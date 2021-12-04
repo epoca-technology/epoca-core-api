@@ -67,3 +67,11 @@ export interface IForecastProviderResult {
 // Tendency
 export type ITendencyForecast = 1|0|-1;
 export type ITendencyForecastExtended = 2|1|0|-1|-2;
+
+
+
+
+
+
+// Intensity
+export type IIntensity = 0|1|2;

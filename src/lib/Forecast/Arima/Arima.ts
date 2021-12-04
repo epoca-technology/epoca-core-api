@@ -1,11 +1,12 @@
-import {appContainer} from "../../ioc";
-import { ICandlestickSeries, SYMBOLS } from "../../../src/types";
-import { IArima, ITendencyForecast, ITendencyForecastExtended, IForecastProviderResult, IArimaConfig } from "./interfaces";
+import {appContainer} from "../../../ioc";
+import { ICandlestickSeries, SYMBOLS } from "../../../../src/types";
+import { ITendencyForecast, ITendencyForecastExtended, IForecastProviderResult } from "../interfaces";
+import {IArima, IArimaConfig} from "./interfaces";
 const ARIMA = require('arima');
 import {BigNumber} from "bignumber.js";
 
 // Init Utilities Service
-import { IUtilitiesService } from "../../../src/modules/shared/utilities";
+import { IUtilitiesService } from "../../../../src/modules/shared/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
@@ -38,7 +39,7 @@ export class Arima implements IArima {
 
 
 
-    public forecast(): IForecastProviderResult {
+    public async forecast(): Promise<IForecastProviderResult> {
         // Make sure the last has as many items as the required minimum for compact list size
         if (this.numberSeries.length < this.minItems) {
             throw new Error(`The number series must contain at least ${this.minItems} items.`);
