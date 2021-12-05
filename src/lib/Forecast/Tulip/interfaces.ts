@@ -18,7 +18,7 @@ export interface ITulip extends IForecastProvider {
     nvi(close: number[], volume: number[]): Promise<number[]>,
 
     // Misc Helpers
-    isCloseEnough(value1: number, value2: number, precision?: number, verbose?: boolean): boolean,
+    isCloseEnough(value1: number, value2: number, allowedDifference?: number): boolean,
 }
 
 

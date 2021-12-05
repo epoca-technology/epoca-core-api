@@ -21,7 +21,7 @@ const td: ICandlestickSeries = getCandlestickSeries('720');
 
 
 
-describe('Tulip Indicators:',  function() {
+xdescribe('Tulip Indicators Essentials:',  function() {
 
 
 
@@ -39,7 +39,7 @@ describe('Tulip Indicators:',  function() {
 
         // Compare it to the correct list
         for (let i = 0; i < correct.length; i++) {
-            expect(t.isCloseEnough(correct[i], sma[i], 0.02, true)).toBeTruthy();
+            if (!t.isCloseEnough(correct[i], sma[i], 0.02)) { fail(`${correct[i]} is not close to ${sma[i]}`); }
         }
     });
 
@@ -58,7 +58,7 @@ describe('Tulip Indicators:',  function() {
 
         // Compare it to the correct list
         for (let i = 0; i < correct.length; i++) {
-            expect(t.isCloseEnough(correct[i], ema[i], 0.02, true)).toBeTruthy();
+            if (!t.isCloseEnough(correct[i], ema[i], 0.02)) { fail(`${correct[i]} is not close to ${ema[i]}`); }
         }
     });
 
@@ -81,9 +81,9 @@ describe('Tulip Indicators:',  function() {
 
         // Compare it to the correct lists
         for (let i = 0; i < correctMacd.length; i++) {
-            expect(t.isCloseEnough(correctMacd[i], macd.macd[i], 0.02, true)).toBeTruthy();
-            expect(t.isCloseEnough(correctMacdSignal[i], macd.macdSignal[i], 0.02, true)).toBeTruthy();
-            expect(t.isCloseEnough(correctMacdHistogram[i], macd.macdHistogram[i], 0.02, true)).toBeTruthy();
+            if (!t.isCloseEnough(correctMacd[i], macd.macd[i], 0.02)) { fail(`${correctMacd[i]} is not close to ${macd.macd[i]}`); }
+            if (!t.isCloseEnough(correctMacdSignal[i], macd.macdSignal[i], 0.02)) { fail(`${correctMacdSignal[i]} is not close to ${macd.macdSignal[i]}`); }
+            if (!t.isCloseEnough(correctMacdHistogram[i], macd.macdHistogram[i], 0.02)) { fail(`${correctMacdHistogram[i]} is not close to ${macd.macdHistogram[i]}`); }
         }
     });
 
@@ -108,7 +108,7 @@ describe('Tulip Indicators:',  function() {
 
         // Compare it to the correct list
         for (let i = 0; i < correct.length; i++) {
-            expect(t.isCloseEnough(correct[i], rsi[i], 0.02, true)).toBeTruthy();
+            if (!t.isCloseEnough(correct[i], rsi[i], 0.02)) { fail(`${correct[i]} is not close to ${rsi[i]}`); }
         }
     });
 
@@ -133,9 +133,9 @@ describe('Tulip Indicators:',  function() {
 
         // Compare it to the correct lists
         for (let i = 0; i < lower.length; i++) {
-            expect(t.isCloseEnough(lower[i], bbands.lower[i], 0.02, true)).toBeTruthy();
-            expect(t.isCloseEnough(middle[i], bbands.middle[i], 0.02, true)).toBeTruthy();
-            expect(t.isCloseEnough(upper[i], bbands.upper[i], 0.02, true)).toBeTruthy();
+            if (!t.isCloseEnough(lower[i], bbands.lower[i], 0.02)) { fail(`${lower[i]} is not close to ${bbands.lower[i]}`); }
+            if (!t.isCloseEnough(middle[i], bbands.middle[i], 0.02)) { fail(`${middle[i]} is not close to ${bbands.middle[i]}`); }
+            if (!t.isCloseEnough(upper[i], bbands.upper[i], 0.02)) { fail(`${upper[i]} is not close to ${bbands.upper[i]}`); }
         }
     });
 
@@ -161,7 +161,7 @@ describe('Tulip Indicators:',  function() {
 
         // Compare it to the correct list
         for (let i = 0; i < correct.length; i++) {
-            expect(t.isCloseEnough(correct[i], pvi[i], 0.02, true)).toBeTruthy();
+            if (!t.isCloseEnough(correct[i], pvi[i], 0.02)) { fail(`${correct[i]} is not close to ${pvi[i]}`); }
         }
     });
 
@@ -183,7 +183,7 @@ describe('Tulip Indicators:',  function() {
 
         // Compare it to the correct list
         for (let i = 0; i < correct.length; i++) {
-            expect(t.isCloseEnough(correct[i], nvi[i], 0.02, true)).toBeTruthy();
+            if (!t.isCloseEnough(correct[i], nvi[i], 0.02)) { fail(`${correct[i]} is not close to ${nvi[i]}`); }
         }
     });
 
@@ -200,10 +200,83 @@ describe('Tulip Indicators:',  function() {
 
 
 
+describe('MACD:', function() {
+
+
+    it('-', async function() {
+        // Init the window size
+        const windowSize: number = 720;
+
+        // Initialize the entire series
+        const series: ICandlestickSeries = getCandlestickSeries('1440');
+
+        // Initialize the processing series
+        let processingSeries: ICandlestickSeries = series.slice(0, windowSize);
+
+        // Init the tulip lib with any series
+        const t: ITulip = new Tulip(processingSeries, {verbose: 2});
+
+        // Print the initial data
+        console.log('Initial Data:');
+        for (let s of processingSeries) { console.log(`${_utils.toDateString(s[6])} | ${s[4]}`); }
+        console.log(' ');
+
+        // Perform the analysis
+        console.log('Analysis:');
+        console.log(' ');
+        for (let i = windowSize; i < series.length; i++) {
+            // Add the item to the processing series
+            processingSeries.push(series[i]);
+
+            // Remove the first item to move the window up
+            processingSeries.shift();
+
+            // Retrieve indicators
+            /*const macd: IMacdResult = await t.macd(_utils.filterList(processingSeries, 4, 'toNumber'), 12, 26, 9);
+            const rsi6: number[] = await t.rsi(_utils.filterList(processingSeries, 4, 'toNumber'), 6);
+            const rsi12: number[] = await t.rsi(_utils.filterList(processingSeries, 4, 'toNumber'), 12);
+            const rsi24: number[] = await t.rsi(_utils.filterList(processingSeries, 4, 'toNumber'), 24);*/
+            const sma7: number[] = await t.sma(_utils.filterList(processingSeries, 4, 'toNumber'), 7);
+            const sma20: number[] = await t.sma(_utils.filterList(processingSeries, 4, 'toNumber'), 20);
+            const sma70: number[] = await t.sma(_utils.filterList(processingSeries, 4, 'toNumber'), 70);
+
+            const ema7: number[] = await t.ema(_utils.filterList(processingSeries, 4, 'toNumber'), 7);
+            const ema20: number[] = await t.ema(_utils.filterList(processingSeries, 4, 'toNumber'), 20);
+            const ema70: number[] = await t.ema(_utils.filterList(processingSeries, 4, 'toNumber'), 70);
+
+
+            // Output the results
+            console.log(`${_utils.toDateString(series[i][6])} | ${series[i][4]}`);
+            //console.log(`macd: ${getResult(macd.macd)} | signal: ${getResult(macd.macdSignal)} | hist: ${getResult(macd.macdHistogram)}`);
+            //console.log(`rsi6: ${getResult(rsi6)} | rsi12: ${getResult(rsi12)} | rsi24: ${getResult(rsi24)}`);
+            //console.log(`sma7: ${getResult(sma7)} | sma20: ${getResult(sma20)} | sma70: ${getResult(sma70)}`);
+            console.log(`ema7: ${getResult(ema7)} | ema20: ${getResult(ema20)} | ema70: ${getResult(ema70)}`);
+            console.log(' ');
+        }
+    });
 
 
 
-describe('Tulip Initialization:', function() {
+});
+
+
+
+function getResult(numberList: number[]): number {
+    return numberList[numberList.length - 1];
+}
+
+
+
+
+
+
+
+
+
+
+
+
+xdescribe('Tulip Initialization:', function() {
 
 
     it('-Can initialize the series with 720 candles | 1 month (Recommended)', function() {

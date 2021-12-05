@@ -316,24 +316,18 @@ export class Tulip implements ITulip {
      * Checks if 2 values are close enough to be considered a match.
      * @param value1 
      * @param value2 
-     * @param precision? 
-     * @param verbose? 
+     * @param allowedDifference? 
      * @returns boolean
      */
-    public isCloseEnough(value1: number, value2: number, precision?: number, verbose?: boolean): boolean {
+    public isCloseEnough(value1: number, value2: number, allowedDifference?: number): boolean {
         // Calculate the difference between the 2 values
         const difference: number = value1 - value2;
 
-        // Init the precision
-        precision = typeof precision == "number" ? precision: 0.02;
+        // Init the allowed difference
+        allowedDifference = typeof allowedDifference == "number" ? allowedDifference: 0.02;
 
-        // Check if the difference is within the precision
-        if (difference >= precision || difference <= -(precision)) {
-            if (verbose) console.log(`${value1} is not close to ${value2}`);
-            return false;
-        } else {
-            return true;
-        }
+        // Check if the difference is within the allowed range
+        return difference <= allowedDifference && difference >= -(allowedDifference);
     }
 
 
