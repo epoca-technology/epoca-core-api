@@ -24,13 +24,28 @@ describe('', function() {
     it('-', async function() {
         try {
             const ts: ITradingSimulation = new TradingSimulation({
-                series: getCandlestickSeries('10000'),
+                series: getCandlestickSeries('1000'),
                 windowSize: 720, // 1 month
                 forecastConfig: {
                     tulipConfig: {
-                        verbose: 2
+                        maDust: 1,
+                        maPeriods: {
+                            MA1: 7,
+                            MA2: 15,
+                            MA3: 60
+                        },
+                        spanImportance: {
+                            oneMonth: 1,
+                            twoWeeks: 1,
+                            oneWeek: 1,
+                            threeDays: 2,
+                        },
+                        verbose: 2,
                     },
-                    verbose: 2
+                    arimaConfig: {
+                        verbose: 1
+                    },
+                    verbose: 1
                 },
                 balanceConfig: {
                     initial: 5000,

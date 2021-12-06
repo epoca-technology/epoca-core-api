@@ -67,10 +67,11 @@ export class BalanceSimulation implements IBalanceSimulation {
      * @leverageSpecs
      * These are the take profit / stop loss specifications based on the current leverage.
      */
-     private leverage: number = 2;
-     private readonly tp: number = 0.4;
+    private bankEnabled = true;
+     private leverage: number = 5;
+     private readonly tp: number = 0.5;
      // Dangerous levels
-     private leverageSpecs: ILeverageSpecs = {
+     /*private leverageSpecs: ILeverageSpecs = {
          2:     { takeProfit: this.tp, stopLoss: 45 },
          3:     { takeProfit: this.tp, stopLoss: 30 },
          4:     { takeProfit: this.tp, stopLoss: 22 },
@@ -80,28 +81,46 @@ export class BalanceSimulation implements IBalanceSimulation {
          8:     { takeProfit: this.tp, stopLoss: 11 },
          9:     { takeProfit: this.tp, stopLoss: 10 },
          10:    { takeProfit: this.tp, stopLoss: 9 },
-     }
+     }*/
      private sl = 2.5;
 
-     /*private leverageSpecs: ILeverageSpecs = {
-        2:     { takeProfit: this.tp, stopLoss: 10 },
+     // 10% SL
+    /*private leverageSpecs: ILeverageSpecs = {
+        2:     { takeProfit: this.tp, stopLoss: 4 },
+        3:     { takeProfit: this.tp, stopLoss: 3 },
+        4:     { takeProfit: this.tp, stopLoss: 2.5 },
+        5:     { takeProfit: this.tp, stopLoss: 18 }
+    }*/
+     // 20% SL
+    private leverageSpecs: ILeverageSpecs = {
+        //2:     { takeProfit: 3, stopLoss: 1 },
+        //2:     { takeProfit: this.tp, stopLoss: 10 },
         3:     { takeProfit: this.tp, stopLoss: 6.5 },
         4:     { takeProfit: this.tp, stopLoss: 5 },
-        5:     { takeProfit: this.tp, stopLoss: 4 }
-    }*/
-     // "Safer" levels ~ 30%
-     /*private leverageSpecs: ILeverageSpecs = {
+        //5:     { takeProfit: this.tp, stopLoss: 4 },
+        5:     { takeProfit: 0.5, stopLoss: 1.5 },
+    }
+     // 30% SL
+    /*private leverageSpecs: ILeverageSpecs = {
         2:     { takeProfit: this.tp, stopLoss: 15 },
         3:     { takeProfit: this.tp, stopLoss: 10 },
         4:     { takeProfit: this.tp, stopLoss: 7.5 },
         5:     { takeProfit: this.tp, stopLoss: 6 },
-        6:     { takeProfit: this.tp, stopLoss: 5 },
-        7:     { takeProfit: this.tp, stopLoss: 4.3 },
-        8:     { takeProfit: this.tp, stopLoss: 3.8 },
-        9:     { takeProfit: this.tp, stopLoss: 3.5 },
-        10:    { takeProfit: this.tp, stopLoss: 3 },
     }*/
-
+     // 40% SL
+    /*private leverageSpecs: ILeverageSpecs = {
+        2:     { takeProfit: this.tp, stopLoss: 20 },
+        3:     { takeProfit: this.tp, stopLoss: 13.33 },
+        4:     { takeProfit: this.tp, stopLoss: 10 },
+        5:     { takeProfit: this.tp, stopLoss: 8 },
+    }*/
+    // 50% SL
+    /*private leverageSpecs: ILeverageSpecs = {
+        2:     { takeProfit: this.tp, stopLoss: 25 },
+        3:     { takeProfit: this.tp, stopLoss: 16.6 },
+        4:     { takeProfit: this.tp, stopLoss: 11 },
+        5:     { takeProfit: this.tp, stopLoss: 10 },
+    }*/
 
 
 
@@ -328,7 +347,7 @@ export class BalanceSimulation implements IBalanceSimulation {
         this.canOpenPosition();
 
         // Check if a bank deposit has to be made
-        if (this.currentChange >= 15) this.makeBankDeposit();
+        if (this.currentChange >= 15 && this.bankEnabled) this.makeBankDeposit();
 
         // Set the current leverage
         this.leverage = this.getCurrentLeverage();
@@ -393,37 +412,22 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     private getCurrentLeverage(): number {
         // If the balance droped 30% stop the simulation
-        if (this.currentChange <= -30) {
+        if (this.currentChange <= -10) {
             throw new Error(`
                 Closing Balance: ${this.current.toString()}$ 
                 Bank Balance: ${this.bank.toNumber()}$
                 Profit: ${this.bank.plus(this.current).minus(this.initial)}`);
         }
-
+        return this.leverage;
         // if the change 
-        if (this.currentChange > -30 && this.currentChange < 0) {
+        if (this.currentChange <= 5) {
             return 5;
         }
-        /*else if (this.currentChange > -20 && this.currentChange <= -15) {
-            return 7;
-        }
-        else if (this.currentChange > -15 && this.currentChange <= -10) {
-            return 6;
-        }
-        else if (this.currentChange > -15 && this.currentChange <= -5) {
-            return 6;
-        }
-        else if (this.currentChange > -5 && this.currentChange < 0) {
-            return 6;
-        }*/
-        else if (this.currentChange >= 0 && this.currentChange <= 5) {
+        else if (this.currentChange > 5 && this.currentChange <= 10) {
             return 4;
         }
-        else if (this.currentChange > 5 && this.currentChange <= 10) {
-            return 3;
-        }
         else {
-            return 2;
+            return 3;
         }
     }
 

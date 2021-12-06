@@ -69,6 +69,27 @@ describe('Tulip Indicators Essentials:',  function() {
 
 
 
+
+
+
+
+    
+
+    it('-Can calculate the Relative Strength Index (RSI)', async function() {
+        // Init test data
+        const series: number[] = [81.59,81.06,82.87,83.00,83.61,83.15,82.84,83.99,84.55,84.36,85.53,86.54,86.89,87.77,87.29];
+        const correct: number[] = [72.03,64.93,75.94,79.80,74.71,83.03,87.48,88.76,91.48,78.50];
+
+        // Retrieve ema
+        const t: ITulip = new Tulip(td, {verbose: 2});
+        //@ts-ignore
+        const rsi: number[] = await t.rsi(series, 5);
+
+        // Compare it to the correct list
+        for (let i = 0; i < correct.length; i++) {
+            if (!t.isCloseEnough(correct[i], rsi[i], 0.02)) { fail(`${correct[i]} is not close to ${rsi[i]}`); }
+        }
+    });
 });
 
 

@@ -12,7 +12,8 @@ import {
     IMASpanOutcomes,
     IMAResult,
     ISpanImportance,
-    IPoints
+    IPoints,
+    IRSIStatus
 } from "./interfaces";
 import * as tulind from "tulind";
 import {BigNumber} from "bignumber.js";
@@ -46,7 +47,7 @@ export class Tulip implements ITulip {
         oneMonth: 1,
         twoWeeks: 1,
         oneWeek: 2,
-        threeDays: 8,
+        threeDays: 6,
     }
 
 
@@ -59,7 +60,7 @@ export class Tulip implements ITulip {
     private readonly maPeriods: IMAPeriods = {
         MA1: 7,
         MA2: 20,
-        MA3: 70
+        MA3: 60
     }
 
 
@@ -70,7 +71,7 @@ export class Tulip implements ITulip {
      * amount. Otherwise it falls into the neutral area.
      * DEFAULT: 2%
      */
-    private readonly maDust: number = 1;
+    private readonly maDust: number = 2;
 
 
 
@@ -125,8 +126,11 @@ export class Tulip implements ITulip {
     public async forecast(): Promise<IForecastProviderResult> {
 
 
-        const maForecast: IMAResult = await this.getMAForecast(true);
-        return {result: maForecast.tendency};
+        //const smaForecast: IMAResult = await this.getMAForecast();
+        const emaForecast: IMAResult = await this.getMAForecast(true);
+        //return {result: smaForecast.tendency == emaForecast.tendency ? smaForecast.tendency: 0};
+        //return {result: smaForecast.tendency};
+        return {result: emaForecast.tendency};
     }
 
 
@@ -223,14 +227,14 @@ export class Tulip implements ITulip {
         /* Handle the change accordingly */
 
         // Short
-        if (change <= -15) { return { tendency: -1, intensity: 2} }
-        else if (change > -15 && change <= -(this.maDust)) { return { tendency: -1, intensity: 1} }
+        if (change <= -30) { return { tendency: -1, intensity: 2} }
+        else if (change > -30 && change <= -(this.maDust)) { return { tendency: -1, intensity: 1} }
 
         // Neutral
         else if (change >= -(this.maDust) && change <= this.maDust) { return { tendency: 0, intensity: 1} }
 
         // Long
-        else if (change > this.maDust && change < 15) { return { tendency: 1, intensity: 1} }
+        else if (change > this.maDust && change < 30) { return { tendency: 1, intensity: 1} }
         else { return { tendency: 1, intensity: 2} }
     }
 
@@ -247,9 +251,9 @@ export class Tulip implements ITulip {
      * Given the MA Span Outcomes, it will analyze the data for each span and return a 
      * final result.
      * @param outcomes 
-     * @returns IMAResult
+     * @returns Promise<IMAResult>
      */
-    private getMAResult(outcomes: IMASpanOutcomes[]): IMAResult {
+    private async getMAResult(outcomes: IMASpanOutcomes[]): Promise<IMAResult> {
         // Calculate the accumulated points & tendency by span
         let spanPoints: IPoints[] = [];
         let spanTendencies: ITendencyForecast[] = [];
@@ -264,11 +268,20 @@ export class Tulip implements ITulip {
         // Calculate the total amount of points
         const totalPoints: IPoints = this.getTotalPoints(spanPoints);
 
-        // Retrieve the final tendency
-        const tendency: ITendencyForecast = this.getTendencyByPoints(totalPoints);
+        // Retrieve the based on the points
+        let tendency: ITendencyForecast = this.getTendencyByPoints(totalPoints);
+
+        // Retrieve Aroon Status
+        const aroonStatus: any = await this.getAroonStatus();
+
+        // Retrieve the RSI status
+        const rsiStatus: IRSIStatus = await this.getRSIStatus();
+
+        // Check if the tendency should be altered by the RSI
+        tendency = this.getTendencyByRSIStatus(tendency, rsiStatus);
 
         // Log it if applies
-        if (this.verbose > 0) this.displayMAResult(spanPoints, spanTendencies, totalPoints, tendency);
+        if (this.verbose > 0) this.displayMAResult(spanPoints, spanTendencies, totalPoints, tendency, rsiStatus);
 
         // Return the result
         return {
@@ -277,6 +290,7 @@ export class Tulip implements ITulip {
             twoWeeks: { tendency: spanTendencies[1], points: spanPoints[1]},
             oneWeek: { tendency: spanTendencies[2], points: spanPoints[2]},
             threeDays: { tendency: spanTendencies[3], points: spanPoints[3]},
+            rsiStatus: rsiStatus
         }
     }
 
@@ -393,6 +407,110 @@ export class Tulip implements ITulip {
 
 
 
+    /**
+     * It will calculate the RSI for the 3 day series and all its MAs
+     * @returns Promise<IRSIStatus>
+     */
+    private async getRSIStatus(): Promise<IRSIStatus> {
+        // Init the RSI for all 
+        const rsiList: [number[], number[], number[]] = await Promise.all([
+            this.rsi(this.series.oneWeek.close, this.maPeriods.MA1),
+            this.rsi(this.series.oneWeek.close, this.maPeriods.MA2),
+            this.rsi(this.series.oneWeek.close, this.maPeriods.MA3),
+        ]);
+
+        // Init the properties
+        let overbought: boolean = false;
+        let oversold: boolean = false;
+
+        // Iterate over each response and fill up the status
+        let rsiResults: number[] = [];
+        for (let rsi of rsiList) {
+            // Init the value and add it to the result list
+            const val: number = rsi[rsi.length - 1];
+            rsiResults.push(val);
+
+            // Check if it is overbought or oversold
+            if (val >= 67) { overbought = true }
+            if (val <= 33) { oversold = true }
+        }
+
+        // Return the status
+        return {
+            overbought: overbought,
+            oversold: oversold,
+            rsi1: rsiResults[0],
+            rsi2: rsiResults[1],
+            rsi3: rsiResults[2],
+        }
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Given the tendency based on points, it will check if the RSI should make an alteration
+     * based on its levels.
+     * @param currentTendency 
+     * @param status 
+     * @returns ITendencyForecast
+     */
+     private getTendencyByRSIStatus(currentTendency: ITendencyForecast, status: IRSIStatus): ITendencyForecast {
+        // Calculate the avg RSI
+        //const avg: number = _utils.calculateAverage([status.rsi1, status.rsi2, status.rsi3]);
+
+
+        /**
+         * Do not long when the RSI is overbought
+         * Do not short when the RSI is oversold
+         */
+        if ((currentTendency == 1 && status.overbought) || (currentTendency == -1 && status.oversold)) {
+            return 0;
+        }
+
+
+        /**
+         * Do not short when the RSI is low.
+         */
+        /*else if (currentTendency == -1 && (status.rsi1 <= 40 || status.rsi2 <= 40 || status.rsi3 <= 40)) {
+            return 0;
+        }*/
+
+
+        /**
+         * Do not long when the RSI is high
+         */
+        /*else if (currentTendency == 1 && (status.rsi1 >= 60 || status.rsi2 >= 60 || status.rsi3 >= 60)) {
+            return 0;
+        } */
+        
+
+        // Otherwise, keep the tendency set by the moving averages
+        else {
+            return currentTendency;
+        }
+    }
+
+
+
+
+
+
+
+
+    private async getAroonStatus(): Promise<any> {
+        const aroon1 = await this.aroon(this.series.threeDays.high, this.series.threeDays.low, this.maPeriods.MA1);
+        const aroon2 = await this.aroon(this.series.threeDays.high, this.series.threeDays.low, this.maPeriods.MA2);
+        const aroon3 = await this.aroon(this.series.threeDays.high, this.series.threeDays.low, this.maPeriods.MA3);
+        console.log(`Aroon1: Low: ${aroon1[0][aroon1.length - 1]} | High: ${aroon1[1][aroon1.length - 1]}`);
+        console.log(`Aroon2: Low: ${aroon2[0][aroon2.length - 1]} | High: ${aroon2[1][aroon2.length - 1]}`);
+        console.log(`Aroon3: Low: ${aroon3[0][aroon3.length - 1]} | High: ${aroon3[1][aroon3.length - 1]}`);
+    }
+
 
 
 
@@ -452,6 +570,10 @@ export class Tulip implements ITulip {
                 return 'threeDays';
         }
     }
+
+
+
+
 
 
 
@@ -529,6 +651,143 @@ export class Tulip implements ITulip {
 
 
 
+    
+    /**
+     * Relative Strength Index
+     * The Relative Strength Index is a momentum oscillator to help identify trends.
+     * https://tulipindicators.org/rsi
+     * @param close 
+     * @param period? 
+     * @returns Promise<number[]>
+     */
+    private async rsi(close: number[], period?: number): Promise<number[]> {
+        // Caclulate the RSI
+        const rsi: [number[]] = await tulind.indicators.rsi.indicator([close], [
+            typeof period == "number" ? period: 5
+        ]);
+
+        // Return the results
+        return rsi[0];
+    }
+
+
+
+
+
+
+
+    private async aroon(high: number[], low: number[], period?: number): Promise<[number[], number[]]> {
+        // Caclulate the aroonosc
+        const aroon: [number[], number[]] = await tulind.indicators.aroon.indicator([high, low], [
+            typeof period == "number" ? period: 5
+        ]);
+        
+        // Return the results
+        return aroon;
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Aroon Oscillator
+     * The Aroon Oscillator indicator can help determine when the market is developing a trend.
+     * https://tulipindicators.org/aroonosc
+     * @param high 
+     * @param low 
+     * @param period? 
+     * @returns Promise<number[]>
+     */
+     private async aroonosc(high: number[], low: number[], period?: number): Promise<number[]> {
+        // Caclulate the aroonosc
+        const aroonosc: [number[]] = await tulind.indicators.aroonosc.indicator([high, low], [
+            typeof period == "number" ? period: 5
+        ]);
+
+        // Return the results
+        return aroonosc[0];
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Stochastic RSI
+     * The Stochastic RSI is a momentum oscillator to help identify trends.
+     * https://tulipindicators.org/stochrsi
+     * @param close 
+     * @param period? 
+     * @returns Promise<number[]>
+     */
+     /*private async stochrsi(close: number[], period?: number): Promise<number[]> {
+        // Caclulate the RSI
+        const stochrsi: [number[]] = await tulind.indicators.stochrsi.indicator([close], [
+            typeof period == "number" ? period: 5
+        ]);
+
+        // Return the results
+        return stochrsi[0];
+    }*/
+
+
+
+
+
+
+
+
+
+    /**
+     * Ultimate Oscillator
+     * The Ultimate Oscillator is really a combination of three separate oscillators, each using a 
+     * different smoothing period.
+     * https://tulipindicators.org/stochrsi
+     * @param high 
+     * @param low 
+     * @param close 
+     * @param shortPeriod? 
+     * @param mediumPeriod? 
+     * @param longPeriod? 
+     * @returns Promise<number[]>
+     */
+     /*private async ultosc(
+         high: number[], 
+         low: number[], 
+         close: number[], 
+         shortPeriod?: number,
+         mediumPeriod?: number,
+         longPeriod?: number,
+    ): Promise<number[]> {
+        // Caclulate the
+        const stochrsi: [number[]] = await tulind.indicators.ultosc.indicator([high, low, close], [
+            typeof shortPeriod == "number" ? shortPeriod: 2,
+            typeof mediumPeriod == "number" ? mediumPeriod: 3,
+            typeof longPeriod == "number" ? longPeriod: 5,
+        ]);
+
+        // Return the results
+        return stochrsi[0];
+    }*/
+
+
+
+
+
+
+
+
+
 
 
 
@@ -587,8 +846,8 @@ export class Tulip implements ITulip {
         // Iterate over the entire candlestick series and populate each property
         for (let item of series) {
             //spanSeries.open.push(Number(item[1]));
-            //spanSeries.high.push(Number(item[2]));
-            //spanSeries.low.push(Number(item[3]));
+            spanSeries.high.push(Number(item[2]));
+            spanSeries.low.push(Number(item[3]));
             spanSeries.close.push(Number(item[4]));
             //spanSeries.volume.push(Number(item[5]));
         }
@@ -620,13 +879,15 @@ export class Tulip implements ITulip {
      * @param tendencies 
      * @param totalPoints 
      * @param finalTendency 
+     * @param rsi 
      * @returns void
      */
     private displayMAResult(
         points: IPoints[], 
         tendencies: ITendencyForecast[], 
         totalPoints: IPoints, 
-        finalTendency: ITendencyForecast
+        finalTendency: ITendencyForecast,
+        rsi: IRSIStatus,
     ): void {
         console.log(' ');
         console.log(`Final: ${finalTendency} | L: ${totalPoints.long} | S: ${totalPoints.short} | N: ${totalPoints.neutral} `);
@@ -634,8 +895,9 @@ export class Tulip implements ITulip {
             for (let i = 0; i < 4; i++) {
                 console.log(`${this.getSpanNameByIndex(i)}: ${tendencies[i]} | L: ${points[i].long} | S: ${points[i].short} | N: ${points[i].neutral} `);
             }
+            console.log(`Overbought: ${rsi.overbought} | Oversold: ${rsi.oversold}`);
+            console.log(`rsi1: ${rsi.rsi1} | rsi2: ${rsi.rsi2} | rsi3: ${rsi.rsi3}`);
         }
-        console.log(' ');
     }
 
 

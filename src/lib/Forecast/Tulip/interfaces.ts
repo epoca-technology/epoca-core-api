@@ -94,6 +94,7 @@ export interface IMAResult {
     twoWeeks: ISpanResult,
     oneWeek: ISpanResult,
     threeDays: ISpanResult,
+    rsiStatus: IRSIStatus
 }
 
 
@@ -133,8 +134,14 @@ export interface IMAOutcome {
 
 
 
-
-
+/* RSI */
+export interface IRSIStatus {
+    overbought: boolean,
+    oversold: boolean,
+    rsi1: number,
+    rsi2: number,
+    rsi3: number,
+}
 
 
 
