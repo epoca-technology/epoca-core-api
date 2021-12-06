@@ -1,6 +1,6 @@
 import { ICandlestickSeries, IVerbose } from "../../types";
 import { IArimaConfig, IArimaResultData } from "./Arima";
-import { ITulipResultData } from "./Tulip";
+import { ITulipConfig, ITulipResultData } from "./Tulip";
 
 
 
@@ -10,13 +10,14 @@ import { ITulipResultData } from "./Tulip";
 
 // Class
 export interface IForecast {
-    forecast(series: ICandlestickSeries): IForecastResult
+    forecast(series: ICandlestickSeries): Promise<IForecastResult>
 }
 
 
 // Config
 export interface IForecastConfig {
-    arimaConfig: IArimaConfig,
+    arimaConfig?: IArimaConfig,
+    tulipConfig?: ITulipConfig,
     verbose?: IVerbose
 }
 
@@ -24,8 +25,7 @@ export interface IForecastConfig {
 // Result
 export interface IForecastResult {
     result: ITendencyForecastExtended,
-    arima?: IForecastProviderResult
-    marketState?: IForecastProviderResult
+    tulip?: IForecastProviderResult
 }
 
 
@@ -74,4 +74,4 @@ export type ITendencyForecastExtended = 2|1|0|-1|-2;
 
 
 // Intensity
-export type IIntensity = 0|1|2;
+export type IIntensity = 1|2;

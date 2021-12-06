@@ -178,9 +178,9 @@ export class TradingSimulation implements ITradingSimulation {
 
     /**
      * Runs the simulation based on the config and returns the results.
-     * @returns ITradingSimulationResult
+     * @returns Promise<ITradingSimulationResult>
      */
-    public run(): ITradingSimulationResult {
+    public async run(): Promise<ITradingSimulationResult> {
         // Generate the simulation id
         const id: string = this.generateID();
 
@@ -191,7 +191,7 @@ export class TradingSimulation implements ITradingSimulation {
         if (this.verbose > 0) this.displayInit(id);
 
         // Execute the simulation
-        this.executeSimulation();
+        await this.executeSimulation();
 
         // Build the results
         const end: number = Date.now();
@@ -265,14 +265,14 @@ export class TradingSimulation implements ITradingSimulation {
      * Initializes the data collection and the simulation.
      * @returns void
      */
-    private executeSimulation(): void {
+    private async executeSimulation(): Promise<void> {
         // Iterates over each item in the series based on the window
         for (let i = this.windowSize; i < this.series.length; i++) {
             // Init the current item
             const currentItem: ICandlestickSeriesItem = this.series[i];
 
             // If it isn't the last time, handle the current item accordingly
-            if (i < this.series.length -1) {
+            if (i < this.series.length - 1) {
                 // Check the position state
                 if (this.activePosition) { this.checkPositionState(currentItem) } 
                 
@@ -288,7 +288,7 @@ export class TradingSimulation implements ITradingSimulation {
                 // Based on the forecast decision, open a position if applies
                 else {
                     // Retrieve the forecast
-                    const forecast: IForecastResult = this.forecast.forecast(this.processingSeries);
+                    const forecast: IForecastResult = await this.forecast.forecast(this.processingSeries);
 
                     // Check if a position can be opened
                     if (this.canOpenPosition(forecast.result)) { this.openPosition(forecast, currentItem) }
@@ -307,7 +307,7 @@ export class TradingSimulation implements ITradingSimulation {
                  * Adjust the processing window so it moves up one space.
                  */
                 this.processingSeries.push(currentItem);    // Add the new item
-                this.processingSeries.slice();              // Remove the first item
+                this.processingSeries = this.processingSeries.slice(1, this.windowSize + 1); // Remove the first item
             } 
             
             // On the last item, close any position that's open regardless of the output.

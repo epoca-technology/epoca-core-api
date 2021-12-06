@@ -21,17 +21,13 @@ import {getCandlestickSeries} from '../data';
 /*  */
 describe('', function() {
 
-    it('-', function() {
+    it('-', async function() {
         try {
             const ts: ITradingSimulation = new TradingSimulation({
                 series: getCandlestickSeries('10000'),
                 windowSize: 720, // 1 month
-                //windowSize: 336,
-                //windowSize: 336, // 14 days
-                //windowSize: 200, // 
-                //windowSize: 60,
                 forecastConfig: {
-                    arimaConfig: {
+                    tulipConfig: {
                         verbose: 2
                     },
                     verbose: 2
@@ -46,7 +42,7 @@ describe('', function() {
                 meditationMinutes: 60,
                 verbose: 1,
             });
-            const result: ITradingSimulationResult = ts.run();
+            const result: ITradingSimulationResult = await ts.run();
         } catch (e) {
             console.log(e);
             fail(_utils.getErrorMessage(e));

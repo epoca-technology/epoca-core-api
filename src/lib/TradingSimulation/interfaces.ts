@@ -5,7 +5,7 @@ import {BigNumber} from "bignumber.js";
 
 // Class
 export interface ITradingSimulation {
-    run(): ITradingSimulationResult
+    run(): Promise<ITradingSimulationResult>
 }
 
 

@@ -1,13 +1,18 @@
 import {appContainer} from "../../../ioc";
 import { ICandlestickSeries, IVerbose, SYMBOLS } from "../../../types";
-import { ITendencyForecast, ITendencyForecastExtended, IForecastProviderResult } from "../interfaces";
+import { ITendencyForecast, ITendencyForecastExtended, IForecastProviderResult, IIntensity } from "../interfaces";
 import { 
     ITulip, 
     ITulipConfig, 
     ISpanSeries, 
     ISpan, 
-    IMacdResult,
-    IBollingerBandsResult
+    IMAPeriods,
+    ISpanMA,
+    IMAOutcome,
+    IMASpanOutcomes,
+    IMAResult,
+    ISpanImportance,
+    IPoints
 } from "./interfaces";
 import * as tulind from "tulind";
 import {BigNumber} from "bignumber.js";
@@ -16,6 +21,7 @@ import {BigNumber} from "bignumber.js";
 
 // Init Utilities Service
 import { IUtilitiesService } from "../../../modules/shared/utilities";
+import { ISpanName } from ".";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
@@ -27,8 +33,44 @@ export class Tulip implements ITulip {
      * This object contains the formated series for each of the time spans.
      * It is recommended to initialize this class with 720 hourly candlesticks.
      */
-    private series: ISpan;
+    private readonly series: ISpan;
 
+
+    
+    /**
+     * @spanImportance
+     * Assigns importance to each spans when it comes down to analyzing final results.
+     * The bigger the number, the more points it will add to the total
+     */
+    private readonly spanImportance: ISpanImportance = {
+        oneMonth: 1,
+        twoWeeks: 1,
+        oneWeek: 2,
+        threeDays: 8,
+    }
+
+
+
+    /**
+     * @maPeriods
+     * These are the periods that will be used to calculate the SMA & EMA.
+     * DEFAULT: MA1: 7, MA2: 20, MA3: 70
+     */
+    private readonly maPeriods: IMAPeriods = {
+        MA1: 7,
+        MA2: 20,
+        MA3: 70
+    }
+
+
+
+    /**
+     * @maDust
+     * For a change to issue a forecast, the % change must be greater than the dust
+     * amount. Otherwise it falls into the neutral area.
+     * DEFAULT: 2%
+     */
+    private readonly maDust: number = 1;
 
 
 
@@ -49,11 +91,23 @@ export class Tulip implements ITulip {
 
 
     constructor(series: ICandlestickSeries, config: ITulipConfig) {
+        //console.log(series.length);
         // Make sure the series is valid
-        if (series.length < 715 || series.length > 730) throw new Error('The series must contain between 715 and 730 candlesticks.'); 
+        if (series.length < 715 || series.length > 730) {
+            throw new Error('The series must contain between 715 and 730 candlesticks.');
+        }; 
 
         // Init the series
         this.series = this.getSpanSeries(series);
+
+        // Init the Span Importance if provided
+        if (config.spanImportance) this.spanImportance = config.spanImportance;
+
+        // Init the MA Periods if provided
+        if (config.maPeriods) this.maPeriods = config.maPeriods;
+
+        // Set the MA Dust if provided
+        if (typeof config.maDust == "number") this.maDust = config.maDust; 
 
         // Set Verbosity
         if (typeof config.verbose == "number") this.verbose = config.verbose;
@@ -65,12 +119,343 @@ export class Tulip implements ITulip {
 
 
 
+
+    
+
     public async forecast(): Promise<IForecastProviderResult> {
 
 
-
-        return {result: 1};
+        const maForecast: IMAResult = await this.getMAForecast(true);
+        return {result: maForecast.tendency};
     }
+
+
+
+
+
+
+
+
+
+    /**
+     * Retrieves the MA Forecast, as well as the data that was use to determine it
+     * @param ema 
+     * @returns Promise<IMAResult>
+     */
+    private async getMAForecast(ema?: boolean): Promise<IMAResult> {
+        // Retrieve all span MAs
+        const spanMAs: [ISpanMA, ISpanMA, ISpanMA, ISpanMA] = await Promise.all([
+            this.getSpanMA(this.series.oneMonth.close, ema),
+            this.getSpanMA(this.series.twoWeeks.close, ema),
+            this.getSpanMA(this.series.oneWeek.close, ema),
+            this.getSpanMA(this.series.threeDays.close, ema)
+        ]);
+
+        // Retrive the results
+        return this.getMAResult([
+            this.getMAOutcomes(spanMAs[0]),
+            this.getMAOutcomes(spanMAs[1]),
+            this.getMAOutcomes(spanMAs[2]),
+            this.getMAOutcomes(spanMAs[3]),
+        ]);
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Given a span of prices, it will calculate the sma|ema for each configuration period.
+     * @param close 
+     * @param ema? 
+     * @returns Promise<ISpanMA>
+     */
+    private async getSpanMA(close: number[], ema?: boolean): Promise<ISpanMA> {
+        return {
+            ma1: ema ? await this.ema(close, this.maPeriods.MA1): await this.sma(close, this.maPeriods.MA1),
+            ma2: ema ? await this.ema(close, this.maPeriods.MA2): await this.sma(close, this.maPeriods.MA2),
+            ma3: ema ? await this.ema(close, this.maPeriods.MA3): await this.sma(close, this.maPeriods.MA3)
+        }
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Given a full span ma, it will retrieve the outcome for each period.
+     * @param ma 
+     * @returns IMASpanOutcomes
+     */
+    private getMAOutcomes(ma: ISpanMA): IMASpanOutcomes {
+        return {
+            MA1: this.getMAOutcome(ma.ma1),
+            MA2: this.getMAOutcome(ma.ma2),
+            MA3: this.getMAOutcome(ma.ma3)
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Given the ma results, it will determine what trend has been taken as well as the intensity.
+     * @param maList 
+     * @returns 
+     */
+    private getMAOutcome(maList: number[]): IMAOutcome{
+        // Calculate the change between the first and the last item
+        const change: number = _utils.calculatePercentageChange(maList[0], maList[maList.length - 1]);
+
+        /* Handle the change accordingly */
+
+        // Short
+        if (change <= -15) { return { tendency: -1, intensity: 2} }
+        else if (change > -15 && change <= -(this.maDust)) { return { tendency: -1, intensity: 1} }
+
+        // Neutral
+        else if (change >= -(this.maDust) && change <= this.maDust) { return { tendency: 0, intensity: 1} }
+
+        // Long
+        else if (change > this.maDust && change < 15) { return { tendency: 1, intensity: 1} }
+        else { return { tendency: 1, intensity: 2} }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Given the MA Span Outcomes, it will analyze the data for each span and return a 
+     * final result.
+     * @param outcomes 
+     * @returns IMAResult
+     */
+    private getMAResult(outcomes: IMASpanOutcomes[]): IMAResult {
+        // Calculate the accumulated points & tendency by span
+        let spanPoints: IPoints[] = [];
+        let spanTendencies: ITendencyForecast[] = [];
+        for (let i = 0; i < 4; i++) {
+            // Calculate the points
+            spanPoints.push(this.getSpanTotalPoints(outcomes[i], i));
+
+            // Retrieve the tendency
+            spanTendencies.push(this.getTendencyByPoints(spanPoints[i]))
+        }
+
+        // Calculate the total amount of points
+        const totalPoints: IPoints = this.getTotalPoints(spanPoints);
+
+        // Retrieve the final tendency
+        const tendency: ITendencyForecast = this.getTendencyByPoints(totalPoints);
+
+        // Log it if applies
+        if (this.verbose > 0) this.displayMAResult(spanPoints, spanTendencies, totalPoints, tendency);
+
+        // Return the result
+        return {
+            tendency: tendency,
+            oneMonth: { tendency: spanTendencies[0], points: spanPoints[0]},
+            twoWeeks: { tendency: spanTendencies[1], points: spanPoints[1]},
+            oneWeek: { tendency: spanTendencies[2], points: spanPoints[2]},
+            threeDays: { tendency: spanTendencies[3], points: spanPoints[3]},
+        }
+    }
+
+
+
+
+
+
+
+    /**
+     * Given the MA Outcomes for a span, it will totalize the points for long, short and
+     * neutral.
+     * @param maOutcomes 
+     * @param spanIndex 
+     * @returns IPoints
+     */
+    private getSpanTotalPoints(maOutcomes: IMASpanOutcomes, spanIndex: number): IPoints {
+        // Init counters
+        let long: number = 0;
+        let short: number = 0;
+        let neutral: number = 0;
+
+        // Init the importance
+        const importance: number = this.getSpanImportanceByIndex(spanIndex);
+
+        // Iterate over each MA and populate the conters
+        for (let maKey in maOutcomes) {
+            switch (maOutcomes[maKey].tendency) {
+                case 0:
+                    neutral += maOutcomes[maKey].intensity * importance;
+                    break;
+                case 1:
+                    long += maOutcomes[maKey].intensity * importance;
+                    break;
+                case -1:
+                    short += maOutcomes[maKey].intensity * importance;
+                    break;
+            }
+        }
+
+        // Return the points
+        return {
+            long: long,
+            short: short,
+            neutral: neutral
+        }
+    }
+
+
+
+
+
+    /**
+     * Given a list of points collected by span, it return a totalized object.
+     * @param allPoints 
+     * @returns IPoints
+     */
+    private getTotalPoints(allPoints: IPoints[]): IPoints {
+        // Init counters
+        let long: number = 0;
+        let short: number = 0;
+        let neutral: number = 0;
+
+        // Iterate over all the collected points and populate results
+        for (let p of allPoints) {
+            long += p.long;
+            short += p.short;
+            neutral += p.neutral;
+        }
+
+        // Return the total points
+        return {
+            long: long,
+            short: short,
+            neutral: neutral
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Given a points object, it will retrieve the tendency forecast.
+     * @param points 
+     * @returns ITendencyForecast
+     */
+    private getTendencyByPoints(points: IPoints): ITendencyForecast {
+        // Calculate the total amount of points
+        const totalPoints: number = points.long + points.short + points.neutral;
+
+        // To be a long, it needs to account for over 50% of the total points
+        if (_utils.getPercentageOutOfTotal(points.long, totalPoints) > 50) {
+            return 1
+        }
+        // To be a short, it needs to account for over 50% of the total points
+        else if (_utils.getPercentageOutOfTotal(points.short, totalPoints) > 50) {
+            return -1
+        }
+        // Otherwise, stand neutral
+        else {
+            return 0;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* Span Getters */
+
+
+
+
+
+
+
+    /**
+     * Given a span index, it will retrieve the importance.
+     * @param index 
+     * @returns number
+     */
+    private getSpanImportanceByIndex(index: number): number {
+        switch (index) {
+            case 0:
+                return this.spanImportance.oneMonth;
+            case 1:
+                return this.spanImportance.twoWeeks;
+            case 2:
+                return this.spanImportance.oneWeek;
+            default: // 3
+                return this.spanImportance.threeDays;
+        }
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Retrieves the span name by index.
+     * @param index 
+     * @returns ISpanName
+     */
+    private getSpanNameByIndex(index: number): ISpanName {
+        switch(index) {
+            case 0:
+                return 'oneMonth';
+            case 1:
+                return 'twoWeeks';
+            case 2:
+                return 'oneWeek';
+            case 3:
+                return 'threeDays';
+        }
+    }
+
+
+
+
 
 
 
@@ -95,13 +480,13 @@ export class Tulip implements ITulip {
      * It is calculated for each bar as the arithmetic mean of the previous n bars.
      * https://tulipindicators.org/sma
      * @param close 
-     * @param period? Defaults to 5
+     * @param period? Defaults to 7
      * @returns Promise<number[]>
      */
-    public async sma(close: number[], period?: number): Promise<number[]> {
+    private async sma(close: number[], period?: number): Promise<number[]> {
         // Caclulate the SMA
         const sma: [number[]] = await tulind.indicators.sma.indicator([close], [
-            typeof period == "number" ? period: 5
+            typeof period == "number" ? period: 7
         ]);
 
         // Return the results
@@ -123,211 +508,17 @@ export class Tulip implements ITulip {
      * smoothing effect on the input data but will also create more lag.
      * https://tulipindicators.org/ema
      * @param close 
-     * @param period?  Defaults to 5
+     * @param period?  Defaults to 7
      * @returns Promise<number[]>
      */
-    public async ema(close: number[], period?: number): Promise<number[]> {
+    private async ema(close: number[], period?: number): Promise<number[]> {
         // Caclulate the EMA
         const ema: [number[]] = await tulind.indicators.ema.indicator([close], [
-            typeof period == "number" ? period: 5
+            typeof period == "number" ? period: 7
         ]);
         
         // Return the results
         return ema[0];
-    }
-
-
-
-
-
-
-
-
-
-    /**
-     * Moving Average Convergence/Divergence
-     * Moving Average Convergence/Divergence helps follow trends and has several uses.
-     * It takes three parameter, a short period n, a long period m, and a signal period p.
-     * https://tulipindicators.org/macd
-     * @param close 
-     * @param shortPeriod? 
-     * @param longPeriod? 
-     * @param signalPeriod? 
-     * @returns Promise<IMacdResult>
-     */
-    public async macd(close: number[], shortPeriod?: number, longPeriod?: number, signalPeriod?: number): Promise<IMacdResult> {
-        // Caclulate the MACD
-        const macd: number[][] = await tulind.indicators.macd.indicator([close], [
-            typeof shortPeriod == "number" ? shortPeriod: 2,
-            typeof longPeriod == "number" ? longPeriod: 5,
-            typeof signalPeriod == "number" ? signalPeriod: 9
-        ]);
-        
-        // Return the results
-        return {
-            macd: macd[0],
-            macdSignal: macd[1],
-            macdHistogram: macd[2]
-        };
-    }
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Relative Strength Index
-     * The Relative Strength Index is a momentum oscillator to help identify trends.
-     * https://tulipindicators.org/rsi
-     * @param close 
-     * @param period? 
-     * @returns Promise<number[]>
-     */
-    public async rsi(close: number[], period?: number): Promise<number[]> {
-        // Caclulate the RSI
-        const rsi: [number[]] = await tulind.indicators.rsi.indicator([close], [
-            typeof period == "number" ? period: 5
-        ]);
-        
-        // Return the results
-        return rsi[0];
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Bollinger Bands
-     * The Bollinger Bands indicator calculates three results. A middle band, which is a 
-     * Simple Moving Average, as well as upper and lower bands which are spaced off the middle band.
-     * It takes two parameters: the period n, as well as a scaling value a. The upper and lower bands 
-     * are spaced off of the middle band by a standard deviations of the input.
-     * https://tulipindicators.org/bbands
-     * @param close 
-     * @param period? 
-     * @param stddev? 
-     * @returns Promise<IBollingerBandsResult>
-     */
-    public async bbands(close: number[], period?: number, stddev?: number): Promise<IBollingerBandsResult> {
-        // Caclulate the Bollinger Bands
-        const bbands: number[][] = await tulind.indicators.bbands.indicator([close], [
-            typeof period == "number" ? period: 5,
-            typeof stddev == "number" ? stddev: 2
-        ]);
-        
-        // Return the results
-        return {
-            lower: bbands[0],
-            middle: bbands[1],
-            upper: bbands[2]
-        };
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Positive Volume Index
-     * Positive Volume Index is very similar to Negative Volume Index, but changes on volume-up days instead.
-     * https://tulipindicators.org/pvi
-     * @param close 
-     * @param volume 
-     * @returns Promise<number[]>
-     */
-    public async pvi(close: number[], volume: number[]): Promise<number[]> {
-        // Caclulate the PVI
-        const pvi: [number[]] = await tulind.indicators.pvi.indicator([close, volume], []);
-        
-        // Return the results
-        return pvi[0];
-    }
-
-
-
-
-
-
-
-
-
-    /**
-     * Negative Volume Index
-     * Negative Volume Index tries to show what smart investors are doing by staying flat on up-volume 
-     * days and only changing on down-volume days.
-     * https://tulipindicators.org/nvi
-     * @param close 
-     * @param volume 
-     * @returns Promise<number[]>
-     */
-     public async nvi(close: number[], volume: number[]): Promise<number[]> {
-        // Caclulate the NVI
-        const nvi: [number[]] = await tulind.indicators.nvi.indicator([close, volume], []);
-        
-        // Return the results
-        return nvi[0];
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /* Misc Helpers */
-
-
-
-
-
-
-
-    /**
-     * Checks if 2 values are close enough to be considered a match.
-     * @param value1 
-     * @param value2 
-     * @param allowedDifference? 
-     * @returns boolean
-     */
-    public isCloseEnough(value1: number, value2: number, allowedDifference?: number): boolean {
-        // Calculate the difference between the 2 values
-        const difference: number = value1 - value2;
-
-        // Init the allowed difference
-        allowedDifference = typeof allowedDifference == "number" ? allowedDifference: 0.02;
-
-        // Check if the difference is within the allowed range
-        return difference <= allowedDifference && difference >= -(allowedDifference);
     }
 
 
@@ -395,11 +586,11 @@ export class Tulip implements ITulip {
 
         // Iterate over the entire candlestick series and populate each property
         for (let item of series) {
-            spanSeries.open.push(Number(item[1]));
-            spanSeries.high.push(Number(item[2]));
-            spanSeries.low.push(Number(item[3]));
+            //spanSeries.open.push(Number(item[1]));
+            //spanSeries.high.push(Number(item[2]));
+            //spanSeries.low.push(Number(item[3]));
             spanSeries.close.push(Number(item[4]));
-            spanSeries.volume.push(Number(item[5]));
+            //spanSeries.volume.push(Number(item[5]));
         }
 
         // Return the span series
@@ -407,4 +598,84 @@ export class Tulip implements ITulip {
     }
 
     
+
+
+
+
+
+
+
+
+    /* Verbose */
+
+
+
+
+
+
+
+    /**
+     * Displays an MA result inclusing the final decision.
+     * @param points 
+     * @param tendencies 
+     * @param totalPoints 
+     * @param finalTendency 
+     * @returns void
+     */
+    private displayMAResult(
+        points: IPoints[], 
+        tendencies: ITendencyForecast[], 
+        totalPoints: IPoints, 
+        finalTendency: ITendencyForecast
+    ): void {
+        console.log(' ');
+        console.log(`Final: ${finalTendency} | L: ${totalPoints.long} | S: ${totalPoints.short} | N: ${totalPoints.neutral} `);
+        if (this.verbose > 1) {
+            for (let i = 0; i < 4; i++) {
+                console.log(`${this.getSpanNameByIndex(i)}: ${tendencies[i]} | L: ${points[i].long} | S: ${points[i].short} | N: ${points[i].neutral} `);
+            }
+        }
+        console.log(' ');
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* Test Helpers */
+
+
+
+
+
+
+
+    /**
+     * Checks if 2 values are close enough to be considered a match.
+     * @param value1 
+     * @param value2 
+     * @param allowedDifference? 
+     * @returns boolean
+     */
+     public isCloseEnough(value1: number, value2: number, allowedDifference?: number): boolean {
+        // Calculate the difference between the 2 values
+        const difference: number = value1 - value2;
+
+        // Init the allowed difference
+        allowedDifference = typeof allowedDifference == "number" ? allowedDifference: 0.02;
+
+        // Check if the difference is within the allowed range
+        return difference <= allowedDifference && difference >= -(allowedDifference);
+    }
 }

@@ -70,7 +70,7 @@ export class BalanceSimulation implements IBalanceSimulation {
      private leverage: number = 2;
      private readonly tp: number = 0.4;
      // Dangerous levels
-     /*private leverageSpecs: ILeverageSpecs = {
+     private leverageSpecs: ILeverageSpecs = {
          2:     { takeProfit: this.tp, stopLoss: 45 },
          3:     { takeProfit: this.tp, stopLoss: 30 },
          4:     { takeProfit: this.tp, stopLoss: 22 },
@@ -80,10 +80,17 @@ export class BalanceSimulation implements IBalanceSimulation {
          8:     { takeProfit: this.tp, stopLoss: 11 },
          9:     { takeProfit: this.tp, stopLoss: 10 },
          10:    { takeProfit: this.tp, stopLoss: 9 },
-     }*/
+     }
      private sl = 2.5;
-     // "Safer" levels
-     private leverageSpecs: ILeverageSpecs = {
+
+     /*private leverageSpecs: ILeverageSpecs = {
+        2:     { takeProfit: this.tp, stopLoss: 10 },
+        3:     { takeProfit: this.tp, stopLoss: 6.5 },
+        4:     { takeProfit: this.tp, stopLoss: 5 },
+        5:     { takeProfit: this.tp, stopLoss: 4 }
+    }*/
+     // "Safer" levels ~ 30%
+     /*private leverageSpecs: ILeverageSpecs = {
         2:     { takeProfit: this.tp, stopLoss: 15 },
         3:     { takeProfit: this.tp, stopLoss: 10 },
         4:     { takeProfit: this.tp, stopLoss: 7.5 },
@@ -93,7 +100,7 @@ export class BalanceSimulation implements IBalanceSimulation {
         8:     { takeProfit: this.tp, stopLoss: 3.8 },
         9:     { takeProfit: this.tp, stopLoss: 3.5 },
         10:    { takeProfit: this.tp, stopLoss: 3 },
-    }
+    }*/
 
 
 
@@ -386,7 +393,7 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     private getCurrentLeverage(): number {
         // If the balance droped 30% stop the simulation
-        if (this.currentChange <= -20) {
+        if (this.currentChange <= -30) {
             throw new Error(`
                 Closing Balance: ${this.current.toString()}$ 
                 Bank Balance: ${this.bank.toNumber()}$
@@ -394,7 +401,7 @@ export class BalanceSimulation implements IBalanceSimulation {
         }
 
         // if the change 
-        if (this.currentChange > -20 && this.currentChange < 0) {
+        if (this.currentChange > -30 && this.currentChange < 0) {
             return 5;
         }
         /*else if (this.currentChange > -20 && this.currentChange <= -15) {
