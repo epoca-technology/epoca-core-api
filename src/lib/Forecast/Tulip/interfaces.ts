@@ -145,3 +145,10 @@ export interface IRSIStatus {
 
 
 
+
+
+/* Aroon */
+export interface IAroonStatus {
+    low: number,
+    high: number
+}

@@ -248,7 +248,8 @@ export class TradingSimulation implements ITradingSimulation {
         }
 
         // Log results - if verbose
-        if (this.verbose > 0) this.displayResult(result);
+        //if (this.verbose > 0) this.displayResult(result);
+        this.displayResult(result);
 
         // Return the final results
         return result;

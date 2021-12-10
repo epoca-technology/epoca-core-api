@@ -13,7 +13,9 @@ import {
     IMAResult,
     ISpanImportance,
     IPoints,
-    IRSIStatus
+    IRSIStatus,
+    IAroonStatus, 
+    ISpanName
 } from "./interfaces";
 import * as tulind from "tulind";
 import {BigNumber} from "bignumber.js";
@@ -22,7 +24,6 @@ import {BigNumber} from "bignumber.js";
 
 // Init Utilities Service
 import { IUtilitiesService } from "../../../modules/shared/utilities";
-import { ISpanName } from ".";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
@@ -94,9 +95,9 @@ export class Tulip implements ITulip {
     constructor(series: ICandlestickSeries, config: ITulipConfig) {
         //console.log(series.length);
         // Make sure the series is valid
-        if (series.length < 715 || series.length > 730) {
+        /*if (series.length < 715 || series.length > 730) {
             throw new Error('The series must contain between 715 and 730 candlesticks.');
-        }; 
+        }; */
 
         // Init the series
         this.series = this.getSpanSeries(series);
@@ -126,11 +127,11 @@ export class Tulip implements ITulip {
     public async forecast(): Promise<IForecastProviderResult> {
 
 
-        //const smaForecast: IMAResult = await this.getMAForecast();
-        const emaForecast: IMAResult = await this.getMAForecast(true);
+        const smaForecast: IMAResult = await this.getMAForecast();
+        //const emaForecast: IMAResult = await this.getMAForecast(true);
         //return {result: smaForecast.tendency == emaForecast.tendency ? smaForecast.tendency: 0};
-        //return {result: smaForecast.tendency};
-        return {result: emaForecast.tendency};
+        return {result: smaForecast.tendency};
+        //return {result: emaForecast.tendency};
     }
 
 
@@ -201,8 +202,8 @@ export class Tulip implements ITulip {
     private getMAOutcomes(ma: ISpanMA): IMASpanOutcomes {
         return {
             MA1: this.getMAOutcome(ma.ma1),
-            MA2: this.getMAOutcome(ma.ma2),
-            MA3: this.getMAOutcome(ma.ma3)
+            MA2: this.getMAOutcome(ma.ma1),
+            MA3: this.getMAOutcome(ma.ma1)
         }
     }
 
@@ -227,7 +228,7 @@ export class Tulip implements ITulip {
         /* Handle the change accordingly */
 
         // Short
-        if (change <= -30) { return { tendency: -1, intensity: 2} }
+        if (change <= -30) { return { tendency: -1, intensity: 1} }
         else if (change > -30 && change <= -(this.maDust)) { return { tendency: -1, intensity: 1} }
 
         // Neutral
@@ -235,7 +236,7 @@ export class Tulip implements ITulip {
 
         // Long
         else if (change > this.maDust && change < 30) { return { tendency: 1, intensity: 1} }
-        else { return { tendency: 1, intensity: 2} }
+        else { return { tendency: 1, intensity: 1} }
     }
 
 
@@ -271,17 +272,20 @@ export class Tulip implements ITulip {
         // Retrieve the based on the points
         let tendency: ITendencyForecast = this.getTendencyByPoints(totalPoints);
 
-        // Retrieve Aroon Status
-        const aroonStatus: any = await this.getAroonStatus();
-
         // Retrieve the RSI status
         const rsiStatus: IRSIStatus = await this.getRSIStatus();
 
         // Check if the tendency should be altered by the RSI
         tendency = this.getTendencyByRSIStatus(tendency, rsiStatus);
 
+        // Retrieve Aroon Status
+        const aroonStatus: IAroonStatus = await this.getAroonStatus();
+
+        // Check if the tendency should be altered by Aroon
+        tendency = this.getTendencyByAroonStatus(tendency, aroonStatus);
+
         // Log it if applies
-        if (this.verbose > 0) this.displayMAResult(spanPoints, spanTendencies, totalPoints, tendency, rsiStatus);
+        if (this.verbose > 0) this.displayMAResult(spanPoints, spanTendencies, totalPoints, tendency, rsiStatus, aroonStatus);
 
         // Return the result
         return {
@@ -383,6 +387,20 @@ export class Tulip implements ITulip {
      * @param points 
      * @returns ITendencyForecast
      */
+     /*private getTendencyByPoints(points: IPoints): ITendencyForecast {
+        // To be a long, it needs to account for over 50% of the total points
+        if (points.long > points.short && points.long > points.neutral) {
+            return 1
+        }
+        // To be a short, it needs to account for over 50% of the total points
+        else if (points.short > points.long && points.short > points.neutral) {
+            return -1
+        }
+        // Otherwise, stand neutral
+        else {
+            return 0;
+        }
+    }*/
     private getTendencyByPoints(points: IPoints): ITendencyForecast {
         // Calculate the total amount of points
         const totalPoints: number = points.long + points.short + points.neutral;
@@ -414,9 +432,9 @@ export class Tulip implements ITulip {
     private async getRSIStatus(): Promise<IRSIStatus> {
         // Init the RSI for all 
         const rsiList: [number[], number[], number[]] = await Promise.all([
+            this.rsi(this.series.twoWeeks.close, this.maPeriods.MA1),
             this.rsi(this.series.oneWeek.close, this.maPeriods.MA1),
-            this.rsi(this.series.oneWeek.close, this.maPeriods.MA2),
-            this.rsi(this.series.oneWeek.close, this.maPeriods.MA3),
+            this.rsi(this.series.threeDays.close, this.maPeriods.MA1),
         ]);
 
         // Init the properties
@@ -427,12 +445,12 @@ export class Tulip implements ITulip {
         let rsiResults: number[] = [];
         for (let rsi of rsiList) {
             // Init the value and add it to the result list
-            const val: number = rsi[rsi.length - 1];
+            const val: number = _utils.roundNumber(rsi[rsi.length - 1], 0);
             rsiResults.push(val);
 
             // Check if it is overbought or oversold
-            if (val >= 67) { overbought = true }
-            if (val <= 33) { oversold = true }
+            if (val >= 80) { overbought = true }
+            if (val <= 20) { oversold = true }
         }
 
         // Return the status
@@ -460,34 +478,38 @@ export class Tulip implements ITulip {
      * @returns ITendencyForecast
      */
      private getTendencyByRSIStatus(currentTendency: ITendencyForecast, status: IRSIStatus): ITendencyForecast {
-        // Calculate the avg RSI
-        //const avg: number = _utils.calculateAverage([status.rsi1, status.rsi2, status.rsi3]);
+        const high: number = 65;
+        const low: number = 35;
 
-
-        /**
-         * Do not long when the RSI is overbought
-         * Do not short when the RSI is oversold
-         */
-        if ((currentTendency == 1 && status.overbought) || (currentTendency == -1 && status.oversold)) {
+        // Do not long when the RSI is overbought
+        if (currentTendency == 1 && status.overbought) {
             return 0;
         }
 
-
-        /**
-         * Do not short when the RSI is low.
-         */
-        /*else if (currentTendency == -1 && (status.rsi1 <= 40 || status.rsi2 <= 40 || status.rsi3 <= 40)) {
+        // Do not short when the RSI is oversold
+        else if (currentTendency == -1 && status.oversold) {
             return 0;
-        }*/
+        }
 
-
-        /**
-         * Do not long when the RSI is high
-         */
-        /*else if (currentTendency == 1 && (status.rsi1 >= 60 || status.rsi2 >= 60 || status.rsi3 >= 60)) {
+        // Do not short when the RSI is low.
+        else if (currentTendency == -1 && (status.rsi1 <= low || status.rsi2 <= low || status.rsi3 <= low)) {
             return 0;
-        } */
+        }
+
+        // Do not long when the RSI is high
+        else if (currentTendency == 1 && (status.rsi1 >= high || status.rsi2 >= high || status.rsi3 >= high)) {
+            return 0;
+        }
+
+        // If neutral and the RSI is strongly overbought, place a short
+        else if (currentTendency == 0 && (status.rsi1 >= 90 || status.rsi2 >= 90 || status.rsi3 >= 90)) {
+            return -1
+        }
         
+        // If neutral and the RSI is strongly oversold, place a long
+        else if (currentTendency == 0 && (status.rsi1 <= 10 || status.rsi2 <= 10|| status.rsi3 <= 10)) {
+            return 1
+        }
 
         // Otherwise, keep the tendency set by the moving averages
         else {
@@ -500,15 +522,75 @@ export class Tulip implements ITulip {
 
 
 
+    /**
+     * Given the tendency based on points & the RSI, it will check if the Aroon should make an alteration
+     * based on its levels.
+     * @param currentTendency 
+     * @param status 
+     * @returns ITendencyForecast
+     */
+    private getTendencyByAroonStatus(currentTendency: ITendencyForecast, status: IAroonStatus): ITendencyForecast {
+        // If aroon low and high are equals, stand neutral
+        if (this.isCloseEnough(status.high, status.low, 1)) {
+            return 0;
+        }
+
+        // If it is a short and aroon is high, cancel the tendency
+        else if (currentTendency == -1 && status.high >= 50) {
+            return 0;
+        }
+
+        // If it is a long and aroon is low, cancel the tendency
+        else if (currentTendency == 1 && status.low >= 50) {
+            return 0;
+        }
+
+        // If the current tendency is neutral and aroon high is dominating, place a long
+        /*if (currentTendency == -1 && status.high >= 55) {
+            return 1;
+        }
+
+        // If the current tendency is neutral and aroon low is dominating, place a short 
+        else if (currentTendency == 1 && status.low >= 55) {
+            return -1;
+        }*/
+
+        // Otherwise, return the current tendency
+        else { return currentTendency }
+    }
 
 
-    private async getAroonStatus(): Promise<any> {
-        const aroon1 = await this.aroon(this.series.threeDays.high, this.series.threeDays.low, this.maPeriods.MA1);
-        const aroon2 = await this.aroon(this.series.threeDays.high, this.series.threeDays.low, this.maPeriods.MA2);
-        const aroon3 = await this.aroon(this.series.threeDays.high, this.series.threeDays.low, this.maPeriods.MA3);
-        console.log(`Aroon1: Low: ${aroon1[0][aroon1.length - 1]} | High: ${aroon1[1][aroon1.length - 1]}`);
-        console.log(`Aroon2: Low: ${aroon2[0][aroon2.length - 1]} | High: ${aroon2[1][aroon2.length - 1]}`);
-        console.log(`Aroon3: Low: ${aroon3[0][aroon3.length - 1]} | High: ${aroon3[1][aroon3.length - 1]}`);
+
+
+
+
+
+
+    /**
+     * Calculates the aroon status for all 3 MA periods. Sums the results and calculates the
+     * % dominance of each
+     * @returns Promise<IAroonStatus>
+     */
+    private async getAroonStatus(): Promise<IAroonStatus> {
+        // Retrieve Aroon for all three periods
+        const aroon1 = await this.aroon(this.series.twoWeeks.high, this.series.twoWeeks.low, this.maPeriods.MA1);
+        const aroon2 = await this.aroon(this.series.oneWeek.high, this.series.oneWeek.low, this.maPeriods.MA1);
+        const aroon3 = await this.aroon(this.series.threeDays.high, this.series.threeDays.low, this.maPeriods.MA1);
+
+        // Calculate both, low and high sum
+        const lowSum: BigNumber = BigNumber.sum(aroon1[0][aroon1.length - 1], aroon2[0][aroon2.length - 1], aroon3[0][aroon3.length - 1]);
+        const highSum: BigNumber = BigNumber.sum(aroon1[1][aroon1.length - 1], aroon2[1][aroon2.length - 1], aroon3[1][aroon3.length - 1]);
+
+        // Calculate the percentage represented by each
+        const total: number = lowSum.plus(highSum).toNumber();
+        const lowPercent: number = _utils.getPercentageOutOfTotal(lowSum.toNumber(), total, 0);
+        const highPercent: number = _utils.getPercentageOutOfTotal(highSum.toNumber(), total, 0);
+
+        // Return the current status
+        return {
+            low: lowPercent,
+            high: highPercent
+        }
     }
 
 
@@ -815,11 +897,17 @@ export class Tulip implements ITulip {
      * @returns 
      */
     private getSpanSeries(series: ICandlestickSeries): ISpan {
-        return {
+        /*return {
             oneMonth: this.getSpanSeriesFromCandlesticks(series),
             twoWeeks: this.getSpanSeriesFromCandlesticks(series.slice(series.length - 360)),
             oneWeek: this.getSpanSeriesFromCandlesticks(series.slice(series.length - 168)),
             threeDays: this.getSpanSeriesFromCandlesticks(series.slice(series.length - 72)),
+        }*/
+        return {
+            oneMonth: this.getSpanSeriesFromCandlesticks(series),
+            twoWeeks: this.getSpanSeriesFromCandlesticks(series.slice(series.length - 120)),
+            oneWeek: this.getSpanSeriesFromCandlesticks(series.slice(series.length - 24)),
+            threeDays: this.getSpanSeriesFromCandlesticks(series.slice(series.length - 12)),
         }
     }
 
@@ -880,6 +968,7 @@ export class Tulip implements ITulip {
      * @param totalPoints 
      * @param finalTendency 
      * @param rsi 
+     * @param aroon 
      * @returns void
      */
     private displayMAResult(
@@ -888,6 +977,7 @@ export class Tulip implements ITulip {
         totalPoints: IPoints, 
         finalTendency: ITendencyForecast,
         rsi: IRSIStatus,
+        aroon: IAroonStatus,
     ): void {
         console.log(' ');
         console.log(`Final: ${finalTendency} | L: ${totalPoints.long} | S: ${totalPoints.short} | N: ${totalPoints.neutral} `);
@@ -895,8 +985,8 @@ export class Tulip implements ITulip {
             for (let i = 0; i < 4; i++) {
                 console.log(`${this.getSpanNameByIndex(i)}: ${tendencies[i]} | L: ${points[i].long} | S: ${points[i].short} | N: ${points[i].neutral} `);
             }
-            console.log(`Overbought: ${rsi.overbought} | Oversold: ${rsi.oversold}`);
-            console.log(`rsi1: ${rsi.rsi1} | rsi2: ${rsi.rsi2} | rsi3: ${rsi.rsi3}`);
+            console.log(`rsi1: ${rsi.rsi1} | rsi2: ${rsi.rsi2} | rsi3: ${rsi.rsi3} | Overbought: ${rsi.overbought} | Oversold: ${rsi.oversold}`);
+            console.log(`Aroon: Low: ${aroon.low}% | High: ${aroon.high}%`);
         }
     }
 

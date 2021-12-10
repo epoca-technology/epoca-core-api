@@ -2,6 +2,7 @@ import { Arima, IArimaConfig } from ".";
 import { ICandlestickSeries } from "../../types";
 import {IForecastConfig, IForecastResult, IForecast, IForecastProviderResult } from "./interfaces";
 import { ITulip, ITulipConfig, Tulip } from "./Tulip";
+import { IMarketState, IMarketStateConfig, MarketState } from "./MarketState";
 
 
 
@@ -32,19 +33,20 @@ export class Forecast implements IForecast {
      */
     public async forecast(series: ICandlestickSeries): Promise<IForecastResult> {
         // Initialize Tulip
-        const tulip: ITulip = new Tulip(series, this.tulipConfig);
-        const tulipForecast: IForecastProviderResult = await tulip.forecast();
+        //const tulip: ITulip = new Tulip(series, this.tulipConfig);
+        //const tulipForecast: IForecastProviderResult = await tulip.forecast();
+
+        // Initialize market state
+        const marketState: IMarketState = new MarketState({verbose: 2});
+        const marketStateForecast: IForecastProviderResult = await marketState.forecast(series);
 
         // Arima
-        const arima = new Arima(series, this.arimaConfig);
+        //const arima = new Arima(series, this.arimaConfig);
         //const arimaForecast = await arima.forecast();
 
-        /*return {
-            result: tulipForecast.result == arimaForecast.result ? tulipForecast.result: 0
-        }*/
-       return {
-            result: tulipForecast.result
-        }
+        //return {result: tulipForecast.result == arimaForecast.result ? tulipForecast.result: 0}
+       //return {result: tulipForecast.result}
+       return {result: marketStateForecast.result}
     }
 
 

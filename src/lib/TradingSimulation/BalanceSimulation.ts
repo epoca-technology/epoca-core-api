@@ -67,8 +67,8 @@ export class BalanceSimulation implements IBalanceSimulation {
      * @leverageSpecs
      * These are the take profit / stop loss specifications based on the current leverage.
      */
-    private bankEnabled = true;
-     private leverage: number = 5;
+    private bankEnabled = false;
+     private leverage: number = 10;
      private readonly tp: number = 0.5;
      // Dangerous levels
      /*private leverageSpecs: ILeverageSpecs = {
@@ -92,13 +92,15 @@ export class BalanceSimulation implements IBalanceSimulation {
         5:     { takeProfit: this.tp, stopLoss: 18 }
     }*/
      // 20% SL
+    private wtf=2;
     private leverageSpecs: ILeverageSpecs = {
-        //2:     { takeProfit: 3, stopLoss: 1 },
+        2:     { takeProfit: 1.5, stopLoss: 1.5 },
         //2:     { takeProfit: this.tp, stopLoss: 10 },
-        3:     { takeProfit: this.tp, stopLoss: 6.5 },
+        3:     { takeProfit: 1, stopLoss: 1 },
         4:     { takeProfit: this.tp, stopLoss: 5 },
         //5:     { takeProfit: this.tp, stopLoss: 4 },
-        5:     { takeProfit: 0.5, stopLoss: 1.5 },
+        5:     { takeProfit: 1.5, stopLoss: 1.5 },
+        10:     { takeProfit: 1.5, stopLoss: 1.5 },
     }
      // 30% SL
     /*private leverageSpecs: ILeverageSpecs = {
@@ -347,7 +349,7 @@ export class BalanceSimulation implements IBalanceSimulation {
         this.canOpenPosition();
 
         // Check if a bank deposit has to be made
-        if (this.currentChange >= 15 && this.bankEnabled) this.makeBankDeposit();
+        if (this.currentChange >= 35 && this.bankEnabled) this.makeBankDeposit();
 
         // Set the current leverage
         this.leverage = this.getCurrentLeverage();
@@ -412,7 +414,7 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     private getCurrentLeverage(): number {
         // If the balance droped 30% stop the simulation
-        if (this.currentChange <= -10) {
+        if (this.currentChange <= -99.9) {
             throw new Error(`
                 Closing Balance: ${this.current.toString()}$ 
                 Bank Balance: ${this.bank.toNumber()}$

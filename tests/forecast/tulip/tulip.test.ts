@@ -20,7 +20,7 @@ const td: ICandlestickSeries = getCandlestickSeries('720');
 
 
 
-describe('Tulip Indicators Essentials:',  function() {
+xdescribe('Tulip Indicators Essentials:',  function() {
 
     it('-', async function() {
         const tda: ICandlestickSeries = getCandlestickSeries('10000');
@@ -98,7 +98,7 @@ describe('Tulip Indicators Essentials:',  function() {
 
 
 
-describe('Tulip Initialization:', function() {
+xdescribe('Tulip Initialization:', function() {
 
 
     it('-Can initialize the series with 720 candles | 1 month (Recommended)', function() {
