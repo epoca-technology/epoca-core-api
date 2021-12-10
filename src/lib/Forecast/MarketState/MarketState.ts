@@ -37,7 +37,7 @@ export class MarketState implements IMarketState {
     private readonly forecastRequirement: number = 100;
 
 
-    private readonly dust: number = 0.02;
+    private readonly dust: number = 0.03;
 
     
     /**
@@ -45,7 +45,7 @@ export class MarketState implements IMarketState {
      * Displays additional data of the process for debugging purposes.
      * DEFAULT: 0
      */
-     private readonly verbose: IVerbose = 2;
+     private readonly verbose: IVerbose = 1;
      
 
 
@@ -79,7 +79,7 @@ export class MarketState implements IMarketState {
         let rsiSummary: IRSISummary;
 
         if (tendency != 0) {
-            /* Aroon */
+            // Aroon
 
             // Build the summary
             aroonSummary = await this.buildAroonSummary(data.high, data.low);
@@ -88,7 +88,17 @@ export class MarketState implements IMarketState {
             tendency = this.forecastTendencyByAroonSummary(tendency, aroonSummary);
 
 
-            /* FOSC */
+
+            // RSI
+
+            // Build the summary
+            rsiSummary = await this.buildRSISummary(data.close);
+
+            // Check if the tendency needs to be altered
+            tendency = this.forecastTendencyByRSISummary(tendency, rsiSummary);
+
+
+            // FOSC
 
             // Build the summary
             foscSummary = await this.buildFOSCSummary(data.close);
@@ -98,7 +108,7 @@ export class MarketState implements IMarketState {
         }
 
         // Log it if applies
-        if (this.verbose > 0 && tendency != 0) this.displayResult(tendency, pointsSummary, aroonSummary, foscSummary);
+        if (this.verbose > 0 && tendency != 0) this.displayResult(tendency, pointsSummary, aroonSummary, foscSummary, rsiSummary);
 
         // Return the final tendency
         return {result: tendency};
@@ -173,7 +183,7 @@ export class MarketState implements IMarketState {
         // Iterate over each change period and compare
         for (let cp of this.changePeriods) {
             // Calculate change
-            const change: number = _utils.calculatePercentageChange(ma[ma.length - (1 + cp)], ma[ma.length - 1]);
+            const change: number = _utils.calculatePercentageChange(ma[ma.length - (1 + cp)], ma[ma.length - 1], 4);
             
             // Check the type of change
             if (change >= this.dust) { points.long += 1 }
@@ -252,11 +262,11 @@ export class MarketState implements IMarketState {
 
     private forecastTendencyByAroonSummary(tendency: ITendencyForecast, summary: IAroonSummary): ITendencyForecast {
         // Only long if it the high percent is dominating
-        if (tendency == 1 && summary.highPercent <= 60) {
+        if (tendency == 1 && summary.highPercent < 40) {
             return 0;
         }
         // Only short if it the high percent is dominating
-        else if (tendency == -1 && summary.lowPercent <= 60) {
+        else if (tendency == -1 && summary.lowPercent < 40) {
             return 0;
         }
         // Otherwise, maintain the position
@@ -315,11 +325,11 @@ export class MarketState implements IMarketState {
 
     private forecastTendencyByFOSCSummary(tendency: ITendencyForecast, summary: IFOSCSummary): ITendencyForecast {
 
-        if (tendency == 1 && summary.longPercentage <= 25) {
+        if (tendency == 1 && summary.longPercentage < 40) {
             return 0;
         }
 
-        else if (tendency == -1 && summary.shortPercentage <= 25) {
+        else if (tendency == -1 && summary.shortPercentage < 40) {
             return 0;
         }
         
@@ -340,33 +350,8 @@ export class MarketState implements IMarketState {
 
     /* RSI */
 
-    /*private async buildRSISummary(high: number[], low: number[], close: number[]): Promise<IRSISummary> {
-        // Init the rsi data
-        let rsiPeriods: number[] = [];
-        let overbought: boolean = false;
-        let oversold: boolean = false;
 
-        // Calculate the RSI
-        const rsi: number[] = await this.ultosc(high, low, close, 5, 80, 140);
-
-        // Check if it is currently overbought
-        if (rsi[rsi.length - 1] >= 80) {
-            overbought = true;
-        } else if (rsi[rsi.length - 1] <= 20) {
-            oversold = true;
-        }
-
-        // Add the current value to the list
-        rsiPeriods.push(rsi[rsi.length - 1]);
-
-        // Return the summary
-        return {
-            overbought: overbought,
-            oversold: oversold,
-            periods: rsiPeriods
-        }
-    }*/
-    private async buildRSISummary(high: number[], low: number[], close: number[]): Promise<IRSISummary> {
+    private async buildRSISummary(close: number[]): Promise<IRSISummary> {
         // Init the rsi data
         let rsiPeriods: number[] = [];
         let overbought: boolean = false;
@@ -375,14 +360,17 @@ export class MarketState implements IMarketState {
         // Iterate over each MA
         for (let period of this.maPeriods) {
             // Calculate the RSI
-            const rsi: number[] = await this.fosc(close, period);
+            const rsi: number[] = await this.rsi(close, period);
 
             // Check if it is currently overbought
-            /*if (rsi[rsi.length - 1] >= 95) {
+            if (rsi[rsi.length - 1] >= 85) {
                 overbought = true;
-            } else if (rsi[rsi.length - 1] <= 5) {
+            } 
+
+            // Check if it is currently oversold
+            else if (rsi[rsi.length - 1] <= 15) {
                 oversold = true;
-            }*/
+            }
 
             // Add the current value to the list
             rsiPeriods.push(rsi[rsi.length - 1]);
@@ -407,11 +395,20 @@ export class MarketState implements IMarketState {
         else if (tendency == -1 && summary.oversold) {
             return 0;
         }
+
+        
         
         else {
             return tendency;
         }
     }
+
+
+
+
+
+
+
 
 
 
@@ -469,7 +466,7 @@ export class MarketState implements IMarketState {
      * @param period? 
      * @returns Promise<number[]>
      */
-    /*private async rsi(close: number[], period?: number): Promise<number[]> {
+    private async rsi(close: number[], period?: number): Promise<number[]> {
         // Caclulate the RSI
         const rsi: [number[]] = await tulind.indicators.rsi.indicator([close], [
             typeof period == "number" ? period: 5
@@ -477,7 +474,7 @@ export class MarketState implements IMarketState {
 
         // Return the results
         return rsi[0];
-    }*/
+    }
 
 
 
@@ -648,6 +645,7 @@ export class MarketState implements IMarketState {
      * @param pSummary
      * @param aSummary
      * @param fSummary
+     * @param rSummary
      * @returns void
      */
      private displayResult(
@@ -655,6 +653,7 @@ export class MarketState implements IMarketState {
         pSummary: IMovingAveragesPointsSummary,
         aSummary: IAroonSummary|undefined,
         fSummary: IFOSCSummary|undefined,
+        rSummary: IRSISummary|undefined,
     ): void {
         console.log(' ');
         console.log(`Final: ${tendency} | L: ${pSummary.long} | S: ${pSummary.short} | N: ${pSummary.neutral} `);
@@ -665,6 +664,10 @@ export class MarketState implements IMarketState {
         if (fSummary) {
             console.log(`FOSC Long: ${fSummary.longPercentage}% | FOSC Short: ${fSummary.shortPercentage}%`);
             if (this.verbose > 1) console.log(fSummary.periods);
+        }
+        if (rSummary) {
+            console.log(`RSI Overbought: ${rSummary.overbought} | RSI Oversold: ${rSummary.oversold}`);
+            if (this.verbose > 1) console.log(rSummary.periods);
         }
     }
 }

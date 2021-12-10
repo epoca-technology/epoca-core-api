@@ -68,61 +68,12 @@ export class BalanceSimulation implements IBalanceSimulation {
      * These are the take profit / stop loss specifications based on the current leverage.
      */
     private bankEnabled = false;
-     private leverage: number = 10;
-     private readonly tp: number = 0.5;
-     // Dangerous levels
-     /*private leverageSpecs: ILeverageSpecs = {
-         2:     { takeProfit: this.tp, stopLoss: 45 },
-         3:     { takeProfit: this.tp, stopLoss: 30 },
-         4:     { takeProfit: this.tp, stopLoss: 22 },
-         5:     { takeProfit: this.tp, stopLoss: 18 },
-         6:     { takeProfit: this.tp, stopLoss: 15 },
-         7:     { takeProfit: this.tp, stopLoss: 13 },
-         8:     { takeProfit: this.tp, stopLoss: 11 },
-         9:     { takeProfit: this.tp, stopLoss: 10 },
-         10:    { takeProfit: this.tp, stopLoss: 9 },
-     }*/
-     private sl = 2.5;
-
-     // 10% SL
-    /*private leverageSpecs: ILeverageSpecs = {
-        2:     { takeProfit: this.tp, stopLoss: 4 },
-        3:     { takeProfit: this.tp, stopLoss: 3 },
-        4:     { takeProfit: this.tp, stopLoss: 2.5 },
-        5:     { takeProfit: this.tp, stopLoss: 18 }
-    }*/
-     // 20% SL
-    private wtf=2;
+    private bankDepositPercent = 10;
+    private leverage: number = 5;
     private leverageSpecs: ILeverageSpecs = {
-        2:     { takeProfit: 1.5, stopLoss: 1.5 },
-        //2:     { takeProfit: this.tp, stopLoss: 10 },
-        3:     { takeProfit: 1, stopLoss: 1 },
-        4:     { takeProfit: this.tp, stopLoss: 5 },
-        //5:     { takeProfit: this.tp, stopLoss: 4 },
-        5:     { takeProfit: 1.5, stopLoss: 1.5 },
-        10:     { takeProfit: 1.5, stopLoss: 1.5 },
+        //5: { takeProfit: 1.3, stopLoss: 1.5 }, BEST PERFORMANCE SO FAR
+        5: { takeProfit: 1.3, stopLoss: 1.5 },
     }
-     // 30% SL
-    /*private leverageSpecs: ILeverageSpecs = {
-        2:     { takeProfit: this.tp, stopLoss: 15 },
-        3:     { takeProfit: this.tp, stopLoss: 10 },
-        4:     { takeProfit: this.tp, stopLoss: 7.5 },
-        5:     { takeProfit: this.tp, stopLoss: 6 },
-    }*/
-     // 40% SL
-    /*private leverageSpecs: ILeverageSpecs = {
-        2:     { takeProfit: this.tp, stopLoss: 20 },
-        3:     { takeProfit: this.tp, stopLoss: 13.33 },
-        4:     { takeProfit: this.tp, stopLoss: 10 },
-        5:     { takeProfit: this.tp, stopLoss: 8 },
-    }*/
-    // 50% SL
-    /*private leverageSpecs: ILeverageSpecs = {
-        2:     { takeProfit: this.tp, stopLoss: 25 },
-        3:     { takeProfit: this.tp, stopLoss: 16.6 },
-        4:     { takeProfit: this.tp, stopLoss: 11 },
-        5:     { takeProfit: this.tp, stopLoss: 10 },
-    }*/
 
 
 
@@ -349,7 +300,7 @@ export class BalanceSimulation implements IBalanceSimulation {
         this.canOpenPosition();
 
         // Check if a bank deposit has to be made
-        if (this.currentChange >= 35 && this.bankEnabled) this.makeBankDeposit();
+        if (this.currentChange >= 30 && this.bankEnabled) this.makeBankDeposit();
 
         // Set the current leverage
         this.leverage = this.getCurrentLeverage();
@@ -388,11 +339,14 @@ export class BalanceSimulation implements IBalanceSimulation {
         // Init savings
         const savings = new BigNumber(this.current).minus(this.initial);
 
+        // Calculate the deposit amount
+        const depositAmount: number = _utils.alterNumberByPercentage(savings, this.bankDepositPercent - 100);
+
         // Deduct the savings from the current 
-        this.current = new BigNumber(this.current).minus(savings).toNumber();
+        this.current = new BigNumber(this.current).minus(depositAmount).toNumber();
 
         // Add the savings to the bank balance
-        this.bank = this.bank.plus(savings);
+        this.bank = this.bank.plus(depositAmount);
 
         // Update the current change
         this.currentChange = _utils.calculatePercentageChange(this.initial, this.current, 0, true);
@@ -414,7 +368,7 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     private getCurrentLeverage(): number {
         // If the balance droped 30% stop the simulation
-        if (this.currentChange <= -99.9) {
+        if (this.currentChange <= -30) {
             throw new Error(`
                 Closing Balance: ${this.current.toString()}$ 
                 Bank Balance: ${this.bank.toNumber()}$

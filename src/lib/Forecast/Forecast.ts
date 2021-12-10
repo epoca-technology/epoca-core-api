@@ -40,13 +40,19 @@ export class Forecast implements IForecast {
         const marketState: IMarketState = new MarketState({verbose: 2});
         const marketStateForecast: IForecastProviderResult = await marketState.forecast(series);
 
-        // Arima
-        //const arima = new Arima(series, this.arimaConfig);
-        //const arimaForecast = await arima.forecast();
-
         //return {result: tulipForecast.result == arimaForecast.result ? tulipForecast.result: 0}
        //return {result: tulipForecast.result}
        return {result: marketStateForecast.result}
+
+       /*if (marketStateForecast.result != 0) {
+        // Arima
+        const arima = new Arima(series, this.arimaConfig);
+        const arimaForecast = await arima.forecast();
+
+        return {result: marketStateForecast.result == arimaForecast.result ? marketStateForecast.result: 0}
+       } else {
+        return {result: 0}
+       }*/
     }
 
 
