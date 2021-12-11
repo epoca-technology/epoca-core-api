@@ -49,11 +49,12 @@ prompt.get(['interval', 'itemsQuantity'], async (e: any, data: prompt.Properties
 
     // Init the series
     let series: ICandlestickSeries = await _binance.getCandlestickSeries(interval, undefined, undefined, itemsQuantity > apiLimit ? apiLimit: itemsQuantity);
+    console.log(`Downloaded from ${_utils.toDateString(series[0][0])} to ${_utils.toDateString(series[series.length - 1][0])}`);
 
     // Check if it needs to look for more candlesticks in the past
     while (series.length < itemsQuantity) {
         // Allow a small delay to prevent Binance from blocking the IP
-        await _utils.asyncDelay(5);
+        await _utils.asyncDelay(15);
 
         /**
          * Check the limit that should be set.
@@ -68,6 +69,7 @@ prompt.get(['interval', 'itemsQuantity'], async (e: any, data: prompt.Properties
 
         // Retrieve the previous series based on the first candle's open time
         let previousSeries: ICandlestickSeries = await _binance.getCandlestickSeries(interval, undefined, series[0][0], nextLimit);
+        console.log(`Downloaded from ${_utils.toDateString(previousSeries[0][0])} to ${_utils.toDateString(previousSeries[previousSeries.length - 1][0])}`);
 
         // Make sure the last item from the previous array is equals to the first from the accumulated series
         if (previousSeries[previousSeries.length - 1][0] != series[0][0]) {

@@ -89,22 +89,24 @@ export class MarketState implements IMarketState {
 
 
 
-            // RSI
+            // RSI - If the tendency hasn't been changed
+            if (tendency != 0) {
+                // Build the summary
+                rsiSummary = await this.buildRSISummary(data.close);
 
-            // Build the summary
-            rsiSummary = await this.buildRSISummary(data.close);
-
-            // Check if the tendency needs to be altered
-            tendency = this.forecastTendencyByRSISummary(tendency, rsiSummary);
+                // Check if the tendency needs to be altered
+                tendency = this.forecastTendencyByRSISummary(tendency, rsiSummary);
+            }
 
 
-            // FOSC
+            // FOSC - If the tendency hasn't been changed
+            if (tendency != 0) {
+                // Build the summary
+                foscSummary = await this.buildFOSCSummary(data.close);
 
-            // Build the summary
-            foscSummary = await this.buildFOSCSummary(data.close);
-
-            // Check if the tendency needs to be altered
-            tendency = this.forecastTendencyByFOSCSummary(tendency, foscSummary);
+                // Check if the tendency needs to be altered
+                tendency = this.forecastTendencyByFOSCSummary(tendency, foscSummary);
+            }
         }
 
         // Log it if applies

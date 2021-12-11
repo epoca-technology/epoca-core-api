@@ -54,7 +54,7 @@ describe('', function() {
                     verbose: 0
                 },
                 balanceConfig: {
-                    initial: 10000,
+                    initial: 5000,
                     borrowInterestPercent: 0.02,
                     tradeFeePercent: 0.04,
                     minimumPositionAmount: 80,
