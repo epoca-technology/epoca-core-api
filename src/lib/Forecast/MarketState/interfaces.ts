@@ -83,7 +83,7 @@ export interface IRSISummary {
 
 
 
-
+//export interface IVolatilitySummary {}
 
 
 

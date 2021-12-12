@@ -298,23 +298,24 @@ export class TradingSimulation implements ITradingSimulation {
                 // Based on the forecast decision, open a position if applies
                 else {
                     // Retrieve the forecast
-                    const forecast: IForecastResult = await this.forecast.forecast(this.processingSeries);
+                    let forecast: IForecastResult = await this.forecast.forecast(this.processingSeries);
 
                     // Check if a position can be opened
                     let canOpenPosition: boolean = this.canOpenPosition(forecast.result);
                     if (canOpenPosition) { 
-                        /*// If it is a long and has lost several in a row, interrupt the position and activate meditation
-                        if (
-                            //(forecast.result == 1 && this.lastUnsuccessfulLongs >= 2) ||
-                            //(forecast.result == -1 && this.lastUnsuccessfulShorts >= 2)
-                            this.unsuccessfulInARow >= 3
+                        // If it is a long and has lost several in a row, interrupt the position and activate meditation
+                        /*if (
+                            (forecast.result == 1 && this.lastUnsuccessfulLongs >= 3) ||
+                            (forecast.result == -1 && this.lastUnsuccessfulShorts >= 3)
+                            //this.unsuccessfulInARow >= 3
                         ) {
                             canOpenPosition = false;
-                            //this.lastUnsuccessfulLongs = 0;
-                            //this.lastUnsuccessfulShorts = 0;
-                            this.unsuccessfulInARow = 0;
+                            this.lastUnsuccessfulLongs = 0;
+                            this.lastUnsuccessfulShorts = 0;
+                            //this.unsuccessfulInARow = 0;
+                            //forecast.result = forecast.result == 1 ? -1: 1;
                             console.log(`Activating meditation in order to stop losing streak.`);
-                            this.activateMeditation(currentItem[6], true);
+                            //this.activateMeditation(currentItem[6]);
                         }*/
 
                         // Open the position
@@ -531,8 +532,8 @@ export class TradingSimulation implements ITradingSimulation {
                 this.successfulShorts += 1;
             }
 
-            //this.lastUnsuccessfulLongs = 0;
-            //this.lastUnsuccessfulShorts = 0;
+            this.lastUnsuccessfulLongs = 0;
+            this.lastUnsuccessfulShorts = 0;
             //this.unsuccessfulInARow = 0;
         } else {
             // Update general counters
@@ -541,12 +542,12 @@ export class TradingSimulation implements ITradingSimulation {
             // Update specific type counters
             if (this.activePosition.type == 'long') {
                 this.unsuccessfulLongs += 1;
-                //this.lastUnsuccessfulLongs += 1;
-                //this.lastUnsuccessfulShorts = 0;
+                this.lastUnsuccessfulLongs += 1;
+                this.lastUnsuccessfulShorts = 0;
             } else {
                 this.unsuccessfulShorts += 1;
-                //this.lastUnsuccessfulShorts += 1;
-                //this.lastUnsuccessfulLongs = 0;
+                this.lastUnsuccessfulShorts += 1;
+                this.lastUnsuccessfulLongs = 0;
             }
 
             //this.unsuccessfulInARow += 1;

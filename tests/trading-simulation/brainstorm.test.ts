@@ -24,9 +24,9 @@ describe('', function() {
     it('-', async function() {
         try {
             const ts: ITradingSimulation = new TradingSimulation({
-                series: getCandlestickSeries('110000_m'),
+                series: getCandlestickSeries('8000_m'),
                 //windowSize: 720, // 1 month
-                //windowSize: 1000,
+                //windowSize: 2000,
                 windowSize: 1000,
                 //windowSize: 500,
                 //windowSize: 400,
@@ -54,7 +54,7 @@ describe('', function() {
                     verbose: 0
                 },
                 balanceConfig: {
-                    initial: 5000,
+                    initial: 10000,
                     borrowInterestPercent: 0.02,
                     tradeFeePercent: 0.04,
                     minimumPositionAmount: 80,

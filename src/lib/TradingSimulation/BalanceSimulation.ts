@@ -350,7 +350,7 @@ export class BalanceSimulation implements IBalanceSimulation {
 
         // Update the current change
         this.currentChange = _utils.calculatePercentageChange(this.initial, this.current, 0, true);
-
+        
         // Log it if applies
         if (this.verbose > 1) this.displayBankTransaction(depositAmount);
     }

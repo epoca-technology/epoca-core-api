@@ -31,14 +31,13 @@ export class MarketState implements IMarketState {
     private readonly maPeriods: number[] = [5, 15, 25, 60, 100, 130, 160, 200];
 
 
-    private readonly changePeriods: number[] = [1, 3, 5];
+    private readonly changePeriods: number[] = [1, 2, 3];
 
 
     private readonly forecastRequirement: number = 100;
 
 
     private readonly dust: number[] = [0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03];
-    //private readonly dust: number[] = [0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03];
     //private readonly dust: number = 0.03;
 
     
@@ -81,7 +80,7 @@ export class MarketState implements IMarketState {
         let aroonSummary: IAroonSummary;
         let foscSummary: IFOSCSummary;
         let rsiSummary: IRSISummary;
-        let bop: number;
+        let volatility: number;
 
         if (tendency != 0) {
             // Aroon
@@ -115,18 +114,21 @@ export class MarketState implements IMarketState {
 
 
 
-            // BOP - If the tendency hasn't been changed
+            // Volatility - If the tendency hasn't been changed
             if (tendency != 0) {
-                // Retrieve the current BOP
-                //bop = await this.bop(data.open, data.high, data.low, data.close);
+                // Retrieve the current Volatility
+                volatility = this.getAverageVolatility(data.high, data.low);
 
                 // Check if the tendency needs to be altered
+                if (volatility < 0.1 || volatility > 0.9) {
+                    tendency = 0;
+                }
                 //tendency = this.forecastTendencyByBOP(tendency, bop);
             }
         }
 
         // Log it if applies
-        if (this.verbose > 0 && tendency != 0) this.displayResult(tendency, pointsSummary, aroonSummary, foscSummary, rsiSummary, bop);
+        if (this.verbose > 0 && tendency != 0) this.displayResult(tendency, pointsSummary, aroonSummary, foscSummary, rsiSummary, volatility);
 
         // Return the final tendency
         return {result: tendency};
@@ -217,9 +219,13 @@ export class MarketState implements IMarketState {
             const change: number = _utils.calculatePercentageChange(ma[ma.length - (1 + cp)], ma[ma.length - 1], 4);
             
             /*if (typeof lastChange == "number") {
-                if (change > lastChange) { points.long += 1 }
-                else if (change < lastChange) { points.short += 1 }
-                else { points.neutral += 1 }
+                if (lastChange > 0) {
+                    if (change >= lastChange) { points.long += 1 }
+                    else { points.neutral += 1}
+                } else {
+                    if (change <= lastChange) { points.short += 1 }
+                    else { points.neutral += 1}
+                }
             } 
             
             // Make sure the change is greater than the dust amount
@@ -234,7 +240,7 @@ export class MarketState implements IMarketState {
             else { points.neutral += 1 }
 
             // Update the last change
-            //lastChange = change;
+            lastChange = change;
 
             // Append the change to the list
             points.changes.push(change);
@@ -459,7 +465,25 @@ export class MarketState implements IMarketState {
 
 
 
-    private forecastTendencyByBOP(tendency: ITendencyForecast, bop: number): ITendencyForecast {
+    private getAverageVolatility(high: number[], low: number[]): number {
+        // 
+        let changes: number[] = [];
+
+        for (let i = 0; i < high.length; i++) {
+            changes.push(_utils.calculatePercentageChange(low[i], high[i]));
+        }
+
+        return _utils.calculateAverage(changes);
+    } 
+
+
+
+
+
+
+
+
+    /*private forecastTendencyByBOP(tendency: ITendencyForecast, bop: number): ITendencyForecast {
 
         if (tendency == 1 && bop <= -0.75) {
             return 0;
@@ -474,19 +498,7 @@ export class MarketState implements IMarketState {
         else {
             return tendency;
         }
-    }
-
-
-
-
-
-
-
-    /* Aroon */
-
-
-
-
+    }*/
 
 
 
@@ -705,7 +717,7 @@ export class MarketState implements IMarketState {
      * @param aSummary
      * @param fSummary
      * @param rSummary
-     * @param bio
+     * @param volatility
      * @returns void
      */
      private displayResult(
@@ -714,7 +726,7 @@ export class MarketState implements IMarketState {
         aSummary: IAroonSummary|undefined,
         fSummary: IFOSCSummary|undefined,
         rSummary: IRSISummary|undefined,
-        bop: number|undefined,
+        volatility: number|undefined,
     ): void {
         console.log(' ');
         console.log(`Final: ${tendency} | L: ${pSummary.long} | S: ${pSummary.short} | N: ${pSummary.neutral} `);
@@ -733,8 +745,8 @@ export class MarketState implements IMarketState {
             console.log(`RSI Overbought: ${rSummary.overbought} | RSI Oversold: ${rSummary.oversold}`);
             if (this.verbose > 1 && this.verboseForecastDetails.includes('rsi')) console.log(rSummary.periods);
         }
-        if (bop) {
-            console.log(`BOP: ${bop}`);
+        if (volatility) {
+            console.log(`Volatility: ${volatility}`);
         }
     }
 }
