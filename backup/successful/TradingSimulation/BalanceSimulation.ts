@@ -67,8 +67,8 @@ export class BalanceSimulation implements IBalanceSimulation {
      * @leverageSpecs
      * These are the take profit / stop loss specifications based on the current leverage.
      */
-    private bankEnabled = true;
-    private bankDepositPercent = 3;
+    private bankEnabled = false;
+    private bankDepositPercent = 5;
     private leverage: number = 10;
     private leverageSpecs: ILeverageSpecs = {
         5: { takeProfit: 1.3, stopLoss: 1.5 },
@@ -300,7 +300,7 @@ export class BalanceSimulation implements IBalanceSimulation {
         this.canOpenPosition();
 
         // Check if a bank deposit has to be made
-        if (this.currentChange >= 150 && this.current > this.history[this.history.length - 1].previous && this.bankEnabled) this.makeBankDeposit();
+        if (this.currentChange >= 200 && this.bankEnabled) this.makeBankDeposit();
 
         // Set the current leverage
         this.leverage = this.getCurrentLeverage();
@@ -368,7 +368,7 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     private getCurrentLeverage(): number {
         // If the balance droped 30% stop the simulation
-        if (this.currentChange <= -20) {
+        if (this.currentChange <= -30) {
             throw new Error(`
                 Closing Balance: ${this.current.toString()}$ 
                 Bank Balance: ${this.bank.toNumber()}$

@@ -37,9 +37,7 @@ export class MarketState implements IMarketState {
     private readonly forecastRequirement: number = 100;
 
 
-    private readonly dust: number[] = [0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03];
-    //private readonly dust: number[] = [0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03];
-    //private readonly dust: number = 0.03;
+    private readonly dust: number = 0.03;
 
     
     /**
@@ -47,9 +45,7 @@ export class MarketState implements IMarketState {
      * Displays additional data of the process for debugging purposes.
      * DEFAULT: 0
      */
-     private readonly verbose: IVerbose = 2;
-     private readonly verboseForecastDetails: string[] = []
-     //private readonly verboseForecastDetails: string[] = ['ema', 'aroon', 'rsi', 'fosc']
+     private readonly verbose: IVerbose = 1;
      
 
 
@@ -81,7 +77,6 @@ export class MarketState implements IMarketState {
         let aroonSummary: IAroonSummary;
         let foscSummary: IFOSCSummary;
         let rsiSummary: IRSISummary;
-        let bop: number;
 
         if (tendency != 0) {
             // Aroon
@@ -112,21 +107,10 @@ export class MarketState implements IMarketState {
                 // Check if the tendency needs to be altered
                 tendency = this.forecastTendencyByFOSCSummary(tendency, foscSummary);
             }
-
-
-
-            // BOP - If the tendency hasn't been changed
-            if (tendency != 0) {
-                // Retrieve the current BOP
-                //bop = await this.bop(data.open, data.high, data.low, data.close);
-
-                // Check if the tendency needs to be altered
-                //tendency = this.forecastTendencyByBOP(tendency, bop);
-            }
         }
 
         // Log it if applies
-        if (this.verbose > 0 && tendency != 0) this.displayResult(tendency, pointsSummary, aroonSummary, foscSummary, rsiSummary, bop);
+        if (this.verbose > 0 && tendency != 0) this.displayResult(tendency, pointsSummary, aroonSummary, foscSummary, rsiSummary);
 
         // Return the final tendency
         return {result: tendency};
@@ -160,25 +144,13 @@ export class MarketState implements IMarketState {
 
     private buildMovingAveragesPointsSummary(mas: IMovingAverages): IMovingAveragesPointsSummary {
         // Init the final points
-        let finalPoints: IMovingAveragesPoints = { long: 0, short: 0, neutral: 0, changes: []};
+        let finalPoints: IMovingAveragesPoints = { long: 0, short: 0, neutral: 0};
 
         // Init the points by period
         let pointsByPeriod: IMovingAveragesPoints[] = [];
 
         // Iterate over each MA
-        for (let i = 0; i < mas.length; i++) {
-            // Build the points
-            const points: IMovingAveragesPoints = this.buildPointsForPeriod(mas[i], this.dust[i]);
-
-            // Increment the points counter
-            finalPoints.long += points.long;
-            finalPoints.short += points.short;
-            finalPoints.neutral += points.neutral;
-
-            // Append the points to the period list
-            pointsByPeriod.push(points);
-        }
-        /*for (let ma of mas) {
+        for (let ma of mas) {
             // Build the points
             const points: IMovingAveragesPoints = this.buildPointsForPeriod(ma);
 
@@ -189,7 +161,7 @@ export class MarketState implements IMarketState {
 
             // Append the points to the period list
             pointsByPeriod.push(points);
-        }*/
+        }
 
         // Return the points summary
         return {
@@ -206,41 +178,22 @@ export class MarketState implements IMarketState {
 
 
 
-    private buildPointsForPeriod(ma: number[], dust: number): IMovingAveragesPoints {
+    private buildPointsForPeriod(ma: number[]): IMovingAveragesPoints {
         // Init points
-        let points: IMovingAveragesPoints = { long: 0, short: 0, neutral: 0, changes: []};
+        let points: IMovingAveragesPoints = { long: 0, short: 0, neutral: 0};
 
         // Iterate over each change period and compare
-        let lastChange: number;
         for (let cp of this.changePeriods) {
             // Calculate change
             const change: number = _utils.calculatePercentageChange(ma[ma.length - (1 + cp)], ma[ma.length - 1], 4);
             
-            /*if (typeof lastChange == "number") {
-                if (change > lastChange) { points.long += 1 }
-                else if (change < lastChange) { points.short += 1 }
-                else { points.neutral += 1 }
-            } 
-            
-            // Make sure the change is greater than the dust amount
-            else {
-                if (change >= dust) { points.long += 1 }
-                else if (change <= -(dust)) { points.short += 1 }
-                else { points.neutral += 1 }
-            }*/
-
-            if (change >= dust) { points.long += 1 }
-            else if (change <= -(dust)) { points.short += 1 }
+            // Check the type of change
+            if (change >= this.dust) { points.long += 1 }
+            else if (change <= -(this.dust)) { points.short += 1 }
             else { points.neutral += 1 }
-
-            // Update the last change
-            //lastChange = change;
-
-            // Append the change to the list
-            points.changes.push(change);
         }
 
-        // Return the points
+        // return the points
         return points;
     }
 
@@ -459,40 +412,6 @@ export class MarketState implements IMarketState {
 
 
 
-    private forecastTendencyByBOP(tendency: ITendencyForecast, bop: number): ITendencyForecast {
-
-        if (tendency == 1 && bop <= -0.75) {
-            return 0;
-        }
-
-        else if (tendency == -1 && bop >= 0.75) {
-            return 0;
-        }
-
-        
-        
-        else {
-            return tendency;
-        }
-    }
-
-
-
-
-
-
-
-    /* Aroon */
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -540,32 +459,6 @@ export class MarketState implements IMarketState {
 
 
 
-    /**
-     * Aroon
-     * The Aroon indicator calculates two results: aroon-down and aroon-up. In combination, 
-     * they can help determine when a trend is developing. It takes one parameter: period n.
-     * https://tulipindicators.org/aroon
-     * @param high 
-     * @param low 
-     * @param period 
-     * @returns 
-     */
-    private async aroon(high: number[], low: number[], period?: number): Promise<[number[], number[]]> {
-        // Caclulate the aroonosc
-        const aroon: [number[], number[]] = await tulind.indicators.aroon.indicator([high, low], [
-            typeof period == "number" ? period: 5
-        ]);
-        
-        // Return the results
-        return aroon;
-    }
-
-
-
-
-
-
-
 
     /**
      * Relative Strength Index
@@ -590,17 +483,6 @@ export class MarketState implements IMarketState {
 
 
 
-
-
-    /**
-     * Forecast Oscillator
-     * The Forecast Oscillator is used to show how closely the price is tracking a linear regression forecast.
-     * Forecast Oscillator takes on parameter, the period n, which is passed to the Time Series Forecast 
-     * function used in it's calculation.
-     * @param close 
-     * @param period 
-     * @returns 
-     */
      private async fosc(close: number[], period?: number): Promise<number[]> {
         // Caclulate the fosc
         const fosc: [number[]] = await tulind.indicators.fosc.indicator([close], [
@@ -614,17 +496,39 @@ export class MarketState implements IMarketState {
 
 
 
+    /**
+     * Aroon Oscillator
+     * The Aroon Oscillator indicator can help determine when the market is developing a trend.
+     * https://tulipindicators.org/aroonosc
+     * @param high 
+     * @param low 
+     * @param period? 
+     * @returns Promise<number[]>
+     */
+    /*private async aroonosc(high: number[], low: number[], period?: number): Promise<number[]> {
+        // Caclulate the aroonosc
+        const aroonosc: [number[]] = await tulind.indicators.aroonosc.indicator([high, low], [
+            typeof period == "number" ? period: 5
+        ]);
+
+        // Return the results
+        return aroonosc[0];
+    }*/
 
 
 
 
 
-    private async bop(open: number[], high: number[], low: number[], close: number[]): Promise<number> {
-        // Caclulate the bop
-        const bop: [number[]] = await tulind.indicators.bop.indicator([open, high, low, close], []);
 
-        // Return the current
-        return bop[0][bop[0].length - 1];
+
+    private async aroon(high: number[], low: number[], period?: number): Promise<[number[], number[]]> {
+        // Caclulate the aroonosc
+        const aroon: [number[], number[]] = await tulind.indicators.aroon.indicator([high, low], [
+            typeof period == "number" ? period: 5
+        ]);
+        
+        // Return the results
+        return aroon;
     }
 
 
@@ -634,6 +538,15 @@ export class MarketState implements IMarketState {
 
 
 
+    private async adx(high: number[], low: number[], close: number[], period?: number): Promise<number[]> {
+       // Caclulate the adx
+       const adx: [number[]] = await tulind.indicators.adx.indicator([high, low, close], [
+           typeof period == "number" ? period: 5,
+       ]);
+
+       // Return the results
+       return adx[0];
+   }
 
 
 
@@ -644,7 +557,37 @@ export class MarketState implements IMarketState {
 
 
 
+    /**
+     * Ultimate Oscillator
+     * The Ultimate Oscillator is really a combination of three separate oscillators, each using a 
+     * different smoothing period.
+     * https://tulipindicators.org/stochrsi
+     * @param high 
+     * @param low 
+     * @param close 
+     * @param shortPeriod? 
+     * @param mediumPeriod? 
+     * @param longPeriod? 
+     * @returns Promise<number[]>
+     */
+     private async ultosc(
+         high: number[], 
+         low: number[], 
+         close: number[], 
+         shortPeriod?: number,
+         mediumPeriod?: number,
+         longPeriod?: number,
+    ): Promise<number[]> {
+        // Caclulate the ultosc
+        const ultosc: [number[]] = await tulind.indicators.ultosc.indicator([high, low, close], [
+            typeof shortPeriod == "number" ? shortPeriod: 2,
+            typeof mediumPeriod == "number" ? mediumPeriod: 3,
+            typeof longPeriod == "number" ? longPeriod: 5,
+        ]);
 
+        // Return the results
+        return ultosc[0];
+    }
 
 
 
@@ -675,7 +618,7 @@ export class MarketState implements IMarketState {
 
         // Iterate over the entire candlestick series and populate each property
         for (let item of series) {
-            spanSeries.open.push(Number(item[1]));
+            //spanSeries.open.push(Number(item[1]));
             spanSeries.high.push(Number(item[2]));
             spanSeries.low.push(Number(item[3]));
             spanSeries.close.push(Number(item[4]));
@@ -705,7 +648,6 @@ export class MarketState implements IMarketState {
      * @param aSummary
      * @param fSummary
      * @param rSummary
-     * @param bio
      * @returns void
      */
      private displayResult(
@@ -714,27 +656,20 @@ export class MarketState implements IMarketState {
         aSummary: IAroonSummary|undefined,
         fSummary: IFOSCSummary|undefined,
         rSummary: IRSISummary|undefined,
-        bop: number|undefined,
     ): void {
         console.log(' ');
         console.log(`Final: ${tendency} | L: ${pSummary.long} | S: ${pSummary.short} | N: ${pSummary.neutral} `);
-        if (this.verbose > 1 && this.verboseForecastDetails.includes('ema')) {
-            console.log(pSummary.periods);
-        }
         if (aSummary) {
             console.log(`Aroon Low: ${aSummary.lowPercent}% | Aroon High: ${aSummary.highPercent}%`);
-            if (this.verbose > 1 && this.verboseForecastDetails.includes('aroon')) console.log(aSummary.periods);
+            if (this.verbose > 1) console.log(aSummary.periods);
         }
         if (fSummary) {
             console.log(`FOSC Long: ${fSummary.longPercentage}% | FOSC Short: ${fSummary.shortPercentage}%`);
-            if (this.verbose > 1 && this.verboseForecastDetails.includes('fosc')) console.log(fSummary.periods);
+            if (this.verbose > 1) console.log(fSummary.periods);
         }
         if (rSummary) {
             console.log(`RSI Overbought: ${rSummary.overbought} | RSI Oversold: ${rSummary.oversold}`);
-            if (this.verbose > 1 && this.verboseForecastDetails.includes('rsi')) console.log(rSummary.periods);
-        }
-        if (bop) {
-            console.log(`BOP: ${bop}`);
+            if (this.verbose > 1) console.log(rSummary.periods);
         }
     }
 }

@@ -142,15 +142,6 @@ export class TradingSimulation implements ITradingSimulation {
 
 
 
-
-    /**
-     * 
-     */
-    private lastUnsuccessfulLongs: number = 0;
-    private lastUnsuccessfulShorts: number = 0;
-    private unsuccessfulInARow: number = 0;
-
-
     /**
      * @verbose
      * Displays additional data of the process for debugging purposes.
@@ -301,25 +292,7 @@ export class TradingSimulation implements ITradingSimulation {
                     const forecast: IForecastResult = await this.forecast.forecast(this.processingSeries);
 
                     // Check if a position can be opened
-                    let canOpenPosition: boolean = this.canOpenPosition(forecast.result);
-                    if (canOpenPosition) { 
-                        /*// If it is a long and has lost several in a row, interrupt the position and activate meditation
-                        if (
-                            //(forecast.result == 1 && this.lastUnsuccessfulLongs >= 2) ||
-                            //(forecast.result == -1 && this.lastUnsuccessfulShorts >= 2)
-                            this.unsuccessfulInARow >= 3
-                        ) {
-                            canOpenPosition = false;
-                            //this.lastUnsuccessfulLongs = 0;
-                            //this.lastUnsuccessfulShorts = 0;
-                            this.unsuccessfulInARow = 0;
-                            console.log(`Activating meditation in order to stop losing streak.`);
-                            this.activateMeditation(currentItem[6], true);
-                        }*/
-
-                        // Open the position
-                        if (canOpenPosition) this.openPosition(forecast, currentItem) 
-                    }
+                    if (this.canOpenPosition(forecast.result)) { this.openPosition(forecast, currentItem) }
 
                     // Otherwise, stand neutral
                     else {
@@ -348,17 +321,6 @@ export class TradingSimulation implements ITradingSimulation {
             }
         }
     }
-
-
-
-
-
-
-    
-
-
-
-
 
 
 
@@ -530,10 +492,6 @@ export class TradingSimulation implements ITradingSimulation {
             } else {
                 this.successfulShorts += 1;
             }
-
-            //this.lastUnsuccessfulLongs = 0;
-            //this.lastUnsuccessfulShorts = 0;
-            //this.unsuccessfulInARow = 0;
         } else {
             // Update general counters
             this.unsuccessful += 1;
@@ -541,15 +499,9 @@ export class TradingSimulation implements ITradingSimulation {
             // Update specific type counters
             if (this.activePosition.type == 'long') {
                 this.unsuccessfulLongs += 1;
-                //this.lastUnsuccessfulLongs += 1;
-                //this.lastUnsuccessfulShorts = 0;
             } else {
                 this.unsuccessfulShorts += 1;
-                //this.lastUnsuccessfulShorts += 1;
-                //this.lastUnsuccessfulLongs = 0;
             }
-
-            //this.unsuccessfulInARow += 1;
         }
 
         // Log it if applies
@@ -626,15 +578,10 @@ export class TradingSimulation implements ITradingSimulation {
     /**
      * Puts the simulation into meditation on position close.
      * @param closeTimestamp 
-     * @param extended? 
      * @returns void
      */
-    private activateMeditation(closeTimestamp: number, extended? : boolean): void {
-        if (extended) {
-            this.meditationEnds = moment(closeTimestamp).add(this.meditationMinutes*30, "minutes").valueOf();
-        } else {
-            this.meditationEnds = moment(closeTimestamp).add(this.meditationMinutes, "minutes").valueOf();
-        }
+    private activateMeditation(closeTimestamp: number): void {
+        this.meditationEnds = moment(closeTimestamp).add(this.meditationMinutes, "minutes").valueOf();
     }
 
 

@@ -35,8 +35,7 @@ export interface IMovingAveragesPointsSummary {
 export interface IMovingAveragesPoints {
     long: number,
     short: number,
-    neutral: number,
-    changes: number[]
+    neutral: number
 }
 
 
@@ -79,11 +78,6 @@ export interface IRSISummary {
     oversold: boolean,
     periods: number[]
 }
-
-
-
-
-
 
 
 
