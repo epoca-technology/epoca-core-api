@@ -2,7 +2,7 @@
 import "reflect-metadata";
 import {appContainer} from '../../src/ioc';
 import {BigNumber} from 'bignumber.js';
-import { ICandlestickSeries, IPriceSeries, SYMBOLS } from "../../src/types";
+import { ICandlestickSeries, SYMBOLS } from "../../src/types";
 
 
 // Init service
@@ -118,7 +118,7 @@ describe('Number Handling:', function() {
 describe('List Filtering:', function() {
     it('-Can build a new list from a series with a specific key or index.', function() {
         // Init list
-        const series: IPriceSeries = [
+        const series: number[][] = [
             [
                 1635206400000,
                 63228.21382584213

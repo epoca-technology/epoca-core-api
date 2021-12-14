@@ -1,6 +1,5 @@
 import {appContainer} from "../../../src/ioc";
 import { SYMBOLS, ICandlestickSeries, ICandlestickSeriesItem, IVerbose } from "../../types";
-import { IForecast, ITendencyForecastExtended, Forecast, IForecastResult } from "../Forecast";
 import { BalanceSimulation } from "./BalanceSimulation";
 import { 
     ITendencyForecastRequired, 
@@ -19,7 +18,12 @@ import * as moment from 'moment';
 
 // Init Utilities Service
 import { IUtilitiesService } from "../../../src/modules/shared/utilities";
-const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
+const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
+
+// Init Forecast Service
+import { IForecastService, ITendencyForecast, IForecastResult } from "../../../src/modules/shared/forecast";
+const _forecast: IForecastService = appContainer.get<IForecastService>(SYMBOLS.ForecastService);
+
 
 
 export class TradingSimulation implements ITradingSimulation {
@@ -40,9 +44,6 @@ export class TradingSimulation implements ITradingSimulation {
     private processingSeries: ICandlestickSeries;
 
 
-
-    // Forecast Class
-    private readonly forecast: IForecast;
 
 
     // Balance Class
@@ -172,9 +173,6 @@ export class TradingSimulation implements ITradingSimulation {
         // Initialize the processing series
         this.processingSeries = this.series.slice(0, this.windowSize);
 
-        // Initialize the forecast
-        this.forecast = new Forecast(config.forecastConfig);
-
         // Initialize the balance
         this.balance = new BalanceSimulation(config.balanceConfig);
     }
@@ -298,13 +296,13 @@ export class TradingSimulation implements ITradingSimulation {
                 // Based on the forecast decision, open a position if applies
                 else {
                     // Retrieve the forecast
-                    let forecast: IForecastResult = await this.forecast.forecast(this.processingSeries);
+                    let forecast: IForecastResult = await _forecast.forecast(this.processingSeries);
 
                     // Check if a position can be opened
                     let canOpenPosition: boolean = this.canOpenPosition(forecast.result);
                     if (canOpenPosition) { 
                         // If it is a long and has lost several in a row, interrupt the position and activate meditation
-                        /*if (
+                        if (
                             (forecast.result == 1 && this.lastUnsuccessfulLongs >= 3) ||
                             (forecast.result == -1 && this.lastUnsuccessfulShorts >= 3)
                             //this.unsuccessfulInARow >= 3
@@ -315,8 +313,8 @@ export class TradingSimulation implements ITradingSimulation {
                             //this.unsuccessfulInARow = 0;
                             //forecast.result = forecast.result == 1 ? -1: 1;
                             console.log(`Activating meditation in order to stop losing streak.`);
-                            //this.activateMeditation(currentItem[6]);
-                        }*/
+                            this.activateMeditation(currentItem[6], true);
+                        }
 
                         // Open the position
                         if (canOpenPosition) this.openPosition(forecast, currentItem) 
@@ -578,7 +576,7 @@ export class TradingSimulation implements ITradingSimulation {
      * @param forecastResult 
      * @returns returns boolean
      */
-    private canOpenPosition(forecastResult: ITendencyForecastExtended): boolean {
+    private canOpenPosition(forecastResult: ITendencyForecast): boolean {
         // If it is equals or greater than the long requirement it can open a position.
         if (forecastResult >= this.tendencyForecastRequired.long) {
             return true;
@@ -632,7 +630,7 @@ export class TradingSimulation implements ITradingSimulation {
      */
     private activateMeditation(closeTimestamp: number, extended? : boolean): void {
         if (extended) {
-            this.meditationEnds = moment(closeTimestamp).add(this.meditationMinutes*30, "minutes").valueOf();
+            this.meditationEnds = moment(closeTimestamp).add(this.meditationMinutes*10, "minutes").valueOf();
         } else {
             this.meditationEnds = moment(closeTimestamp).add(this.meditationMinutes, "minutes").valueOf();
         }

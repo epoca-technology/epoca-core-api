@@ -274,7 +274,7 @@ export class UtilitiesService implements IUtilitiesService {
      * @returns string
      */
      public toDateString(timestamp: number): string {
-        return moment(timestamp).format("DD/MM/YYYY hh:mm:ss");
+        return moment(timestamp).format("DD/MM/YYYY HH:mm:ss");
     }
 
 

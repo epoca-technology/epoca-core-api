@@ -69,10 +69,10 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     private bankEnabled = true;
     private bankDepositPercent = 3;
-    private leverage: number = 10;
+    private leverage: number = 2;
     private leverageSpecs: ILeverageSpecs = {
-        5: { takeProfit: 1.3, stopLoss: 1.5 },
-        10: { takeProfit: 1.3, stopLoss: 1.5 },
+        2: { takeProfit: 3, stopLoss: 4 },
+        10: { takeProfit: 3, stopLoss: 4 },
     }
 
 
@@ -368,7 +368,7 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     private getCurrentLeverage(): number {
         // If the balance droped 30% stop the simulation
-        if (this.currentChange <= -20) {
+        if (this.currentChange <= -15) {
             throw new Error(`
                 Closing Balance: ${this.current.toString()}$ 
                 Bank Balance: ${this.bank.toNumber()}$

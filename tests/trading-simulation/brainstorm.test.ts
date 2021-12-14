@@ -24,35 +24,8 @@ describe('', function() {
     it('-', async function() {
         try {
             const ts: ITradingSimulation = new TradingSimulation({
-                series: getCandlestickSeries('8000_m'),
-                //windowSize: 720, // 1 month
-                //windowSize: 2000,
-                windowSize: 1000,
-                //windowSize: 500,
-                //windowSize: 400,
-                //windowSize: 300,
-                //windowSize: 200,
-                forecastConfig: {
-                    tulipConfig: {
-                        maDust: 0.1,
-                        maPeriods: {
-                            MA1: 7,
-                            MA2: 25,
-                            MA3: 60
-                        },
-                        spanImportance: {
-                            oneMonth: 1,
-                            twoWeeks: 1,
-                            oneWeek: 1,
-                            threeDays: 3,
-                        },
-                        verbose: 2,
-                    },
-                    arimaConfig: {
-                        verbose: 0
-                    },
-                    verbose: 0
-                },
+                series: getCandlestickSeries('100000'),
+                windowSize: 750,
                 balanceConfig: {
                     initial: 10000,
                     borrowInterestPercent: 0.02,
@@ -60,7 +33,7 @@ describe('', function() {
                     minimumPositionAmount: 80,
                     verbose: 1
                 },
-                meditationMinutes: 60,
+                meditationMinutes: 30,
                 verbose: 1,
             });
             const result: ITradingSimulationResult = await ts.run();

@@ -84,7 +84,8 @@ export interface IAPIError {
  export const SYMBOLS: ISymbols = {
 
 
-
+    // Forecast
+    ForecastService: Symbol.for("ForecastService"),
 
     // Binance
     BinanceService: Symbol.for("BinanceService"),
@@ -98,6 +99,7 @@ export interface IAPIError {
 
 export interface ISymbols {
 
+    ForecastService: symbol,
     BinanceService: symbol,
     UtilitiesService: symbol,
     ExternalRequest: symbol,

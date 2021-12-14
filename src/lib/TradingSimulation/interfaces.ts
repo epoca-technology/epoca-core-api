@@ -1,4 +1,4 @@
-import { IForecastConfig, IForecastResult } from "../Forecast";
+import { IForecastResult } from "../../../src/modules/shared/forecast";
 import { ICandlestickSeries, IVerbose } from "../../../src/types";
 import {BigNumber} from "bignumber.js";
 
@@ -13,7 +13,6 @@ export interface ITradingSimulation {
 // Class Config
 export interface ITradingSimulationConfig {
     series: ICandlestickSeries,
-    forecastConfig: IForecastConfig,
     balanceConfig: IBalanceSimulationConfig,
     windowSize?: number,
     tendencyForecastRequired?: ITendencyForecastRequired,
