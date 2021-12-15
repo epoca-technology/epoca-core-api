@@ -54,7 +54,7 @@ prompt.get(['interval', 'itemsQuantity'], async (e: any, data: prompt.Properties
     // Check if it needs to look for more candlesticks in the past
     while (series.length < itemsQuantity) {
         // Allow a small delay to prevent Binance from blocking the IP
-        await _utils.asyncDelay(15);
+        await _utils.asyncDelay(30);
 
         /**
          * Check the limit that should be set.

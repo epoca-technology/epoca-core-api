@@ -18,6 +18,9 @@ export class ForecastService implements IForecastService {
 
 
 
+    private readonly dustAmount: number = 0.7;
+
+
     constructor() {}
 
 
@@ -61,13 +64,21 @@ export class ForecastService implements IForecastService {
             series,
             series.slice(this._utils.alterNumberByPercentage(series.length, -95, 0, true)),
             series.slice(this._utils.alterNumberByPercentage(series.length, -90, 0, true)),
+            series.slice(this._utils.alterNumberByPercentage(series.length, -85, 0, true)),
             series.slice(this._utils.alterNumberByPercentage(series.length, -80, 0, true)),
+            series.slice(this._utils.alterNumberByPercentage(series.length, -75, 0, true)),
             series.slice(this._utils.alterNumberByPercentage(series.length, -70, 0, true)),
+            series.slice(this._utils.alterNumberByPercentage(series.length, -65, 0, true)),
             series.slice(this._utils.alterNumberByPercentage(series.length, -60, 0, true)),
+            series.slice(this._utils.alterNumberByPercentage(series.length, -55, 0, true)),
             series.slice(this._utils.alterNumberByPercentage(series.length, -50, 0, true)),
+            series.slice(this._utils.alterNumberByPercentage(series.length, -45, 0, true)),
             series.slice(this._utils.alterNumberByPercentage(series.length, -40, 0, true)),
+            series.slice(this._utils.alterNumberByPercentage(series.length, -35, 0, true)),
             series.slice(this._utils.alterNumberByPercentage(series.length, -30, 0, true)),
+            series.slice(this._utils.alterNumberByPercentage(series.length, -25, 0, true)),
             series.slice(this._utils.alterNumberByPercentage(series.length, -20, 0, true)),
+            series.slice(this._utils.alterNumberByPercentage(series.length, -15, 0, true)),
             series.slice(this._utils.alterNumberByPercentage(series.length, -10, 0, true)),
             series.slice(this._utils.alterNumberByPercentage(series.length, -5, 0, true)),
         ];
@@ -122,27 +133,42 @@ export class ForecastService implements IForecastService {
 
         // Iterate over the changes and classify them
         for (let change of changes) {
-            if (change > 0) { long += 1 }
-            else if (change < 0) { short += 1 }
+            if (change > this.dustAmount) { long += 1 }
+            else if (change < -(this.dustAmount)) { short += 1 }
             else { neutral += 1 }
         }
 
         // Calculate the total amount of counters
         const total: number = long + short + neutral;
 
+        // Initialize the tendency
+        let tendency: ITendencyForecast = 0;
+
         // If the market is high, place a short
-        if (this._utils.getPercentageOutOfTotal(long, total) >= 90) {
+        if (
+            this._utils.getPercentageOutOfTotal(long, total) >= 95 &&
+            changes[changes.length -1] >= changes[changes.length - 2] &&
+            changes[changes.length -2] >= changes[changes.length - 3] &&
+            changes[changes.length -3] >= changes[changes.length - 4] &&
+            changes[changes.length -4] >= changes[changes.length - 5]
+        ) {
             return -1;
         }
 
         // If the market is low, place a long
-        else if (this._utils.getPercentageOutOfTotal(short, total) >= 90) {
+        else if (
+            this._utils.getPercentageOutOfTotal(short, total) >= 95 &&
+            changes[changes.length -1] <= changes[changes.length - 2] &&
+            changes[changes.length -2] <= changes[changes.length - 3] &&
+            changes[changes.length -3] <= changes[changes.length - 4] &&
+            changes[changes.length -4] <= changes[changes.length - 5]
+        ) {
             return 1;
         }
 
 
-        // Otherwise, stand neutral
-        return 0;
+        // Return the final tendency
+        return tendency;
     }
 
 

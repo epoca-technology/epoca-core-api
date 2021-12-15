@@ -24,8 +24,8 @@ describe('', function() {
     it('-', async function() {
         try {
             const ts: ITradingSimulation = new TradingSimulation({
-                series: getCandlestickSeries('100000'),
-                windowSize: 750,
+                series: getCandlestickSeries('100000_ETH'),
+                windowSize: 1000,
                 balanceConfig: {
                     initial: 10000,
                     borrowInterestPercent: 0.02,
@@ -33,7 +33,7 @@ describe('', function() {
                     minimumPositionAmount: 80,
                     verbose: 1
                 },
-                meditationMinutes: 30,
+                meditationMinutes: 0,
                 verbose: 1,
             });
             const result: ITradingSimulationResult = await ts.run();

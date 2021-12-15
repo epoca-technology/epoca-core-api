@@ -302,7 +302,7 @@ export class TradingSimulation implements ITradingSimulation {
                     let canOpenPosition: boolean = this.canOpenPosition(forecast.result);
                     if (canOpenPosition) { 
                         // If it is a long and has lost several in a row, interrupt the position and activate meditation
-                        if (
+                        /*if (
                             (forecast.result == 1 && this.lastUnsuccessfulLongs >= 3) ||
                             (forecast.result == -1 && this.lastUnsuccessfulShorts >= 3)
                             //this.unsuccessfulInARow >= 3
@@ -314,7 +314,7 @@ export class TradingSimulation implements ITradingSimulation {
                             //forecast.result = forecast.result == 1 ? -1: 1;
                             console.log(`Activating meditation in order to stop losing streak.`);
                             this.activateMeditation(currentItem[6], true);
-                        }
+                        }*/
 
                         // Open the position
                         if (canOpenPosition) this.openPosition(forecast, currentItem) 
