@@ -94,7 +94,10 @@ export interface IAPIError {
     UtilitiesService: Symbol.for("UtilitiesService"),
 
     // External Request
-    ExternalRequest: Symbol.for("ExternalRequest"),
+    ExternalRequestService: Symbol.for("ExternalRequestService"),
+
+    // Database Service
+    DatabaseService: Symbol.for("DatabaseService"),
 }
 
 export interface ISymbols {
@@ -102,7 +105,8 @@ export interface ISymbols {
     ForecastService: symbol,
     BinanceService: symbol,
     UtilitiesService: symbol,
-    ExternalRequest: symbol,
+    ExternalRequestService: symbol,
+    DatabaseService: symbol,
 }
 
 

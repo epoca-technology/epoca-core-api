@@ -24,7 +24,7 @@ describe('', function() {
     it('-', async function() {
         try {
             const ts: ITradingSimulation = new TradingSimulation({
-                series: getCandlestickSeries('100000_ETH'),
+                series: getCandlestickSeries('200000'),
                 windowSize: 1000,
                 balanceConfig: {
                     initial: 10000,

@@ -69,9 +69,9 @@ describe('Number Handling:', function() {
 
 
     it('-Can get the percent out of a number total', function() {
-        expect(_utils.getPercentageOutOfTotal(50, 100)).toEqual(50);
-        expect(_utils.getPercentageOutOfTotal(100, 1000)).toEqual(10);
-        expect(_utils.getPercentageOutOfTotal(30, 100)).toEqual(30);
+        expect(_utils.calculatePercentageOutOfTotal(50, 100)).toEqual(50);
+        expect(_utils.calculatePercentageOutOfTotal(100, 1000)).toEqual(10);
+        expect(_utils.calculatePercentageOutOfTotal(30, 100)).toEqual(30);
     });
 
 
@@ -96,6 +96,15 @@ describe('Number Handling:', function() {
         expect(_utils.getRoundingMode()).toEqual(1);
         expect(_utils.getRoundingMode(false)).toEqual(1);
         expect(_utils.getRoundingMode(true)).toEqual(0);
+    });
+
+
+
+    it('-Can retrieve a BigNumber from a number, string or BigNumber Instance', function() {
+        expect(_utils.getBigNumber(100).toNumber()).toEqual(100);
+        expect(_utils.getBigNumber('100').toNumber()).toEqual(100);
+        const bn: BigNumber = new BigNumber(100.55);
+        expect(_utils.getBigNumber(bn).toNumber()).toEqual(100.55);
     });
 });
 

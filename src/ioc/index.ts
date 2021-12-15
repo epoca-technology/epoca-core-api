@@ -7,8 +7,9 @@ import { environment } from "../environment";
 // Modules
 import { forecastModule } from "../modules/shared/forecast";
 import { binanceModule } from "../modules/shared/binance";
-import { externalRequestModule } from "../modules/shared/external-request";
 import { utilitiesModule } from "../modules/shared/utilities";
+import { externalRequestModule } from "../modules/shared/external-request";
+import { databaseModule } from "../modules/shared/database";
 
 
 // Initialize Inversify
@@ -26,11 +27,14 @@ appContainer.load(
     // Binance
     binanceModule,
 
+    // Utilities
+    utilitiesModule,
+
     // External Request
     externalRequestModule,
 
-    // Utilities
-    utilitiesModule,
+    // Database
+    databaseModule,
 );
 
 

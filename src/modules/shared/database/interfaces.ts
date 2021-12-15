@@ -1,0 +1,13 @@
+
+
+
+// Service
+export interface IDatabaseService {
+    
+
+
+
+}
+
+
+

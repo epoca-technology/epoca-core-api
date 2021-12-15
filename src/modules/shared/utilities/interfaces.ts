@@ -5,17 +5,18 @@ export interface IUtilitiesService {
 
 
     // Numbers
-    calculateAverage(numberSeries: number[], decimalPlaces?: number, roundUp?: boolean): number,
-    alterNumberByPercentage(value: string|number|BigNumber, percent: number, decimalPlaces?: number, roundUp?: boolean): number,
-    calculatePercentageChange(oldNumber: number, newNumber: number, decimalPlaces?: number, roundUp?: boolean): number,
-    getPercentageOutOfTotal(value: number, total: number, decimalPlaces?: number, roundUp?: boolean): number,
-    calculateFee(value: number|BigNumber, feePercentage: number, decimalPlaces?: number, roundUp?: boolean): number,
-    roundNumber(value: BigNumber|string|number, decimalPlaces?: number, roundUp?: boolean): number,
+    calculateAverage(numberSeries: INumber[], decimalPlaces?: number, roundUp?: boolean): number,
+    alterNumberByPercentage(value: INumber, percent: number, decimalPlaces?: number, roundUp?: boolean): number,
+    calculatePercentageChange(oldNumber: INumber, newNumber: INumber, decimalPlaces?: number, roundUp?: boolean): number,
+    calculatePercentageOutOfTotal(value: INumber, total: INumber, decimalPlaces?: number, roundUp?: boolean): number,
+    calculateFee(value: INumber, feePercentage: number, decimalPlaces?: number, roundUp?: boolean): number,
+    roundNumber(value: INumber, decimalPlaces?: number, roundUp?: boolean): number,
     getDecimalPlaces(decimalPlaces?: number): number,
     getRoundingMode(roundUp?: boolean): BigNumber.RoundingMode,
+    getBigNumber(value: INumber): BigNumber,
 
     // List Filtering
-    filterList(list: any[], keyOrIndex: string|number, changeFormat?: IFilterListChangeFormat, decimalPlaces?: number): any[],
+    filterList(list: any[], keyOrIndex: string|number, changeFormat?: IFilterListChangeFormat, decimalPlaces?: number, roundUp?: boolean): any[],
 
     // Dates
     toDateString(timestamp: number): string,
@@ -30,5 +31,13 @@ export interface IUtilitiesService {
 
 
 
+
+// Number Format
+export type INumber = number|string|BigNumber;
+
+
+
 // Format changing
 export type IFilterListChangeFormat = 'toString'|'toNumber';
+
+

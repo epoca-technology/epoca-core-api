@@ -102,7 +102,7 @@ export class ForecastService implements IForecastService {
     private getPeriodChanges(periods: ICandlestickSeries[]): number[] { 
         let changes: number[] = [];
         for (let period of periods) {
-            changes.push(this._utils.calculatePercentageChange(Number(period[0][4]), Number(period[period.length -1][4])));
+            changes.push(this._utils.calculatePercentageChange(period[0][4], period[period.length -1][4]));
         }
         return changes;
     }
@@ -146,7 +146,7 @@ export class ForecastService implements IForecastService {
 
         // If the market is high, place a short
         if (
-            this._utils.getPercentageOutOfTotal(long, total) >= 95 &&
+            this._utils.calculatePercentageOutOfTotal(long, total) >= 95 &&
             changes[changes.length -1] >= changes[changes.length - 2] &&
             changes[changes.length -2] >= changes[changes.length - 3] &&
             changes[changes.length -3] >= changes[changes.length - 4] &&
@@ -157,7 +157,7 @@ export class ForecastService implements IForecastService {
 
         // If the market is low, place a long
         else if (
-            this._utils.getPercentageOutOfTotal(short, total) >= 95 &&
+            this._utils.calculatePercentageOutOfTotal(short, total) >= 95 &&
             changes[changes.length -1] <= changes[changes.length - 2] &&
             changes[changes.length -2] <= changes[changes.length - 3] &&
             changes[changes.length -3] <= changes[changes.length - 4] &&

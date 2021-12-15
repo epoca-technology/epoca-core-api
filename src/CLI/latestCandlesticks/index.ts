@@ -16,7 +16,7 @@ const _binance: IBinanceService = appContainer.get<IBinanceService>(SYMBOLS.Bina
 
 // Initialize
 console.log('LATEST CANDLESTICKS');
-console.log('@param interval? // Defaults to 1h')
+console.log('@param interval? // Defaults to 1m')
 console.log('@param itemsQuantity? // Defaults to 1000');
 console.log(' ');
 console.log('The json file will be placed inside of test_candlesticks within the root directory');
@@ -29,7 +29,7 @@ const d: {
     interval: ICandlestickSeriesInterval,
     itemsQuantity: number
 } = {
-    interval: '1h',
+    interval: '1m',
     itemsQuantity: 1000,
 }
 

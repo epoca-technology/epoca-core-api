@@ -218,7 +218,7 @@ export class TradingSimulation implements ITradingSimulation {
             unsuccessful: this.unsuccessful,
             neutral: this.neutral,
             whileMeditating: this.whileMeditating,
-            successRate: _utils.getPercentageOutOfTotal(this.successful, this.positions.length),
+            successRate: _utils.calculatePercentageOutOfTotal(this.successful, this.positions.length),
 
             /* Balance */
 
@@ -240,13 +240,13 @@ export class TradingSimulation implements ITradingSimulation {
             longsTotal: this.longsTotal,
             successfulLongs: this.successfulLongs,
             unsuccessfulLongs: this.unsuccessfulLongs,
-            longSuccessRate: _utils.getPercentageOutOfTotal(this.successfulLongs, this.longsTotal),
+            longSuccessRate: _utils.calculatePercentageOutOfTotal(this.successfulLongs, this.longsTotal),
 
             // Short Counters
             shortsTotal: this.shortsTotal,
             successfulShorts: this.successfulShorts,
             unsuccessfulShorts: this.unsuccessfulShorts,
-            shortSuccessRate: _utils.getPercentageOutOfTotal(this.successfulShorts, this.shortsTotal),
+            shortSuccessRate: _utils.calculatePercentageOutOfTotal(this.successfulShorts, this.shortsTotal),
 
             // Times
             start: start,

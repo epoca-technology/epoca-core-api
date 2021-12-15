@@ -1,15 +1,15 @@
 import {inject, injectable} from "inversify";
-import { IBinanceService } from "./interfaces";
+import { IBinanceService, ICandlestickSeriesInterval } from "./interfaces";
 import { SYMBOLS, ICandlestickSeries } from "../../../types";
 import { IUtilitiesService } from "../utilities";
 import { IExternalRequestOptions, IExternalRequestResponse, IExternalRequestService } from "../external-request";
-import { ICandlestickSeriesInterval } from ".";
+
 
 @injectable()
 export class BinanceService implements IBinanceService {
     // Inject dependencies
-    @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
-    @inject(SYMBOLS.ExternalRequest)            private _er: IExternalRequestService;
+    @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
+    @inject(SYMBOLS.ExternalRequestService)             private _er: IExternalRequestService;
 
 
 

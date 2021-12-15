@@ -20,7 +20,6 @@
   "license": "ISC",
   "homepage": "https://bitbucket.org/projectplutus/api-dev#readme",
   "dependencies": {
-    "arima": "0.2.2",
     "bignumber.js": "9.0.1",
     "body-parser": "1.19.0",
     "cors": "2.8.5",
@@ -29,9 +28,7 @@
     "https": "1.0.0",
     "inversify": "6.0.1",
     "moment": "2.29.1",
-    "reflect-metadata": "0.1.13",
-    "trading-signals": "^3.2.0",
-    "tulind": "0.8.20"
+    "reflect-metadata": "0.1.13"
   },
   "devDependencies": {
     "@types/cors": "2.8.12",
