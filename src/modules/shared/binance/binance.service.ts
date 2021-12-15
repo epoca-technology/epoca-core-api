@@ -1,8 +1,9 @@
 import {inject, injectable} from "inversify";
-import { IBinanceService, ICandlestickSeriesInterval } from "./interfaces";
-import { SYMBOLS, ICandlestickSeries } from "../../../types";
+import { IBinanceService, ICandlestickSeriesInterval, ICandlestickSeries } from "./interfaces";
+import { SYMBOLS } from "../../../types";
 import { IUtilitiesService } from "../utilities";
 import { IExternalRequestOptions, IExternalRequestResponse, IExternalRequestService } from "../external-request";
+import { ICryptoCurrencySymbol } from "../cryptocurrency";
 
 
 @injectable()
@@ -53,18 +54,25 @@ export class BinanceService implements IBinanceService {
 
     /**
      * Retrieves the candlesticks series accoring to params.
-     * @param interval      Defaults to 1h
-     * @param startTime     Defaults to undefined
-     * @param endTime       Defaults to undefined
-     * @param limit         Defaults to 1000
+     * @param symbol
+     * @param interval?      Defaults to 1m
+     * @param startTime?     Defaults to undefined
+     * @param endTime?       Defaults to undefined
+     * @param limit?         Defaults to 1000
      * @returns Promise<ICandlestickSeries>
      */
-    public async getCandlestickSeries(interval?: ICandlestickSeriesInterval, startTime?: number, endTime?: number, limit?:number): Promise<ICandlestickSeries> {
+    public async getCandlestickSeries(
+        symbol: ICryptoCurrencySymbol, 
+        interval?: ICandlestickSeriesInterval, 
+        startTime?: number, 
+        endTime?: number, 
+        limit?:number
+    ): Promise<ICandlestickSeries> {
             // Build the path based on params
-            let path: string = '/api/v3/klines?symbol=BTCUSDT';
+            let path: string = `/api/v3/klines?symbol=${symbol}USDT`;
 
             // Add the interval
-            path += `&interval=${interval || '1h'}`;
+            path += `&interval=${interval || '1m'}`;
 
             // Add the start time if provided
             if (startTime) path += `&startTime=${startTime}`;

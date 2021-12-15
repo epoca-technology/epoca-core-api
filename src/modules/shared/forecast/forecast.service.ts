@@ -1,5 +1,6 @@
 import {inject, injectable} from "inversify";
-import { SYMBOLS, ICandlestickSeries } from "../../../types";
+import { SYMBOLS } from "../../../types";
+import { ICandlestickSeries } from "../binance";
 import { IUtilitiesService } from "../utilities";
 import { 
     IForecastResult, 

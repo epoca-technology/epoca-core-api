@@ -1,4 +1,4 @@
-import { ICandlestickSeries } from "../../../types";
+import { ICandlestickSeries } from "../../../modules/shared/binance";
 
 
 

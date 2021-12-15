@@ -1,5 +1,6 @@
-import {appContainer} from "../../../src/ioc";
-import { SYMBOLS, ICandlestickSeries, ICandlestickSeriesItem, IVerbose } from "../../types";
+import {appContainer} from "../../ioc";
+import { SYMBOLS,  IVerbose } from "../../types";
+import { ICandlestickSeries, ICandlestickSeriesItem } from "../../modules/shared/binance";
 import { BalanceSimulation } from "./BalanceSimulation";
 import { 
     ITendencyForecastRequired, 

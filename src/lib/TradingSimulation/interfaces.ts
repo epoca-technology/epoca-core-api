@@ -1,5 +1,6 @@
-import { IForecastResult } from "../../../src/modules/shared/forecast";
-import { ICandlestickSeries, IVerbose } from "../../../src/types";
+import { IForecastResult } from "../../modules/shared/forecast";
+import { IVerbose } from "../../types";
+import { ICandlestickSeries } from "../../modules/shared/binance";
 import {BigNumber} from "bignumber.js";
 
 

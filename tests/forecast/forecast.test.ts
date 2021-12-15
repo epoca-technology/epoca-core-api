@@ -1,7 +1,8 @@
 // Dependencies
 import "reflect-metadata";
 import {appContainer} from '../../src/ioc';
-import { ICandlestickSeries, SYMBOLS } from "../../src/types";
+import { SYMBOLS } from "../../src/types";
+import { ICandlestickSeries } from "../../src/modules/shared/binance";
 
 
 // Init Utilities Service
