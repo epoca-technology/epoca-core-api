@@ -85,7 +85,8 @@ prompt.get(['interval', 'itemsQuantity'], async (e: any, data: prompt.Properties
     }
     
     // Minify the series
-    const minifiedSeries: ICandlestickSeries = minifySeries(series);
+    //const minifiedSeries: ICandlestickSeries = minifySeries(series);
+    const minifiedSeries: ICandlestickSeries = series;
 
     // Create the file
     fs.writeFile(`./test_candlesticks/${itemsQuantity}.json`, JSON.stringify(minifiedSeries), 'utf8', (err) => {

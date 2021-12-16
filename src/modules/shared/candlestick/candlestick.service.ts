@@ -59,7 +59,7 @@ export class CandlestickService implements ICandlestickService {
                 l: <string>this._utils.outputNumber(c[3], {decimalPlaces: 2}),
                 c: <string>this._utils.outputNumber(c[4], {decimalPlaces: 2}),
                 v: <string>this._utils.outputNumber(c[7], {decimalPlaces: 2}),
-                tbv: <string>this._utils.outputNumber(c[9], {decimalPlaces: 2}),
+                tbv: <string>this._utils.outputNumber(c[10], {decimalPlaces: 2}),
                 s: symbol
             });
         }

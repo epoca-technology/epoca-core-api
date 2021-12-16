@@ -7,13 +7,6 @@ import { BalanceSimulation, IBalanceSimulation } from "../../src/lib/TradingSimu
 import { IUtilitiesService } from "../../src/modules/shared/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
-// Trading Simulation
-import {TradingSimulation, ITradingSimulation, ITradingSimulationResult} from "../../src/lib/TradingSimulation";
-
-
-// Series Data
-import {getCandlestickSeries} from '../data';
-
 
 
 

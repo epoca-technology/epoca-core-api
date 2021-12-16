@@ -26,9 +26,11 @@ Latest Candlesticks:  `npm run cli-latest-candlesticks`
 
 End-to-end: `npm run test`
 
+Trading Simulation: `npm run test-trading-simulation`
+
 Forecast: `npm run test-forecast`
 
-Trading Simulation: `npm run test-trading-simulation`
+Candlestick: `npm run test-candlestick`
 
 Utilities: `npm run test-utils`
 
@@ -46,7 +48,7 @@ Start: `sudo systemctl start mysql`
 
 Stop: `sudo systemctl stop mysql`
 
-#
+
 ### AUTH Error Fix
 
 Open the monitor with `sudo mysql`. Enter the following command

@@ -8,6 +8,7 @@ import { environment } from "./environment";
 import { forecastModule } from "../modules/shared/forecast";
 import { candlestickModule } from "../modules/shared/candlestick";
 import { binanceModule } from "../modules/shared/binance";
+import { cryptocurrencyModule } from "../modules/shared/cryptocurrency";
 import { utilitiesModule } from "../modules/shared/utilities";
 import { externalRequestModule } from "../modules/shared/external-request";
 import { databaseModule } from "../modules/shared/database";
@@ -31,6 +32,9 @@ appContainer.load(
 
     // Binance
     binanceModule,
+
+    // CryptoCurrency
+    cryptocurrencyModule,
 
     // Utilities
     utilitiesModule,
