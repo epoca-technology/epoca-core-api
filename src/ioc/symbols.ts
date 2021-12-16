@@ -1,67 +1,13 @@
 /**
- * Universal Types
- */
-
-
-
-
-
-
-
-
-
-
-/**
- * Verbose Levels
- * 0: No logs
- * 1: Important logs
- * 2: All logs
- */
-export type IVerbose = 0|1|2;
-
-
-
-
-
-
-
-
-/* API */
-
-
-// API Response
-export interface IAPIResponse {
-    success: boolean,
-    data: any|null,
-    error: IAPIError|null
-}
-
-// API Error
-export interface IAPIError {
-    code: number,
-    message: string
-}
-
-
-
-
-
-
-
-
-
-
-
-
-/**
  * API Symbols
  */
 
  export const SYMBOLS: ISymbols = {
-
-
     // Forecast
     ForecastService: Symbol.for("ForecastService"),
+
+    // Candlestick
+    CandlestickService: Symbol.for("CandlestickService"),
 
     // Binance
     BinanceService: Symbol.for("BinanceService"),
@@ -76,9 +22,10 @@ export interface IAPIError {
     DatabaseService: Symbol.for("DatabaseService"),
 }
 
-export interface ISymbols {
 
+export interface ISymbols {
     ForecastService: symbol,
+    CandlestickService: symbol,
     BinanceService: symbol,
     UtilitiesService: symbol,
     ExternalRequestService: symbol,

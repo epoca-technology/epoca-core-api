@@ -1,5 +1,5 @@
 import {ContainerModule, interfaces} from "inversify";
-import { SYMBOLS } from "../../../types";
+import { SYMBOLS } from "../../../ioc";
 import { BinanceService } from "./binance.service";
 import { IBinanceService } from "./interfaces";
 

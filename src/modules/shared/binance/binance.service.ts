@@ -1,6 +1,6 @@
 import {inject, injectable} from "inversify";
 import { IBinanceService, ICandlestickSeriesInterval, ICandlestickSeries } from "./interfaces";
-import { SYMBOLS } from "../../../types";
+import { SYMBOLS } from "../../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { IExternalRequestOptions, IExternalRequestResponse, IExternalRequestService } from "../external-request";
 import { ICryptoCurrencySymbol } from "../cryptocurrency";

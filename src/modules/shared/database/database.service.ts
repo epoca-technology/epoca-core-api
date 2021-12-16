@@ -1,10 +1,10 @@
-import {inject, injectable, postConstruct} from "inversify";
+import {inject, injectable} from "inversify";
 import { 
     IDatabaseService,
     IConnection,
     IConnectionConfig
 } from "./interfaces";
-import { SYMBOLS } from "../../../types";
+import { SYMBOLS } from "../../../ioc";
 import * as mysql from "mysql";
 
 
@@ -25,20 +25,33 @@ export class DatabaseService implements IDatabaseService {
 
     // Tables
     public readonly tables: string[] = [
+        // TEST: 1m_candlesticks
+        `CREATE TABLE IF NOT EXISTS test_1m_candlesticks (
+            ot BIGINT(20) NOT NULL,
+            ct BIGINT(20) NOT NULL,
+            o VARCHAR(100) NOT NULL,
+            h VARCHAR(100) NOT NULL,
+            l VARCHAR(100) NOT NULL,
+            c VARCHAR(100) NOT NULL,
+            v VARCHAR(100) NOT NULL,
+            tbv VARCHAR(100) NOT NULL,
+            s VARCHAR(5) NOT NULL,
+            PRIMARY KEY (ot)
+        );`,
+
         // 1m_candlesticks
-        `
-            CREATE TABLE IF NOT EXISTS 1m_candlesticks (
-                s VARCHAR(20) NOT NULL,
-                ot VARCHAR(20) NOT NULL,
-                ct VARCHAR(20) NOT NULL,
-                o VARCHAR(20) NOT NULL,
-                h VARCHAR(20) NOT NULL,
-                l VARCHAR(20) NOT NULL,
-                c VARCHAR(20) NOT NULL,
-                v VARCHAR(20) NOT NULL,
-                tbv VARCHAR(20) NOT NULL
-            );
-        `,
+        `CREATE TABLE IF NOT EXISTS 1m_candlesticks (
+            ot BIGINT(20) NOT NULL,
+            ct BIGINT(20) NOT NULL,
+            o VARCHAR(100) NOT NULL,
+            h VARCHAR(100) NOT NULL,
+            l VARCHAR(100) NOT NULL,
+            c VARCHAR(100) NOT NULL,
+            v VARCHAR(100) NOT NULL,
+            tbv VARCHAR(100) NOT NULL,
+            s VARCHAR(5) NOT NULL,
+            PRIMARY KEY (ot)
+        );`,
     ];
 
 

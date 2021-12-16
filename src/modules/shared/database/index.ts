@@ -1,5 +1,5 @@
 import {ContainerModule, interfaces} from "inversify";
-import { SYMBOLS } from "../../../types";
+import { SYMBOLS } from "../../../ioc";
 import { DatabaseService } from "./database.service";
 import { IDatabaseService } from "./interfaces";
 

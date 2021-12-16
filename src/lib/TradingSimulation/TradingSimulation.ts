@@ -1,5 +1,5 @@
 import {appContainer} from "../../ioc";
-import { SYMBOLS,  IVerbose } from "../../types";
+import { SYMBOLS } from "../../ioc";
 import { ICandlestickSeries, ICandlestickSeriesItem } from "../../modules/shared/binance";
 import { BalanceSimulation } from "./BalanceSimulation";
 import { 
@@ -158,7 +158,7 @@ export class TradingSimulation implements ITradingSimulation {
      * Displays additional data of the process for debugging purposes.
      * DEFAULT: 0
      */
-    private readonly verbose: IVerbose = 0;
+    private readonly verbose: number = 0;
 
 
 
@@ -219,7 +219,7 @@ export class TradingSimulation implements ITradingSimulation {
             unsuccessful: this.unsuccessful,
             neutral: this.neutral,
             whileMeditating: this.whileMeditating,
-            successRate: _utils.calculatePercentageOutOfTotal(this.successful, this.positions.length),
+            successRate: <number>_utils.calculatePercentageOutOfTotal(this.successful, this.positions.length, {outputFormat: 'number'}),
 
             /* Balance */
 
@@ -241,13 +241,13 @@ export class TradingSimulation implements ITradingSimulation {
             longsTotal: this.longsTotal,
             successfulLongs: this.successfulLongs,
             unsuccessfulLongs: this.unsuccessfulLongs,
-            longSuccessRate: _utils.calculatePercentageOutOfTotal(this.successfulLongs, this.longsTotal),
+            longSuccessRate: <number>_utils.calculatePercentageOutOfTotal(this.successfulLongs, this.longsTotal, {outputFormat: 'number'}),
 
             // Short Counters
             shortsTotal: this.shortsTotal,
             successfulShorts: this.successfulShorts,
             unsuccessfulShorts: this.unsuccessfulShorts,
-            shortSuccessRate: _utils.calculatePercentageOutOfTotal(this.successfulShorts, this.shortsTotal),
+            shortSuccessRate: <number>_utils.calculatePercentageOutOfTotal(this.successfulShorts, this.shortsTotal, {outputFormat: 'number'}),
 
             // Times
             start: start,
@@ -388,9 +388,10 @@ export class TradingSimulation implements ITradingSimulation {
             type: forecast.result > 0 ? 'long': 'short',
             forecast: forecast,
             openTime: currentItem[0],
-            openPrice: _utils.roundNumber(currentItem[1], 2),
-            takeProfitPrice: forecast.result > 0 ? _utils.alterNumberByPercentage(currentItem[1], ep.takeProfit): _utils.alterNumberByPercentage(currentItem[1], -(ep.takeProfit)),
-            stopLossPrice: forecast.result > 0 ? _utils.alterNumberByPercentage(currentItem[1], -(ep.stopLoss)): _utils.alterNumberByPercentage(currentItem[1], ep.stopLoss),
+            //openPrice: _utils.roundNumber(currentItem[1], 2),
+            openPrice: <number>_utils.outputNumber(currentItem[1], {decimalPlaces: 2, outputFormat: 'number'}),
+            takeProfitPrice: forecast.result > 0 ? <number>_utils.alterNumberByPercentage(currentItem[1], ep.takeProfit, {outputFormat: 'number'}): <number>_utils.alterNumberByPercentage(currentItem[1], -(ep.takeProfit), {outputFormat: 'number'}),
+            stopLossPrice: forecast.result > 0 ? <number>_utils.alterNumberByPercentage(currentItem[1], -(ep.stopLoss), {outputFormat: 'number'}): <number>_utils.alterNumberByPercentage(currentItem[1], ep.stopLoss, {outputFormat: 'number'}),
         };
 
         // Increment the counter
@@ -687,7 +688,12 @@ export class TradingSimulation implements ITradingSimulation {
      * @returns number
      */
     private getSimulationDuration(start: number, end: number): number {
-        return _utils.roundNumber(new BigNumber(end).minus(start).dividedBy(1000), 0, true);
+        //return _utils.roundNumber(new BigNumber(end).minus(start).dividedBy(1000), 0, true);
+        return <number>_utils.outputNumber(new BigNumber(end).minus(start).dividedBy(1000), {
+            decimalPlaces: 0,
+            roundUp: true,
+            outputFormat: 'number'
+        });
     }
 
 

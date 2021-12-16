@@ -1,5 +1,5 @@
 import {inject, injectable} from "inversify";
-import { SYMBOLS } from "../../../types";
+import { SYMBOLS } from "../../../ioc";
 import { ICandlestickSeries } from "../binance";
 import { IUtilitiesService } from "../utilities";
 import { 
@@ -60,29 +60,21 @@ export class ForecastService implements IForecastService {
      * @param series 
      * @returns ICandlestickSeries[]
      */
-    private getSeriesPeriods(series: ICandlestickSeries): ICandlestickSeries[] {
-        return [
-            series,
-            series.slice(this._utils.alterNumberByPercentage(series.length, -95, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -90, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -85, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -80, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -75, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -70, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -65, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -60, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -55, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -50, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -45, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -40, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -35, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -30, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -25, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -20, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -15, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -10, 0, true)),
-            series.slice(this._utils.alterNumberByPercentage(series.length, -5, 0, true)),
-        ];
+     private getSeriesPeriods(series: ICandlestickSeries): ICandlestickSeries[] {
+        // Initialize the series list
+        let list: ICandlestickSeries[] = [series];
+
+        // Build the smaller frames
+        for (let i = -95; i <= -5; i = i + 5) {
+            list.push(series.slice(<number>this._utils.alterNumberByPercentage(series.length, i, {
+                decimalPlaces: 0, 
+                roundUp: true, 
+                outputFormat: "number"
+            })));
+        }
+        
+        // Return the final list
+        return list;
     }
 
 
@@ -103,7 +95,9 @@ export class ForecastService implements IForecastService {
     private getPeriodChanges(periods: ICandlestickSeries[]): number[] { 
         let changes: number[] = [];
         for (let period of periods) {
-            changes.push(this._utils.calculatePercentageChange(period[0][4], period[period.length -1][4]));
+            changes.push(<number>this._utils.calculatePercentageChange(period[0][4], period[period.length -1][4], {
+                outputFormat: 'number'
+            }));
         }
         return changes;
     }
@@ -128,26 +122,26 @@ export class ForecastService implements IForecastService {
      */
      private getTendencyFromChanges(changes: number[]): ITendencyForecast {
         // Init the counters
-        let long: number = 0;
-        let short: number = 0;
+        let up: number = 0;
+        let down: number = 0;
         let neutral: number = 0;
 
         // Iterate over the changes and classify them
         for (let change of changes) {
-            if (change > this.dustAmount) { long += 1 }
-            else if (change < -(this.dustAmount)) { short += 1 }
+            if (change > this.dustAmount) { up += 1 }
+            else if (change < -(this.dustAmount)) { down += 1 }
             else { neutral += 1 }
         }
 
         // Calculate the total amount of counters
-        const total: number = long + short + neutral;
+        const total: number = up + down + neutral;
 
         // Initialize the tendency
         let tendency: ITendencyForecast = 0;
 
         // If the market is high, place a short
         if (
-            this._utils.calculatePercentageOutOfTotal(long, total) >= 95 &&
+            this._utils.calculatePercentageOutOfTotal(up, total) >= 95 &&
             changes[changes.length -1] >= changes[changes.length - 2] &&
             changes[changes.length -2] >= changes[changes.length - 3] &&
             changes[changes.length -3] >= changes[changes.length - 4] &&
@@ -158,7 +152,7 @@ export class ForecastService implements IForecastService {
 
         // If the market is low, place a long
         else if (
-            this._utils.calculatePercentageOutOfTotal(short, total) >= 95 &&
+            this._utils.calculatePercentageOutOfTotal(down, total) >= 95 &&
             changes[changes.length -1] <= changes[changes.length - 2] &&
             changes[changes.length -2] <= changes[changes.length - 3] &&
             changes[changes.length -3] <= changes[changes.length - 4] &&

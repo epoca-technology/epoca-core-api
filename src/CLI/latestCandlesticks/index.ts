@@ -1,7 +1,6 @@
 // Dependencies 
 import "reflect-metadata";
-import { appContainer } from "../../ioc";
-import { SYMBOLS } from "../../types";
+import { appContainer, SYMBOLS } from "../../ioc";
 import * as prompt from 'prompt';
 import * as fs from 'fs';
 

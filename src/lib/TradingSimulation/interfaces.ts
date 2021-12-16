@@ -1,5 +1,4 @@
 import { IForecastResult } from "../../modules/shared/forecast";
-import { IVerbose } from "../../types";
 import { ICandlestickSeries } from "../../modules/shared/binance";
 import {BigNumber} from "bignumber.js";
 
@@ -18,7 +17,7 @@ export interface ITradingSimulationConfig {
     windowSize?: number,
     tendencyForecastRequired?: ITendencyForecastRequired,
     meditationMinutes?: number,
-    verbose?: IVerbose
+    verbose?: number
 }
 export interface ITendencyForecastRequired { long: 1|2,short: -1|-2 }
 
@@ -53,7 +52,7 @@ export interface IBalanceSimulationConfig {
     borrowInterestPercent?: number,
     tradeFeePercent?: number,
     minimumPositionAmount?: number,
-    verbose?: IVerbose,
+    verbose?: number,
 }
 
 // History

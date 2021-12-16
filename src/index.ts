@@ -6,7 +6,7 @@ import cors = require('cors');
 import {BigNumber} from 'bignumber.js';
 
 // Environment
-import { environment } from "./environment";
+import { environment } from "./ioc";
 
 
 // BigNumber Config

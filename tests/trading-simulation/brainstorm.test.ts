@@ -1,7 +1,6 @@
 // Dependencies
 import "reflect-metadata";
-import {appContainer} from "../../src/ioc";
-import { SYMBOLS } from "../../src/types";
+import {appContainer, SYMBOLS} from "../../src/ioc";
 
 
 // Init Utilities Service

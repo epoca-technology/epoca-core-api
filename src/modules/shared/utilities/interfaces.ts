@@ -1,22 +1,16 @@
 import {BigNumber} from 'bignumber.js';
 
 
+
+
 export interface IUtilitiesService {
-
-
     // Numbers
-    calculateAverage(numberSeries: INumber[], decimalPlaces?: number, roundUp?: boolean): number,
-    alterNumberByPercentage(value: INumber, percent: number, decimalPlaces?: number, roundUp?: boolean): number,
-    calculatePercentageChange(oldNumber: INumber, newNumber: INumber, decimalPlaces?: number, roundUp?: boolean): number,
-    calculatePercentageOutOfTotal(value: INumber, total: INumber, decimalPlaces?: number, roundUp?: boolean): number,
-    calculateFee(value: INumber, feePercentage: number, decimalPlaces?: number, roundUp?: boolean): number,
-    roundNumber(value: INumber, decimalPlaces?: number, roundUp?: boolean): number,
-    getDecimalPlaces(decimalPlaces?: number): number,
-    getRoundingMode(roundUp?: boolean): BigNumber.RoundingMode,
-    getBigNumber(value: INumber): BigNumber,
-
-    // List Filtering
-    filterList(list: any[], keyOrIndex: string|number, changeFormat?: IFilterListChangeFormat, decimalPlaces?: number, roundUp?: boolean): any[],
+    calculateAverage(numberSeries: INumber[], config?: INumberConfig): INumber,
+    alterNumberByPercentage(value: INumber, percent: number, config?: INumberConfig): INumber,
+    calculatePercentageChange(oldNumber: INumber, newNumber: INumber, config?: INumberConfig): INumber,
+    calculatePercentageOutOfTotal(value: INumber, total: INumber, config?: INumberConfig): INumber,
+    calculateFee(value: INumber, feePercentage: number, config?: INumberConfig): INumber,
+    outputNumber(value: INumber, config?: INumberConfig): INumber,
 
     // Dates
     toDateString(timestamp: number): string,
@@ -37,7 +31,16 @@ export type INumber = number|string|BigNumber;
 
 
 
-// Format changing
-export type IFilterListChangeFormat = 'toString'|'toNumber';
+// Number Config
+export interface INumberConfig {
+    outputFormat?: INumberOutputFormat,     // Defaults to 'string'
+    decimalPlaces?: number,                 // Defaults to 2
+    roundUp?: boolean,                      // Defaults to false
+    roundingMode?: BigNumber.RoundingMode    // It's inserted in the service
+}
+export type INumberOutputFormat = 'number'|'string'|'BigNumber';
+
+
+
 
 
