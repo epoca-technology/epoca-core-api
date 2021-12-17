@@ -17,6 +17,7 @@ const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.Databas
 console.log('DATABASE');
 console.log('@param action? // Defaults to 0')
 console.log('0 = Initialize Database');
+console.log('1 = Display Tables Size');
 console.log(' ');
 prompt.start();
 
@@ -35,8 +36,10 @@ prompt.get(['action'], async (e: any, data: prompt.Properties) => {
     // Handle the action accordingly
     switch(action) {
         case '0':
-            const results: any = await initializeDatabase();
-            console.log(results);
+            await initializeDatabase();
+            break;
+        case '1':
+            await displayTablesSize();
             break;
         default:
             throw new Error(`The provided action ${data.action} is invalid.`);
@@ -54,7 +57,7 @@ prompt.get(['action'], async (e: any, data: prompt.Properties) => {
  * Creates the Database as well as the required tables for the project to run.
  * @returns Promise<any[]>
  */
-async function initializeDatabase(): Promise<any[]> {
+async function initializeDatabase(): Promise<void> {
     // Init the results
     let results: any[] = [];
 
@@ -74,7 +77,30 @@ async function initializeDatabase(): Promise<any[]> {
         results.push(tableCreation);
     }
 
-    // Return the results
-    return results;
+    // Display the results
+    console.log(results);
 }
 
+
+
+
+
+
+
+/**
+ * Displays the size of all existing tables in the database
+ * @returns Promise<void>
+ */
+async function displayTablesSize(): Promise<void> {
+    // Retrieve the sizes and display them
+    const tableSizes: any = await _db.query({sql: `
+        SELECT 
+        table_schema as 'Database', 
+        table_name AS 'Table', 
+        round(((data_length + index_length) / 1024 / 1024), 2) 'Size in MB' 
+        FROM information_schema.TABLES 
+        WHERE TABLE_SCHEMA = '${_db.connectionConfig.database}'
+        ORDER BY (data_length + index_length) DESC;
+    `});
+    console.table(tableSizes);
+}

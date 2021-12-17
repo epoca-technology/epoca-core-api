@@ -1,5 +1,5 @@
 import { IForecastResult } from "../../modules/shared/forecast";
-import { ICandlestickSeries } from "../../modules/shared/binance";
+import { ICandlestick } from "../../modules/shared/candlestick";
 import {BigNumber} from "bignumber.js";
 
 
@@ -12,7 +12,7 @@ export interface ITradingSimulation {
 
 // Class Config
 export interface ITradingSimulationConfig {
-    series: ICandlestickSeries,
+    series: ICandlestick[],
     balanceConfig: IBalanceSimulationConfig,
     windowSize?: number,
     tendencyForecastRequired?: ITendencyForecastRequired,

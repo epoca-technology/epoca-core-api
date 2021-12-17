@@ -1,6 +1,5 @@
-import {appContainer} from "../../ioc";
-import { SYMBOLS } from "../../ioc";
-import { ICandlestickSeries, IBinanceCandlestick } from "../../modules/shared/binance";
+import {appContainer, SYMBOLS} from "../../ioc";
+import { ICandlestick } from "../../modules/shared/candlestick";
 import { BalanceSimulation } from "./BalanceSimulation";
 import { 
     ITendencyForecastRequired, 
@@ -35,14 +34,14 @@ export class TradingSimulation implements ITradingSimulation {
      * The entire list of candles to be simulated.
      * DEFAULT: 150
      */
-    private readonly series: ICandlestickSeries;
+    private readonly series: ICandlestick[];
 
 
     /**
      * @processingSeries
      * The specific chunk of series that's currently active based on the windows size.
      */
-    private processingSeries: ICandlestickSeries;
+    private processingSeries: ICandlestick[];
 
 
 
@@ -278,7 +277,7 @@ export class TradingSimulation implements ITradingSimulation {
         // Iterates over each item in the series based on the window
         for (let i = this.windowSize; i < this.series.length; i++) {
             // Init the current item
-            const currentItem: IBinanceCandlestick = this.series[i];
+            const currentItem: ICandlestick = this.series[i];
 
             // If it isn't the last time, handle the current item accordingly
             if (i < this.series.length - 1) {
@@ -286,9 +285,9 @@ export class TradingSimulation implements ITradingSimulation {
                 if (this.activePosition) { this.checkPositionState(currentItem) } 
                 
                 // Check if it is meditating
-                else if (this.isMeditating(currentItem[0])){ 
+                else if (this.isMeditating(currentItem.ot)){ 
                     // Log info if applies
-                    if (this.verbose > 1) this.displayIgnoredWhileMeditating(currentItem[0], currentItem[6]);
+                    if (this.verbose > 1) this.displayIgnoredWhileMeditating(currentItem.ot, currentItem.ct);
 
                     // Increment the counter
                     this.whileMeditating += 1
@@ -378,7 +377,7 @@ export class TradingSimulation implements ITradingSimulation {
      * @param currentItem 
      * @returns void
      */
-    private openPosition(forecast: IForecastResult, currentItem: IBinanceCandlestick): void {
+    private openPosition(forecast: IForecastResult, currentItem: ICandlestick): void {
         // Retrieve the exit parameters
         const ep: IPositionExitParameters = this.balance.getPositionExitParameters();
 
@@ -387,11 +386,10 @@ export class TradingSimulation implements ITradingSimulation {
             //state: true,
             type: forecast.result > 0 ? 'long': 'short',
             forecast: forecast,
-            openTime: currentItem[0],
-            //openPrice: _utils.roundNumber(currentItem[1], 2),
-            openPrice: <number>_utils.outputNumber(currentItem[1], {decimalPlaces: 2, outputFormat: 'number'}),
-            takeProfitPrice: forecast.result > 0 ? <number>_utils.alterNumberByPercentage(currentItem[1], ep.takeProfit, {outputFormat: 'number'}): <number>_utils.alterNumberByPercentage(currentItem[1], -(ep.takeProfit), {outputFormat: 'number'}),
-            stopLossPrice: forecast.result > 0 ? <number>_utils.alterNumberByPercentage(currentItem[1], -(ep.stopLoss), {outputFormat: 'number'}): <number>_utils.alterNumberByPercentage(currentItem[1], ep.stopLoss, {outputFormat: 'number'}),
+            openTime: currentItem.ot,
+            openPrice: <number>_utils.outputNumber(currentItem.o, {decimalPlaces: 2, outputFormat: 'number'}),
+            takeProfitPrice: forecast.result > 0 ? <number>_utils.alterNumberByPercentage(currentItem.o, ep.takeProfit, {outputFormat: 'number'}): <number>_utils.alterNumberByPercentage(currentItem.o, -(ep.takeProfit), {outputFormat: 'number'}),
+            stopLossPrice: forecast.result > 0 ? <number>_utils.alterNumberByPercentage(currentItem.o, -(ep.stopLoss), {outputFormat: 'number'}): <number>_utils.alterNumberByPercentage(currentItem.o, ep.stopLoss, {outputFormat: 'number'}),
         };
 
         // Increment the counter
@@ -425,33 +423,33 @@ export class TradingSimulation implements ITradingSimulation {
      * @param forcePositionClose? 
      * @returns void
      */
-    private checkPositionState(currentItem: IBinanceCandlestick, forcePositionClose?: boolean): void {
+    private checkPositionState(currentItem: ICandlestick, forcePositionClose?: boolean): void {
         // Check the long position state
         if (this.activePosition.type == 'long') {
             // Check if the position has to be closed forcefully
             if (forcePositionClose) {
                 // Init the closing price
-                const closePrice: BigNumber = new BigNumber(currentItem[4]);
+                const closePrice: BigNumber = new BigNumber(currentItem.c);
 
                 // Close the position
-                this.closePosition(closePrice.toNumber(), closePrice.isGreaterThan(this.activePosition.openPrice), currentItem[6]);
+                this.closePosition(closePrice.toNumber(), closePrice.isGreaterThan(this.activePosition.openPrice), currentItem.ct);
             }
 
             // Otherwise, check if any of the condicitions has been met
             else {
                 // Init the high and the low
-                const high: BigNumber = new BigNumber(currentItem[2]);
-                const low: BigNumber = new BigNumber(currentItem[3]);
+                const high: BigNumber = new BigNumber(currentItem.h);
+                const low: BigNumber = new BigNumber(currentItem.l);
 
                 // Check if the SL Price was hit by the low
                 if (low.isLessThanOrEqualTo(this.activePosition.stopLossPrice)) {
-                    this.closePosition(this.activePosition.stopLossPrice, false, currentItem[6]);
+                    this.closePosition(this.activePosition.stopLossPrice, false, currentItem.ct);
                 }
                 
                 
                 // Check if the TP Price was hit by the high
                 else if (high.isGreaterThanOrEqualTo(this.activePosition.takeProfitPrice)) {
-                    this.closePosition(this.activePosition.takeProfitPrice, true, currentItem[6]);
+                    this.closePosition(this.activePosition.takeProfitPrice, true, currentItem.ct);
                 }
 
 
@@ -467,27 +465,27 @@ export class TradingSimulation implements ITradingSimulation {
             // Check if the position has to be closed forcefully
             if (forcePositionClose) {
                 // Init the closing price
-                const closePrice: BigNumber = new BigNumber(currentItem[4]);
+                const closePrice: BigNumber = new BigNumber(currentItem.c);
 
                 // Close the position
-                this.closePosition(closePrice.toNumber(), closePrice.isLessThan(this.activePosition.openPrice), currentItem[6]);
+                this.closePosition(closePrice.toNumber(), closePrice.isLessThan(this.activePosition.openPrice), currentItem.ct);
             }
 
             // Otherwise, check if any of the condicitions has been met
             else {
                 // Init the high and the low
-                const high: BigNumber = new BigNumber(currentItem[2]);
-                const low: BigNumber = new BigNumber(currentItem[3]);
+                const high: BigNumber = new BigNumber(currentItem.h);
+                const low: BigNumber = new BigNumber(currentItem.l);
 
                 // Check if the SL Price was hit by the high
                 if (high.isGreaterThanOrEqualTo(this.activePosition.stopLossPrice)) {
-                    this.closePosition(this.activePosition.stopLossPrice, false, currentItem[6]);
+                    this.closePosition(this.activePosition.stopLossPrice, false, currentItem.ct);
                 }
 
 
                 // Check if the TP Price was hit by the low
                 else if (low.isLessThanOrEqualTo(this.activePosition.takeProfitPrice)) {
-                    this.closePosition(this.activePosition.takeProfitPrice, true, currentItem[6]);
+                    this.closePosition(this.activePosition.takeProfitPrice, true, currentItem.ct);
                 }
 
 
@@ -724,7 +722,7 @@ export class TradingSimulation implements ITradingSimulation {
         console.log(' ');console.log(' ');
         console.log(`Trading Simulation: ${id}`);
         console.log(`Initial Series (${this.processingSeries.length}):`);
-        for (let s of this.processingSeries) { console.log(`${_utils.toDateString(s[6])} | ${s[4]}`); }
+        for (let s of this.processingSeries) { console.log(`${_utils.toDateString(s.ct)} | ${s.c}`); }
         console.log(' ');console.log(' ');
     }
 
@@ -753,10 +751,10 @@ export class TradingSimulation implements ITradingSimulation {
      * @param forecastResult 
      * @returns void
      */
-    private displayStandingNeutral(item: IBinanceCandlestick, forecastResult: IForecastResult): void {
-        console.log(`Neutral on period: ${_utils.toDateString(item[0])} - ${_utils.toDateString(item[6])}`);
-        console.log(`Forecast: ${_utils.toDateString(item[0])} - ${_utils.toDateString(item[6])}`);
-        console.log(forecastResult);
+    private displayStandingNeutral(item: ICandlestick, forecastResult: IForecastResult): void {
+        console.log(`Neutral on period: ${_utils.toDateString(item.ot)} - ${_utils.toDateString(item.ct)}`);
+        //console.log(`Forecast: ${_utils.toDateString(item[0])} - ${_utils.toDateString(item[6])}`);
+        //console.log(forecastResult);
     }
 
 
@@ -818,9 +816,9 @@ export class TradingSimulation implements ITradingSimulation {
      * @param currentItem 
      * @returns void
      */
-    private displayActionlessStateCheck(currentItem: IBinanceCandlestick): void {
-        console.log(`Actionless Check: ${_utils.toDateString(currentItem[0])} - ${_utils.toDateString(currentItem[6])}`);
-        console.log(`O: ${currentItem[1]} | H: ${currentItem[2]} | L: ${currentItem[3]} | C: ${currentItem[4]}`);
+    private displayActionlessStateCheck(currentItem: ICandlestick): void {
+        console.log(`Actionless Check: ${_utils.toDateString(currentItem.ot)} - ${_utils.toDateString(currentItem.ct)}`);
+        console.log(`O: ${currentItem.o} | H: ${currentItem.h} | L: ${currentItem.l} | C: ${currentItem.c}`);
     }
 
 

@@ -64,7 +64,7 @@ export class DatabaseService implements IDatabaseService {
         return new Promise((resolve, reject) => {
             connection.query(sql, (err: mysql.MysqlError, result: any) => {
                 // End the connection
-                connection.end();
+                connection.destroy();
 
                 // Handle the error if any
                 if (err) reject(err);

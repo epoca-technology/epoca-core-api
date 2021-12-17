@@ -1,6 +1,6 @@
 import {inject, injectable} from "inversify";
 import { SYMBOLS } from "../../../ioc";
-import { ICandlestickSeries } from "../binance";
+import { ICandlestick } from "../candlestick";
 import { IUtilitiesService } from "../utilities";
 import { 
     IForecastResult, 
@@ -34,9 +34,9 @@ export class ForecastService implements IForecastService {
      * @param series 
      * @returns Promise<IForecastResult>
      */
-    public async forecast(series: ICandlestickSeries): Promise<IForecastResult> {
+    public async forecast(series: ICandlestick[]): Promise<IForecastResult> {
         // Init the periods
-        const periods: ICandlestickSeries[] = this.getSeriesPeriods(series);
+        const periods: ICandlestick[][] = this.getSeriesPeriods(series);
 
         // Calculate the changed per period from beginning to end
         const changes: number[] = this.getPeriodChanges(periods);
@@ -60,9 +60,9 @@ export class ForecastService implements IForecastService {
      * @param series 
      * @returns ICandlestickSeries[]
      */
-     private getSeriesPeriods(series: ICandlestickSeries): ICandlestickSeries[] {
+     private getSeriesPeriods(series: ICandlestick[]): ICandlestick[][] {
         // Initialize the series list
-        let list: ICandlestickSeries[] = [series];
+        let list: ICandlestick[][] = [series];
 
         // Build the smaller frames
         for (let i = -95; i <= -5; i = i + 5) {
@@ -92,10 +92,10 @@ export class ForecastService implements IForecastService {
      * @param periods 
      * @returns number[]
      */
-    private getPeriodChanges(periods: ICandlestickSeries[]): number[] { 
+    private getPeriodChanges(periods: ICandlestick[][]): number[] { 
         let changes: number[] = [];
         for (let period of periods) {
-            changes.push(<number>this._utils.calculatePercentageChange(period[0][4], period[period.length -1][4], {
+            changes.push(<number>this._utils.calculatePercentageChange(period[0].c, period[period.length -1].c, {
                 outputFormat: 'number'
             }));
         }

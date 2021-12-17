@@ -87,11 +87,19 @@ prompt.get(['symbol', 'startDate'], async (e: any, data: prompt.Properties) => {
             // Save and retrieve the candlesticks from the starting timestamp
             const candlesticks: ICandlestick[] = await _candlestick.saveCandlesticksFromStart(symbol, startTime);
 
-            // Set the next start time
-            startTime = candlesticks[candlesticks.length -1].ot;
+            // Make sure candlesticks were retrieved
+            if (candlesticks.length > 0) {
+                // Set the next start time
+                startTime = candlesticks[candlesticks.length -1].ot;
 
-            // Check if finished syncing
-            fullySynced = candlesticks.length < 1000;
+                // Check if finished syncing
+                fullySynced = candlesticks.length < 1000;
+            } 
+            
+            // If no candlesticks were retrieved it means the candlesticks are fully synced or Binance is experiencing an outage
+            else {
+                fullySynced = true;
+            }
 
             // Update the progress and allow for a small delay before continuing
             progressBar.update(progressBarCounter += 1);
@@ -100,6 +108,7 @@ prompt.get(['symbol', 'startDate'], async (e: any, data: prompt.Properties) => {
             console.log(' ');
             console.log(e);
             console.log(' ');
+            await _utils.asyncDelay(30);
         }
     }
 

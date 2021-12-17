@@ -7,12 +7,16 @@ import {appContainer, SYMBOLS} from "../../src/ioc";
 import { IUtilitiesService } from "../../src/modules/shared/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
+
+// Init Candlestick Service
+import { ICandlestickService, ICandlestick } from "../../src/modules/shared/candlestick";
+const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
+
+
 // Trading Simulation
 import {TradingSimulation, ITradingSimulation, ITradingSimulationResult} from "../../src/lib/TradingSimulation";
 
 
-// Series Data
-import {getCandlestickSeries} from '../data';
 
 
 
@@ -21,9 +25,10 @@ import {getCandlestickSeries} from '../data';
 describe('', function() {
 
     it('-', async function() {
+        const series: ICandlestick[] = await _candlestick.get('BTC');
         try {
             const ts: ITradingSimulation = new TradingSimulation({
-                series: getCandlestickSeries('200000'),
+                series: series,
                 windowSize: 1000,
                 balanceConfig: {
                     initial: 10000,

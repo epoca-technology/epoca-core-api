@@ -1,10 +1,10 @@
-import { ICandlestickSeries } from "../../../modules/shared/binance";
+import { ICandlestick } from "../../../modules/shared/candlestick";
 
 
 
-
+// Service
 export interface IForecastService {
-    forecast(series: ICandlestickSeries): Promise<IForecastResult>
+    forecast(series: ICandlestick[]): Promise<IForecastResult>
 }
 
 
