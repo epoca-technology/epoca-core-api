@@ -1,16 +1,26 @@
-import { ICandlestickSeriesItem } from "../binance";
+import { IBinanceCandlestick } from "../binance";
 import { ICryptoCurrencySymbol } from "../cryptocurrency";
 
 
 
 
 export interface ICandlestickService {
+    // Properties
 
+    testMode: boolean,
 
+    // Retrievers
+    get(symbol: ICryptoCurrencySymbol, start?: number, end?: number): Promise<ICandlestick[]>,
+    getLastOpenTimestamp(symbol: ICryptoCurrencySymbol): Promise<number>,
+    getLast(symbol: ICryptoCurrencySymbol, limit?: number): Promise<ICandlestick[]>,
 
+    // Candlestick Syncing
+    
+    saveCandlesticksFromStart(symbol: ICryptoCurrencySymbol, startTimestamp: number): Promise<void>,
+    saveCandlesticks(candlesticks: ICandlestick[]): Promise<any>,
 
     // Candlesticks Proccessors
-    processBinanceCandlesticks(symbol: ICryptoCurrencySymbol, candlesticks: ICandlestickSeriesItem[]): ICandlestick[],
+    processBinanceCandlesticks(symbol: ICryptoCurrencySymbol, candlesticks: IBinanceCandlestick[]): ICandlestick[],
 }
 
 

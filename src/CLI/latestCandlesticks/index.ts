@@ -9,7 +9,7 @@ import { IUtilitiesService } from "../../modules/shared/utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Init Binance
-import { IBinanceService, ICandlestickSeriesInterval, ICandlestickSeries, ICandlestickSeriesItem } from "../../modules/shared/binance";
+import { IBinanceService, ICandlestickSeriesInterval, ICandlestickSeries, IBinanceCandlestick } from "../../modules/shared/binance";
 const _binance: IBinanceService = appContainer.get<IBinanceService>(SYMBOLS.BinanceService);
 
 
@@ -113,7 +113,7 @@ prompt.get(['interval', 'itemsQuantity'], async (e: any, data: prompt.Properties
 function minifySeries(series: ICandlestickSeries): ICandlestickSeries {
     let minSeries: ICandlestickSeries = [];
     for (let item of series) {
-        minSeries.push(<ICandlestickSeriesItem>item.slice(0, 7));
+        minSeries.push(<IBinanceCandlestick>item.slice(0, 7));
     }
     return minSeries;
 }

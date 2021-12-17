@@ -23,11 +23,9 @@ const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.Databas
 
 
 describe('Database Essentials: ',  function() {
-
-    // Clean the table before each test
-    beforeEach(async () => {
-        await _db.query({sql: 'DELETE FROM test_1m_candlesticks;'});
-    });
+    // Clean the table before each test and once all tests have concluded
+    beforeEach(async () => { await _db.query({sql: 'DELETE FROM test_1m_candlesticks;'}) });
+    afterAll(async () => { await _db.query({sql: 'DELETE FROM test_1m_candlesticks;'}) });
 
 
 

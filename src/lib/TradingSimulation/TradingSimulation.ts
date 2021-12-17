@@ -1,6 +1,6 @@
 import {appContainer} from "../../ioc";
 import { SYMBOLS } from "../../ioc";
-import { ICandlestickSeries, ICandlestickSeriesItem } from "../../modules/shared/binance";
+import { ICandlestickSeries, IBinanceCandlestick } from "../../modules/shared/binance";
 import { BalanceSimulation } from "./BalanceSimulation";
 import { 
     ITendencyForecastRequired, 
@@ -278,7 +278,7 @@ export class TradingSimulation implements ITradingSimulation {
         // Iterates over each item in the series based on the window
         for (let i = this.windowSize; i < this.series.length; i++) {
             // Init the current item
-            const currentItem: ICandlestickSeriesItem = this.series[i];
+            const currentItem: IBinanceCandlestick = this.series[i];
 
             // If it isn't the last time, handle the current item accordingly
             if (i < this.series.length - 1) {
@@ -378,7 +378,7 @@ export class TradingSimulation implements ITradingSimulation {
      * @param currentItem 
      * @returns void
      */
-    private openPosition(forecast: IForecastResult, currentItem: ICandlestickSeriesItem): void {
+    private openPosition(forecast: IForecastResult, currentItem: IBinanceCandlestick): void {
         // Retrieve the exit parameters
         const ep: IPositionExitParameters = this.balance.getPositionExitParameters();
 
@@ -425,7 +425,7 @@ export class TradingSimulation implements ITradingSimulation {
      * @param forcePositionClose? 
      * @returns void
      */
-    private checkPositionState(currentItem: ICandlestickSeriesItem, forcePositionClose?: boolean): void {
+    private checkPositionState(currentItem: IBinanceCandlestick, forcePositionClose?: boolean): void {
         // Check the long position state
         if (this.activePosition.type == 'long') {
             // Check if the position has to be closed forcefully
@@ -753,7 +753,7 @@ export class TradingSimulation implements ITradingSimulation {
      * @param forecastResult 
      * @returns void
      */
-    private displayStandingNeutral(item: ICandlestickSeriesItem, forecastResult: IForecastResult): void {
+    private displayStandingNeutral(item: IBinanceCandlestick, forecastResult: IForecastResult): void {
         console.log(`Neutral on period: ${_utils.toDateString(item[0])} - ${_utils.toDateString(item[6])}`);
         console.log(`Forecast: ${_utils.toDateString(item[0])} - ${_utils.toDateString(item[6])}`);
         console.log(forecastResult);
@@ -818,7 +818,7 @@ export class TradingSimulation implements ITradingSimulation {
      * @param currentItem 
      * @returns void
      */
-    private displayActionlessStateCheck(currentItem: ICandlestickSeriesItem): void {
+    private displayActionlessStateCheck(currentItem: IBinanceCandlestick): void {
         console.log(`Actionless Check: ${_utils.toDateString(currentItem[0])} - ${_utils.toDateString(currentItem[6])}`);
         console.log(`O: ${currentItem[1]} | H: ${currentItem[2]} | L: ${currentItem[3]} | C: ${currentItem[4]}`);
     }

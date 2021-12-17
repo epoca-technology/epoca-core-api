@@ -34,8 +34,8 @@ export type ICandlestickSeriesInterval = '1m'|'3m'|'5m'|'15m'|'30m'|'1h'|'2h'|'4
 
 
 // Candlesticks
-export type ICandlestickSeries = ICandlestickSeriesItem[];
-export type ICandlestickSeriesItem = [
+export type ICandlestickSeries = IBinanceCandlestick[]; //@DEPRECATE
+export type IBinanceCandlestick = [
     number,     // 0 = Open time.                       Ej: 1638122400000
     string,     // 1 = Open.                            Ej: "53896.36000000"
     string,     // 2 = High.                            Ej: "54186.17000000"

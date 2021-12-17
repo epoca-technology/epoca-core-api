@@ -38,7 +38,8 @@ export class CryptoCurrencyService implements ICryptoCurrencyService {
 
 
     // Symbol List
-    public readonly symbols: ICryptoCurrencySymbol[] = <ICryptoCurrencySymbol[]>Object.keys(this.data);
+    //public readonly symbols: ICryptoCurrencySymbol[] = <ICryptoCurrencySymbol[]>Object.keys(this.data);
+    public readonly symbols: ICryptoCurrencySymbol[] = ['BTC'];
 
 
 
