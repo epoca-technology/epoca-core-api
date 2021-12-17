@@ -19,7 +19,7 @@ Run `npm start` to run the server
 
 Database:  `npm run cli-db`
 
-Latest Candlesticks:  `npm run cli-latest-candlesticks`
+Candlestick Sync:  `npm run cli-candlestick-sync`
 
 #
 ## Tests

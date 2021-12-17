@@ -111,6 +111,22 @@ describe('Number Handling:', function() {
 
 
 
+/* Date Handling */
+describe('Date Handling:', function() {
+    it('-Can retrieve a timestamp from a string date.', function() {
+        expect(_utils.getTimestamp('17-12-2021')).toEqual(1639713600000);
+        expect(_utils.getTimestamp('17-08-2017')).toEqual(1502942400000);
+        expect(_utils.getTimestamp('11-08-2020')).toEqual(1597118400000);
+    });
+});
+
+
+
+
+
+
+
+
 
 
 

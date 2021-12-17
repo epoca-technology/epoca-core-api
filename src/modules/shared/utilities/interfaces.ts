@@ -13,6 +13,7 @@ export interface IUtilitiesService {
     outputNumber(value: INumber, config?: INumberConfig): INumber,
 
     // Dates
+    getTimestamp(date: string): number,
     toDateString(timestamp: number): string,
 
     // Error Handling

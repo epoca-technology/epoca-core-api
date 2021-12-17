@@ -279,6 +279,18 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+    /**
+     * Given a date in the following format '19/05/2020' it will return the timestamp.
+     * @param date 
+     * @returns number
+     */
+    public getTimestamp(date: string): number {
+        return moment(date, ["DD-MM-YYYY"]).valueOf();
+    }
+
+
+
+
 
 
 
