@@ -9,7 +9,7 @@ import { IUtilitiesService } from "../../modules/shared/utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Init Binance
-import { IBinanceService, ICandlestickSeriesInterval, ICandlestickSeries, IBinanceCandlestick } from "../../modules/shared/binance";
+import { IBinanceService, IBinanceCandlestickInterval, ICandlestickSeries, IBinanceCandlestick } from "../../modules/shared/binance";
 const _binance: IBinanceService = appContainer.get<IBinanceService>(SYMBOLS.BinanceService);
 
 
@@ -25,7 +25,7 @@ prompt.start();
 
 // Defaults
 const d: {
-    interval: ICandlestickSeriesInterval,
+    interval: IBinanceCandlestickInterval,
     itemsQuantity: number
 } = {
     interval: '1m',
@@ -40,14 +40,14 @@ prompt.get(['interval', 'itemsQuantity'], async (e: any, data: prompt.Properties
     const apiLimit: number = 1000;
 
     // Init interval
-    const interval: ICandlestickSeriesInterval = 
-        typeof data.interval == "string" && data.interval.length ? <ICandlestickSeriesInterval>data.interval: d.interval;
+    const interval: IBinanceCandlestickInterval = 
+        typeof data.interval == "string" && data.interval.length ? <IBinanceCandlestickInterval>data.interval: d.interval;
 
     // Init Items Quantity
     const itemsQuantity: number = typeof data.itemsQuantity == "string" && data.itemsQuantity.length ? Number(data.itemsQuantity): d.itemsQuantity;
 
     // Init the series
-    let series: ICandlestickSeries = await _binance.getCandlestickSeries('BTC',interval, undefined, undefined, itemsQuantity > apiLimit ? apiLimit: itemsQuantity);
+    let series: ICandlestickSeries = await _binance.getCandlesticks('BTC',interval, undefined, undefined, itemsQuantity > apiLimit ? apiLimit: itemsQuantity);
     console.log(`Downloaded from ${_utils.toDateString(series[0][0])} to ${_utils.toDateString(series[series.length - 1][0])}`);
 
     // Check if it needs to look for more candlesticks in the past
@@ -67,7 +67,7 @@ prompt.get(['interval', 'itemsQuantity'], async (e: any, data: prompt.Properties
         }
 
         // Retrieve the previous series based on the first candle's open time
-        let previousSeries: ICandlestickSeries = await _binance.getCandlestickSeries('BTC',interval, undefined, series[0][0], nextLimit);
+        let previousSeries: ICandlestickSeries = await _binance.getCandlesticks('BTC',interval, undefined, series[0][0], nextLimit);
         console.log(`Downloaded from ${_utils.toDateString(previousSeries[0][0])} to ${_utils.toDateString(previousSeries[previousSeries.length - 1][0])}`);
 
         // Make sure the last item from the previous array is equals to the first from the accumulated series

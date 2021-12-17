@@ -1,9 +1,10 @@
 import {inject, injectable} from "inversify";
-import { IBinanceService, ICandlestickSeriesInterval, ICandlestickSeries } from "./interfaces";
+import { IBinanceService, IBinanceCandlestickInterval } from "./interfaces";
 import { SYMBOLS } from "../../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { IExternalRequestOptions, IExternalRequestResponse, IExternalRequestService } from "../external-request";
 import { ICryptoCurrencySymbol } from "../cryptocurrency";
+import { IBinanceCandlestick } from ".";
 
 
 @injectable()
@@ -59,15 +60,15 @@ export class BinanceService implements IBinanceService {
      * @param startTime?     Defaults to undefined
      * @param endTime?       Defaults to undefined
      * @param limit?         Defaults to 1000
-     * @returns Promise<ICandlestickSeries>
+     * @returns Promise<IBinanceCandlestick[]>
      */
-    public async getCandlestickSeries(
+    public async getCandlesticks(
         symbol: ICryptoCurrencySymbol, 
-        interval?: ICandlestickSeriesInterval, 
+        interval?: IBinanceCandlestickInterval, 
         startTime?: number, 
         endTime?: number, 
         limit?:number
-    ): Promise<ICandlestickSeries> {
+    ): Promise<IBinanceCandlestick[]> {
             // Build the path based on params
             let path: string = `/api/v3/klines?symbol=${symbol}USDT`;
 

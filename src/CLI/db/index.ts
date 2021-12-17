@@ -68,7 +68,6 @@ async function initializeDatabase(): Promise<any[]> {
     const dbCreation: any = await _db.query({sql: `CREATE DATABASE IF NOT EXISTS ${_db.connectionConfig.database};`}, dbCreationConfig);
     results.push(dbCreation);
 
-
     // Create the required tables in case they don't exist
     for (let table of _db.tables) {
         const tableCreation: any = await _db.query({sql: table});

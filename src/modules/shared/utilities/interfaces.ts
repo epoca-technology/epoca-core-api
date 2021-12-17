@@ -6,10 +6,10 @@ import {BigNumber} from 'bignumber.js';
 export interface IUtilitiesService {
     // Numbers
     calculateAverage(numberSeries: INumber[], config?: INumberConfig): INumber,
-    alterNumberByPercentage(value: INumber, percent: number, config?: INumberConfig): INumber,
+    alterNumberByPercentage(value: INumber, percent: INumber, config?: INumberConfig): INumber,
     calculatePercentageChange(oldNumber: INumber, newNumber: INumber, config?: INumberConfig): INumber,
     calculatePercentageOutOfTotal(value: INumber, total: INumber, config?: INumberConfig): INumber,
-    calculateFee(value: INumber, feePercentage: number, config?: INumberConfig): INumber,
+    calculateFee(value: INumber, feePercentage: INumber, config?: INumberConfig): INumber,
     outputNumber(value: INumber, config?: INumberConfig): INumber,
 
     // Dates

@@ -81,6 +81,13 @@ describe('Number Handling:', function() {
         expect(_utils.outputNumber(new BigNumber(1.555), {decimalPlaces: 2, outputFormat: 'number'})).toEqual(1.55);
     });
 
+    
+
+    it('-Can calculate a fee', function() {
+        expect(_utils.calculateFee(1000, 1)).toEqual('10');
+        expect(_utils.calculateFee(300, 10)).toEqual('30');
+        expect(_utils.calculateFee(100, 35)).toEqual('35');
+    });
 
 
 

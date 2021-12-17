@@ -9,14 +9,15 @@ export interface ICandlestickService {
 
     testMode: boolean,
 
-    // Retrievers
+    // Candlestick Retrievers
     get(symbol: ICryptoCurrencySymbol, start?: number, end?: number): Promise<ICandlestick[]>,
     getLastOpenTimestamp(symbol: ICryptoCurrencySymbol): Promise<number>,
     getLast(symbol: ICryptoCurrencySymbol, limit?: number): Promise<ICandlestick[]>,
 
     // Candlestick Syncing
-    
-    saveCandlesticksFromStart(symbol: ICryptoCurrencySymbol, startTimestamp: number): Promise<void>,
+    saveCandlesticksFromStart(symbol: ICryptoCurrencySymbol, startTimestamp: number): Promise<ICandlestick[]>,
+
+    // Candlestick Saving
     saveCandlesticks(candlesticks: ICandlestick[]): Promise<any>,
 
     // Candlesticks Proccessors

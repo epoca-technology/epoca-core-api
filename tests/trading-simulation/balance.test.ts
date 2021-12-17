@@ -11,7 +11,7 @@ const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
 /*  */
-xdescribe('Balance Simulation Tests', function() {
+describe('Balance Simulation Tests', function() {
 
     it('-', function() {
         const bs: IBalanceSimulation = new BalanceSimulation({

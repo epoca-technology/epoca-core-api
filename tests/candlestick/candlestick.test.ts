@@ -2,11 +2,12 @@
 import "reflect-metadata";
 import {appContainer, SYMBOLS} from '../../src/ioc';
 
+// Moment
+import * as moment from 'moment';
 
-
-// Init the Candlesticks Service
-import { ICandlestickService, ICandlestick } from "../../src/modules/shared/candlestick";
-const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
+// Init the Utilities Service
+import { IUtilitiesService } from "../../src/modules/shared/utilities";
+const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
 // Init the Database Service
@@ -14,9 +15,14 @@ import { IDatabaseService } from "../../src/modules/shared/database";
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 
+// Init the Candlesticks Service
+import { ICandlestickService, ICandlestick } from "../../src/modules/shared/candlestick";
+const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
+
+
 // Init the Binance Service
-import {IBinanceService , IBinanceCandlestick } from "../../src/modules/shared/binance";
-const _binance: IBinanceService = appContainer.get<IBinanceService>(SYMBOLS.BinanceService);
+import { IBinanceCandlestick } from "../../src/modules/shared/binance";
+//const _binance: IBinanceService = appContainer.get<IBinanceService>(SYMBOLS.BinanceService);
 
 
 // Init the CryptoCurrency Service
@@ -37,12 +43,14 @@ const tc: IBinanceCandlestick[] = [
 
 
 
-describe('Candlestick: ',  function() {
+
+
+
+
+
+describe('Candlestick Basic DB Actions: ',  function() {
     // Increase the timeout Interval and enable testMode on candlesticks
     beforeAll(() => { 
-        // Increase Timeout Interval to not stop Binance Requests
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000;
-
         // Enable test mode on the candlesticks
         _candlestick.testMode = true;
     });
@@ -94,6 +102,190 @@ describe('Candlestick: ',  function() {
 
 
 
+    it('-Can retrieve all the candlesticks: ', async function() {
+        // Processed
+        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks('BTC', tc);
+
+        // Save some candlesticks
+        await _candlestick.saveCandlesticks(processed);
+
+        // Retrieve all the candlesticks and make sure they match the originals
+        const c: ICandlestick[] = await _candlestick.get('BTC');
+        for (let i = 0; i < tc.length; i++) {
+            // The records must be identical - Except that the downloaded ones won't have the s property
+            expect(processed[i].ot).toBe(c[i].ot);
+            expect(processed[i].ct).toBe(c[i].ct);
+            expect(processed[i].o).toBe(c[i].o);
+            expect(processed[i].h).toBe(c[i].h);
+            expect(processed[i].l).toBe(c[i].l);
+            expect(processed[i].c).toBe(c[i].c);
+            expect(processed[i].v).toBe(c[i].v);
+            expect(processed[i].tbv).toBe(c[i].tbv);
+        }
+    });
+
+
+
+
+
+
+    it('-Can retrieve candlesticks from a start timestamp: ', async function() {
+        // Processed
+        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks('BTC', tc);
+
+        // Save some candlesticks
+        await _candlestick.saveCandlesticks(processed);
+
+        // Retrieve the last 2 candlesticks
+        const c: ICandlestick[] = await _candlestick.get('BTC', processed[processed.length - 2].ot);
+        expect(c.length).toBe(2);
+
+        // Make sure they match
+        expect(processed[processed.length - 2].ot).toBe(c[0].ot);
+        expect(processed[processed.length - 1].ot).toBe(c[1].ot);
+    });
+
+
+
+
+    it('-Can retrieve candlesticks from an end timestamp: ', async function() {
+        // Processed
+        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks('BTC', tc);
+
+        // Save some candlesticks
+        await _candlestick.saveCandlesticks(processed);
+
+        // Retrieve the first 3 candlesticks
+        const c: ICandlestick[] = await _candlestick.get('BTC', undefined, processed[2].ot);
+        expect(c.length).toBe(3);
+
+        // Make sure they match
+        expect(processed[0].ot).toBe(c[0].ot);
+        expect(processed[1].ot).toBe(c[1].ot);
+        expect(processed[2].ot).toBe(c[2].ot);
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+describe('Candlestick Basic DB Actions: ',  function() {
+    // Increase the timeout Interval and enable testMode on candlesticks
+    beforeAll(() => { 
+        // Increase Timeout Interval to not stop Binance Requests
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 400000;
+
+        // Enable test mode on the candlesticks
+        _candlestick.testMode = true;
+    });
+
+    // Clean the table before each test and once all tests have concluded
+    beforeEach(async () => { await _db.query({sql: 'DELETE FROM test_1m_candlesticks;'}) });
+    afterAll(async () => { 
+        // Clean the DB
+        await _db.query({sql: 'DELETE FROM test_1m_candlesticks;'}) ;
+
+        // Disable test mode
+        _candlestick.testMode = false;
+    });
+
+
+    
+
+
+    it('-Can save candlesticks from genesis with a correct sequence: ', async function() {
+        // Retrieve the last candlestick open time - in the first lot it will be the genesis
+        let startTS: number = await _candlestick.getLastOpenTimestamp('BTC');
+        expect(startTS).toBe(_cCurrency.data['BTC'].genesisCandlestick);
+
+        // Save the first lot
+        const firstLot: ICandlestick[] = await _candlestick.saveCandlesticksFromStart('BTC', startTS);
+        expect(firstLot.length).toBe(1000);
+
+        // Retrieve the start ts again
+        startTS = await _candlestick.getLastOpenTimestamp('BTC');
+
+        // The new start ts should match the last record from the first lot
+        expect(firstLot[firstLot.length - 1].ot).toBe(startTS);
+
+        // Allow a small delay before saving the next candlesticks
+        await _utils.asyncDelay(5);
+
+        // Save the second lot
+        const secondLot: ICandlestick[] = await _candlestick.saveCandlesticksFromStart('BTC', startTS);
+        expect(secondLot.length).toBe(1000);
+        
+        // Retrieve the start ts again
+        startTS = await _candlestick.getLastOpenTimestamp('BTC');
+
+        // The new start ts should match the last record from the second lot
+        expect(secondLot[secondLot.length - 1].ot).toBe(startTS);
+
+        // Allow a small delay before saving the last candlesticks
+        await _utils.asyncDelay(5);
+
+        // Save the third lot
+        const thirdLot: ICandlestick[] = await _candlestick.saveCandlesticksFromStart('BTC', startTS);
+        expect(thirdLot.length).toBe(1000);
+
+        // Retrieve the start ts again
+        startTS = await _candlestick.getLastOpenTimestamp('BTC');
+
+        // The new start ts should match the last record from the first lot
+        expect(thirdLot[thirdLot.length - 1].ot).toBe(startTS);
+
+        // Download all the candlesticks stored in the db
+        const candlesticks: ICandlestick[] = await _candlestick.get('BTC');
+
+        // There should be 3k candles
+        expect(candlesticks.length).toBe(3000);
+
+        // Iterate over each candlestick and make sure they all follow a perfect sequence
+        for (let i = 0; i < candlesticks.length; i++) {
+            // Make sure that the next item exists so it can be compared
+            if (candlesticks[i + 1]) {
+                // Init the current ot
+                const current = moment(candlesticks[i].ot);
+
+                // Init the next ot
+                const nextOT: number = candlesticks[i + 1].ot;
+
+                // Make sure the sequence is followed
+                expect(current.add(1, "minutes").valueOf()).toBe(nextOT);
+            }
+        }
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+describe('Candlestick Essentials: ',  function() {
+
 
 
 
@@ -134,9 +326,3 @@ describe('Candlestick: ',  function() {
         }
     });
 });
-
-
-
-
-
-

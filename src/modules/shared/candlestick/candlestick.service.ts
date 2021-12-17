@@ -32,7 +32,7 @@ export class CandlestickService implements ICandlestickService {
 
 
 
-    /* Retrievers */
+    /* Candlestick Retrievers */
 
 
 
@@ -70,7 +70,7 @@ export class CandlestickService implements ICandlestickService {
         // If only the start is provided
         else if (typeof end == "number") {
             sql += ' AND ot <= ?';
-            values.push(start);
+            values.push(end);
         }
 
         // Retrieve the candlesticks
@@ -152,10 +152,6 @@ export class CandlestickService implements ICandlestickService {
 
 
 
-
-
-
-
     /* Candlestick Syncing */
 
 
@@ -172,19 +168,48 @@ export class CandlestickService implements ICandlestickService {
      * a duplicate record.
      * @param symbol 
      * @param startTimestamp 
-     * @returns Promise<void>
+     * @returns Promise<ICandlestick[]>
      */
-    public async saveCandlesticksFromStart(symbol: ICryptoCurrencySymbol, startTimestamp: number): Promise<void> {
+     public async saveCandlesticksFromStart(symbol: ICryptoCurrencySymbol, startTimestamp: number): Promise<ICandlestick[]> {
         // Init the timestamp
         startTimestamp = startTimestamp == this._cCurrency.data[symbol].genesisCandlestick ? startTimestamp: startTimestamp + 1;
 
         // Retrieve the last 1k candlesticks from Binance
-        
+        const bCandlesticks: IBinanceCandlestick[] = await this._binance.getCandlesticks(symbol, '1m', startTimestamp, undefined, 1000);
 
+        // Make sure new records were extracted
+        if (bCandlesticks && bCandlesticks.length) {
+            // Process them
+            const processed: ICandlestick[] = this.processBinanceCandlesticks(symbol, bCandlesticks);
+
+            // Store them in the DB
+            await this.saveCandlesticks(processed);
+
+            // Return the retrieved list
+            return processed;
+        }
+        // Otherwise, return an empty list
+        else {
+            return [];
+        }
     }
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* Candlestick Saving */
 
 
 
@@ -210,6 +235,12 @@ export class CandlestickService implements ICandlestickService {
             values: [values]
         });
     }
+
+
+
+
+
+
 
 
 

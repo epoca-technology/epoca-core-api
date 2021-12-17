@@ -3,11 +3,14 @@ import {injectable} from "inversify";
 import { 
     IUtilitiesService, 
     INumber, 
-    INumberConfig, 
-    INumberOutputFormat
+    INumberConfig,
 } from "./interfaces";
 import {BigNumber} from 'bignumber.js';
 import * as moment from 'moment';
+
+
+
+
 
 @injectable()
 export class UtilitiesService implements IUtilitiesService {
@@ -58,18 +61,19 @@ export class UtilitiesService implements IUtilitiesService {
      * @param config? 
      * @returns INumber
      */
-    public alterNumberByPercentage(value: INumber, percent: number, config?: INumberConfig): INumber {
+    public alterNumberByPercentage(value: INumber, percent: INumber, config?: INumberConfig): INumber {
         // Init the new number
         let newNumber: BigNumber;
+        let percentBN: BigNumber = this.getBigNumber(percent);
 
         // Handle an increase
-        if (percent > 0) {
-            newNumber = new BigNumber(percent).dividedBy(100).plus(1).times(value);
+        if (percentBN.isGreaterThan(0)) {
+            newNumber = percentBN.dividedBy(100).plus(1).times(value);
         } 
         
         // Handle a decrease
-        else if (percent < 0) {
-            newNumber = new BigNumber(-(percent)).dividedBy(100).minus(1).times(value).times(-1);
+        else if (percentBN.isLessThan(0)) {
+            newNumber = percentBN.times(-1).dividedBy(100).minus(1).times(value).times(-1);
         }
 
         // Return the same value in case of 0%
@@ -161,8 +165,8 @@ export class UtilitiesService implements IUtilitiesService {
      * @param config?
      * @returns INumber
      */
-    public calculateFee(value: INumber, feePercentage: number, config?: INumberConfig): INumber {
-        return this.outputNumber(new BigNumber(feePercentage).times(value).dividedBy(100), config);
+    public calculateFee(value: INumber, feePercentage: INumber, config?: INumberConfig): INumber {
+        return this.outputNumber(this.getBigNumber(feePercentage).times(value).dividedBy(100), config);
     }
 
 
