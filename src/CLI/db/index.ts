@@ -2,6 +2,8 @@
 import "reflect-metadata";
 import { appContainer, SYMBOLS } from "../../ioc";
 import * as prompt from 'prompt';
+import mysqldump from 'mysqldump';
+import * as fs from "fs";
 
 // Init Utilities
 import { IDatabaseService } from "../../modules/shared/database";
@@ -18,6 +20,7 @@ console.log('DATABASE');
 console.log('@param action? // Defaults to 0')
 console.log('0 = Initialize Database');
 console.log('1 = Display Tables Size');
+console.log('2 = Backup Database');
 console.log(' ');
 prompt.start();
 
@@ -40,6 +43,9 @@ prompt.get(['action'], async (e: any, data: prompt.Properties) => {
             break;
         case '1':
             await displayTablesSize();
+            break;
+        case '2':
+            await backupDatabase();
             break;
         default:
             throw new Error(`The provided action ${data.action} is invalid.`);
@@ -103,4 +109,16 @@ async function displayTablesSize(): Promise<void> {
         ORDER BY (data_length + index_length) DESC;
     `});
     console.table(tableSizes);
+}
+
+
+
+
+async function backupDatabase(): Promise<void> {
+    // Backup the DB
+    const dump: any = await mysqldump({
+        connection: <mysqldump.ConnectionOptions>_db.connectionConfig,
+        dumpToFile: './dump.sql',
+    });
+    console.log(dump);
 }

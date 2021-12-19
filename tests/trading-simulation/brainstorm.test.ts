@@ -30,8 +30,9 @@ describe('', function() {
 
 
 
-    it('-', async function() {
-        const series: ICandlestick[] = await _candlestick.get('BTC', _utils.getTimestamp('01-01-2018'), _utils.getTimestamp('01-01-2019'));
+    it('-Trading Simulation', async function() {
+        //const series: ICandlestick[] = await _candlestick.get('BTC', _utils.getTimestamp('01-01-2018'), _utils.getTimestamp('01-01-2019'));
+        const series: ICandlestick[] = await _candlestick.get('BTC');
         try {
             const ts: ITradingSimulation = new TradingSimulation({
                 series: series,

@@ -36,7 +36,8 @@ export class ForecastService implements IForecastService {
      * @returns Promise<IForecastResult>
      */
     public async forecast(candlesticks1m: ICandlestick[]): Promise<IForecastResult> {
-        return this.forecastWithEMA(candlesticks1m);
+        //return this.forecastWithEMA(candlesticks1m);
+        return Math.random() > 0.5 ? {result: 1}: {result: -1};
     }
 
 
