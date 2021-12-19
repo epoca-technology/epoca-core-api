@@ -1,14 +1,14 @@
 import {inject, injectable} from "inversify";
 import { SYMBOLS } from "../../../ioc";
-import { ICandlestick } from "../candlestick";
+import { ICandlestick, ICandlestickService } from "../candlestick";
 import { IUtilitiesService } from "../utilities";
 import { 
     IForecastResult, 
     IForecastService, 
     ITendencyForecast 
 } from "./interfaces";
-
-
+import {EMA, RSI} from "bfx-hf-indicators";
+import {BigNumber} from "bignumber.js";
 
 
 
@@ -16,10 +16,11 @@ import {
 export class ForecastService implements IForecastService {
     // Inject dependencies
     @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
+    @inject(SYMBOLS.CandlestickService)         private _candlestick: ICandlestickService;
 
 
 
-    private readonly dustAmount: number = 0.7;
+
 
 
     constructor() {}
@@ -30,145 +31,124 @@ export class ForecastService implements IForecastService {
 
 
     /**
-     * Given a series of candlesticks, it will predict the next position to be taken.
+     * Given a series of 1m candlesticks, it will predict the next position to be taken.
      * @param series 
      * @returns Promise<IForecastResult>
      */
-    public async forecast(series: ICandlestick[]): Promise<IForecastResult> {
-        // Init the periods
-        const periods: ICandlestick[][] = this.getSeriesPeriods(series);
-
-        // Calculate the changed per period from beginning to end
-        const changes: number[] = this.getPeriodChanges(periods);
-
-        // Retrieve the tendency based on the periods
-        let tendency: ITendencyForecast = this.getTendencyFromChanges(changes);
-
-        // Return the final results
-        return {result: tendency};
+    public async forecast(candlesticks1m: ICandlestick[]): Promise<IForecastResult> {
+        return this.forecastWithTA(candlesticks1m);
     }
-
-
-
-
-
-
-
-
-    /**
-     * Given a series of candlesticks, it will cut the list in different timeframes.
-     * @param series 
-     * @returns ICandlestickSeries[]
-     */
-     private getSeriesPeriods(series: ICandlestick[]): ICandlestick[][] {
-        // Initialize the series list
-        let list: ICandlestick[][] = [series];
-
-        // Build the smaller frames
-        for (let i = -95; i <= -5; i = i + 5) {
-            list.push(series.slice(<number>this._utils.alterNumberByPercentage(series.length, i, {
-                decimalPlaces: 0, 
-                roundUp: true, 
-                outputFormat: "number"
-            })));
-        }
-        
-        // Return the final list
-        return list;
-    }
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Given a list of periods, it will calculate the change between the first series
-     * item and the last within each period.
-     * @param periods 
-     * @returns number[]
-     */
-    private getPeriodChanges(periods: ICandlestick[][]): number[] { 
-        let changes: number[] = [];
-        for (let period of periods) {
-            changes.push(<number>this._utils.calculatePercentageChange(period[0].c, period[period.length -1].c, {
-                outputFormat: 'number'
-            }));
-        }
-        return changes;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Given a list of changes, it will classify each one and suggest the appropiate
-     * tendency based on market conditions.
-     * @param changes 
-     * @returns ITendencyForecast
-     */
-     private getTendencyFromChanges(changes: number[]): ITendencyForecast {
-        // Init the counters
-        let up: number = 0;
-        let down: number = 0;
-        let neutral: number = 0;
-
-        // Iterate over the changes and classify them
-        for (let change of changes) {
-            if (change > this.dustAmount) { up += 1 }
-            else if (change < -(this.dustAmount)) { down += 1 }
-            else { neutral += 1 }
-        }
-
-        // Calculate the total amount of counters
-        const total: number = up + down + neutral;
-
-        // Initialize the tendency
-        let tendency: ITendencyForecast = 0;
-
-        // If the market is high, place a short
-        if (
-            this._utils.calculatePercentageOutOfTotal(up, total) >= 95 &&
-            changes[changes.length -1] >= changes[changes.length - 2] &&
-            changes[changes.length -2] >= changes[changes.length - 3] &&
-            changes[changes.length -3] >= changes[changes.length - 4] &&
-            changes[changes.length -4] >= changes[changes.length - 5]
-        ) {
-            return -1;
-        }
-
-        // If the market is low, place a long
-        else if (
-            this._utils.calculatePercentageOutOfTotal(down, total) >= 95 &&
-            changes[changes.length -1] <= changes[changes.length - 2] &&
-            changes[changes.length -2] <= changes[changes.length - 3] &&
-            changes[changes.length -3] <= changes[changes.length - 4] &&
-            changes[changes.length -4] <= changes[changes.length - 5]
-        ) {
-            return 1;
-        }
-
-
-        // Return the final tendency
-        return tendency;
-    }
-
 
 
 
     
 
+
+
+
+
+
+
+
+
+
+
+
+
+    /* TA Forecasting */
+
+
+
+
+
+    private async forecastWithTA(candlesticks1m: ICandlestick[]): Promise<IForecastResult> {
+        // Init periods
+        const shortPeriod: number = 7;
+        const mediumPeriod: number = 25;
+        const longPeriod: number = 99;
+
+        // Init EMAs
+        const shortEMA: EMA = new EMA([shortPeriod]);
+        const mediumEMA: EMA = new EMA([mediumPeriod]);
+        const longEMA: EMA = new EMA([longPeriod]);
+
+        // Init RSI
+        const shortRSI: RSI = new RSI([shortPeriod]);
+        //const mediumRSI: RSI = new RSI([mediumPeriod]);
+        const longRSI: RSI = new RSI([longPeriod]);
+
+        // Initialize best suited candlestick interval
+        const candlesticks: ICandlestick[] = this._candlestick.alterInterval(candlesticks1m, 30);
+        
+        // Iterate over each candlestick and calculate the indicators
+        candlesticks.forEach((c) => {
+            // Close Price
+            const closePrice: number = <number>this._utils.outputNumber(c.c, {outputFormat: 'number'});
+
+            // Populate the EMAs
+            shortEMA.add(closePrice);
+            mediumEMA.add(closePrice);
+            longEMA.add(closePrice);
+
+            // Populate the RSIs
+            //shortRSI.add(closePrice);
+            //longRSI.add(closePrice);
+        });
+
+        // Initialize the tendency
+        let tendency: ITendencyForecast = 0;
+
+        // Check if there has been a crossing
+        if (shortEMA.crossed(mediumEMA.v())) {
+            // Set Values
+            const sEMA: number = <number>this._utils.outputNumber(shortEMA.v(), {decimalPlaces: 2, outputFormat: 'number'});
+            const mEMA: number = <number>this._utils.outputNumber(mediumEMA.v(), {decimalPlaces: 2, outputFormat: 'number'});
+            const lEMA: number = <number>this._utils.outputNumber(longEMA.v(), {decimalPlaces: 2, outputFormat: 'number'});
+
+            // Make sure the EMAs aren't equal
+            if (sEMA != mEMA) {
+                // Initialize the RSI values
+                //const sRSI: number = <number>this._utils.outputNumber(shortRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
+                //const lRSI: number = <number>this._utils.outputNumber(longRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
+
+                // Set the tendency based on the EMA Cross
+                tendency = sEMA > mEMA ? 1: -1;
+
+                // Only long when the long EMA is above the trading price
+                if (tendency == 1 && new BigNumber(lEMA).isLessThan(candlesticks[candlesticks.length - 1].c)) {
+                    console.log('Long stopped by Trend Line');
+                    tendency = 0;
+                }
+
+
+                // Only short when the long EMA is below the trading price
+                if (tendency == -1 && new BigNumber(lEMA).isGreaterThan(candlesticks[candlesticks.length - 1].c)) {
+                    console.log('Short stopped by Trend Line');
+                    tendency = 0;
+                }
+
+
+                // If one of the RSIs is high, neutralize the long
+                /*if (tendency == 1 && (sRSI >= 65 || lRSI >= 65)) {
+                    console.log('Long stopped by RSI');
+                    tendency = 0;
+                }
+
+                // If one of the RSIs is low, neutralize the short
+                else if (tendency == -1 && (sRSI <= 35 || lRSI <= 35)) {
+                    console.log('Short stopped by RSI');
+                    tendency = 0;
+                }*/
+
+                // Log it
+                //if (tendency != 0) console.log(`SEMA (${sEMA}) LEMA (${lEMA}) | SRSI (${sRSI}) LRSI (${lRSI})`);
+                console.log(`SEMA: ${sEMA} MEMA: ${mEMA} LEMA: ${lEMA}`);
+            } else {
+                console.log(`Fake Cross ${shortEMA.v()} ${longEMA.v()}`);
+            }
+        }
+
+        // Return the final results
+        return {result: tendency};
+    }
 }

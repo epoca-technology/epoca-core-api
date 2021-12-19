@@ -39,7 +39,7 @@ const tc: IBinanceCandlestick[] = [
     [1639676460000,"48082.95000000","48124.65000000","48078.15000000","48095.28000000","21.67298000",1639676519999,"1042498.05020290",986,"14.29816000","687768.58757760","0"],
     [1639676520000,"48095.29000000","48131.57000000","48078.78000000","48083.35000000","27.07318000",1639676579999,"1302402.89166520",929,"12.36964000","595089.59287920","0"],
 ];
-
+import {TEST_BINANCE_CANDLESTICKS} from "./data";
 
 
 
@@ -285,6 +285,57 @@ describe('Candlestick Basic DB Actions: ',  function() {
 
 
 describe('Candlestick Essentials: ',  function() {
+
+
+
+
+
+
+    it('-Can merge a list of candlesticks into one: ', async function() {
+        // Original
+        const original: ICandlestick[] = _candlestick.processBinanceCandlesticks('BTC', TEST_BINANCE_CANDLESTICKS);
+        expect(_candlestick.alterInterval(original, 30).length).toBe(1);
+        expect(_candlestick.alterInterval(original, 15).length).toBe(2);
+        expect(_candlestick.alterInterval(original, 10).length).toBe(3);
+        expect(_candlestick.alterInterval(original, 5).length).toBe(6);
+        expect(_candlestick.alterInterval(original, 3).length).toBe(10);
+        expect(_candlestick.alterInterval(original, 2).length).toBe(15);
+        expect(_candlestick.alterInterval(original, 1).length).toBe(30);
+    });
+
+
+
+
+
+
+
+    it('-Can merge a list of candlesticks into one: ', async function() {
+        // Original
+        const original: ICandlestick[] = [
+            {ot: 1639676280000, ct: 1639676339999, o: "48106.3", h: "48143.06", l: "48091", c: "48091", v: "1183886.21", tbv: "769983.71"},
+            {ot: 1639676340000, ct: 1639676399999, o: "48091.01", h: "48104.29", l: "48075.41", c: "48092.18", v: "1948820.69", tbv: "1260723.02"},
+            {ot: 1639676400000, ct: 1639676459999, o: "48092.18", h: "48097.24", l: "48060", c: "48082.95", v: "1387157.33", tbv: "579152.41"},
+            {ot: 1639676460000, ct: 1639676519999, o: "48082.95", h: "48124.65", l: "48078.15", c: "48095.28", v: "1042498.05", tbv: "687768.58"},
+            {ot: 1639676520000, ct: 1639676579999, o: "48095.29", h: "48131.57", l: "48078.78", c: "48083.35", v: "1302402.89", tbv: "595089.59"},
+        ];
+
+        // Merge them into one
+        // @ts-ignore
+        const merged: ICandlestick = _candlestick.mergeCandlesticks(original);
+
+        // Validate the results
+        expect(merged.ot).toBe(1639676280000);
+        expect(merged.ct).toBe(1639676579999);
+        expect(merged.o).toBe("48106.3");
+        expect(merged.h).toBe("48143.06");
+        expect(merged.l).toBe("48060");
+        expect(merged.c).toBe("48083.35");
+        expect(merged.v).toBe("6864765.17");
+        expect(merged.tbv).toBe("3892717.31");
+    });
+
+
+
 
 
 

@@ -14,13 +14,12 @@ export interface ICandlestickService {
     getLastOpenTimestamp(symbol: ICryptoCurrencySymbol): Promise<number>,
     getLast(symbol: ICryptoCurrencySymbol, limit?: number): Promise<ICandlestick[]>,
 
-    // Candlestick Syncing
+    // Candlestick Syncing & Saving
     saveCandlesticksFromStart(symbol: ICryptoCurrencySymbol, startTimestamp: number): Promise<ICandlestick[]>,
-
-    // Candlestick Saving
     saveCandlesticks(candlesticks: ICandlestick[]): Promise<any>,
 
-    // Candlesticks Proccessors
+    // Helpers
+    alterInterval(candlesticks1m: ICandlestick[], intervalMinutes: number): ICandlestick[],
     processBinanceCandlesticks(symbol: ICryptoCurrencySymbol, candlesticks: IBinanceCandlestick[]): ICandlestick[],
 }
 

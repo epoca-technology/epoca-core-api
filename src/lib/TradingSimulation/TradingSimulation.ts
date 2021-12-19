@@ -207,8 +207,8 @@ export class TradingSimulation implements ITradingSimulation {
             id: id,
 
             // Period
-            periodBegins: this.series[this.windowSize][0],
-            periodEnds: this.series[this.series.length - 1][6],
+            periodBegins: this.series[this.windowSize].ot,
+            periodEnds: this.series[this.series.length - 1].ct,
 
             // Positions
             positions: this.positions,

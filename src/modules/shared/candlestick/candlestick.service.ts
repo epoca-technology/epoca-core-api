@@ -5,6 +5,7 @@ import { IDatabaseService } from "../database";
 import { IUtilitiesService } from "../utilities";
 import { IBinanceService, IBinanceCandlestick } from "../binance";
 import { ICryptoCurrencySymbol, ICryptoCurrencyService } from "../cryptocurrency";
+import BigNumber from "bignumber.js";
 
 
 
@@ -152,7 +153,7 @@ export class CandlestickService implements ICandlestickService {
 
 
 
-    /* Candlestick Syncing */
+    /* Candlestick Syncing & Saving */
 
 
 
@@ -202,23 +203,6 @@ export class CandlestickService implements ICandlestickService {
 
 
 
-
-
-
-
-
-
-
-    /* Candlestick Saving */
-
-
-
-
-
-
-
-
-
     /**
      * Given a list of candlesticks, it will save them to the database.
      * @param candlesticks 
@@ -239,6 +223,112 @@ export class CandlestickService implements ICandlestickService {
 
 
 
+
+
+
+
+
+    /* Helpers */
+
+
+
+
+
+
+
+
+
+
+
+    /* Candlestick Interval Alteration */
+
+
+
+
+
+
+    /**
+     * Given a list of 1 minute candlesticks, it will alter the intervals according
+     * to provided value.
+     * @param candlesticks1m 
+     * @param intervalMinutes 
+     * @returns ICandlestick[]
+     */
+    public alterInterval(candlesticks1m: ICandlestick[], intervalMinutes: number): ICandlestick[] {
+        // Init the new list
+        let list: ICandlestick[] = [];
+
+        // Iterate over new interval
+        let prev: number = 0;
+        for (let i = 0; i < Math.ceil(candlesticks1m.length / intervalMinutes); i++) {
+            if (candlesticks1m[prev]) {
+                list.push(this.mergeCandlesticks(candlesticks1m.slice(prev, prev + intervalMinutes)));
+                prev = prev + intervalMinutes;
+            }
+        }
+
+
+        // Return the final list
+        return list;
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Given a list of candlesticks, it will merge the properties and return a 
+     * unified object.
+     * @param candlesticks 
+     * @returns ICandlestick
+     */
+    private mergeCandlesticks(candlesticks: ICandlestick[]): ICandlestick {
+        // Init the candlestick
+        let final: ICandlestick = {
+            ot: candlesticks[0].ot,
+            ct: candlesticks[candlesticks.length - 1].ct,
+            o: candlesticks[0].o,
+            h: '',     // Placeholder
+            l: '',     // Placeholder
+            c: candlesticks[candlesticks.length - 1].c,
+            v: '',     // Placeholder
+            tbv: ''    // Placeholder
+        };
+
+        // Init the high & low lists
+        let high: string[] = [];
+        let low: string[] = [];
+
+        // Init the volume accumulators
+        let v: BigNumber = new BigNumber(0);
+        let tbv: BigNumber = new BigNumber(0);
+
+        // Iterate over each candlestick
+        candlesticks.forEach((c) => {
+            // Append the highs and the lows to the lists
+            high.push(c.h);
+            low.push(c.l);
+
+            // Accumulate the volumes
+            v = v.plus(c.v);
+            tbv = tbv.plus(c.tbv);
+        });
+
+        // Set the highest high and the lowest low
+        final.h = String(BigNumber.max.apply(null, high));
+        final.l = String(BigNumber.min.apply(null, low));
+
+        // Set the volume accumulation result
+        final.v = v.toString();
+        final.tbv = tbv.toString();
+
+        // Return the final candlestick
+        return final;
+    }
 
 
 

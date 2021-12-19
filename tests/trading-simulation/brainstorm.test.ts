@@ -23,13 +23,19 @@ import {TradingSimulation, ITradingSimulation, ITradingSimulationResult} from ".
 
 /*  */
 describe('', function() {
+    // Increase the timeout Interval
+    beforeAll(() => { 
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 400000;
+    });
+
+
 
     it('-', async function() {
-        const series: ICandlestick[] = await _candlestick.get('BTC');
+        const series: ICandlestick[] = await _candlestick.get('BTC', _utils.getTimestamp('01-01-2018'), _utils.getTimestamp('01-01-2019'));
         try {
             const ts: ITradingSimulation = new TradingSimulation({
                 series: series,
-                windowSize: 1000,
+                windowSize: 5000,
                 balanceConfig: {
                     initial: 10000,
                     borrowInterestPercent: 0.02,
@@ -37,7 +43,7 @@ describe('', function() {
                     minimumPositionAmount: 80,
                     verbose: 1
                 },
-                meditationMinutes: 0,
+                meditationMinutes: 60,
                 verbose: 1,
             });
             const result: ITradingSimulationResult = await ts.run();

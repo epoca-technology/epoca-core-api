@@ -103,12 +103,12 @@ prompt.get(['symbol', 'startDate'], async (e: any, data: prompt.Properties) => {
 
             // Update the progress and allow for a small delay before continuing
             progressBar.update(progressBarCounter += 1);
-            if (!fullySynced) await _utils.asyncDelay(30);
+            if (!fullySynced) await _utils.asyncDelay(20);
         } catch (e) {
             console.log(' ');
             console.log(e);
             console.log(' ');
-            await _utils.asyncDelay(30);
+            await _utils.asyncDelay(40);
         }
     }
 

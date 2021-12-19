@@ -25,7 +25,7 @@ const _forecast: IForecastService = appContainer.get<IForecastService>(SYMBOLS.F
 describe('Forecast Essentials: ',  function() {
 
     it('-', async function() {
-        const series: ICandlestick[] = await _candlestick.get('BTC');
+        const series: ICandlestick[] = await _candlestick.getLast('BTC', 1000);
         await _forecast.forecast(series);
     });
 
