@@ -3,7 +3,6 @@ import "reflect-metadata";
 import { appContainer, SYMBOLS } from "../../ioc";
 import * as prompt from 'prompt';
 import mysqldump from 'mysqldump';
-import * as fs from "fs";
 
 // Init Utilities
 import { IDatabaseService } from "../../modules/shared/database";
@@ -94,6 +93,60 @@ async function initializeDatabase(): Promise<void> {
 
 
 /**
+ * It will retrieve the last decompressed dump made.
+ * @returns Promise<string>
+ */
+/*async function getDatabaseDump(): Promise<string> {
+    // Retrieve the last backup made
+    const file: Buffer = fs.readFileSync(`${_db.backupDirectory}/${getLastBackupName()}`);
+
+    // Decompress the file
+    const decompressed: Buffer = await ungzip(file);
+    console.log(decompressed.length);
+
+    // Return the decompressed file in string format
+    return decompressed.toString();
+}*/
+
+
+
+
+
+
+
+/**
+ * It will read the backup directory and retrieve the last performed 
+ * backup name.
+ * @returns string
+ */
+/*function getLastBackupName(): string {
+    // Read the backup directory's contents
+    const files: string[] = fs.readdirSync(_db.backupDirectory);
+
+    // Iterate over the files and create a list out of the names
+    let names: string[] = [];
+    files.forEach((f) => names.push(f.split('.')[0]));
+
+    // Make sure that files were found
+    if (names.length > 0) {
+        // Return the file with the highest timestamp
+        return `${BigNumber.max.apply(null, names)}.sql.gz`;
+    } else {
+        throw new Error(`No database backup files were found in ${_db.backupDirectory}`);
+    }
+}*/
+
+
+
+
+
+
+
+
+
+
+
+/**
  * Displays the size of all existing tables in the database
  * @returns Promise<void>
  */
@@ -114,11 +167,23 @@ async function displayTablesSize(): Promise<void> {
 
 
 
+
+
+
+
+
+
+/**
+ * Creates and compresses a dump file that is placed inside of the ./db_backups 
+ * directory.
+ * @returns Promise<void>
+ */
 async function backupDatabase(): Promise<void> {
     // Backup the DB
     const dump: any = await mysqldump({
         connection: <mysqldump.ConnectionOptions>_db.connectionConfig,
-        dumpToFile: './dump.sql',
+        dumpToFile: `${_db.backupDirectory}/${Date.now()}.sql.gz`,
+        compressFile: true,
     });
     console.log(dump);
 }

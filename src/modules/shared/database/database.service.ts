@@ -26,6 +26,8 @@ export class DatabaseService implements IDatabaseService {
     public readonly tables: string[] = TABLES;
 
 
+    // Backups Directory
+    public readonly backupDirectory: string = './db_backups';
 
 
 

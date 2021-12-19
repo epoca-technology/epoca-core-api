@@ -322,7 +322,7 @@ describe('Candlestick Essentials: ',  function() {
         // Merge them into one
         // @ts-ignore
         const merged: ICandlestick = _candlestick.mergeCandlesticks(original);
-
+        
         // Validate the results
         expect(merged.ot).toBe(1639676280000);
         expect(merged.ct).toBe(1639676579999);

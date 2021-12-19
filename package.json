@@ -31,11 +31,8 @@
     "express-rate-limit": "5.5.1",
     "https": "1.0.0",
     "inversify": "6.0.1",
-    "json-stable-stringify": "1.0.1",
     "moment": "2.29.1",
     "mysql": "2.18.1",
-    "mysql-backup": "1.0.0",
-    "mysqldump": "^3.2.0",
     "reflect-metadata": "0.1.13"
   },
   "devDependencies": {
@@ -54,6 +51,8 @@
     "gulp-typescript": "6.0.0-alpha.1",
     "jasmine": "3.10.0",
     "jasmine-ts": "0.4.0",
+    "json-stable-stringify": "1.0.1",
+    "mysqldump": "3.2.0",
     "prompt": "1.2.0",
     "ts-node": "10.4.0",
     "typescript": "4.5.2"
