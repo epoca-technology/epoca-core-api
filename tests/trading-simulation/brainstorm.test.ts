@@ -35,7 +35,7 @@ describe('', function() {
         try {
             const ts: ITradingSimulation = new TradingSimulation({
                 series: series,
-                windowSize: 5000,
+                windowSize: 10000,
                 balanceConfig: {
                     initial: 10000,
                     borrowInterestPercent: 0.02,

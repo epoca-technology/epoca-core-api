@@ -70,7 +70,7 @@ export class BalanceSimulation implements IBalanceSimulation {
     private bankDepositPercent = 3;
     private leverage: number = 10;
     private leverageSpecs: ILeverageSpecs = {
-        10: { takeProfit: 1.5, stopLoss: 1.5 },
+        10: { takeProfit: 1, stopLoss: 1 },
         //5: { takeProfit: 3, stopLoss: 3 },
         //10: { takeProfit: 3, stopLoss: 4 },
     }
