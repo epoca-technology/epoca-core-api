@@ -36,8 +36,9 @@ export class ForecastService implements IForecastService {
      * @returns Promise<IForecastResult>
      */
     public async forecast(candlesticks1m: ICandlestick[]): Promise<IForecastResult> {
-        //return this.forecastWithEMA(candlesticks1m);
-        return Math.random() > 0.5 ? {result: 1}: {result: -1};
+        return this.forecastWithEMA(candlesticks1m);
+        //return this.forecastWithRSI(candlesticks1m);
+        //return Math.random() > 0.5 ? {result: 1}: {result: -1};
     }
 
 
@@ -74,12 +75,12 @@ export class ForecastService implements IForecastService {
         const longEMA: EMA = new EMA([longPeriod]);
 
         // Init RSI
-        const shortRSI: RSI = new RSI([shortPeriod]);
-        const mediumRSI: RSI = new RSI([mediumPeriod]);
-        const longRSI: RSI = new RSI([longPeriod]);
+        //const shortRSI: RSI = new RSI([shortPeriod]);
+        //const mediumRSI: RSI = new RSI([mediumPeriod]);
+        //const longRSI: RSI = new RSI([longPeriod]);
 
         // Initialize best suited candlestick interval
-        const candlesticks: ICandlestick[] = this._candlestick.alterInterval(candlesticks1m, 30);
+        const candlesticks: ICandlestick[] = this._candlestick.alterInterval(candlesticks1m, 15);
         
         // Iterate over each candlestick and calculate the indicators
         candlesticks.forEach((c) => {
@@ -92,9 +93,9 @@ export class ForecastService implements IForecastService {
             longEMA.add(closePrice);
 
             // Populate the RSIs
-            shortRSI.add(closePrice);
-            mediumRSI.add(closePrice);
-            longRSI.add(closePrice);
+            //shortRSI.add(closePrice);
+            //mediumRSI.add(closePrice);
+            //longRSI.add(closePrice);
         });
 
         // Initialize the tendency
@@ -110,15 +111,15 @@ export class ForecastService implements IForecastService {
             // Make sure the EMAs aren't equal
             if (sEMA != mEMA) {
                 // Initialize the RSI values
-                const sRSI: number = <number>this._utils.outputNumber(shortRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
-                const mRSI: number = <number>this._utils.outputNumber(mediumRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
-                const lRSI: number = <number>this._utils.outputNumber(longRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
+                //const sRSI: number = <number>this._utils.outputNumber(shortRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
+                //const mRSI: number = <number>this._utils.outputNumber(mediumRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
+                //const lRSI: number = <number>this._utils.outputNumber(longRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
 
                 // Set the tendency based on the EMA Cross
                 tendency = sEMA > mEMA ? 1: -1;
 
                 // Only long when the long EMA is above the trading price
-                if (tendency == 1 && new BigNumber(lEMA).isLessThan(candlesticks[candlesticks.length - 1].c)) {
+                /*if (tendency == 1 && new BigNumber(lEMA).isLessThan(candlesticks[candlesticks.length - 1].c)) {
                     console.log('Long stopped by Trend Line');
                     tendency = 0;
                 }
@@ -128,7 +129,7 @@ export class ForecastService implements IForecastService {
                 if (tendency == -1 && new BigNumber(lEMA).isGreaterThan(candlesticks[candlesticks.length - 1].c)) {
                     console.log('Short stopped by Trend Line');
                     tendency = 0;
-                }
+                }*/
 
 
                 // If one of the RSIs is high, neutralize the long
@@ -144,8 +145,8 @@ export class ForecastService implements IForecastService {
                 }*/
 
                 // Log it
-                if (tendency != 0) console.log(`SEMA (${sEMA}) LEMA (${lEMA}) | SRSI (${sRSI}) MRSI (${mRSI}) LRSI (${lRSI})`);
-                //console.log(`SEMA: ${sEMA} MEMA: ${mEMA} LEMA: ${lEMA}`);
+                //if (tendency != 0) console.log(`SEMA (${sEMA}) LEMA (${lEMA})`);
+                console.log(`SEMA: ${sEMA} MEMA: ${mEMA} LEMA: ${lEMA}`);
             } else {
                 console.log(`Fake Cross ${shortEMA.v()} ${longEMA.v()}`);
             }
@@ -162,14 +163,10 @@ export class ForecastService implements IForecastService {
 
 
     private async forecastWithRSI(candlesticks1m: ICandlestick[]): Promise<IForecastResult> {
-        // Init periods
-        const shortPeriod: number = 7;
-        const mediumPeriod: number = 25;
-        const longPeriod: number = 99;
         // Init RSI
-        const shortRSI: RSI = new RSI([shortPeriod]);
-        const mediumRSI: RSI = new RSI([mediumPeriod]);
-        const longRSI: RSI = new RSI([longPeriod]);
+        const shortRSI: RSI = new RSI([7]);
+        //const mediumRSI: RSI = new RSI([25]);
+        //const longRSI: RSI = new RSI([99]);
 
         // Initialize best suited candlestick interval
         const candlesticks: ICandlestick[] = this._candlestick.alterInterval(candlesticks1m, 30);
@@ -181,31 +178,31 @@ export class ForecastService implements IForecastService {
 
             // Populate the RSIs
             shortRSI.add(closePrice);
-            mediumRSI.add(closePrice);
-            longRSI.add(closePrice);
+            //mediumRSI.add(closePrice);
+            //longRSI.add(closePrice);
         });
 
         // Initialize the RSI values
         const sRSI: number = <number>this._utils.outputNumber(shortRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
-        const mRSI: number = <number>this._utils.outputNumber(mediumRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
-        const lRSI: number = <number>this._utils.outputNumber(longRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
+        //const mRSI: number = <number>this._utils.outputNumber(mediumRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
+        //const lRSI: number = <number>this._utils.outputNumber(longRSI.v(), {decimalPlaces: 0, outputFormat: 'number'});
 
         // Initialize the tendency
         let tendency: ITendencyForecast = 0;
 
        
         
-        if (sRSI >= 65 || mRSI >= 65 || lRSI >= 65) {
+        if (sRSI >= 75 && sRSI <= 85) {
             tendency = -1;
         }
 
         // If one of the RSIs is low, neutralize the short
-        else if (sRSI <= 35 || mRSI <= 35 || lRSI <= 35) {
+        else if (sRSI <= 15 && sRSI <= 25) {
             tendency = 1;
         }
 
         // Log it
-        if (tendency != 0) console.log(`SRSI (${sRSI}) MRSI (${mRSI}) LRSI (${lRSI})`);
+        if (tendency != 0) console.log(`SRSI (${sRSI})`);
 
         // Return the final results
         return {result: tendency};

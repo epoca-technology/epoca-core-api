@@ -1,8 +1,7 @@
 import {BigNumber} from 'bignumber.js';
 
 
-
-
+// Service
 export interface IUtilitiesService {
     // Numbers
     calculateAverage(numberSeries: INumber[], config?: INumberConfig): INumber,
@@ -16,6 +15,9 @@ export interface IUtilitiesService {
     getTimestamp(date: string): number,
     toDateString(timestamp: number): string,
 
+    // API Response
+    apiResponse(outcome: boolean, data?: any, error?: any): IAPIResponse,
+
     // Error Handling
     getErrorMessage(e: any): string,
 
@@ -26,6 +28,9 @@ export interface IUtilitiesService {
 
 
 
+
+
+/* Numbers */
 
 // Number Format
 export type INumber = number|string|BigNumber;
@@ -45,3 +50,11 @@ export type INumberOutputFormat = 'number'|'string'|'BigNumber';
 
 
 
+
+
+/* API Request Response */
+export interface IAPIResponse {
+    success: boolean,
+    data?: any,
+    error?: string
+}

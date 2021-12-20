@@ -1,5 +1,5 @@
-import { IForecastResult } from "../../modules/shared/forecast";
-import { ICandlestick } from "../../modules/shared/candlestick";
+import { IForecastResult } from "../../modules/forecast";
+import { ICandlestick } from "../../modules/candlestick";
 import {BigNumber} from "bignumber.js";
 
 

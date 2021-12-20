@@ -1,5 +1,5 @@
 import {ContainerModule, interfaces} from "inversify";
-import { SYMBOLS } from "../../../ioc";
+import { SYMBOLS } from "../../ioc";
 import { ForecastService } from "./forecast.service";
 import { IForecastService } from "./interfaces";
 

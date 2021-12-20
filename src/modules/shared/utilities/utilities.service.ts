@@ -4,6 +4,7 @@ import {
     IUtilitiesService, 
     INumber, 
     INumberConfig,
+    IAPIResponse
 } from "./interfaces";
 import {BigNumber} from 'bignumber.js';
 import * as moment from 'moment';
@@ -307,6 +308,32 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+
+
+
+    /* API Response */
+
+
+
+
+    
+
+
+
+    /**
+     * Retrieves an API Response based on provided params.
+     * @param outcome 
+     * @param data?
+     * @param error?
+     * @returns IAPIResponse
+     */
+    public apiResponse(outcome: boolean, data?: any, error?: any): IAPIResponse {
+        return {
+            success: outcome,
+            data: data != undefined && data != null ? data: undefined,
+            error: outcome ? undefined: this.getErrorMessage(error)
+        }
+    }
 
 
 

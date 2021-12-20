@@ -1,4 +1,4 @@
-import { ICandlestick } from "../../../modules/shared/candlestick";
+import { ICandlestick } from "../candlestick";
 
 
 

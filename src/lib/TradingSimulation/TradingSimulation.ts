@@ -1,5 +1,5 @@
 import {appContainer, SYMBOLS} from "../../ioc";
-import { ICandlestick } from "../../modules/shared/candlestick";
+import { ICandlestick } from "../../modules/candlestick";
 import { BalanceSimulation } from "./BalanceSimulation";
 import { 
     ITendencyForecastRequired, 
@@ -21,7 +21,7 @@ import { IUtilitiesService } from "../../../src/modules/shared/utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Init Forecast Service
-import { IForecastService, ITendencyForecast, IForecastResult } from "../../../src/modules/shared/forecast";
+import { IForecastService, ITendencyForecast, IForecastResult } from "../../modules/forecast";
 const _forecast: IForecastService = appContainer.get<IForecastService>(SYMBOLS.ForecastService);
 
 

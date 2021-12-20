@@ -17,7 +17,7 @@ const _cCurrency: ICryptoCurrencyService = appContainer.get<ICryptoCurrencyServi
 
 
 // Init the Candlestick Service
-import { ICandlestick, ICandlestickService } from "../../modules/shared/candlestick";
+import { ICandlestick, ICandlestickService } from "../../modules/candlestick";
 const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
 

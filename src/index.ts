@@ -38,9 +38,11 @@ const port = process.env.PORT || 8075;
 
 
 // Routes
+import {CandlestickRoute} from './modules/candlestick/candlestick.route';
 import {ServerRoute} from './modules/server/server.route';
 
 
+app.use('/candlestick', CandlestickRoute);
 app.use('/server', ServerRoute);
 
 

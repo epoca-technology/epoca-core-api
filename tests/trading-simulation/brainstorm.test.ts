@@ -9,7 +9,7 @@ const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
 // Init Candlestick Service
-import { ICandlestickService, ICandlestick } from "../../src/modules/shared/candlestick";
+import { ICandlestickService, ICandlestick } from "../../src/modules/candlestick";
 const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
 

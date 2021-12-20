@@ -1,5 +1,5 @@
-import { IBinanceCandlestick } from "../binance";
-import { ICryptoCurrencySymbol } from "../cryptocurrency";
+import { IBinanceCandlestick } from "../shared/binance";
+import { ICryptoCurrencySymbol } from "../shared/cryptocurrency";
 
 
 
@@ -10,6 +10,7 @@ export interface ICandlestickService {
     testMode: boolean,
 
     // Candlestick Retrievers
+    getForPeriod(symbol: ICryptoCurrencySymbol, start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]>,
     get(symbol: ICryptoCurrencySymbol, start?: number, end?: number): Promise<ICandlestick[]>,
     getLastOpenTimestamp(symbol: ICryptoCurrencySymbol): Promise<number>,
     getLast(symbol: ICryptoCurrencySymbol, limit?: number): Promise<ICandlestick[]>,

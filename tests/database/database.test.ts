@@ -10,7 +10,7 @@ import { TEST_BINANCE_CANDLESTICKS } from "./data";
 
 
 // Init the Candlestick Service
-import { ICandlestickService, ICandlestick } from "../../src/modules/shared/candlestick";
+import { ICandlestickService, ICandlestick } from "../../src/modules/candlestick";
 const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
 

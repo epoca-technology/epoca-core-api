@@ -1,10 +1,10 @@
 import {inject, injectable} from "inversify";
 import { ICandlestickService, ICandlestick } from "./interfaces";
-import { SYMBOLS } from "../../../ioc";
-import { IDatabaseService } from "../database";
-import { IUtilitiesService } from "../utilities";
-import { IBinanceService, IBinanceCandlestick } from "../binance";
-import { ICryptoCurrencySymbol, ICryptoCurrencyService } from "../cryptocurrency";
+import { SYMBOLS } from "../../ioc";
+import { IDatabaseService } from "../shared/database";
+import { IUtilitiesService } from "../shared/utilities";
+import { IBinanceService, IBinanceCandlestick } from "../shared/binance";
+import { ICryptoCurrencySymbol, ICryptoCurrencyService } from "../shared/cryptocurrency";
 import BigNumber from "bignumber.js";
 
 
@@ -34,6 +34,32 @@ export class CandlestickService implements ICandlestickService {
 
 
     /* Candlestick Retrievers */
+
+
+
+
+
+
+    /**
+     * Retrieves the candlesticks for a given period in any interval.
+     * @param symbol 
+     * @param start 
+     * @param end 
+     * @param intervalMinutes 
+     * @returns Promise<ICandlestick[]>
+     */
+    public async getForPeriod(symbol: ICryptoCurrencySymbol, start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]> {
+        // Retrieve the 1m candlesticks for the given period
+        const candlesticks1m: ICandlestick[] = await this.get(symbol, start, end);
+
+        // Return them based in the provided interval
+        return this.alterInterval(candlesticks1m, intervalMinutes);
+    }
+
+
+
+
+
 
 
 
@@ -319,8 +345,8 @@ export class CandlestickService implements ICandlestickService {
         });
 
         // Set the highest high and the lowest low
-        final.h = String(BigNumber.max.apply(null, high));
-        final.l = String(BigNumber.min.apply(null, low));
+        final.h = BigNumber.max.apply(null, high).toString();
+        final.l = BigNumber.min.apply(null, low).toString();
 
         // Set the volume accumulation result
         final.v = v.toString();

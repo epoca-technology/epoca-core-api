@@ -1,7 +1,15 @@
+// Dependencies
 import express = require("express");
+import {appContainer, SYMBOLS} from '../../ioc';
 
-// Rate Limits
-import {lowRiskLimit} from '../shared/utilities';
+
+
+// Rate Limit & Utilities
+import {lowRiskLimit, IUtilitiesService} from '../shared/utilities';
+const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
+
+
+
 
 // Init Route
 const ServerRoute = express.Router();
@@ -13,7 +21,7 @@ const ServerRoute = express.Router();
  * Allows the GUI to verify that the server is running and can take requests.
  */
 ServerRoute.route(`/status`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
-    res.send({success:true, data: null, error: null});
+    res.send(_utils.apiResponse(true));
 });
 
 
@@ -25,7 +33,7 @@ ServerRoute.route(`/status`).get(lowRiskLimit, async (req: express.Request, res:
  * Allows the GUI to retrieve the current server time.
  */
  ServerRoute.route(`/time`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
-    res.send({success:true, data: Date.now(), error: null});
+    res.send(_utils.apiResponse(true, Date.now()));
 });
 
 

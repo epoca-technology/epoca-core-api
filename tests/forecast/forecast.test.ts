@@ -9,12 +9,12 @@ const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.Ut
 
 
 // Init Candlestick Service
-import { ICandlestickService, ICandlestick } from "../../src/modules/shared/candlestick";
+import { ICandlestickService, ICandlestick } from "../../src/modules/candlestick";
 const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
 
 // Init Forecast Service
-import { IForecastService } from "../../src/modules/shared/forecast";
+import { IForecastService } from "../../src/modules/forecast";
 const _forecast: IForecastService = appContainer.get<IForecastService>(SYMBOLS.ForecastService);
 
 

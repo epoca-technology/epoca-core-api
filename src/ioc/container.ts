@@ -5,8 +5,10 @@ import {Container} from "inversify";
 import { environment } from "./environment";
 
 // Modules
-import { forecastModule } from "../modules/shared/forecast";
-import { candlestickModule } from "../modules/shared/candlestick";
+import { candlestickModule } from "../modules/candlestick";
+import { forecastModule } from "../modules/forecast";
+
+// Shared Modules
 import { binanceModule } from "../modules/shared/binance";
 import { cryptocurrencyModule } from "../modules/shared/cryptocurrency";
 import { utilitiesModule } from "../modules/shared/utilities";
@@ -23,12 +25,16 @@ const appContainer: Container = new Container({skipBaseClassChecks: true, defaul
 
 // Load the container
 appContainer.load(
+    /* Main */
+
+    // Candlestick
+    candlestickModule,
 
     // Forecast
     forecastModule,
 
-    // Candlestick
-    candlestickModule,
+    
+    /* Shared */
 
     // Binance
     binanceModule,
