@@ -1,6 +1,7 @@
 // Dependencies
 import express = require("express");
 import {appContainer, SYMBOLS} from '../../ioc';
+import { ICryptoCurrencySymbol } from "../shared/cryptocurrency";
 
 
 
@@ -26,23 +27,31 @@ const CandlestickRoute = express.Router();
 * @param start 
 * @param end 
 * @param intervalMinutes 
-* @returns IAPIResponse<ICandlestick[]>
+* @returns ICandlestick[]
 */
 CandlestickRoute.route(`/getForPeriod`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
-     // Retrieve the token
-     const token: string = req.get("authorization");
+    // Retrieve the token
+    const token: string = req.get("authorization");
 
      try {
         // Validate the token
         // @TODO
 
         // Retrieve the candlesticks
-        const data: ICandlestick[] = await _candlestick.getForPeriod(req.body.symbol, req.body.start, req.body.end, req.body.intervalMinutes);
+        const data: ICandlestick[] = await _candlestick.getForPeriod(
+            <ICryptoCurrencySymbol>req.query.symbol, 
+            Number(req.query.start), 
+            Number(req.query.end), 
+            Number(req.query.intervalMinutes)
+        );
 
         // Return the response
-        res.send(_utils.apiResponse(true, data));
-     } catch (e) { res.send(_utils.apiResponse(false, undefined, e)) }
-    
+        res.send(data);
+    } catch (e) {
+		console.log(e);
+        res.status(500);
+        res.json({ error: e });
+    }
 });
 
 

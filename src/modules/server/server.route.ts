@@ -19,9 +19,10 @@ const ServerRoute = express.Router();
 
 /**
  * Allows the GUI to verify that the server is running and can take requests.
+ * @returns {success: boolean}
  */
 ServerRoute.route(`/status`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
-    res.send(_utils.apiResponse(true));
+    res.send({success: true});
 });
 
 
@@ -31,9 +32,10 @@ ServerRoute.route(`/status`).get(lowRiskLimit, async (req: express.Request, res:
 
 /**
  * Allows the GUI to retrieve the current server time.
+ * @returns {ts: number}
  */
  ServerRoute.route(`/time`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
-    res.send(_utils.apiResponse(true, Date.now()));
+    res.send({ts: Date.now()});
 });
 
 
