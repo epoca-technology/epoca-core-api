@@ -218,7 +218,7 @@ export class TradingSimulation implements ITradingSimulation {
             unsuccessful: this.unsuccessful,
             neutral: this.neutral,
             whileMeditating: this.whileMeditating,
-            successRate: <number>_utils.calculatePercentageOutOfTotal(this.successful, this.positions.length, {outputFormat: 'number'}),
+            successRate: <number>_utils.calculatePercentageOutOfTotal(this.successful, this.positions.length),
 
             /* Balance */
 
@@ -240,13 +240,13 @@ export class TradingSimulation implements ITradingSimulation {
             longsTotal: this.longsTotal,
             successfulLongs: this.successfulLongs,
             unsuccessfulLongs: this.unsuccessfulLongs,
-            longSuccessRate: <number>_utils.calculatePercentageOutOfTotal(this.successfulLongs, this.longsTotal, {outputFormat: 'number'}),
+            longSuccessRate: <number>_utils.calculatePercentageOutOfTotal(this.successfulLongs, this.longsTotal),
 
             // Short Counters
             shortsTotal: this.shortsTotal,
             successfulShorts: this.successfulShorts,
             unsuccessfulShorts: this.unsuccessfulShorts,
-            shortSuccessRate: <number>_utils.calculatePercentageOutOfTotal(this.successfulShorts, this.shortsTotal, {outputFormat: 'number'}),
+            shortSuccessRate: <number>_utils.calculatePercentageOutOfTotal(this.successfulShorts, this.shortsTotal),
 
             // Times
             start: start,
@@ -387,9 +387,9 @@ export class TradingSimulation implements ITradingSimulation {
             type: forecast.result > 0 ? 'long': 'short',
             forecast: forecast,
             openTime: currentItem.ot,
-            openPrice: <number>_utils.outputNumber(currentItem.o, {decimalPlaces: 2, outputFormat: 'number'}),
-            takeProfitPrice: forecast.result > 0 ? <number>_utils.alterNumberByPercentage(currentItem.o, ep.takeProfit, {outputFormat: 'number'}): <number>_utils.alterNumberByPercentage(currentItem.o, -(ep.takeProfit), {outputFormat: 'number'}),
-            stopLossPrice: forecast.result > 0 ? <number>_utils.alterNumberByPercentage(currentItem.o, -(ep.stopLoss), {outputFormat: 'number'}): <number>_utils.alterNumberByPercentage(currentItem.o, ep.stopLoss, {outputFormat: 'number'}),
+            openPrice: <number>_utils.outputNumber(currentItem.o, {dp: 2}),
+            takeProfitPrice: forecast.result > 0 ? <number>_utils.alterNumberByPercentage(currentItem.o, ep.takeProfit): <number>_utils.alterNumberByPercentage(currentItem.o, -(ep.takeProfit)),
+            stopLossPrice: forecast.result > 0 ? <number>_utils.alterNumberByPercentage(currentItem.o, -(ep.stopLoss)): <number>_utils.alterNumberByPercentage(currentItem.o, ep.stopLoss),
         };
 
         // Increment the counter
@@ -688,9 +688,8 @@ export class TradingSimulation implements ITradingSimulation {
     private getSimulationDuration(start: number, end: number): number {
         //return _utils.roundNumber(new BigNumber(end).minus(start).dividedBy(1000), 0, true);
         return <number>_utils.outputNumber(new BigNumber(end).minus(start).dividedBy(1000), {
-            decimalPlaces: 0,
-            roundUp: true,
-            outputFormat: 'number'
+            dp: 0,
+            ru: true
         });
     }
 

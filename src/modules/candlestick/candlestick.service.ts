@@ -394,12 +394,12 @@ export class CandlestickService implements ICandlestickService {
             list.push({
                 ot: c[0],
                 ct: c[6],
-                o: <string>this._utils.outputNumber(c[1], {decimalPlaces: 2}),
-                h: <string>this._utils.outputNumber(c[2], {decimalPlaces: 2}),
-                l: <string>this._utils.outputNumber(c[3], {decimalPlaces: 2}),
-                c: <string>this._utils.outputNumber(c[4], {decimalPlaces: 2}),
-                v: <string>this._utils.outputNumber(c[7], {decimalPlaces: 2}),
-                tbv: <string>this._utils.outputNumber(c[10], {decimalPlaces: 2}),
+                o: <string>this._utils.outputNumber(c[1], {dp: 2, of: 's'}),
+                h: <string>this._utils.outputNumber(c[2], {dp: 2, of: 's'}),
+                l: <string>this._utils.outputNumber(c[3], {dp: 2, of: 's'}),
+                c: <string>this._utils.outputNumber(c[4], {dp: 2, of: 's'}),
+                v: <string>this._utils.outputNumber(c[7], {dp: 2, of: 's'}),
+                tbv: <string>this._utils.outputNumber(c[10], {dp: 2, of: 's'}),
                 s: symbol
             });
         }

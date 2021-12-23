@@ -36,12 +36,12 @@ export type INumber = number|string|BigNumber;
 
 // Number Config
 export interface INumberConfig {
-    outputFormat?: INumberOutputFormat,     // Defaults to 'string'
-    decimalPlaces?: number,                 // Defaults to 2
-    roundUp?: boolean,                      // Defaults to false
-    roundingMode?: BigNumber.RoundingMode    // It's inserted in the service
+    of?: INumberOutputFormat,    // Output Format: Defaults to 'n'
+    dp?: number,                 // Decimal Places: Defaults to 2
+    ru?: boolean,                // Round Up: Defaults to false
+    rm?: BigNumber.RoundingMode  // Rounding Mode: It's inserted in the service
 }
-export type INumberOutputFormat = 'number'|'string'|'BigNumber';
+export type INumberOutputFormat = 'n'|'s'|'bn';
 
 
 

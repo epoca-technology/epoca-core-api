@@ -190,18 +190,18 @@ export class UtilitiesService implements IUtilitiesService {
         config = this.getConfig(config);
 
         // Retrieve the Big Number and set the decimal places
-        const bn: BigNumber = this.getBigNumber(value).decimalPlaces(config.decimalPlaces, config.roundingMode);
+        const bn: BigNumber = this.getBigNumber(value).decimalPlaces(config.dp, config.rm);
 
         // Return the desired format
-        switch(config.outputFormat) {
-            case 'string':
+        switch(config.of) {
+            case 's':
                 return bn.toString();
-            case 'number':
+            case 'n':
                 return bn.toNumber();
-            case 'BigNumber':
+            case 'bn':
                 return bn;
             default:
-                throw new Error(`The provided output format ${config.outputFormat} is invalid.`);
+                throw new Error(`The provided output format ${config.of} is invalid.`);
         }
     }
 
@@ -243,9 +243,9 @@ export class UtilitiesService implements IUtilitiesService {
 
         // Return the final
         return {
-            decimalPlaces: typeof config.decimalPlaces == "number" ? config.decimalPlaces: 2,
-            roundingMode: config.roundUp == true ? BigNumber.ROUND_UP: BigNumber.ROUND_DOWN,
-            outputFormat: typeof config.outputFormat == "string" ? config.outputFormat: 'string'
+            dp: typeof config.dp == "number" ? config.dp: 2,
+            rm: config.ru == true ? BigNumber.ROUND_UP: BigNumber.ROUND_DOWN,
+            of: typeof config.of == "string" ? config.of: 'n'
         }
     }
 

@@ -161,17 +161,11 @@ export class BalanceSimulation implements IBalanceSimulation {
 
         // Calculate the borrow interest fee
         //const borrowInterestFee: number = _utils.calculateFee(borrowedAmount, this.borrowInterestPercent, 2, true);
-        const borrowInterestFee: number = <number>_utils.calculateFee(borrowedAmount, this.borrowInterestPercent, {
-            roundUp: true,
-            outputFormat: 'number'
-        });
+        const borrowInterestFee: number = <number>_utils.calculateFee(borrowedAmount, this.borrowInterestPercent, { ru: true });
 
         // Calculate the open trade fee
         //const openTradeFee: number = _utils.calculateFee(borrowedAmount, this.tradeFeePercent, 2, true);
-        const openTradeFee: number = <number>_utils.calculateFee(borrowedAmount, this.tradeFeePercent, {
-            roundUp: true,
-            outputFormat: 'number'
-        });
+        const openTradeFee: number = <number>_utils.calculateFee(borrowedAmount, this.tradeFeePercent, { ru: true });
 
         // Deduct the trade fee from the borrowed amount in order to calculate the correct close trade fee
         //borrowedAmountBN = borrowedAmountBN.minus(openTradeFee);
@@ -180,19 +174,14 @@ export class BalanceSimulation implements IBalanceSimulation {
 
         // Calculate the price change
         //const priceChange: number = _utils.calculatePercentageChange(position.openPrice, position.closePrice);
-        const priceChange: number = <number>_utils.calculatePercentageChange(position.openPrice, position.closePrice, {
-            outputFormat: 'number'
-        });
+        const priceChange: number = <number>_utils.calculatePercentageChange(position.openPrice, position.closePrice);
 
         // Alter the borrowed amount based on the price change %
         borrowedAmountBN = new BigNumber(_utils.alterNumberByPercentage(borrowedAmountBN, priceChange));
 
         // Calculate the close trade fee
         //const closeTradeFee: number = _utils.calculateFee(borrowedAmountBN, this.tradeFeePercent, 2, true);
-        const closeTradeFee: number = <number>_utils.calculateFee(borrowedAmountBN, this.tradeFeePercent, {
-            roundUp: true,
-            outputFormat: 'number'
-        });
+        const closeTradeFee: number = <number>_utils.calculateFee(borrowedAmountBN, this.tradeFeePercent, { ru: true});
 
         // Init the difference
         let difference: number;
@@ -243,8 +232,8 @@ export class BalanceSimulation implements IBalanceSimulation {
         // Update the change
         //this.currentChange = _utils.calculatePercentageChange(this.initial, this.current, 0, true);
         this.currentChange = <number>_utils.calculatePercentageChange(this.initial, this.current, {
-            decimalPlaces: 0,
-            roundUp: true
+            dp: 0,
+            ru: true
         });
 
         // Add the balance update to history
@@ -287,10 +276,7 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     private getBorrowedAmount(positionAmount: number): number {
         //return _utils.roundNumber(new BigNumber(positionAmount).times(this.leverage), 2);
-        return <number>_utils.outputNumber(new BigNumber(positionAmount).times(this.leverage), {
-            decimalPlaces: 2,
-            outputFormat: 'number'
-        });
+        return <number>_utils.outputNumber(new BigNumber(positionAmount).times(this.leverage), { dp: 2 });
     }
 
     
@@ -364,9 +350,7 @@ export class BalanceSimulation implements IBalanceSimulation {
 
         // Calculate the deposit amount
         //const depositAmount: number = _utils.alterNumberByPercentage(savings, this.bankDepositPercent - 100);
-        const depositAmount: number = <number>_utils.alterNumberByPercentage(savings, this.bankDepositPercent - 100, {
-            outputFormat: 'number'
-        });
+        const depositAmount: number = <number>_utils.alterNumberByPercentage(savings, this.bankDepositPercent - 100);
 
         // Deduct the savings from the current 
         this.current = new BigNumber(this.current).minus(depositAmount).toNumber();
@@ -377,9 +361,8 @@ export class BalanceSimulation implements IBalanceSimulation {
         // Update the current change
         //this.currentChange = _utils.calculatePercentageChange(this.initial, this.current, 0, true);
         this.currentChange = <number>_utils.calculatePercentageChange(this.initial, this.current, {
-            decimalPlaces: 0,
-            roundUp: true,
-            outputFormat: 'number'
+            dp: 0,
+            ru: true
         });
         
         // Log it if applies

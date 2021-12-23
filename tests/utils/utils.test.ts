@@ -27,8 +27,8 @@ describe('Number Handling:', function() {
         ];
 
         for (let v of vals) {
-            expect(_utils.alterNumberByPercentage(v.originalNumber, v.percent, {outputFormat: 'number'})).toEqual(v.result);
-            expect(_utils.calculatePercentageChange(v.originalNumber, v.result, {outputFormat: 'number'})).toEqual(v.percent);
+            expect(_utils.alterNumberByPercentage(v.originalNumber, v.percent)).toEqual(v.result);
+            expect(_utils.calculatePercentageChange(v.originalNumber, v.result)).toEqual(v.percent);
         }
     });
 
@@ -45,8 +45,8 @@ describe('Number Handling:', function() {
         ];
 
         for (let v of vals) {
-            expect(_utils.alterNumberByPercentage(v.originalNumber, v.percent, {outputFormat: 'number'})).toEqual(v.result);
-            expect(_utils.calculatePercentageChange(v.originalNumber, v.result, {outputFormat: 'number'})).toEqual(v.percent);
+            expect(_utils.alterNumberByPercentage(v.originalNumber, v.percent)).toEqual(v.result);
+            expect(_utils.calculatePercentageChange(v.originalNumber, v.result)).toEqual(v.percent);
         }
     });
 
@@ -54,39 +54,39 @@ describe('Number Handling:', function() {
 
 
     it('-Can calculate the average value from a list of numbers', function() {
-        expect(_utils.calculateAverage([100,200,300,400,500])).toEqual('300');
-        expect(_utils.calculateAverage([100.54,201.69,302.55,988.25,631.12])).toEqual('444.83');
+        expect(_utils.calculateAverage([100,200,300,400,500])).toEqual(300);
+        expect(_utils.calculateAverage([100.54,201.69,302.55,988.25,631.12])).toEqual(444.83);
     });
 
 
 
     it('-Can calculate the percentage change between 2 numbers', function() {
-        expect(_utils.calculatePercentageChange(100, 50)).toEqual('-50');
-        expect(_utils.calculatePercentageChange(100, 150)).toEqual('50');
-        expect(_utils.calculatePercentageChange(100, 100)).toEqual('0');
+        expect(_utils.calculatePercentageChange(100, 50, {of: 's'})).toEqual('-50');
+        expect(_utils.calculatePercentageChange(100, 150, {of: 's'})).toEqual('50');
+        expect(_utils.calculatePercentageChange(100, 100, {of: 's'})).toEqual('0');
     });
 
 
     it('-Can get the percent out of a number total', function() {
-        expect(_utils.calculatePercentageOutOfTotal(50, 100)).toEqual('50');
-        expect(_utils.calculatePercentageOutOfTotal(100, 1000)).toEqual('10');
-        expect(_utils.calculatePercentageOutOfTotal(30, 100)).toEqual('30');
+        expect(_utils.calculatePercentageOutOfTotal(50, 100)).toEqual(50);
+        expect(_utils.calculatePercentageOutOfTotal(100, 1000)).toEqual(10);
+        expect(_utils.calculatePercentageOutOfTotal(30, 100)).toEqual(30);
     });
 
 
     it('-Can round numbers in any format', function() {
-        expect(_utils.outputNumber(1.5, {decimalPlaces: 0, outputFormat: 'number'})).toEqual(1);
-        expect(_utils.outputNumber('1.5', {decimalPlaces: 0, roundUp: true})).toEqual('2');
-        expect(_utils.outputNumber(new BigNumber(1.555), {decimalPlaces: 2, roundUp: true})).toEqual('1.56');
-        expect(_utils.outputNumber(new BigNumber(1.555), {decimalPlaces: 2, outputFormat: 'number'})).toEqual(1.55);
+        expect(_utils.outputNumber(1.5, {dp: 0})).toEqual(1);
+        expect(_utils.outputNumber('1.5', {dp: 0, ru: true})).toEqual(2);
+        expect(_utils.outputNumber(new BigNumber(1.555), {dp: 2, ru: true})).toEqual(1.56);
+        expect(_utils.outputNumber(new BigNumber(1.555), {dp: 2})).toEqual(1.55);
     });
 
     
 
     it('-Can calculate a fee', function() {
-        expect(_utils.calculateFee(1000, 1)).toEqual('10');
-        expect(_utils.calculateFee(300, 10)).toEqual('30');
-        expect(_utils.calculateFee(100, 35)).toEqual('35');
+        expect(_utils.calculateFee(1000, 1)).toEqual(10);
+        expect(_utils.calculateFee(300, 10)).toEqual(30);
+        expect(_utils.calculateFee(100, 35)).toEqual(35);
     });
 
 

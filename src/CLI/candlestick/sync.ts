@@ -65,13 +65,13 @@ prompt.get(['symbol', 'startDate'], async (e: any, data: prompt.Properties) => {
 
     // Calculate the estimated remaining hours for the sync to be complete
     const remainingHours: BigNumber = <BigNumber>_utils.outputNumber(new BigNumber(Date.now()).minus(startTime).dividedBy(1000).dividedBy(60).dividedBy(60), {
-        decimalPlaces: 0,
-        roundUp: true,
-        outputFormat: 'BigNumber'
+        dp: 0,
+        ru: true,
+        of: 'bn'
     });
 
     // Since 1k 1m candlesticks are downloaded per request, calculate the estimated amount of requests needed
-    const remainingRequests: number = <number>_utils.outputNumber(remainingHours.dividedBy(16.66), {decimalPlaces: 0, roundUp: true, outputFormat: 'number'})
+    const remainingRequests: number = <number>_utils.outputNumber(remainingHours.dividedBy(16.66), {dp: 0, ru: true})
 
     // Start the progress bar
     console.log(' ');
