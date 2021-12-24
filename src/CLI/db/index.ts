@@ -2,13 +2,18 @@
 import "reflect-metadata";
 import { appContainer, SYMBOLS } from "../../ioc";
 import * as prompt from 'prompt';
-import mysqldump from 'mysqldump';
+import * as cliProgress from 'cli-progress';
+import {PoolClient, Client, QueryResult} from "pg";
+import {execute} from "@getvim/execute";
 
-// Init Utilities
+// Init Database
 import { IDatabaseService } from "../../modules/shared/database";
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 
+// Init Candlesticks
+import { ICandlestick, ICandlestickService } from "../../modules/candlestick";
+const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
 
 
@@ -18,8 +23,9 @@ const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.Databas
 console.log('DATABASE');
 console.log('@param action? // Defaults to 0')
 console.log('0 = Initialize Database');
-console.log('1 = Display Tables Size');
+console.log('1 = Display Database Size');
 console.log('2 = Backup Database');
+console.log('3 = Restore Database');
 console.log(' ');
 prompt.start();
 
@@ -41,10 +47,13 @@ prompt.get(['action'], async (e: any, data: prompt.Properties) => {
             await initializeDatabase();
             break;
         case '1':
-            await displayTablesSize();
+            await displayDatabaseSize();
             break;
         case '2':
             await backupDatabase();
+            break;
+        case '3':
+            await restoreDatabase();
             break;
         default:
             throw new Error(`The provided action ${data.action} is invalid.`);
@@ -57,33 +66,66 @@ prompt.get(['action'], async (e: any, data: prompt.Properties) => {
 
 
 
+/* Initialize Database */
+
+
+
 
 /**
  * Creates the Database as well as the required tables for the project to run.
  * @returns Promise<any[]>
  */
 async function initializeDatabase(): Promise<void> {
-    // Init the results
-    let results: any[] = [];
+    console.log(' ');console.log('DATABASE INITIALIZATION');
 
-    // Create the DB if it doesn't exist
+    // Create the DB
+    await createDatabase();
 
-    // Build a custom config object as the DB may not exist
-    let dbCreationConfig = Object.assign({}, _db.connectionConfig);
-    delete dbCreationConfig.database;
+    // Init the client
+    const client: PoolClient = await _db.pool.connect();
 
-    // Attempt to create it
-    const dbCreation: any = await _db.query({sql: `CREATE DATABASE IF NOT EXISTS ${_db.connectionConfig.database};`}, dbCreationConfig);
-    results.push(dbCreation);
-
-    // Create the required tables in case they don't exist
-    for (let table of _db.tables) {
-        const tableCreation: any = await _db.query({sql: table});
-        results.push(tableCreation);
+    try {
+        // Create the required tables in case they don't exist
+        for (let table of _db.tables) {
+            const tableCreation: QueryResult = await client.query(table.sql);
+            console.log(' ');console.log(`Table ${table.name} created successfuly:`, tableCreation);
+        }
     }
+    finally { client.release() }
+}
 
-    // Display the results
-    console.log(results);
+
+
+
+
+/**
+ * Checks for the existance of the database. If it doesn't, it will create it.
+ * @returns Promise<void>
+ */
+async function createDatabase(): Promise<void> {
+    // Retrieve a client
+    const client: Client = new Client({
+        host: _db.config.host,
+        user: _db.config.user,
+        password: _db.config.password,
+        port: _db.config.port,
+    });
+
+    // Perform the connection
+    await client.connect();
+
+    try {
+        // Check if the DB exists and create it if it doesn't
+        const {rowCount}: QueryResult = await client.query('SELECT FROM pg_database WHERE datname = $1', [_db.config.database]);
+        let dbCreationResult: QueryResult|undefined;
+        if (rowCount == 0) {
+            dbCreationResult = await client.query(`CREATE DATABASE ${_db.config.database}`);
+            console.log(' ');console.log(`Database ${_db.config.database} was created successfuly:`, dbCreationResult);
+        } else {
+            console.log(' ');console.log(`The DB ${_db.config.database} already exists. Skipping creation.`);
+        }
+    }
+    finally { await client.end() }
 }
 
 
@@ -92,76 +134,37 @@ async function initializeDatabase(): Promise<void> {
 
 
 
-/**
- * It will retrieve the last decompressed dump made.
- * @returns Promise<string>
- */
-/*async function getDatabaseDump(): Promise<string> {
-    // Retrieve the last backup made
-    const file: Buffer = fs.readFileSync(`${_db.backupDirectory}/${getLastBackupName()}`);
-
-    // Decompress the file
-    const decompressed: Buffer = await ungzip(file);
-    console.log(decompressed.length);
-
-    // Return the decompressed file in string format
-    return decompressed.toString();
-}*/
 
 
 
 
 
 
-
-/**
- * It will read the backup directory and retrieve the last performed 
- * backup name.
- * @returns string
- */
-/*function getLastBackupName(): string {
-    // Read the backup directory's contents
-    const files: string[] = fs.readdirSync(_db.backupDirectory);
-
-    // Iterate over the files and create a list out of the names
-    let names: string[] = [];
-    files.forEach((f) => names.push(f.split('.')[0]));
-
-    // Make sure that files were found
-    if (names.length > 0) {
-        // Return the file with the highest timestamp
-        return `${BigNumber.max.apply(null, names)}.sql.gz`;
-    } else {
-        throw new Error(`No database backup files were found in ${_db.backupDirectory}`);
-    }
-}*/
-
-
-
-
-
-
-
-
-
+/* Database Size */
 
 
 /**
  * Displays the size of all existing tables in the database
  * @returns Promise<void>
  */
-async function displayTablesSize(): Promise<void> {
-    // Retrieve the sizes and display them
-    const tableSizes: any = await _db.query({sql: `
-        SELECT 
-        table_schema as 'Database', 
-        table_name AS 'Table', 
-        round(((data_length + index_length) / 1024 / 1024), 2) 'Size in MB' 
-        FROM information_schema.TABLES 
-        WHERE TABLE_SCHEMA = '${_db.connectionConfig.database}'
-        ORDER BY (data_length + index_length) DESC;
-    `});
-    console.table(tableSizes);
+ async function displayDatabaseSize(): Promise<void> {
+    console.log(' ');console.log('DATABASE SIZE');
+
+    // Init the client
+    const client: PoolClient = await _db.pool.connect();
+
+    try {
+        // Retrieve the size of the entire database
+        const dbSize: QueryResult = await client.query(`SELECT pg_size_pretty( pg_database_size('${_db.config.database}') );`);
+        console.log(' ');console.log(`Database: ${dbSize.rows[0].pg_size_pretty}`);
+
+        // Retrieve the size for each table
+        for (let table of _db.tables) {
+            const tableSize: QueryResult = await client.query(`SELECT pg_size_pretty( pg_total_relation_size('${table.name}') );`);
+            console.log(`${table.name}: ${tableSize.rows[0].pg_size_pretty}`);
+        }
+    }
+    finally { client.release() }
 }
 
 
@@ -170,6 +173,8 @@ async function displayTablesSize(): Promise<void> {
 
 
 
+
+/* Backup */
 
 
 
@@ -178,12 +183,86 @@ async function displayTablesSize(): Promise<void> {
  * directory.
  * @returns Promise<void>
  */
-async function backupDatabase(): Promise<void> {
-    // Backup the DB
-    const dump: any = await mysqldump({
-        connection: <mysqldump.ConnectionOptions>_db.connectionConfig,
-        dumpToFile: `${_db.backupDirectory}/${Date.now()}.sql.gz`,
-        compressFile: true,
-    });
-    console.log(dump);
+ async function backupDatabase(): Promise<void> {
+     try {
+        console.log(' ');console.log('DATABASE BACKUP');console.log(' ');
+        await execute(`PGPASSWORD="${_db.config.password}" pg_dump -U ${_db.config.user} -h ${_db.config.host} -d ${_db.config.database} -f ./db_backup/backup.dump -Fc`);
+     } catch (e) {
+        console.log(e);
+     }
 }
+
+
+
+
+
+
+
+
+/* Restore */
+
+
+/**
+ * Restores the backup file located in the db_backup directory.
+ * @returns Promise<void>
+ */
+async function restoreDatabase(): Promise<void> {
+    try {
+        console.log(' ');console.log('DATABASE RESTORE');console.log(' ');
+        await initializeDatabase();
+        await execute(`PGPASSWORD="${_db.config.password}" pg_restore --clean -U ${_db.config.user} -h ${_db.config.host} -d plutus ./db_backup/backup.dump`);
+    } catch (e) {
+       console.log(e);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+/* Migration */
+
+
+
+/**
+ * Migrates the old MYSQL candlesticks into the new db with the new format.
+ * @returns migrateDB(): Promise<void>
+ */
+/*async function migrateDB(): Promise<void> {
+    // Init the progress bar
+    const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+    let progressBarCounter: number = 0;
+
+    // Download all candlesticks
+    const candlesticks: ICandlestick[] = await _candlestick.get('BTC');
+
+    // Init the client
+    const client: PoolClient = await _db.pool.connect();
+
+    // Start the progress bar
+    console.log(' ');console.log('Migration in progress...');console.log(' ');
+    progressBar.start(candlesticks.length, progressBarCounter);
+
+    try {
+        // Iterate over each candlestick and save it
+        for (let c of candlesticks) {
+            // Save the candlestick
+            const res: QueryResult = await client.query(
+                `
+                INSERT INTO candlesticks(ot, ct, o, h, l, c, v, tbv)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                `,
+                [c.ot, c.ct, Number(c.o), Number(c.h), Number(c.l), Number(c.c), Number(c.v), Number(c.tbv)]
+            );
+
+            // Update the progress and allow for a small delay before continuing
+            progressBar.update(progressBarCounter += 1);
+        }
+    }
+    finally { client.release() }
+}*/

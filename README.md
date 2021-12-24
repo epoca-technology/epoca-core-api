@@ -9,6 +9,12 @@
 5) Syncronize the candlesticks with `npm run cli-candlestick-sync`
 
 #
+## Last Database Dump
+
+https://firebasestorage.googleapis.com/v0/b/projectplutus-dev.appspot.com/o/db_backups%2Fbackup.dump?alt=media&token=3787499e-e2f1-4e7e-954e-c496b492134a
+
+
+#
 ## Build
 
 Run `npm run build` to perform a gulp build
@@ -63,3 +69,57 @@ Open the monitor with `sudo mysql`. Enter the following command
 Then run this query to refresh privileges:
 
 `flush privileges;`
+
+
+
+#
+# POSTGRES
+
+## Installation Guide:
+
+https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ubuntu-20-04-quickstart
+
+
+
+## Open PSQL
+sudo -u postgres psql
+
+
+
+## Setup the password on the postgres user
+
+ALTER USER postgres WITH PASSWORD '123456';
+
+
+
+
+
+
+#
+# Install PGADMIN4
+
+## Install the public key for the repository (if not done previously):
+
+`sudo curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo apt-key add`
+
+## Create the repository configuration file:
+
+`sudo sh -c 'echo "deb https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs) pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list && apt update'`
+
+
+## Install pgAdmin
+
+### Install for both desktop and web modes:
+
+`sudo apt install pgadmin4`
+
+### Install for desktop mode only:
+`sudo apt install pgadmin4-desktop`
+
+
+### Install for web mode only: 
+`sudo apt install pgadmin4-web `
+
+
+### Configure the webserver, if you installed pgadmin4-web:
+`sudo /usr/pgadmin4/bin/setup-web.sh`

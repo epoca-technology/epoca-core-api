@@ -1,10 +1,8 @@
 import {injectable} from "inversify";
-import { 
-    IDatabaseService,
-} from "./interfaces";
+import { IDatabaseService, ITable} from "./interfaces";
 import { TABLES } from "./tables";
 import * as mysql from "mysql";
-
+import {Pool, PoolConfig} from "pg";
 
 
 @injectable()
@@ -12,6 +10,27 @@ export class DatabaseService implements IDatabaseService {
     // Inject dependencies
 
 
+    
+    // Pool Config
+    public readonly config: PoolConfig = {
+        host: 'localhost',
+        user: 'postgres',
+        password: '123456',
+        database: 'plutus',
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+        port: 5432
+    }
+
+    // Pool
+    public readonly pool: Pool = new Pool(this.config);
+
+
+
+
+
+    /* MySQL */
 
     // Connection Configuration
     public connectionConfig: mysql.ConnectionConfig = {
@@ -23,7 +42,7 @@ export class DatabaseService implements IDatabaseService {
 
 
     // Tables
-    public readonly tables: string[] = TABLES;
+    public readonly tables: ITable[] = TABLES;
 
 
     // Backups Directory

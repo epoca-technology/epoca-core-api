@@ -1,12 +1,14 @@
 import * as mysql from "mysql";
-
+import {Pool, PoolConfig} from "pg";
 
 
 // Service
 export interface IDatabaseService {
     // Properties
+    config: PoolConfig,
+    pool: Pool,
     connectionConfig: mysql.ConnectionConfig,
-    tables: string[],
+    tables: ITable[],
     backupDirectory: string,
 
     
@@ -15,3 +17,6 @@ export interface IDatabaseService {
 }
 
 
+
+// Table
+export interface ITable {name: string, sql: string};
