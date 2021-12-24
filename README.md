@@ -5,7 +5,7 @@
 1) Install dependencies with `npm start` 
 2) Build the project with `npm run build` 
 3) Initialize the DB with `npm run cli-db` 
-4) Decompress the DB backup (`./db_backups`) and import it directly into MySQL manually.
+4) Alternatively, you can restore the database with `npm run cli-db`
 5) Syncronize the candlesticks with `npm run cli-candlestick-sync`
 
 #

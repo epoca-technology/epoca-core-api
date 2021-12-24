@@ -1,19 +1,24 @@
-import * as mysql from "mysql";
-import {Pool, PoolConfig} from "pg";
+import {Pool, PoolConfig, QueryConfig, QueryResult, PoolClient, Client} from "pg";
+
+// Postgres Types
+export type IPool = Pool;
+export type IPoolConfig = PoolConfig;
+export type IPoolClient = PoolClient;
+export type IQueryConfig = QueryConfig;
+export type IQueryResult = QueryResult;
+export type IClient = Client;
 
 
 // Service
 export interface IDatabaseService {
     // Properties
-    config: PoolConfig,
-    pool: Pool,
-    connectionConfig: mysql.ConnectionConfig,
+    config: IPoolConfig,
+    pool: IPool,
     tables: ITable[],
-    backupDirectory: string,
 
     
     // Query
-    query(sql: mysql.QueryOptions, config?: mysql.ConnectionConfig): Promise<any>
+    query(config: IQueryConfig): Promise<IQueryResult>
 }
 
 

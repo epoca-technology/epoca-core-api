@@ -1,10 +1,9 @@
 import {inject, injectable} from "inversify";
 import { ICandlestickService, ICandlestick } from "./interfaces";
 import { SYMBOLS } from "../../ioc";
-import { IDatabaseService } from "../shared/database";
+import { IDatabaseService, IPoolClient, IQueryResult } from "../shared/database";
 import { IUtilitiesService } from "../shared/utilities";
 import { IBinanceService, IBinanceCandlestick } from "../shared/binance";
-import { ICryptoCurrencySymbol, ICryptoCurrencyService } from "../shared/cryptocurrency";
 import BigNumber from "bignumber.js";
 
 
@@ -14,9 +13,11 @@ export class CandlestickService implements ICandlestickService {
     // Inject dependencies
     @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
-    @inject(SYMBOLS.CryptoCurrencyService)              private _cCurrency: ICryptoCurrencyService;
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
 
+    
+    // Genesis Candlestick Timestamp
+    public readonly genesisCandlestickTimestamp: number = 1502942400000;
 
 
     // Test Mode
@@ -42,15 +43,14 @@ export class CandlestickService implements ICandlestickService {
 
     /**
      * Retrieves the candlesticks for a given period in any interval.
-     * @param symbol 
      * @param start 
      * @param end 
      * @param intervalMinutes 
      * @returns Promise<ICandlestick[]>
      */
-    public async getForPeriod(symbol: ICryptoCurrencySymbol, start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]> {
+    public async getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]> {
         // Retrieve the 1m candlesticks for the given period
-        const candlesticks1m: ICandlestick[] = await this.get(symbol, start, end);
+        const candlesticks1m: ICandlestick[] = await this.get(start, end);
 
         // Return them based in the provided interval
         return this.alterInterval(candlesticks1m, intervalMinutes);
@@ -67,44 +67,42 @@ export class CandlestickService implements ICandlestickService {
     /**
      * Retrieves all candlesticks within 2 periods. If none of the periods are provided,
      * it will return all the candlesticks.
-     * @param symbol 
      * @param start? 
      * @param end? 
      * @returns 
      */
-    public async get(symbol: ICryptoCurrencySymbol, start?: number, end?: number): Promise<ICandlestick[]> {
+    public async get(start?: number, end?: number): Promise<ICandlestick[]> {
         // Init the sql values
         let sql: string = `
             SELECT ot, ct, o, h, l, c, v, tbv
-            FROM ${this.testMode ? 'test_1m_candlesticks': '1m_candlesticks'}
-            WHERE s = ?
+            FROM ${this.testMode ? 'test_candlesticks': 'candlesticks'}
         `;
-        let values: any[] = [symbol];
+        let values: any[] = [];
 
         // Check if both timestamps have been provided
         if (typeof start == "number" && typeof end == "number") {
-            sql += ' AND ot >= ? AND ot <= ?';
+            sql += ' WHERE ot >= $1 AND ot <= $2';
             values.push(start);
             values.push(end);
         }
 
         // If only the start is provided
         else if (typeof start == "number") {
-            sql += ' AND ot >= ?';
+            sql += ' WHERE ot >= $1';
             values.push(start);
         }
 
         // If only the start is provided
         else if (typeof end == "number") {
-            sql += ' AND ot <= ?';
+            sql += ' WHERE ot <= $1';
             values.push(end);
         }
 
         // Retrieve the candlesticks
-        return await this._db.query({
-            sql: sql,
-            values: values
-        });
+        const {rows}: IQueryResult = await this._db.query({text: sql,values: values});
+
+        // Return them
+        return rows || [];
     }
 
 
@@ -120,18 +118,17 @@ export class CandlestickService implements ICandlestickService {
     /**
      * Given a symbol, it will retrieve the open time of the last candlestick stored.
      * If none is found, it will return the genesis candlestick timestamp.
-     * @param symbol
      * @returns Promise<number>
      */
-    public async getLastOpenTimestamp(symbol: ICryptoCurrencySymbol): Promise<number> {
+    public async getLastOpenTimestamp(): Promise<number> {
         // Retrieve the last candlestick open item
-        const openTime: {ot: number}[] = await this._db.query({
-            sql: `SELECT ot FROM ${this.testMode ? 'test_1m_candlesticks': '1m_candlesticks'} WHERE s = ? ORDER BY ot DESC LIMIT 1`,
-            values: [symbol]
+        const {rows}: IQueryResult = await this._db.query({
+            text: `SELECT ot FROM ${this.testMode ? 'test_candlesticks': 'candlesticks'} ORDER BY ot DESC LIMIT 1`,
+            values: []
         });
 
         // If no results were found, return the symbol's genesis open time
-        return openTime.length > 0 ? openTime[0].ot: this._cCurrency.data[symbol].genesisCandlestick;
+        return rows.length > 0 ? rows[0].ot: this.genesisCandlestickTimestamp;
     }
 
 
@@ -146,32 +143,35 @@ export class CandlestickService implements ICandlestickService {
 
     /**
      * Retrieves the latest candlesticks based on the limit provided.
-     * @param symbol 
      * @param limit? 
      * @returns Promise<ICandlestick[]>
      */
-    public async getLast(symbol: ICryptoCurrencySymbol, limit?: number): Promise<ICandlestick[]> {
+    public async getLast(limit?: number): Promise<ICandlestick[]> {
         // Init the limit
         limit = typeof limit == "number" ? limit: 1000;
 
         // Retrieve the candlesticks
-        const candlesticks: ICandlestick[] = await this._db.query({
-            sql: `
+        const {rows}: IQueryResult = await this._db.query({
+            text: `
                 SELECT ot, ct, o, h, l, c, v, tbv
-                FROM ${this.testMode ? 'test_1m_candlesticks': '1m_candlesticks'}
-                WHERE s = ?
+                FROM ${this.testMode ? 'test_candlesticks': 'candlesticks'}
                 ORDER BY ot DESC
-                LIMIT ?
+                LIMIT $1
             `,
-            values: [symbol, limit]
+            values: [limit]
         });
 
         // Return the reversed candlesticks
-        return candlesticks.reverse();
+        return rows.reverse();
     }
 
     
     
+
+
+
+
+
 
 
 
@@ -193,21 +193,20 @@ export class CandlestickService implements ICandlestickService {
      * Retrieves the candlesticks starting at the provided point and stores them in the DB.
      * If the starting point is not the genesis, it will add 1 to the time in order to prevent
      * a duplicate record.
-     * @param symbol 
      * @param startTimestamp 
      * @returns Promise<ICandlestick[]>
      */
-     public async saveCandlesticksFromStart(symbol: ICryptoCurrencySymbol, startTimestamp: number): Promise<ICandlestick[]> {
+     public async saveCandlesticksFromStart(startTimestamp: number): Promise<ICandlestick[]> {
         // Init the timestamp
-        startTimestamp = startTimestamp == this._cCurrency.data[symbol].genesisCandlestick ? startTimestamp: startTimestamp + 1;
+        startTimestamp = startTimestamp == this.genesisCandlestickTimestamp ? startTimestamp: startTimestamp + 1;
 
         // Retrieve the last 1k candlesticks from Binance
-        const bCandlesticks: IBinanceCandlestick[] = await this._binance.getCandlesticks(symbol, '1m', startTimestamp, undefined, 1000);
+        const bCandlesticks: IBinanceCandlestick[] = await this._binance.getCandlesticks('1m', startTimestamp, undefined, 1000);
 
         // Make sure new records were extracted
         if (bCandlesticks && bCandlesticks.length) {
             // Process them
-            const processed: ICandlestick[] = this.processBinanceCandlesticks(symbol, bCandlesticks);
+            const processed: ICandlestick[] = this.processBinanceCandlesticks(bCandlesticks);
 
             // Store them in the DB
             await this.saveCandlesticks(processed);
@@ -232,18 +231,37 @@ export class CandlestickService implements ICandlestickService {
     /**
      * Given a list of candlesticks, it will save them to the database.
      * @param candlesticks 
-     * @returns Promise<any>
+     * @returns Promise<void>
      */
-    public async saveCandlesticks(candlesticks: ICandlestick[]): Promise<any> {
-        // Prepare the values to be saved
-        let values: any[] = [];
-        for (let c of candlesticks) { values.push([c.ot, c.ct, c.o, c.h, c.l, c.c, c.v, c.tbv, c.s]) }
+    public async saveCandlesticks(candlesticks: ICandlestick[]): Promise<void> {
+        // Initialize the client
+        const client: IPoolClient = await this._db.pool.connect();
 
-        // Insert them into the db
-        return await this._db.query({
-            sql: `INSERT INTO ${this.testMode ? 'test_1m_candlesticks': '1m_candlesticks'} (ot, ct, o, h, l, c, v, tbv, s) VALUES ?`, 
-            values: [values]
-        });
+        try {
+            // Begin the transaction
+            await client.query({text: 'BEGIN'});
+
+            // Insert the candlesticks
+            for (let c of candlesticks) {
+                await client.query({
+                    text: `
+                        INSERT INTO ${this.testMode ? 'test_candlesticks': 'candlesticks'}(ot, ct, o, h, l, c, v, tbv) 
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    `,
+                    values: [c.ot, c.ct, c.o, c.h, c.l, c.c, c.v, c.tbv]
+                });
+            }
+
+            // Finally, commit the inserts
+            await client.query({text: 'COMMIT'});
+
+        } catch (e) {
+            // Rollback and rethrow the error
+            await client.query('ROLLBACK');
+            throw e;
+        } finally {
+            client.release();
+        }
     }
 
 
@@ -318,16 +336,16 @@ export class CandlestickService implements ICandlestickService {
             ot: candlesticks[0].ot,
             ct: candlesticks[candlesticks.length - 1].ct,
             o: candlesticks[0].o,
-            h: '',     // Placeholder
-            l: '',     // Placeholder
+            h: 0,     // Placeholder
+            l: 0,     // Placeholder
             c: candlesticks[candlesticks.length - 1].c,
-            v: '',     // Placeholder
-            tbv: ''    // Placeholder
+            v: 0,     // Placeholder
+            tbv: 0    // Placeholder
         };
 
         // Init the high & low lists
-        let high: string[] = [];
-        let low: string[] = [];
+        let high: number[] = [];
+        let low: number[] = [];
 
         // Init the volume accumulators
         let v: BigNumber = new BigNumber(0);
@@ -345,12 +363,12 @@ export class CandlestickService implements ICandlestickService {
         });
 
         // Set the highest high and the lowest low
-        final.h = BigNumber.max.apply(null, high).toString();
-        final.l = BigNumber.min.apply(null, low).toString();
+        final.h = BigNumber.max.apply(null, high).toNumber();
+        final.l = BigNumber.min.apply(null, low).toNumber();
 
         // Set the volume accumulation result
-        final.v = v.toString();
-        final.tbv = tbv.toString();
+        final.v = v.toNumber();
+        final.tbv = tbv.toNumber();
 
         // Return the final candlestick
         return final;
@@ -381,11 +399,10 @@ export class CandlestickService implements ICandlestickService {
     /**
      * Given a list of binance candlesticks, it will convert them into the correct format
      * in order to be stored in the db.
-     * @param symbol 
      * @param candlesticks 
      * @returns ICandlestick[]
      */
-    public processBinanceCandlesticks(symbol: ICryptoCurrencySymbol, candlesticks: IBinanceCandlestick[]): ICandlestick[] {
+    public processBinanceCandlesticks(candlesticks: IBinanceCandlestick[]): ICandlestick[] {
         // Init the list
         let list: ICandlestick[] = [];
 
@@ -394,13 +411,12 @@ export class CandlestickService implements ICandlestickService {
             list.push({
                 ot: c[0],
                 ct: c[6],
-                o: <string>this._utils.outputNumber(c[1], {dp: 2, of: 's'}),
-                h: <string>this._utils.outputNumber(c[2], {dp: 2, of: 's'}),
-                l: <string>this._utils.outputNumber(c[3], {dp: 2, of: 's'}),
-                c: <string>this._utils.outputNumber(c[4], {dp: 2, of: 's'}),
-                v: <string>this._utils.outputNumber(c[7], {dp: 2, of: 's'}),
-                tbv: <string>this._utils.outputNumber(c[10], {dp: 2, of: 's'}),
-                s: symbol
+                o: <number>this._utils.outputNumber(c[1], {dp: 2}),
+                h: <number>this._utils.outputNumber(c[2], {dp: 2}),
+                l: <number>this._utils.outputNumber(c[3], {dp: 2}),
+                c: <number>this._utils.outputNumber(c[4], {dp: 2}),
+                v: <number>this._utils.outputNumber(c[7], {dp: 2}),
+                tbv: <number>this._utils.outputNumber(c[10], {dp: 2})
             });
         }
 

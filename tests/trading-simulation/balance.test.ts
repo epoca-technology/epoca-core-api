@@ -16,7 +16,7 @@ xdescribe('Balance Simulation Tests', function() {
     it('-', function() {
         const bs: IBalanceSimulation = new BalanceSimulation({
             initial: 100,
-            verbose: 2
+            verbose: 0
         });
         /*bs.onPositionClose({
             type: 'long',

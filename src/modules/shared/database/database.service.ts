@@ -1,8 +1,7 @@
 import {injectable} from "inversify";
-import { IDatabaseService, ITable} from "./interfaces";
+import { IDatabaseService, ITable, IPool, IPoolClient, IPoolConfig, IQueryResult, IQueryConfig} from "./interfaces";
 import { TABLES } from "./tables";
-import * as mysql from "mysql";
-import {Pool, PoolConfig} from "pg";
+import {Pool, types} from "pg";
 
 
 @injectable()
@@ -12,7 +11,7 @@ export class DatabaseService implements IDatabaseService {
 
     
     // Pool Config
-    public readonly config: PoolConfig = {
+    public readonly config: IPoolConfig = {
         host: 'localhost',
         user: 'postgres',
         password: '123456',
@@ -23,35 +22,24 @@ export class DatabaseService implements IDatabaseService {
         port: 5432
     }
 
+
     // Pool
-    public readonly pool: Pool = new Pool(this.config);
+    public readonly pool: IPool = new Pool(this.config);
 
 
-
-
-
-    /* MySQL */
-
-    // Connection Configuration
-    public connectionConfig: mysql.ConnectionConfig = {
-        host: 'localhost',
-        user: 'root',
-        password: '123456',
-        database: 'plutus'
-    }
-
-
-    // Tables
+    // Database Tables
     public readonly tables: ITable[] = TABLES;
-
-
-    // Backups Directory
-    public readonly backupDirectory: string = './db_backups';
 
 
 
     
-    constructor() { }
+    constructor() {
+        // Bigint Parsing
+        types.setTypeParser(20, (val) => { return parseInt(val, 10) })
+
+        // Numeric Parsing
+        types.setTypeParser(1700, (val) => { return parseFloat(val) });
+    }
 
 
 
@@ -69,30 +57,23 @@ export class DatabaseService implements IDatabaseService {
 
 
 
-
-
     /**
-     * Performs a SQL query and retrieves the results.
-     * @param sql 
-     * @param config? 
-     * @returns Promise<any>
+     * Given a Query config, it will execute it on the database and retrieve
+     * the results.
+     * @param config 
+     * @returns Promise<IQueryResult>
      */
-    public query(sql: mysql.QueryOptions, config?: mysql.ConnectionConfig): Promise<any> {
-        // Init the connection
-        const connection: mysql.Connection = mysql.createConnection(config || this.connectionConfig);
+    public async query(config: IQueryConfig): Promise<IQueryResult> {
+        // Init the client
+        const client: IPoolClient = await this.pool.connect();
 
-        // Perform the query
-        return new Promise((resolve, reject) => {
-            connection.query(sql, (err: mysql.MysqlError, result: any) => {
-                // End the connection
-                connection.destroy();
+        try {
+            // Execute the query
+            const query: IQueryResult = await client.query(config);
 
-                // Handle the error if any
-                if (err) reject(err);
-
-                // Resolve the results
-                resolve(result);
-            });
-        });
+            // Return the results
+            return query;
+        }
+        finally { client.release() }
     }
 }

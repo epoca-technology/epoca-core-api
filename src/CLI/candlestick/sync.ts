@@ -11,11 +11,6 @@ import { IUtilitiesService } from "../../modules/shared/utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
-// Init the CryptoCurrency Service
-import { ICryptoCurrencyService, ICryptoCurrencySymbol } from "../../modules/shared/cryptocurrency";
-const _cCurrency: ICryptoCurrencyService = appContainer.get<ICryptoCurrencyService>(SYMBOLS.CryptoCurrencyService);
-
-
 // Init the Candlestick Service
 import { ICandlestick, ICandlestickService } from "../../modules/candlestick";
 const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
@@ -28,8 +23,6 @@ const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(
  * CLI Initializer
  */
 console.log('CANDLESTICK SYNC');
-console.log('@param symbol');
-console.log('@param startDate? // ONLY FOR TESTING: Format: 19-02-2020. If none is provided will default to the current last.');
 console.log(' ');
 prompt.start();
 
@@ -39,16 +32,12 @@ prompt.start();
 /**
  * Database CLI
  */
-prompt.get(['symbol', 'startDate'], async (e: any, data: prompt.Properties) => {
+prompt.get([], async (e: any, data: prompt.Properties) => {
     if (e) throw e;
 
     // Init the progress bar
     const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
     let progressBarCounter: number = 0;
-
-    // Init the symbol
-    const symbol: ICryptoCurrencySymbol = <ICryptoCurrencySymbol>data.symbol;
-    if (!_cCurrency.symbols.includes(symbol)) { throw new Error(`The symbol ${symbol} is not supported.`) }
 
     // Init the start timestamp
     let startTime: number;
@@ -60,7 +49,7 @@ prompt.get(['symbol', 'startDate'], async (e: any, data: prompt.Properties) => {
 
     // Otherwise, retrieve the last saved open time
     else {
-        startTime = await _candlestick.getLastOpenTimestamp(symbol);
+        startTime = await _candlestick.getLastOpenTimestamp();
     }
 
     // Calculate the estimated remaining hours for the sync to be complete
@@ -85,7 +74,7 @@ prompt.get(['symbol', 'startDate'], async (e: any, data: prompt.Properties) => {
     while(!fullySynced) {
         try {
             // Save and retrieve the candlesticks from the starting timestamp
-            const candlesticks: ICandlestick[] = await _candlestick.saveCandlesticksFromStart(symbol, startTime);
+            const candlesticks: ICandlestick[] = await _candlestick.saveCandlesticksFromStart(startTime);
 
             // Make sure candlesticks were retrieved
             if (candlesticks.length > 0) {
@@ -116,7 +105,7 @@ prompt.get(['symbol', 'startDate'], async (e: any, data: prompt.Properties) => {
     // Sync completed
     progressBar.stop();
     console.log(' ');
-    console.log(`The candlesticks for ${symbol} have been synced.`);
+    console.log(`The candlesticks have been synced.`);
     console.log('');
 });
 

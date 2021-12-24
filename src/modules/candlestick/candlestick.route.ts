@@ -1,7 +1,6 @@
 // Dependencies
 import express = require("express");
 import {appContainer, SYMBOLS} from '../../ioc';
-import { ICryptoCurrencySymbol } from "../shared/cryptocurrency";
 
 
 
@@ -23,7 +22,6 @@ const CandlestickRoute = express.Router();
 
 /**
  * Allows the GUI to verify that the server is running and can take requests.
-* @param symbol 
 * @param start 
 * @param end 
 * @param intervalMinutes 
@@ -39,7 +37,6 @@ CandlestickRoute.route(`/getForPeriod`).get(lowRiskLimit, async (req: express.Re
 
         // Retrieve the candlesticks
         const data: ICandlestick[] = await _candlestick.getForPeriod(
-            <ICryptoCurrencySymbol>req.query.symbol, 
             Number(req.query.start), 
             Number(req.query.end), 
             Number(req.query.intervalMinutes)

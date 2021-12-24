@@ -1,10 +1,8 @@
 import {inject, injectable} from "inversify";
-import { IBinanceService, IBinanceCandlestickInterval } from "./interfaces";
+import { IBinanceService, IBinanceCandlestickInterval, IBinanceCandlestick } from "./interfaces";
 import { SYMBOLS } from "../../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { IExternalRequestOptions, IExternalRequestResponse, IExternalRequestService } from "../external-request";
-import { ICryptoCurrencySymbol } from "../cryptocurrency";
-import { IBinanceCandlestick } from ".";
 
 
 @injectable()
@@ -55,7 +53,6 @@ export class BinanceService implements IBinanceService {
 
     /**
      * Retrieves the candlesticks series accoring to params.
-     * @param symbol
      * @param interval?      Defaults to 1m
      * @param startTime?     Defaults to undefined
      * @param endTime?       Defaults to undefined
@@ -63,14 +60,13 @@ export class BinanceService implements IBinanceService {
      * @returns Promise<IBinanceCandlestick[]>
      */
     public async getCandlesticks(
-        symbol: ICryptoCurrencySymbol, 
         interval?: IBinanceCandlestickInterval, 
         startTime?: number, 
         endTime?: number, 
         limit?:number
     ): Promise<IBinanceCandlestick[]> {
             // Build the path based on params
-            let path: string = `/api/v3/klines?symbol=${symbol}USDT`;
+            let path: string = `/api/v3/klines?symbol=BTCUSDT`;
 
             // Add the interval
             path += `&interval=${interval || '1m'}`;

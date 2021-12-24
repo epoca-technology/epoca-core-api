@@ -10,7 +10,6 @@ import { forecastModule } from "../modules/forecast";
 
 // Shared Modules
 import { binanceModule } from "../modules/shared/binance";
-import { cryptocurrencyModule } from "../modules/shared/cryptocurrency";
 import { utilitiesModule } from "../modules/shared/utilities";
 import { externalRequestModule } from "../modules/shared/external-request";
 import { databaseModule } from "../modules/shared/database";
@@ -38,9 +37,6 @@ appContainer.load(
 
     // Binance
     binanceModule,
-
-    // CryptoCurrency
-    cryptocurrencyModule,
 
     // Utilities
     utilitiesModule,

@@ -12,9 +12,6 @@
     // Binance
     BinanceService: Symbol.for("BinanceService"),
 
-    // CryptoCurrency
-    CryptoCurrencyService: Symbol.for("CryptoCurrencyService"),
-
     // Utilities
     UtilitiesService: Symbol.for("UtilitiesService"),
 
@@ -30,7 +27,6 @@ export interface ISymbols {
     ForecastService: symbol,
     CandlestickService: symbol,
     BinanceService: symbol,
-    CryptoCurrencyService: symbol,
     UtilitiesService: symbol,
     ExternalRequestService: symbol,
     DatabaseService: symbol,

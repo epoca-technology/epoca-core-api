@@ -15,7 +15,7 @@ const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(
 
 
 // Init the Database Service
-import { IDatabaseService } from "../../src/modules/shared/database";
+import { IDatabaseService, IPoolClient, IQueryResult } from "../../src/modules/shared/database";
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 
@@ -24,71 +24,86 @@ const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.Databas
 
 describe('Database Essentials: ',  function() {
     // Clean the table before each test and once all tests have concluded
-    beforeEach(async () => { await _db.query({sql: 'DELETE FROM test_1m_candlesticks;'}) });
-    afterAll(async () => { await _db.query({sql: 'DELETE FROM test_1m_candlesticks;'}) });
+    beforeEach(async () => { await _db.query({text: 'DELETE FROM test_candlesticks;'}) });
+    afterAll(async () => { await _db.query({text: 'DELETE FROM test_candlesticks;'}) });
 
 
 
     
 
     it('-Can store a set of processed candlesticks, retrieve them and validate their integrity: ', async function() {
-        // Initialize the first and last open timestamps
-        const first: ICandlestick = _candlestick.processBinanceCandlesticks('BTC', [TEST_BINANCE_CANDLESTICKS[0]])[0];
-        const last: ICandlestick = _candlestick.processBinanceCandlesticks('BTC', [TEST_BINANCE_CANDLESTICKS[TEST_BINANCE_CANDLESTICKS.length - 1]])[0];
+        // Initialize the DB Client
+        const client: IPoolClient = await _db.pool.connect();
 
-        // There should be no records stored
-        const empty: ICandlestick[] = await _db.query({sql: 'SELECT * FROM test_1m_candlesticks;'});
-        expect(empty.length).toBe(0);
-
-        // Process the raw candlesticks
-        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks('BTC', TEST_BINANCE_CANDLESTICKS);
-
-        // Build the insert query
-        const insertQuery: string = 'INSERT INTO test_1m_candlesticks (ot, ct, o, h, l, c, v, tbv, s) VALUES ?';
-
-        // Build the values
-        let values: any[] = [];
-        for (let c of processed) {
-            values.push([c.ot, c.ct, c.o, c.h, c.l, c.c, c.v, c.tbv, 'BTC']);
-        }
-
-        // Store the data in the DB
-        const firstInsertResponse: any = await _db.query({sql: insertQuery, values: [values]});
-        expect(firstInsertResponse.affectedRows).toBe(processed.length);
-
-        // Cannot Insert a candlestick that already exists
         try {
-            await _db.query({sql: insertQuery, values: [
-                [[last.ot, last.ct, last.o, last.h, last.l, last.c, last.v, last.tbv, 'BTC']]
-            ]});
-            fail(`It should have not inserted a candlestick that already exists ${last.ot}.`);
-        } catch (e) {
-            if (!e.message.includes('ER_DUP_ENTRY')) fail(e);
-        }
+            // Initialize the first and last open timestamps
+            const first: ICandlestick = _candlestick.processBinanceCandlesticks([TEST_BINANCE_CANDLESTICKS[0]])[0];
+            const last: ICandlestick = _candlestick.processBinanceCandlesticks([TEST_BINANCE_CANDLESTICKS[TEST_BINANCE_CANDLESTICKS.length - 1]])[0];
 
-        // Retrieve all the candlesticks and make sure the numbers add up
-        const candlesticks: ICandlestick[] = await _db.query({sql: 'SELECT * FROM test_1m_candlesticks ORDER BY ot ASC'});
-        expect(candlesticks.length).toBe(processed.length);
+            // There should be no records stored
+            const empty: IQueryResult = await client.query({text: 'SELECT * FROM test_candlesticks;'});
+            expect(empty.rows.length).toBe(0);
 
-        // Iterate over the candlesticks and validate their integrity
-        for (let i = 0; i < processed.length; i++) {
-            if (stringify(processed[i]) != stringify(candlesticks[i])) {
-                fail(`Candlestick ${processed[i].ot} integrity check failed.`);
+            // Process the raw candlesticks
+            const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(TEST_BINANCE_CANDLESTICKS);
+
+            // Insert the candlesticks in the db
+            for (let c of processed) {
+                await client.query({
+                    text: `
+                        INSERT INTO test_candlesticks(ot, ct, o, h, l, c, v, tbv) 
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    `,
+                    values: [c.ot, c.ct, c.o, c.h, c.l, c.c, c.v, c.tbv]
+                });
             }
-        }
 
-        // Can retrieve the candlesticks in descending order
-        const descCandlesticks: ICandlestick[] = await _db.query({sql: 'SELECT * FROM test_1m_candlesticks ORDER BY ot DESC'});
-        expect(descCandlesticks.length).toBe(processed.length);
 
-        // The first item in the desc list should be the last one in the original list
-        if (stringify(last) != stringify(descCandlesticks[0])) {
-            fail(`In a desc list the first candlestick should have been ${last.ot}`);
-        }
+            // Cannot Insert a candlestick that already exists
+            try {
+                await client.query({
+                    text: `
+                        INSERT INTO test_candlesticks(ot, ct, o, h, l, c, v, tbv) 
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    `,
+                    values: [last.ot, last.ct, last.o, last.h, last.l, last.c, last.v, last.tbv]
+                });
+                fail(`It should have not inserted a candlestick that already exists ${last.ot}.`);
+            } catch (e) {
+                if (!e.message.includes('duplicate')) {
+                    throw new Error('Should have received a duplicate error when attempting to insert the same candlestick twice');
+                }
+            }
 
-        // The last item in the desc list should be the first one in the original list
-        if (stringify(first) != stringify(descCandlesticks[descCandlesticks.length - 1])) {
-            fail(`In a desc list the last candlestick should have been ${first.ot}`);
+            // Retrieve all the candlesticks and make sure the numbers add up
+            const all: IQueryResult = await client.query({text: 'SELECT * FROM test_candlesticks ORDER BY ot ASC'});
+            expect(all.rows.length).toBe(processed.length);
+
+            // Iterate over the candlesticks and validate their integrity
+            for (let i = 0; i < processed.length; i++) {
+                if (stringify(processed[i]) != stringify(all.rows[i])) {
+                    console.log(processed[i]);
+                    console.log(all.rows[i]);
+                    fail(`Candlestick ${processed[i].ot} integrity check failed.`);
+                }
+            }
+
+            // Can retrieve the candlesticks in descending order
+            const descCandlesticks: IQueryResult = await client.query({text: 'SELECT * FROM test_candlesticks ORDER BY ot DESC'});
+            expect(descCandlesticks.rows.length).toBe(processed.length);
+
+
+            // The first item in the desc list should be the last one in the original list
+            if (stringify(last) != stringify(descCandlesticks.rows[0])) {
+                fail(`In a desc list the first candlestick should have been ${last.ot}`);
+            }
+
+            // The last item in the desc list should be the first one in the original list
+            if (stringify(first) != stringify(descCandlesticks.rows[descCandlesticks.rows.length - 1])) {
+                fail(`In a desc list the last candlestick should have been ${first.ot}`);
+            }
+        } finally {
+            client.release();
         }
     });
 });

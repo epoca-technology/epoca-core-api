@@ -31,8 +31,8 @@ describe('', function() {
 
 
     it('-Trading Simulation', async function() {
-        //const series: ICandlestick[] = await _candlestick.get('BTC', _utils.getTimestamp('01-01-2018'), _utils.getTimestamp('01-01-2019'));
-        const series: ICandlestick[] = await _candlestick.get('BTC');
+        //const series: ICandlestick[] = await _candlestick.get(_utils.getTimestamp('01-01-2018'), _utils.getTimestamp('01-01-2019'));
+        const series: ICandlestick[] = await _candlestick.get();
         try {
             const ts: ITradingSimulation = new TradingSimulation({
                 series: series,
@@ -42,10 +42,10 @@ describe('', function() {
                     borrowInterestPercent: 0.02,
                     tradeFeePercent: 0.04,
                     minimumPositionAmount: 80,
-                    verbose: 1
+                    verbose: 0
                 },
                 meditationMinutes: 60,
-                verbose: 1,
+                verbose: 0,
             });
             const result: ITradingSimulationResult = await ts.run();
         } catch (e) {

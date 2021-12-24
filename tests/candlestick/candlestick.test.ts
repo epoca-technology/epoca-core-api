@@ -25,11 +25,6 @@ import { IBinanceCandlestick } from "../../src/modules/shared/binance";
 //const _binance: IBinanceService = appContainer.get<IBinanceService>(SYMBOLS.BinanceService);
 
 
-// Init the CryptoCurrency Service
-import {ICryptoCurrencyService } from "../../src/modules/shared/cryptocurrency";
-const _cCurrency: ICryptoCurrencyService = appContainer.get<ICryptoCurrencyService>(SYMBOLS.CryptoCurrencyService);
-
-
 
 // Test Data
 const tc: IBinanceCandlestick[] = [
@@ -56,10 +51,10 @@ describe('Candlestick Basic DB Actions: ',  function() {
     });
 
     // Clean the table before each test and once all tests have concluded
-    beforeEach(async () => { await _db.query({sql: 'DELETE FROM test_1m_candlesticks;'}) });
+    beforeEach(async () => { await _db.query({text: 'DELETE FROM test_candlesticks;'}) });
     afterAll(async () => { 
         // Clean the DB
-        await _db.query({sql: 'DELETE FROM test_1m_candlesticks;'}) ;
+        await _db.query({text: 'DELETE FROM test_candlesticks;'}) ;
 
         // Disable test mode
         _candlestick.testMode = false;
@@ -71,14 +66,14 @@ describe('Candlestick Basic DB Actions: ',  function() {
 
     it('-Can retrieve the last open timestamp: ', async function() {
         // If no data has been stored, it will retrieve the genesis timestamp
-        let ot: number = await _candlestick.getLastOpenTimestamp('BTC');
-        expect(ot).toBe(_cCurrency.data['BTC'].genesisCandlestick);
+        let ot: number = await _candlestick.getLastOpenTimestamp();
+        expect(ot).toBe(_candlestick.genesisCandlestickTimestamp);
         
         // Save some candlesticks
-        await _candlestick.saveCandlesticks(_candlestick.processBinanceCandlesticks('BTC', tc));
+        await _candlestick.saveCandlesticks(_candlestick.processBinanceCandlesticks(tc));
 
         // Retrieve the last open timestamp again and should match the last saved candle
-        ot = await _candlestick.getLastOpenTimestamp('BTC');
+        ot = await _candlestick.getLastOpenTimestamp();
         expect(ot).toBe(tc[tc.length - 1][0]);
     });
 
@@ -89,10 +84,10 @@ describe('Candlestick Basic DB Actions: ',  function() {
 
     it('-Can retrieve the last candlesticks: ', async function() {
         // Save some candlesticks
-        await _candlestick.saveCandlesticks(_candlestick.processBinanceCandlesticks('BTC', tc));
+        await _candlestick.saveCandlesticks(_candlestick.processBinanceCandlesticks(tc));
 
         // Retrieve the last 2 and make sure they match
-        const c: ICandlestick[] = await _candlestick.getLast('BTC', 2);
+        const c: ICandlestick[] = await _candlestick.getLast(2);
         expect(c[0].ot).toBe(tc[tc.length - 2][0]);
         expect(c[1].ot).toBe(tc[tc.length - 1][0]);
     });
@@ -104,15 +99,15 @@ describe('Candlestick Basic DB Actions: ',  function() {
 
     it('-Can retrieve all the candlesticks: ', async function() {
         // Processed
-        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks('BTC', tc);
+        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(tc);
 
         // Save some candlesticks
         await _candlestick.saveCandlesticks(processed);
 
         // Retrieve all the candlesticks and make sure they match the originals
-        const c: ICandlestick[] = await _candlestick.get('BTC');
+        const c: ICandlestick[] = await _candlestick.get();
         for (let i = 0; i < tc.length; i++) {
-            // The records must be identical - Except that the downloaded ones won't have the s property
+            // The records must be identical
             expect(processed[i].ot).toBe(c[i].ot);
             expect(processed[i].ct).toBe(c[i].ct);
             expect(processed[i].o).toBe(c[i].o);
@@ -131,13 +126,13 @@ describe('Candlestick Basic DB Actions: ',  function() {
 
     it('-Can retrieve candlesticks from a start timestamp: ', async function() {
         // Processed
-        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks('BTC', tc);
+        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(tc);
 
         // Save some candlesticks
         await _candlestick.saveCandlesticks(processed);
 
         // Retrieve the last 2 candlesticks
-        const c: ICandlestick[] = await _candlestick.get('BTC', processed[processed.length - 2].ot);
+        const c: ICandlestick[] = await _candlestick.get(processed[processed.length - 2].ot);
         expect(c.length).toBe(2);
 
         // Make sure they match
@@ -150,13 +145,13 @@ describe('Candlestick Basic DB Actions: ',  function() {
 
     it('-Can retrieve candlesticks from an end timestamp: ', async function() {
         // Processed
-        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks('BTC', tc);
+        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(tc);
 
         // Save some candlesticks
         await _candlestick.saveCandlesticks(processed);
 
         // Retrieve the first 3 candlesticks
-        const c: ICandlestick[] = await _candlestick.get('BTC', undefined, processed[2].ot);
+        const c: ICandlestick[] = await _candlestick.get(undefined, processed[2].ot);
         expect(c.length).toBe(3);
 
         // Make sure they match
@@ -189,10 +184,10 @@ describe('Candlestick Basic DB Actions: ',  function() {
     });
 
     // Clean the table before each test and once all tests have concluded
-    beforeEach(async () => { await _db.query({sql: 'DELETE FROM test_1m_candlesticks;'}) });
+    beforeEach(async () => { await _db.query({text: 'DELETE FROM test_candlesticks;'}) });
     afterAll(async () => { 
         // Clean the DB
-        await _db.query({sql: 'DELETE FROM test_1m_candlesticks;'}) ;
+        await _db.query({text: 'DELETE FROM test_candlesticks;'}) ;
 
         // Disable test mode
         _candlestick.testMode = false;
@@ -204,15 +199,15 @@ describe('Candlestick Basic DB Actions: ',  function() {
 
     it('-Can save candlesticks from genesis with a correct sequence: ', async function() {
         // Retrieve the last candlestick open time - in the first lot it will be the genesis
-        let startTS: number = await _candlestick.getLastOpenTimestamp('BTC');
-        expect(startTS).toBe(_cCurrency.data['BTC'].genesisCandlestick);
+        let startTS: number = await _candlestick.getLastOpenTimestamp();
+        expect(startTS).toBe(_candlestick.genesisCandlestickTimestamp);
 
         // Save the first lot
-        const firstLot: ICandlestick[] = await _candlestick.saveCandlesticksFromStart('BTC', startTS);
+        const firstLot: ICandlestick[] = await _candlestick.saveCandlesticksFromStart(startTS);
         expect(firstLot.length).toBe(1000);
 
         // Retrieve the start ts again
-        startTS = await _candlestick.getLastOpenTimestamp('BTC');
+        startTS = await _candlestick.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the first lot
         expect(firstLot[firstLot.length - 1].ot).toBe(startTS);
@@ -221,11 +216,11 @@ describe('Candlestick Basic DB Actions: ',  function() {
         await _utils.asyncDelay(5);
 
         // Save the second lot
-        const secondLot: ICandlestick[] = await _candlestick.saveCandlesticksFromStart('BTC', startTS);
+        const secondLot: ICandlestick[] = await _candlestick.saveCandlesticksFromStart(startTS);
         expect(secondLot.length).toBe(1000);
         
         // Retrieve the start ts again
-        startTS = await _candlestick.getLastOpenTimestamp('BTC');
+        startTS = await _candlestick.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the second lot
         expect(secondLot[secondLot.length - 1].ot).toBe(startTS);
@@ -234,17 +229,17 @@ describe('Candlestick Basic DB Actions: ',  function() {
         await _utils.asyncDelay(5);
 
         // Save the third lot
-        const thirdLot: ICandlestick[] = await _candlestick.saveCandlesticksFromStart('BTC', startTS);
+        const thirdLot: ICandlestick[] = await _candlestick.saveCandlesticksFromStart(startTS);
         expect(thirdLot.length).toBe(1000);
 
         // Retrieve the start ts again
-        startTS = await _candlestick.getLastOpenTimestamp('BTC');
+        startTS = await _candlestick.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the first lot
         expect(thirdLot[thirdLot.length - 1].ot).toBe(startTS);
 
         // Download all the candlesticks stored in the db
-        const candlesticks: ICandlestick[] = await _candlestick.get('BTC');
+        const candlesticks: ICandlestick[] = await _candlestick.get();
 
         // There should be 3k candles
         expect(candlesticks.length).toBe(3000);
@@ -293,7 +288,7 @@ describe('Candlestick Essentials: ',  function() {
 
     it('-Can merge a list of candlesticks into one: ', async function() {
         // Original
-        const original: ICandlestick[] = _candlestick.processBinanceCandlesticks('BTC', TEST_BINANCE_CANDLESTICKS);
+        const original: ICandlestick[] = _candlestick.processBinanceCandlesticks(TEST_BINANCE_CANDLESTICKS);
         expect(_candlestick.alterInterval(original, 30).length).toBe(1);
         expect(_candlestick.alterInterval(original, 15).length).toBe(2);
         expect(_candlestick.alterInterval(original, 10).length).toBe(3);
@@ -312,11 +307,11 @@ describe('Candlestick Essentials: ',  function() {
     it('-Can merge a list of candlesticks into one: ', async function() {
         // Original
         const original: ICandlestick[] = [
-            {ot: 1639676280000, ct: 1639676339999, o: "48106.3", h: "48143.06", l: "48091", c: "48091", v: "1183886.21", tbv: "769983.71"},
-            {ot: 1639676340000, ct: 1639676399999, o: "48091.01", h: "48104.29", l: "48075.41", c: "48092.18", v: "1948820.69", tbv: "1260723.02"},
-            {ot: 1639676400000, ct: 1639676459999, o: "48092.18", h: "48097.24", l: "48060", c: "48082.95", v: "1387157.33", tbv: "579152.41"},
-            {ot: 1639676460000, ct: 1639676519999, o: "48082.95", h: "48124.65", l: "48078.15", c: "48095.28", v: "1042498.05", tbv: "687768.58"},
-            {ot: 1639676520000, ct: 1639676579999, o: "48095.29", h: "48131.57", l: "48078.78", c: "48083.35", v: "1302402.89", tbv: "595089.59"},
+            {ot: 1639676280000, ct: 1639676339999, o: 48106.3, h: 48143.06, l: 48091, c: 48091, v: 1183886.21, tbv: 769983.71},
+            {ot: 1639676340000, ct: 1639676399999, o: 48091.01, h: 48104.29, l: 48075.41, c: 48092.18, v: 1948820.69, tbv: 1260723.02},
+            {ot: 1639676400000, ct: 1639676459999, o: 48092.18, h: 48097.24, l: 48060, c: 48082.95, v: 1387157.33, tbv: 579152.41},
+            {ot: 1639676460000, ct: 1639676519999, o: 48082.95, h: 48124.65, l: 48078.15, c: 48095.28, v: 1042498.05, tbv: 687768.58},
+            {ot: 1639676520000, ct: 1639676579999, o: 48095.29, h: 48131.57, l: 48078.78, c: 48083.35, v: 1302402.89, tbv: 595089.59},
         ];
 
         // Merge them into one
@@ -326,12 +321,12 @@ describe('Candlestick Essentials: ',  function() {
         // Validate the results
         expect(merged.ot).toBe(1639676280000);
         expect(merged.ct).toBe(1639676579999);
-        expect(merged.o).toBe("48106.3");
-        expect(merged.h).toBe("48143.06");
-        expect(merged.l).toBe("48060");
-        expect(merged.c).toBe("48083.35");
-        expect(merged.v).toBe("6864765.17");
-        expect(merged.tbv).toBe("3892717.31");
+        expect(merged.o).toBe(48106.3);
+        expect(merged.h).toBe(48143.06);
+        expect(merged.l).toBe(48060);
+        expect(merged.c).toBe(48083.35);
+        expect(merged.v).toBe(6864765.17);
+        expect(merged.tbv).toBe(3892717.31);
     });
 
 
@@ -353,15 +348,15 @@ describe('Candlestick Essentials: ',  function() {
 
         // Expected
         const expected: ICandlestick[] = [
-            {ot: 1639676280000, ct: 1639676339999, o: "48106.3", h: "48143.06", l: "48091", c: "48091", v: "1183886.21", tbv: "769983.71", s: "BTC"},
-            {ot: 1639676340000, ct: 1639676399999, o: "48091.01", h: "48104.29", l: "48075.41", c: "48092.18", v: "1948820.69", tbv: "1260723.02", s: "BTC"},
-            {ot: 1639676400000, ct: 1639676459999, o: "48092.18", h: "48097.24", l: "48060", c: "48082.95", v: "1387157.33", tbv: "579152.41", s: "BTC"},
-            {ot: 1639676460000, ct: 1639676519999, o: "48082.95", h: "48124.65", l: "48078.15", c: "48095.28", v: "1042498.05", tbv: "687768.58", s: "BTC"},
-            {ot: 1639676520000, ct: 1639676579999, o: "48095.29", h: "48131.57", l: "48078.78", c: "48083.35", v: "1302402.89", tbv: "595089.59", s: "BTC"},
+            {ot: 1639676280000, ct: 1639676339999, o: 48106.3, h: 48143.06, l: 48091, c: 48091, v: 1183886.21, tbv: 769983.71},
+            {ot: 1639676340000, ct: 1639676399999, o: 48091.01, h: 48104.29, l: 48075.41, c: 48092.18, v: 1948820.69, tbv: 1260723.02},
+            {ot: 1639676400000, ct: 1639676459999, o: 48092.18, h: 48097.24, l: 48060, c: 48082.95, v: 1387157.33, tbv: 579152.41},
+            {ot: 1639676460000, ct: 1639676519999, o: 48082.95, h: 48124.65, l: 48078.15, c: 48095.28, v: 1042498.05, tbv: 687768.58},
+            {ot: 1639676520000, ct: 1639676579999, o: 48095.29, h: 48131.57, l: 48078.78, c: 48083.35, v: 1302402.89, tbv: 595089.59},
         ];
 
         // Process the raw candlesticks
-        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks('BTC', raw);
+        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(raw);
 
         // Iterate over each candlestick and make sure the processed values are correct
         for (let i = 0; i < raw.length; i++) {
@@ -373,7 +368,6 @@ describe('Candlestick Essentials: ',  function() {
             if (processed[i].c != expected[i].c) { fail(`Close Price: ${processed[i].c} != ${expected[i].c}`) }
             if (processed[i].v != expected[i].v) { fail(`Volume: ${processed[i].v} != ${expected[i].v}`) }
             if (processed[i].tbv != expected[i].tbv) { fail(`Taker Buy Volume: ${processed[i].tbv} != ${expected[i].tbv}`) }
-            if (processed[i].s != expected[i].s) { fail(`Symbol: ${processed[i].s} != ${expected[i].s}`) }
         }
     });
 });

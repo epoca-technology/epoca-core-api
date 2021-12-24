@@ -1,4 +1,3 @@
-import { ICryptoCurrencySymbol } from "../cryptocurrency";
 
 
 // Service
@@ -12,7 +11,6 @@ export interface IBinanceService {
 
     // Market Data
     getCandlesticks(
-        symbol: ICryptoCurrencySymbol, 
         interval?: IBinanceCandlestickInterval, 
         startTime?: number, 
         endTime?: number, 

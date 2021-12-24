@@ -2,18 +2,12 @@
 import "reflect-metadata";
 import { appContainer, SYMBOLS } from "../../ioc";
 import * as prompt from 'prompt';
-import * as cliProgress from 'cli-progress';
-import {PoolClient, Client, QueryResult} from "pg";
+import {Client} from "pg";
 import {execute} from "@getvim/execute";
 
 // Init Database
-import { IDatabaseService } from "../../modules/shared/database";
+import { IDatabaseService, IPoolClient, IQueryResult } from "../../modules/shared/database";
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
-
-
-// Init Candlesticks
-import { ICandlestick, ICandlestickService } from "../../modules/candlestick";
-const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
 
 
@@ -82,12 +76,12 @@ async function initializeDatabase(): Promise<void> {
     await createDatabase();
 
     // Init the client
-    const client: PoolClient = await _db.pool.connect();
+    const client: IPoolClient = await _db.pool.connect();
 
     try {
         // Create the required tables in case they don't exist
         for (let table of _db.tables) {
-            const tableCreation: QueryResult = await client.query(table.sql);
+            const tableCreation: IQueryResult = await client.query(table.sql);
             console.log(' ');console.log(`Table ${table.name} created successfuly:`, tableCreation);
         }
     }
@@ -116,8 +110,8 @@ async function createDatabase(): Promise<void> {
 
     try {
         // Check if the DB exists and create it if it doesn't
-        const {rowCount}: QueryResult = await client.query('SELECT FROM pg_database WHERE datname = $1', [_db.config.database]);
-        let dbCreationResult: QueryResult|undefined;
+        const {rowCount}: IQueryResult = await client.query('SELECT FROM pg_database WHERE datname = $1', [_db.config.database]);
+        let dbCreationResult: IQueryResult|undefined;
         if (rowCount == 0) {
             dbCreationResult = await client.query(`CREATE DATABASE ${_db.config.database}`);
             console.log(' ');console.log(`Database ${_db.config.database} was created successfuly:`, dbCreationResult);
@@ -151,16 +145,16 @@ async function createDatabase(): Promise<void> {
     console.log(' ');console.log('DATABASE SIZE');
 
     // Init the client
-    const client: PoolClient = await _db.pool.connect();
+    const client: IPoolClient = await _db.pool.connect();
 
     try {
         // Retrieve the size of the entire database
-        const dbSize: QueryResult = await client.query(`SELECT pg_size_pretty( pg_database_size('${_db.config.database}') );`);
+        const dbSize: IQueryResult = await client.query(`SELECT pg_size_pretty( pg_database_size('${_db.config.database}') );`);
         console.log(' ');console.log(`Database: ${dbSize.rows[0].pg_size_pretty}`);
 
         // Retrieve the size for each table
         for (let table of _db.tables) {
-            const tableSize: QueryResult = await client.query(`SELECT pg_size_pretty( pg_total_relation_size('${table.name}') );`);
+            const tableSize: IQueryResult = await client.query(`SELECT pg_size_pretty( pg_total_relation_size('${table.name}') );`);
             console.log(`${table.name}: ${tableSize.rows[0].pg_size_pretty}`);
         }
     }
@@ -186,7 +180,7 @@ async function createDatabase(): Promise<void> {
  async function backupDatabase(): Promise<void> {
      try {
         console.log(' ');console.log('DATABASE BACKUP');console.log(' ');
-        await execute(`PGPASSWORD="${_db.config.password}" pg_dump -U ${_db.config.user} -h ${_db.config.host} -d ${_db.config.database} -f ./db_backup/backup.dump -Fc`);
+        await execute(`PGPASSWORD="${_db.config.password}" pg_dump -U ${_db.config.user} -h ${_db.config.host} -d ${_db.config.database} -f ./db_backups/backup.dump -Fc`);
      } catch (e) {
         console.log(e);
      }
@@ -210,59 +204,8 @@ async function restoreDatabase(): Promise<void> {
     try {
         console.log(' ');console.log('DATABASE RESTORE');console.log(' ');
         await initializeDatabase();
-        await execute(`PGPASSWORD="${_db.config.password}" pg_restore --clean -U ${_db.config.user} -h ${_db.config.host} -d plutus ./db_backup/backup.dump`);
+        await execute(`PGPASSWORD="${_db.config.password}" pg_restore --clean -U ${_db.config.user} -h ${_db.config.host} -d plutus ./db_backups/backup.dump`);
     } catch (e) {
        console.log(e);
     }
 }
-
-
-
-
-
-
-
-
-
-
-/* Migration */
-
-
-
-/**
- * Migrates the old MYSQL candlesticks into the new db with the new format.
- * @returns migrateDB(): Promise<void>
- */
-/*async function migrateDB(): Promise<void> {
-    // Init the progress bar
-    const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-    let progressBarCounter: number = 0;
-
-    // Download all candlesticks
-    const candlesticks: ICandlestick[] = await _candlestick.get('BTC');
-
-    // Init the client
-    const client: PoolClient = await _db.pool.connect();
-
-    // Start the progress bar
-    console.log(' ');console.log('Migration in progress...');console.log(' ');
-    progressBar.start(candlesticks.length, progressBarCounter);
-
-    try {
-        // Iterate over each candlestick and save it
-        for (let c of candlesticks) {
-            // Save the candlestick
-            const res: QueryResult = await client.query(
-                `
-                INSERT INTO candlesticks(ot, ct, o, h, l, c, v, tbv)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                `,
-                [c.ot, c.ct, Number(c.o), Number(c.h), Number(c.l), Number(c.c), Number(c.v), Number(c.tbv)]
-            );
-
-            // Update the progress and allow for a small delay before continuing
-            progressBar.update(progressBarCounter += 1);
-        }
-    }
-    finally { client.release() }
-}*/

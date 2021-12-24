@@ -1,27 +1,26 @@
 import { IBinanceCandlestick } from "../shared/binance";
-import { ICryptoCurrencySymbol } from "../shared/cryptocurrency";
 
 
 
 
 export interface ICandlestickService {
     // Properties
-
+    genesisCandlestickTimestamp: number,
     testMode: boolean,
 
     // Candlestick Retrievers
-    getForPeriod(symbol: ICryptoCurrencySymbol, start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]>,
-    get(symbol: ICryptoCurrencySymbol, start?: number, end?: number): Promise<ICandlestick[]>,
-    getLastOpenTimestamp(symbol: ICryptoCurrencySymbol): Promise<number>,
-    getLast(symbol: ICryptoCurrencySymbol, limit?: number): Promise<ICandlestick[]>,
+    getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]>,
+    get(start?: number, end?: number): Promise<ICandlestick[]>,
+    getLastOpenTimestamp(): Promise<number>,
+    getLast(limit?: number): Promise<ICandlestick[]>,
 
     // Candlestick Syncing & Saving
-    saveCandlesticksFromStart(symbol: ICryptoCurrencySymbol, startTimestamp: number): Promise<ICandlestick[]>,
-    saveCandlesticks(candlesticks: ICandlestick[]): Promise<any>,
+    saveCandlesticksFromStart(startTimestamp: number): Promise<ICandlestick[]>,
+    saveCandlesticks(candlesticks: ICandlestick[]): Promise<void>,
 
     // Helpers
     alterInterval(candlesticks1m: ICandlestick[], intervalMinutes: number): ICandlestick[],
-    processBinanceCandlesticks(symbol: ICryptoCurrencySymbol, candlesticks: IBinanceCandlestick[]): ICandlestick[],
+    processBinanceCandlesticks(candlesticks: IBinanceCandlestick[]): ICandlestick[],
 }
 
 
@@ -34,11 +33,10 @@ export interface ICandlestickService {
 export interface ICandlestick {
     ot: number,                 // Open Time
     ct: number,                 // Close Time
-    o: string,                  // Open Price
-    h: string,                  // High Price
-    l: string,                  // Low Price
-    c: string,                  // Close Price
-    v: string,                  // Volume (USDT)
-    tbv: string,                // Taker Buy Volume (USDT)
-    s?: ICryptoCurrencySymbol   // Cryptocurrency Symbol - Only present when adding the record to the db
+    o: number,                  // Open Price
+    h: number,                  // High Price
+    l: number,                  // Low Price
+    c: number,                  // Close Price
+    v: number,                  // Volume (USDT)
+    tbv: number,                // Taker Buy Volume (USDT)
 }
