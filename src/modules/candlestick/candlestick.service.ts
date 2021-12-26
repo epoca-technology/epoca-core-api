@@ -92,7 +92,7 @@ export class CandlestickService implements ICandlestickService {
             values.push(start);
         }
 
-        // If only the start is provided
+        // If only the end is provided
         else if (typeof end == "number") {
             sql += ' WHERE ot <= $1';
             values.push(end);

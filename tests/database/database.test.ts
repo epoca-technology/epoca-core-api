@@ -70,7 +70,7 @@ describe('Database Essentials: ',  function() {
                 });
                 fail(`It should have not inserted a candlestick that already exists ${last.ot}.`);
             } catch (e) {
-                if (!e.message.includes('duplicate')) {
+                if (!e.message.includes('duplicate') && !e.message.includes('duplicada')) {
                     throw new Error('Should have received a duplicate error when attempting to insert the same candlestick twice');
                 }
             }
