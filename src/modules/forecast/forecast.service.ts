@@ -3,11 +3,14 @@ import { SYMBOLS } from "../../ioc";
 import { ICandlestick, ICandlestickService } from "../candlestick";
 import { IUtilitiesService } from "../shared/utilities";
 import { 
+    IForecastConfig,
     IForecastResult, 
     IForecastService, 
-    ITendencyForecast 
+    IKeyZonesConfig, 
+    ITendencyForecast,
+    IKeyZonesState,
+    IKeyZonesService,
 } from "./interfaces";
-import {BigNumber} from "bignumber.js";
 
 
 
@@ -16,8 +19,25 @@ export class ForecastService implements IForecastService {
     // Inject dependencies
     @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
     @inject(SYMBOLS.CandlestickService)         private _candlestick: ICandlestickService;
+    @inject(SYMBOLS.KeyZonesService)            private _kz: IKeyZonesService;
 
 
+
+    /**
+     * @intervalMinutes
+     * The interval that will be set on the 1m candlesticks before building the key zones.
+     */
+     private readonly intervalMinutes: number = 30;
+
+
+
+
+
+    /**
+     * @verbose
+     * Displays information based on the number set for debugging purposes
+     */
+    private readonly verbose: number = 0;
 
 
 
@@ -31,11 +51,53 @@ export class ForecastService implements IForecastService {
 
     /**
      * Given a series of 1m candlesticks, it will predict the next position to be taken.
-     * @param series 
+     * @param candlesticks1m?
+     * @param startTimestamp?
+     * @param endTimestamp?
+     * @param fConfig?
+     * @param keyZonesConfig?
      * @returns Promise<IForecastResult>
      */
-    public async forecast(candlesticks1m: ICandlestick[]): Promise<IForecastResult> {
-        return Math.random() > 0.5 ? {result: 1}: {result: -1};
+    public async forecast(
+        candlesticks1m?: ICandlestick[],
+        startTimestamp?: number,
+        endTimestamp?: number,
+        fConfig?: IForecastConfig,
+        kzConfig?: IKeyZonesConfig,
+    ): Promise<IForecastResult> {
+        // Init values
+        let tendency: ITendencyForecast = 0;
+        fConfig = this.getConfig(fConfig);
+
+        // Check if the candlesticks were provided, otherwise retrieve them
+        if (!candlesticks1m || !candlesticks1m.length) {
+            // Make sure the timestamps were provided
+            if (typeof startTimestamp != "number" || typeof endTimestamp != "number") {
+                throw new Error(`The startTimestamp ${startTimestamp} and/or the endTimestamp ${endTimestamp} are invalid.`);
+            }
+
+            // Verbose
+            if (fConfig.verbose > 0) console.log(`Retrieving candlesticks from ${startTimestamp} to ${endTimestamp}.`);
+
+            // Retrieve the candlesticks
+            candlesticks1m = await this._candlestick.get(startTimestamp, endTimestamp);
+        }
+
+        // Scale the candlesticks according to the provided interval
+        const candlesticks: ICandlestick[] = this._candlestick.alterInterval(candlesticks1m, fConfig.intervalMinutes);
+
+        // Build the Key Zones State
+        const kzState: IKeyZonesState = this._kz.getState(candlesticks, kzConfig);
+
+        // Forecast the tendency based on the key zones state
+        // @TODO
+
+        // Return the final result
+        return {
+            result: tendency,
+            keyZonesState: kzState,
+            candlesticks: fConfig.includeCandlesticksInResponse ? candlesticks: undefined,
+        };
     }
 
 
@@ -49,4 +111,27 @@ export class ForecastService implements IForecastService {
 
 
 
+
+
+
+
+
+    /* Misc Helpers */
+
+
+
+
+    /**
+     * Given a config object, it will retrieve the final config values.
+     * @param config 
+     * @returns IForecastConfig
+     */
+    private getConfig(config?: IForecastConfig): IForecastConfig {
+        config = config ? config: {};
+        return {
+            intervalMinutes: typeof config.intervalMinutes == "number" ? config.intervalMinutes: this.intervalMinutes,
+            includeCandlesticksInResponse: config.includeCandlesticksInResponse == true,
+            verbose: typeof config.verbose == "number" ? config.verbose: this.verbose,
+        }
+    }
 }

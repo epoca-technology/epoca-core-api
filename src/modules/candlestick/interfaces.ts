@@ -15,6 +15,7 @@ export interface ICandlestickService {
     getLast(limit?: number): Promise<ICandlestick[]>,
 
     // Candlestick Syncing & Saving
+    initializeSync(): Promise<void>,
     saveCandlesticksFromStart(startTimestamp: number): Promise<ICandlestick[]>,
     saveCandlesticks(candlesticks: ICandlestick[]): Promise<void>,
 

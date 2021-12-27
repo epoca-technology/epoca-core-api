@@ -74,6 +74,11 @@ function logError(err: any, event: string): void {
 
 
 
+// Initialize API
+import {init} from './initializer';
+init();
+
+
 
 // Hello World
 console.log('Plutus API Initialized on Port: ' + port);

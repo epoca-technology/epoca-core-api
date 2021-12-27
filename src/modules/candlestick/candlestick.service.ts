@@ -34,6 +34,14 @@ export class CandlestickService implements ICandlestickService {
 
 
 
+
+
+
+
+
+
+
+
     /* Candlestick Retrievers */
 
 
@@ -180,6 +188,53 @@ export class CandlestickService implements ICandlestickService {
 
 
     /* Candlestick Syncing & Saving */
+
+
+
+
+
+
+
+    /**
+     * Initializes an interval that will update the candlesticks once per minute.
+     * @returns Promise<void>
+     */
+     public async initializeSync(): Promise<void> {
+        // Perform the first sync
+        await this.syncCandlesticks();
+
+        // Initialize the interval
+        setInterval(async ()=> {
+            // Sync the candlesticks persistently 
+            try {
+                await this.syncCandlesticks();
+            } catch(e) { 
+                console.log('Failed to sync candlesticks, attempting again in a few seconds:', e);
+                await this._utils.asyncDelay(5);
+                try {
+                    await this.syncCandlesticks();
+                } catch (e) {
+                    console.log('Failed to sync candlesticks again, will attempt again in ~50 seconds:', e);
+                }
+            }
+        }, 60000);
+    }
+
+
+
+
+
+    /**
+     * Retrieves the last open timestamp and saves new candlesticks.
+     * @returns Promise<void>
+     */
+    private async syncCandlesticks(): Promise<void> {
+        // Retrieve the last open timestamp
+        const ts: number = await this.getLastOpenTimestamp();
+
+        // Save the candlesticks
+        await this.saveCandlesticksFromStart(ts);
+    }
 
 
 
