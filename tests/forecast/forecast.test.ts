@@ -14,7 +14,7 @@ const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(
 
 
 // Init Forecast Service
-import { IForecastService } from "../../src/modules/forecast";
+import { IForecastResult, IForecastService } from "../../src/modules/forecast";
 const _forecast: IForecastService = appContainer.get<IForecastService>(SYMBOLS.ForecastService);
 
 
@@ -25,8 +25,23 @@ const _forecast: IForecastService = appContainer.get<IForecastService>(SYMBOLS.F
 describe('Forecast Essentials: ',  function() {
 
     it('-', async function() {
-        const series: ICandlestick[] = await _candlestick.getLast(1000);
-        await _forecast.forecast(series);
+        const series: ICandlestick[] = await _candlestick.getLast(28800);
+        const res: IForecastResult = await _forecast.forecast(
+            series,
+            undefined,
+            undefined,
+            {
+                intervalMinutes: 30,
+                verbose: 2,
+                includeCandlesticksInResponse: false
+            },
+            {
+                zoneSize: 1,
+                reversalCountRequirement: 1,
+                verbose: 2
+            }
+        );
+        console.log(res.keyZonesState);
     });
 
 

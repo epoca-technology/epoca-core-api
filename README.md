@@ -1,5 +1,11 @@
 # Plutus API
 
+## Requirements
+- NodeJS: v16.13.1
+- NPM: v8.1.2
+- PostgreSQL: v12.9
+
+#
 ## Getting Started
 
 1) Install dependencies with `npm start` 

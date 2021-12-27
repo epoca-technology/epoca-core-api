@@ -9,7 +9,7 @@ import {
     IKeyZonesConfig, 
     ITendencyForecast,
     IKeyZonesState,
-    IKeyZonesService,
+    IKeyZonesService
 } from "./interfaces";
 
 
@@ -65,8 +65,7 @@ export class ForecastService implements IForecastService {
         fConfig?: IForecastConfig,
         kzConfig?: IKeyZonesConfig,
     ): Promise<IForecastResult> {
-        // Init values
-        let tendency: ITendencyForecast = 0;
+        // Init config
         fConfig = this.getConfig(fConfig);
 
         // Check if the candlesticks were provided, otherwise retrieve them
@@ -89,12 +88,9 @@ export class ForecastService implements IForecastService {
         // Build the Key Zones State
         const kzState: IKeyZonesState = this._kz.getState(candlesticks, kzConfig);
 
-        // Forecast the tendency based on the key zones state
-        // @TODO
-
         // Return the final result
         return {
-            result: tendency,
+            result: this.forecastTendencyFromKeyZonesState(kzState, fConfig),
             keyZonesState: kzState,
             candlesticks: fConfig.includeCandlesticksInResponse ? candlesticks: undefined,
         };
@@ -103,6 +99,19 @@ export class ForecastService implements IForecastService {
 
 
     
+
+
+
+    /**
+     * Given the keyzones state and the configuration, it will determine the next tendency
+     * to be followed.
+     * @param state
+     * @param config
+     * @returns ITendencyForecast
+     */
+    private forecastTendencyFromKeyZonesState(state: IKeyZonesState, config: IForecastConfig): ITendencyForecast {
+        return 0;
+    }
 
 
 
