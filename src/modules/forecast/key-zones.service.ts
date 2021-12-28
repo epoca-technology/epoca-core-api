@@ -33,7 +33,7 @@ export class KeyZonesService implements IKeyZonesService {
      * @zoneSize
      * The zone's size percentage. The start and end prices are based on this value.
      */
-    private readonly zoneSize: number = 1;
+    private readonly zoneSize: number = 0.5;
 
 
 
@@ -42,7 +42,7 @@ export class KeyZonesService implements IKeyZonesService {
      * The number of times a reverse needs to happen within a zone in order to be 
      * considered a key zone.
      */
-    private readonly reversalCountRequirement: number = 1;
+    private readonly reversalCountRequirement: number = 2;
 
 
 
@@ -120,28 +120,34 @@ export class KeyZonesService implements IKeyZonesService {
 
         /**
          * Iterate over each candlestick scanning for reversals.
-         * The loop starts on the fourth item and ends on the third to last item as 
+         * The loop starts on the fifth item and ends on the fifth to last item as 
          * for a reversal to be detected it needs:
-         * 1) 3 higher highs and then 2 lower highs
-         * 2) 3 lower lows and then 2 higher lows
+         * Resistance:  Higher than the previous 4 and next 4 candlesticks
+         * Support:  Lower than the previous 4 and next 4 candlesticks
          */
-        for (let i = 3; i < candlesticks.length - 2; i++) {
+        for (let i = 4; i < candlesticks.length - 4; i++) {
             // Check if a resistance reversal has occurred
             if (
-                candlesticks[i - 2].h > candlesticks[i - 3].h &&
-                candlesticks[i - 1].h > candlesticks[i - 2].h &&
+                candlesticks[i].h > candlesticks[i - 4].h &&
+                candlesticks[i].h > candlesticks[i - 3].h &&
+                candlesticks[i].h > candlesticks[i - 2].h &&
                 candlesticks[i].h > candlesticks[i - 1].h &&
                 candlesticks[i].h > candlesticks[i + 1].h &&
-                candlesticks[i + 1].h > candlesticks[i + 2].h
+                candlesticks[i].h > candlesticks[i + 2].h &&
+                candlesticks[i].h > candlesticks[i + 3].h &&
+                candlesticks[i].h > candlesticks[i + 4].h
             ) { this.onReversal(candlesticks[i], 'resistance', config.zoneSize) }
-     
+
             // Check if a support reversal has occurred
             else if (
-                candlesticks[i - 2].l < candlesticks[i - 3].l &&
-                candlesticks[i - 1].l < candlesticks[i - 2].l &&
+                candlesticks[i].l < candlesticks[i - 4].l &&
+                candlesticks[i].l < candlesticks[i - 3].l &&
+                candlesticks[i].l < candlesticks[i - 2].l &&
                 candlesticks[i].l < candlesticks[i - 1].l &&
                 candlesticks[i].l < candlesticks[i + 1].l &&
-                candlesticks[i + 1].l < candlesticks[i + 2].l
+                candlesticks[i].l < candlesticks[i + 2].l &&
+                candlesticks[i].l < candlesticks[i + 3].l &&
+                candlesticks[i].l < candlesticks[i + 4].l
             ) { this.onReversal(candlesticks[i], 'support', config.zoneSize) }
         }
 
