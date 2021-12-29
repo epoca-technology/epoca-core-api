@@ -95,6 +95,8 @@ export class KeyZonesService implements IKeyZonesService {
 
         // Retrieve the key zones
         state.zones = this.getKeyZones(candlesticks, config);
+        state.zonesAbove = this.getZonesFromPrice(state.price, state.zones, true);
+        state.zonesBelow = this.getZonesFromPrice(state.price, state.zones, false);
 
         // Return the final state
         return state;
@@ -371,6 +373,41 @@ export class KeyZonesService implements IKeyZonesService {
             mutated: this.zoneMutated(reversals)
         }
     }
+
+
+
+
+
+
+
+
+    /**
+     * Retrieves all the key zones from the current price.
+     * @param price 
+     * @param kz 
+     * @param above 
+     * @returns IKeyZone[]
+     */
+    private getZonesFromPrice(price: number, kz: IKeyZone[], above: boolean): IKeyZone[] {
+        // Init the zones
+        let zones: IKeyZone[] = [];
+
+        // Build the zones based on the type
+        kz.forEach((z) => { 
+            // Build zones that are above the price
+            if (above && z.start > price) { zones.push(z) } 
+            
+            // Build zones that are below the price
+            else if (!above && z.end < price) { zones.push(z)}
+        });
+
+        // Order the zones in descending order
+        zones.sort((a, b) => { return b.start - a.start});
+
+        // Return the zones
+        return zones;
+    }
+
 
 
 
