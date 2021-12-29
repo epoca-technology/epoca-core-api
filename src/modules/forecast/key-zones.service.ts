@@ -313,7 +313,7 @@ export class KeyZonesService implements IKeyZonesService {
         for (let i = 0; i < this.zones.length; i++) {
             // Make sure there hasn't been a merge
             if (!merged) {
-                // Check if there is a next item before proceding
+                // Check if there is a next item before proceeding
                 if (this.zones[i + 1]) {
                     // Calculate the % change between the current end and the next start
                     const change: number = <number>this._utils.calculatePercentageChange(this.zones[i].end, this.zones[i + 1].start);
