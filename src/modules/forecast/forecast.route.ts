@@ -48,6 +48,7 @@ ForecastRoute.route(`/forecast`).get(lowRiskLimit, async (req: express.Request, 
             },
             {
                 zoneSize: Number(req.query.zoneSize),
+                zoneMergeDistanceLimit: Number(req.query.zoneMergeDistanceLimit),
                 reversalCountRequirement: Number(req.query.reversalCountRequirement),
             }
         );

@@ -40,6 +40,7 @@ export interface IForecastConfig extends IConfig {
 
 export interface IKeyZonesConfig extends IConfig {
     zoneSize?: number,
+    zoneMergeDistanceLimit?: number,
     reversalCountRequirement?: number,
 }
 
@@ -83,16 +84,22 @@ export interface IKeyZonePriceRange {
 
 export interface IKeyZone extends IKeyZonePriceRange {
     id: number,                     // Candlestick Open Timestamp
-    reversalCount: number,          // Number of times the price has reversed from this point
-    reversalType: IReversalType,    // Type of reversal that took place at the zone
-}
+    reversals: IReversal[],         // List of reversals that took place at the zone, ordered by date ascending
+    mutated?: boolean               // Changed it's type from resistance to support or viceversa
+} 
+
 
 /**
+ * Reversals
  * Resistance: Price touches a resistance zone and reverses.
  * Support: Price touches a support zone and reverses.
- * Mutated: The type of reverse has changed its type. From support to resistance or vice versa
  */
-export type IReversalType = 'resistance'|'support'|'mutated';
+export interface IReversal {
+    id: number,
+    type: IReversalType
+}
+
+export type IReversalType = 'resistance'|'support';
 
 
 

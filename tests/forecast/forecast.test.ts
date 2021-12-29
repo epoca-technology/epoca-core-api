@@ -30,16 +30,17 @@ describe('Forecast Essentials: ',  function() {
             series,
             undefined,
             undefined,
-            {
+            /*{
                 intervalMinutes: 30,
                 verbose: 2,
                 includeCandlesticksInResponse: false
             },
             {
-                zoneSize: 1,
+                zoneSize: 0.5,
+                zoneMergeDistanceLimit: 1.5,
                 reversalCountRequirement: 1,
                 verbose: 2
-            }
+            }*/
         );
         console.log(res.keyZonesState);
     });
