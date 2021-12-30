@@ -27,7 +27,7 @@ export class ForecastService implements IForecastService {
      * @intervalMinutes
      * The interval that will be set on the 1m candlesticks before building the key zones.
      */
-     private readonly intervalMinutes: number = 300;
+     private readonly intervalMinutes: number = 240; // 4 hours
 
 
 
@@ -86,10 +86,12 @@ export class ForecastService implements IForecastService {
         const candlesticks: ICandlestick[] = this._candlestick.alterInterval(candlesticks1m, fConfig.intervalMinutes);
 
         // Build the Key Zones State
-        const kzState: IKeyZonesState = this._kz.getState(candlesticks, kzConfig);
+        const kzState: IKeyZonesState = this._kz.getState(candlesticks, candlesticks1m, kzConfig);
 
         // Return the final result
         return {
+            start: candlesticks1m[0].ot,
+            end: candlesticks1m.at(-1).ct,
             result: this.forecastTendencyFromKeyZonesState(kzState, fConfig),
             keyZonesState: kzState,
             candlesticks: fConfig.includeCandlesticksInResponse ? candlesticks: undefined,

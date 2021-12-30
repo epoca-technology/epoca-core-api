@@ -22,7 +22,7 @@ export interface IForecastService {
 
 // Key Zones Service
 export interface IKeyZonesService {
-    getState(candlesticks1m: ICandlestick[], config?: IKeyZonesConfig): IKeyZonesState
+    getState(candlesticks: ICandlestick[], candlesticks1m: ICandlestick[], config?: IKeyZonesConfig): IKeyZonesState
 }
 
 
@@ -66,10 +66,12 @@ export interface IKeyZonesState {
     zonesBelow: IKeyZone[],
 
     // Resistance
+    resistanceDominance: number,
     touchedResistance: boolean,
     brokeResistance: boolean,
 
     // Support
+    supportDominance: number,
     touchedSupport: boolean,
     brokeSupport: boolean,
 }
@@ -117,9 +119,11 @@ export type IReversalType = 'resistance'|'support';
 
 // Forecast Result
 export interface IForecastResult {
+    start: number,                  // First Candlestick's Open Time
+    end: number,                    // Last Candlestick's Close Time
     result: ITendencyForecast,
     keyZonesState: IKeyZonesState,
-    candlesticks?: ICandlestick[] // Only exists if includeCandlesticksInResponse is set to true
+    candlesticks?: ICandlestick[]   // Only exists if includeCandlesticksInResponse is set to true
 }
 
 

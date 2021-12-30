@@ -77,10 +77,11 @@ export class KeyZonesService implements IKeyZonesService {
     /**
      * Given a series of candlesticks, it will build the current state to aid decision making.
      * @param candlesticks
+     * @param candlesticks1m
      * @param config?
      * @returns IKeyZonesState
      */
-    public getState(candlesticks: ICandlestick[], config?: IKeyZonesConfig): IKeyZonesState {
+    public getState(candlesticks: ICandlestick[], candlesticks1m: ICandlestick[], config?: IKeyZonesConfig): IKeyZonesState {
         // Make sure a minimum of 10 candlesticks have been provided
         if (!candlesticks || candlesticks.length < 10) {
             console.log(candlesticks);
@@ -97,6 +98,14 @@ export class KeyZonesService implements IKeyZonesService {
         state.zones = this.getKeyZones(candlesticks, config);
         state.zonesAbove = this.getZonesFromPrice(state.price, state.zones, true);
         state.zonesBelow = this.getZonesFromPrice(state.price, state.zones, false);
+
+        // Resistance Data
+        state.resistanceDominance = <number>this._utils.calculatePercentageOutOfTotal(state.zonesAbove.length, state.zones.length, {ru: true, dp: 0});
+
+
+        // Support Data
+        state.supportDominance = <number>this._utils.calculatePercentageOutOfTotal(state.zonesBelow.length, state.zones.length, {ru: true, dp: 0});
+
 
         // Return the final state
         return state;
@@ -479,8 +488,10 @@ export class KeyZonesService implements IKeyZonesService {
             zones: [],
             zonesAbove: [],
             zonesBelow: [],
+            resistanceDominance: 0,
             touchedResistance: false,
             brokeResistance: false,
+            supportDominance: 0,
             touchedSupport: false,
             brokeSupport: false
         }

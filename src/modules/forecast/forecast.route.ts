@@ -43,13 +43,13 @@ ForecastRoute.route(`/forecast`).get(lowRiskLimit, async (req: express.Request, 
             Number(req.query.start), 
             Number(req.query.end), 
             {
-                intervalMinutes: Number(req.query.intervalMinutes),
+                intervalMinutes: Number(req.query.intervalMinutes) || undefined,
                 includeCandlesticksInResponse: true
             },
             {
-                zoneSize: Number(req.query.zoneSize),
-                zoneMergeDistanceLimit: Number(req.query.zoneMergeDistanceLimit),
-                reversalCountRequirement: Number(req.query.reversalCountRequirement),
+                zoneSize: Number(req.query.zoneSize) || undefined,
+                zoneMergeDistanceLimit: Number(req.query.zoneMergeDistanceLimit) || undefined,
+                reversalCountRequirement: Number(req.query.reversalCountRequirement) || undefined,
             }
         );
 
