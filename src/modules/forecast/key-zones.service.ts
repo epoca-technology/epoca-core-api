@@ -401,8 +401,13 @@ export class KeyZonesService implements IKeyZonesService {
             else if (!above && z.end < price) { zones.push(z)}
         });
 
-        // Order the zones in descending order
-        zones.sort((a, b) => { return b.start - a.start});
+        /**
+         * Order the zones based on the proximity to the price.
+         * Zones Above: Order ascending by price
+         * Zones Below: Order descending by price
+         */
+        if (above) { zones.sort((a, b) => { return a.start - b.start}) } 
+        else { zones.sort((a, b) => { return b.start - a.start}) }
 
         // Return the zones
         return zones;
