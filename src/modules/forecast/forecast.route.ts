@@ -24,9 +24,9 @@ const ForecastRoute = express.Router();
  * Allows the GUI to verify that the server is running and can take requests.
 * @param start 
 * @param end 
-* @param intervalMinutes 
-* @param zoneSize 
-* @param reversalCountRequirement 
+* @param intervalMinutes? 
+* @param zoneSize?
+* @param zoneMergeDistanceLimit?
 * @returns IForecastResult
 */
 ForecastRoute.route(`/forecast`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
@@ -49,7 +49,6 @@ ForecastRoute.route(`/forecast`).get(lowRiskLimit, async (req: express.Request, 
             {
                 zoneSize: Number(req.query.zoneSize) || undefined,
                 zoneMergeDistanceLimit: Number(req.query.zoneMergeDistanceLimit) || undefined,
-                reversalCountRequirement: Number(req.query.reversalCountRequirement) || undefined,
             }
         );
 

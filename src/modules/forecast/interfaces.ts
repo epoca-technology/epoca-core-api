@@ -40,8 +40,7 @@ export interface IForecastConfig extends IConfig {
 
 export interface IKeyZonesConfig extends IConfig {
     zoneSize?: number,
-    zoneMergeDistanceLimit?: number,
-    reversalCountRequirement?: number,
+    zoneMergeDistanceLimit?: number
 }
 
 
@@ -56,9 +55,6 @@ export interface IKeyZonesConfig extends IConfig {
 export interface IKeyZonesState {
     // Close price of the last candlestick
     price: number,
-
-    // Percentage of takers that are buying
-    takerBuyVolumePercent: number,
 
     // Key Zones
     zones: IKeyZone[],
@@ -87,6 +83,8 @@ export interface IKeyZonePriceRange {
 export interface IKeyZone extends IKeyZonePriceRange {
     id: number,                     // Candlestick Open Timestamp
     reversals: IReversal[],         // List of reversals that took place at the zone, ordered by date ascending
+    volume: number,                 // The accumulated volume that has been processed within the zone
+    volumeScore: number,            // Score from 0 to 10 based on the volume traded
     mutated?: boolean               // Changed it's type from resistance to support or viceversa
 } 
 

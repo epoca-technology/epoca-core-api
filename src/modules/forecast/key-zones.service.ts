@@ -11,6 +11,7 @@ import {
     IKeyZonePriceRange,
     IReversal,
 } from "./interfaces";
+import {BigNumber} from "bignumber.js";
 
 
 
@@ -102,7 +103,6 @@ export class KeyZonesService implements IKeyZonesService {
         // Resistance Data
         state.resistanceDominance = <number>this._utils.calculatePercentageOutOfTotal(state.zonesAbove.length, state.zones.length, {ru: true, dp: 0});
 
-
         // Support Data
         state.supportDominance = <number>this._utils.calculatePercentageOutOfTotal(state.zonesBelow.length, state.zones.length, {ru: true, dp: 0});
 
@@ -171,7 +171,7 @@ export class KeyZonesService implements IKeyZonesService {
         }
 
         // Build the key zones
-        const keyZones: IKeyZone[] = this.selectKeyZones(config.zoneMergeDistanceLimit, config.reversalCountRequirement);
+        const keyZones: IKeyZone[] = this.selectKeyZones(config.zoneMergeDistanceLimit);
 
         // Clear temp data
         this.zones = [];
@@ -198,12 +198,16 @@ export class KeyZonesService implements IKeyZonesService {
         const range: IKeyZonePriceRange = this.getZonePriceRange(candlestick, rType, zoneSize);
 
         // Check if the reversal matches a previous zone
-        const zoneIndex: number|undefined = this.isInZone(range);
+        const zoneIndex: number|undefined = this.reversedInExistingZone(range);
         
         // The price range matches an existing zone
         if (typeof zoneIndex == "number") {
             // Add the new reversal
             this.zones[zoneIndex].reversals.push({id: candlestick.ot, type: rType});
+
+            // Add the volume
+            this.zones[zoneIndex].volume = 
+                <number>this._utils.outputNumber(new BigNumber(this.zones[zoneIndex].volume).plus(candlestick.v));
 
             // Check if there has been a mutation
             this.zones[zoneIndex].mutated = this.zoneMutated(this.zones[zoneIndex].reversals);
@@ -215,7 +219,9 @@ export class KeyZonesService implements IKeyZonesService {
                 id: candlestick.ot,
                 start: range.start,
                 end: range.end,
-                reversals: [{id: candlestick.ot, type: rType}]
+                reversals: [{id: candlestick.ot, type: rType}],
+                volume: candlestick.v,
+                volumeScore: 0
             });
         }
     }
@@ -234,7 +240,7 @@ export class KeyZonesService implements IKeyZonesService {
      * @param range
      * @returns number|undefined
      */
-    private isInZone(range: IKeyZonePriceRange): number|undefined {
+    private reversedInExistingZone(range: IKeyZonePriceRange): number|undefined {
         // Iterate over each zone looking for a match
         for (let i = 0; i < this.zones.length; i++) {
             if (
@@ -308,10 +314,9 @@ export class KeyZonesService implements IKeyZonesService {
     /**
      * Selects the key zones by merging and filtering all detected zones.
      * @param  zoneMergeDistanceLimit
-     * @param  reversalCountRequirement
      * @returns IKeyZone[]
      */
-    private selectKeyZones(zoneMergeDistanceLimit: number, reversalCountRequirement: number): IKeyZone[] {
+    private selectKeyZones(zoneMergeDistanceLimit: number): IKeyZone[] {
         // Init the key zones
         let keyZones: IKeyZone[] = [];
         let final: IKeyZone[] = [];
@@ -348,11 +353,14 @@ export class KeyZonesService implements IKeyZonesService {
         }
 
 
-        // Iterate over each zone and add the ones that meet the reversal count requirement
-        keyZones.forEach((z) => { if (z.reversals.length >= reversalCountRequirement) final.push(z) });
+        // Iterate over each zone and find the zone with the highest volume
+        let vols: number[] = [];
+        keyZones.forEach((z) => { vols.push(z.volume) });
+        const highestVol: number = BigNumber.max.apply(null, vols).toNumber();
 
-        // Return the final key zones
-        return final;
+
+        // Populate the volume score for each key zone and return the final list
+        return this.populateKeyZonesVolumeScore(keyZones, highestVol);
     }
 
 
@@ -379,8 +387,55 @@ export class KeyZonesService implements IKeyZonesService {
             start: <number>this._utils.calculateAverage([z1.start, z2.start]),
             end: <number>this._utils.calculateAverage([z1.end, z2.end]),
             reversals: reversals,
+            volume: <number>this._utils.outputNumber(new BigNumber(z1.volume).plus(z2.volume)),
+            volumeScore: 0,
             mutated: this.zoneMutated(reversals)
         }
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Given a list of key zones, it will calculate the volume score for each.
+     * @param keyZones 
+     * @param highestVolume 
+     * @returns IKeyZone[]
+     */
+    private populateKeyZonesVolumeScore(keyZones: IKeyZone[], highestVolume: number): IKeyZone[] {
+        // Init the keyzones
+        let final: IKeyZone[] = keyZones.slice();
+
+        // Iterate over each keyzone again updating its values
+        for (let i = 0; i < final.length; i++) {
+            final[i].volumeScore = <number>this._utils.outputNumber(
+                new BigNumber(final[i].volume).times(10).dividedBy(highestVolume), 
+                {dp: 0}
+            );
+        }
+
+        // Return the list
+        return final;
+    }
+
+
+
+
+
+
+    /**
+     * Given a keyzone volume and the highest volume recorded, it will 
+     * retrieve a score from 0 to 10
+     * @param volume 
+     * @param highestVolume 
+     * @returns number
+     */
+    private getVolumeScore(volume: number, highestVolume: number): number {
+        return <number>this._utils.outputNumber(new BigNumber(volume).times(10).dividedBy(highestVolume), {ru: false, dp: 0});
     }
 
 
@@ -443,6 +498,10 @@ export class KeyZonesService implements IKeyZonesService {
 
 
 
+
+
+
+
     /* Misc Helpers */
 
 
@@ -462,7 +521,6 @@ export class KeyZonesService implements IKeyZonesService {
         return {
             zoneSize: typeof config.zoneSize == "number" ? config.zoneSize: this.zoneSize,
             zoneMergeDistanceLimit: typeof config.zoneMergeDistanceLimit == "number" ? config.zoneMergeDistanceLimit: this.zoneMergeDistanceLimit,
-            reversalCountRequirement: typeof config.reversalCountRequirement == "number" ? config.reversalCountRequirement: this.reversalCountRequirement,
             verbose: typeof config.verbose == "number" ? config.verbose: this.verbose,
         }
     }
@@ -484,7 +542,6 @@ export class KeyZonesService implements IKeyZonesService {
     private getInitialState(last: ICandlestick): IKeyZonesState {
         return {
             price: last.c,
-            takerBuyVolumePercent: <number>this._utils.calculatePercentageOutOfTotal(last.tbv, last.v, {ru: true, dp: 0}),
             zones: [],
             zonesAbove: [],
             zonesBelow: [],
