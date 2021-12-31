@@ -319,13 +319,14 @@ export class KeyZonesService implements IKeyZonesService {
     private selectKeyZones(zoneMergeDistanceLimit: number): IKeyZone[] {
         // Init the key zones
         let keyZones: IKeyZone[] = [];
-        let final: IKeyZone[] = [];
 
         // Sort the local zones by start price ascending (low to high)
         this.zones.sort((a, b) => { return a.start - b.start });
 
-        // Check if zones need to be merged
+        // Check if zones need to be merged and list the key zones volumes
         let merged: boolean = false;
+        let vols: number[] = [];
+
         for (let i = 0; i < this.zones.length; i++) {
             // Make sure there hasn't been a merge
             if (!merged) {
@@ -336,16 +337,24 @@ export class KeyZonesService implements IKeyZonesService {
                     
                     // Merge the zones if needed
                     if (change <= zoneMergeDistanceLimit) {
-                        keyZones.push(this.mergeZones(this.zones[i], this.zones[i + 1]));
+                        const mz: IKeyZone = this.mergeZones(this.zones[i], this.zones[i + 1]);
+                        keyZones.push(mz);
+                        vols.push(mz.volume);
                         merged = true;
                     } 
                     
                     // Otherwise, just add the zone
-                    else { keyZones.push(this.zones[i]) }
+                    else { 
+                        keyZones.push(this.zones[i]);
+                        vols.push(this.zones[i].volume);
+                    }
                 }
 
                 // Checking last zone (unmerged), add it to the final list
-                else { keyZones.push(this.zones[i]) }
+                else { 
+                    keyZones.push(this.zones[i]);
+                    vols.push(this.zones[i].volume);
+                }
             } 
             
             // The current item has already been merged with the previous one. Just skip it
@@ -353,14 +362,8 @@ export class KeyZonesService implements IKeyZonesService {
         }
 
 
-        // Iterate over each zone and find the zone with the highest volume
-        let vols: number[] = [];
-        keyZones.forEach((z) => { vols.push(z.volume) });
-        const highestVol: number = BigNumber.max.apply(null, vols).toNumber();
-
-
         // Populate the volume score for each key zone and return the final list
-        return this.populateKeyZonesVolumeScore(keyZones, highestVol);
+        return this.populateKeyZonesVolumeScore(keyZones, BigNumber.max.apply(null, vols).toNumber());
     }
 
 
@@ -407,36 +410,22 @@ export class KeyZonesService implements IKeyZonesService {
      * @returns IKeyZone[]
      */
     private populateKeyZonesVolumeScore(keyZones: IKeyZone[], highestVolume: number): IKeyZone[] {
-        // Init the keyzones
-        let final: IKeyZone[] = keyZones.slice();
-
-        // Iterate over each keyzone again updating its values
-        for (let i = 0; i < final.length; i++) {
-            final[i].volumeScore = <number>this._utils.outputNumber(
-                new BigNumber(final[i].volume).times(10).dividedBy(highestVolume), 
+        // Iterate over each keyzone setting the volume score
+        for (let i = 0; i < keyZones.length; i++) {
+            keyZones[i].volumeScore = <number>this._utils.outputNumber(
+                new BigNumber(keyZones[i].volume).times(10).dividedBy(highestVolume), 
                 {dp: 0}
             );
         }
 
         // Return the list
-        return final;
+        return keyZones;
     }
 
 
 
 
 
-
-    /**
-     * Given a keyzone volume and the highest volume recorded, it will 
-     * retrieve a score from 0 to 10
-     * @param volume 
-     * @param highestVolume 
-     * @returns number
-     */
-    private getVolumeScore(volume: number, highestVolume: number): number {
-        return <number>this._utils.outputNumber(new BigNumber(volume).times(10).dividedBy(highestVolume), {ru: false, dp: 0});
-    }
 
 
 
