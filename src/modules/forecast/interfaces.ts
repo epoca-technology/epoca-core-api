@@ -120,7 +120,7 @@ export interface IForecastResult {
     start: number,                  // First Candlestick's Open Time
     end: number,                    // Last Candlestick's Close Time
     result: ITendencyForecast,
-    keyZonesState: IKeyZonesState,
+    state: IKeyZonesState,
     candlesticks?: ICandlestick[]   // Only exists if includeCandlesticksInResponse is set to true
 }
 

@@ -51,15 +51,6 @@ export class KeyZonesService implements IKeyZonesService {
 
 
     /**
-     * @reversalCountRequirement
-     * The number of times a reverse needs to happen within a zone in order to be 
-     * considered a key zone.
-     */
-    private readonly reversalCountRequirement: number = 1;
-
-
-
-    /**
      * @verbose
      * Displays information based on the number set for debugging purposes
      */
@@ -125,7 +116,7 @@ export class KeyZonesService implements IKeyZonesService {
 
 
 
-    /* Key Zones */
+    /* Key Zones Detection */
 
 
 

@@ -93,7 +93,7 @@ export class ForecastService implements IForecastService {
             start: candlesticks1m[0].ot,
             end: candlesticks1m.at(-1).ct,
             result: this.forecastTendencyFromKeyZonesState(kzState, fConfig),
-            keyZonesState: kzState,
+            state: kzState,
             candlesticks: fConfig.includeCandlesticksInResponse ? candlesticks: undefined,
         };
     }
