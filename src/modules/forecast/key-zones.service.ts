@@ -37,7 +37,7 @@ export class KeyZonesService implements IKeyZonesService {
      * @zoneSize
      * The zone's size percentage. The start and end prices are based on this value.
      */
-    private readonly zoneSize: number = 0.5;
+    private readonly zoneSize: number = 0.6;
 
 
 
@@ -212,7 +212,7 @@ export class KeyZonesService implements IKeyZonesService {
                 end: range.end,
                 reversals: [{id: candlestick.ot, type: rType}],
                 volume: candlestick.v,
-                volumeScore: 0
+                volumeScore: 0, // Will be populated afterwards
             });
         }
     }
@@ -382,7 +382,7 @@ export class KeyZonesService implements IKeyZonesService {
             end: <number>this._utils.calculateAverage([z1.end, z2.end]),
             reversals: reversals,
             volume: <number>this._utils.outputNumber(new BigNumber(z1.volume).plus(z2.volume)),
-            volumeScore: 0,
+            volumeScore: 0, // Will be populated afterwards
             mutated: this.zoneMutated(reversals)
         }
     }
