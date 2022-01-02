@@ -405,7 +405,7 @@ export class KeyZonesService implements IKeyZonesService {
         for (let i = 0; i < keyZones.length; i++) {
             keyZones[i].volumeScore = <number>this._utils.outputNumber(
                 new BigNumber(keyZones[i].volume).times(10).dividedBy(highestVolume), 
-                {dp: 0}
+                {dp: 0, ru: true}
             );
         }
 
