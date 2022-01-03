@@ -10,6 +10,10 @@ import {
     IReversalType,
     IKeyZonePriceRange,
     IReversal,
+    IKeyZonesData,
+    IPriceAction,
+    IPriceActionData,
+    IKeyZonePriceAction
 } from "./interfaces";
 import {BigNumber} from "bignumber.js";
 
@@ -83,20 +87,35 @@ export class KeyZonesService implements IKeyZonesService {
         // Init the config
         config = this.getConfig(config);
 
+        // Init the last candlestick
+        const lastCandlestick: ICandlestick = candlesticks.at(-1);
+
         // Init the state
-        let state: IKeyZonesState = this.getInitialState(candlesticks.at(-1));
+        let state: IKeyZonesState = this.getInitialState(lastCandlestick.c);
 
-        // Retrieve the key zones
-        state.zones = this.getKeyZones(candlesticks, config);
-        state.zonesAbove = this.getZonesFromPrice(state.price, state.zones, true);
-        state.zonesBelow = this.getZonesFromPrice(state.price, state.zones, false);
+        // Retrieve the Key Zones Data
+        const {keyZones, actions} = this.getKeyZonesData(candlesticks, candlesticks1m, config);
 
-        // Resistance Data
-        state.resistanceDominance = <number>this._utils.calculatePercentageOutOfTotal(state.zonesAbove.length, state.zones.length, {ru: true, dp: 0});
+        // Key Zones
+        state.zones = keyZones;
+        state.zonesAbove = this.getZonesFromPrice(state.price, keyZones, true);
+        state.zonesBelow = this.getZonesFromPrice(state.price, keyZones, false);
 
-        // Support Data
-        state.supportDominance = <number>this._utils.calculatePercentageOutOfTotal(state.zonesBelow.length, state.zones.length, {ru: true, dp: 0});
+        // Resistance Dominance
+        state.resistanceDominance = <number>this._utils.calculatePercentageOutOfTotal(state.zonesAbove.length, keyZones.length, {ru: true, dp: 0});
 
+        // Support Dominance
+        state.supportDominance = <number>this._utils.calculatePercentageOutOfTotal(state.zonesBelow.length, keyZones.length, {ru: true, dp: 0});
+
+        // Actions
+        state.actions = actions;
+
+        // Check if an action took place.
+        const action: IPriceAction = actions.at(-1);
+        state.touchedSupport = action.type == 'touched-support' && action.id == lastCandlestick.ct;
+        state.brokeSupport = action.type == 'broke-support' && action.id == lastCandlestick.ct;
+        state.touchedResistance = action.type == 'touched-resistance' && action.id == lastCandlestick.ct;
+        state.brokeResistance = action.type == 'broke-resistance' && action.id == lastCandlestick.ct;
 
         // Return the final state
         return state;
@@ -125,10 +144,11 @@ export class KeyZonesService implements IKeyZonesService {
      * Retrieves a list of all the zones in which there were reversals
      * ordered by the date in which they were first found.
      * @param candlesticks
+     * @param candlesticks1m
      * @param config
-     * @returns IKeyZone[]
+     * @returns IKeyZonesData
      */
-    private getKeyZones(candlesticks: ICandlestick[], config: IKeyZonesConfig): IKeyZone[] {
+    private getKeyZonesData(candlesticks: ICandlestick[], candlesticks1m: ICandlestick[], config: IKeyZonesConfig): IKeyZonesData {
         // Init temp data
         this.zones = [];
 
@@ -136,8 +156,8 @@ export class KeyZonesService implements IKeyZonesService {
          * Iterate over each candlestick scanning for reversals.
          * The loop starts on the fifth item and ends on the fifth to last item as 
          * for a reversal to be detected it needs:
-         * Resistance:  Higher than the previous 4 and next 4 candlesticks
-         * Support:  Lower than the previous 4 and next 4 candlesticks
+         * Resistance:  Higher than the previous 3 and next 3 candlesticks
+         * Support:  Lower than the previous 3 and next 3 candlesticks
          */
         for (let i = 3; i < candlesticks.length - 3; i++) {
             // Check if a resistance reversal has occurred
@@ -162,13 +182,13 @@ export class KeyZonesService implements IKeyZonesService {
         }
 
         // Build the key zones
-        const keyZones: IKeyZone[] = this.selectKeyZones(config.zoneMergeDistanceLimit);
+        const data: IKeyZonesData = this.selectKeyZones(config.zoneMergeDistanceLimit, candlesticks1m);
 
         // Clear temp data
         this.zones = [];
 
-        // Return the key zones only
-        return keyZones;
+        // Return the key zones and actions
+        return data;
     }
 
 
@@ -213,6 +233,8 @@ export class KeyZonesService implements IKeyZonesService {
                 reversals: [{id: candlestick.ot, type: rType}],
                 volume: candlestick.v,
                 volumeScore: 0, // Will be populated afterwards
+                mutated: false,
+                action: {touched: 0, broke: 0}
             });
         }
     }
@@ -281,6 +303,8 @@ export class KeyZonesService implements IKeyZonesService {
 
 
 
+    
+
     /**
      * Based on a list of reversals, it will determine if the zone
      * has mutated.
@@ -304,10 +328,11 @@ export class KeyZonesService implements IKeyZonesService {
 
     /**
      * Selects the key zones by merging and filtering all detected zones.
-     * @param  zoneMergeDistanceLimit
-     * @returns IKeyZone[]
+     * @param zoneMergeDistanceLimit
+     * @param candlesticks1m
+     * @returns IKeyZonesData
      */
-    private selectKeyZones(zoneMergeDistanceLimit: number): IKeyZone[] {
+    private selectKeyZones(zoneMergeDistanceLimit: number, candlesticks1m: ICandlestick[]): IKeyZonesData {
         // Init the key zones
         let keyZones: IKeyZone[] = [];
 
@@ -353,8 +378,33 @@ export class KeyZonesService implements IKeyZonesService {
         }
 
 
-        // Populate the volume score for each key zone and return the final list
-        return this.populateKeyZonesVolumeScore(keyZones, BigNumber.max.apply(null, vols).toNumber());
+        /**
+         * Iterate over each selected keyzone and complete the missing properties as well as 
+         * building the action history
+         */
+        let actions: IPriceAction[] = [];
+        for (let i = 0; i < keyZones.length; i++) {
+            // Calculate the volume score
+            keyZones[i].volumeScore = <number>this._utils.outputNumber(
+                new BigNumber(keyZones[i].volume).times(10).dividedBy(BigNumber.max.apply(null, vols).toNumber()), 
+                {dp: 0, ru: true}
+            );
+
+            // Build the key zone's price action data
+            const {keyZoneAction, action} = this.buildKeyZonePriceActionData(keyZones[i], candlesticks1m);
+
+            // Set the key zone action
+            keyZones[i].action = keyZoneAction;
+
+            // Add the actions to the history
+            actions = actions.concat(action);
+        }
+
+        // Order the actions by date ascending
+        actions.sort((a, b) => { return a.id - b.id });
+
+        // Return the Key Zones Data
+        return {keyZones: keyZones, actions: actions};
     }
 
 
@@ -383,9 +433,12 @@ export class KeyZonesService implements IKeyZonesService {
             reversals: reversals,
             volume: <number>this._utils.outputNumber(new BigNumber(z1.volume).plus(z2.volume)),
             volumeScore: 0, // Will be populated afterwards
-            mutated: this.zoneMutated(reversals)
+            mutated: this.zoneMutated(reversals),
+            action: {touched: 0, broke: 0}
         }
     }
+
+
 
 
 
@@ -395,22 +448,31 @@ export class KeyZonesService implements IKeyZonesService {
 
 
     /**
-     * Given a list of key zones, it will calculate the volume score for each.
-     * @param keyZones 
-     * @param highestVolume 
-     * @returns IKeyZone[]
+     * Given a keyzone and a list of 1m candlesticks it will build the action history
+     * the keyzone has had since its creation in order to meassure its strength.
+     * @param keyZone 
+     * @param candlesticks1m 
+     * @returns IPriceActionData
      */
-    private populateKeyZonesVolumeScore(keyZones: IKeyZone[], highestVolume: number): IKeyZone[] {
-        // Iterate over each keyzone setting the volume score
-        for (let i = 0; i < keyZones.length; i++) {
-            keyZones[i].volumeScore = <number>this._utils.outputNumber(
-                new BigNumber(keyZones[i].volume).times(10).dividedBy(highestVolume), 
-                {dp: 0, ru: true}
-            );
+    private buildKeyZonePriceActionData(keyZone: IKeyZone, candlesticks1m: ICandlestick[]): IPriceActionData {
+        // Init values
+        let touched: number = 0;
+        let broke: number = 0;
+        let action: IPriceAction[] = [];
+
+        // Iterate over each candlestick
+        for (let i = 0; i < candlesticks1m.length; i++) {
+
+            // Only check for actions if the candlestick is older than the key zone
+            if (candlesticks1m[i].ot > keyZone.id) {
+
+                
+            }
         }
 
-        // Return the list
-        return keyZones;
+
+        // Return the data
+        return {keyZoneAction: {touched: touched, broke: broke}, action: action}
     }
 
 
@@ -421,6 +483,14 @@ export class KeyZonesService implements IKeyZonesService {
 
 
 
+
+
+
+
+
+
+
+    /* General Retrievers */
 
 
 
@@ -515,16 +585,17 @@ export class KeyZonesService implements IKeyZonesService {
 
     
     /**
-     * Given the last candlestick, it will build the initial state.
-     * @param last 
+     * Given the last price, it will return the initial state.
+     * @param lastPrice
      * @returns IKeyZonesState
      */
-    private getInitialState(last: ICandlestick): IKeyZonesState {
+    private getInitialState(lastPrice: number): IKeyZonesState {
         return {
-            price: last.c,
+            price: lastPrice,
             zones: [],
             zonesAbove: [],
             zonesBelow: [],
+            actions: [],
             resistanceDominance: 0,
             touchedResistance: false,
             brokeResistance: false,
