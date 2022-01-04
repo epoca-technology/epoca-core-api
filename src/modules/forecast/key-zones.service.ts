@@ -12,8 +12,7 @@ import {
     IReversal,
     IKeyZonesData,
     IPriceAction,
-    IPriceActionData,
-    IKeyZonePriceAction
+    IPriceActionData
 } from "./interfaces";
 import {BigNumber} from "bignumber.js";
 
@@ -466,10 +465,82 @@ export class KeyZonesService implements IKeyZonesService {
             // Only check for actions if the candlestick is older than the key zone
             if (candlesticks1m[i].ot > keyZone.id) {
 
-                
+                // Check if the current candlestick is in the zone
+                if (this.isInZone(candlesticks1m[i].c, keyZone)) {
+
+                    /**
+                     * For a resistance to be touched, the current price must be in the zone and the 3 
+                     * previous ones must not be in the zone and must be lower.
+                     */
+                    if (
+                        (candlesticks1m[i].c > candlesticks1m[i - 1].c && !this.isInZone(candlesticks1m[i - 1].c, keyZone)) &&
+                        (candlesticks1m[i].c > candlesticks1m[i - 2].c && !this.isInZone(candlesticks1m[i - 2].c, keyZone)) &&
+                        (candlesticks1m[i].c > candlesticks1m[i - 3].c && !this.isInZone(candlesticks1m[i - 3].c, keyZone))
+                    ) {
+                        // Increase the touched counter
+                        touched += 1;
+
+                        // Log the action
+                        action.push({id: candlesticks1m[i].ct, type: 'touched-resistance', zone: keyZone, price: candlesticks1m[i].c });
+                    }
+
+                    /**
+                     * For a support to be touched, the current price must be in the zone and the 3 
+                     * previous ones must not be in the zone and must be higher
+                     */
+                    else if (
+                        (candlesticks1m[i].c < candlesticks1m[i - 1].c && !this.isInZone(candlesticks1m[i - 1].c, keyZone)) &&
+                        (candlesticks1m[i].c < candlesticks1m[i - 2].c && !this.isInZone(candlesticks1m[i - 2].c, keyZone)) &&
+                        (candlesticks1m[i].c < candlesticks1m[i - 3].c && !this.isInZone(candlesticks1m[i - 3].c, keyZone))
+                    ) {
+                        // Increase the touched counter
+                        touched += 1;
+
+                         // Log the action
+                        action.push({id: candlesticks1m[i].ct, type: 'touched-support', zone: keyZone, price: candlesticks1m[i].c });
+                    }
+                }
+
+                // Check if the previous candlestick was in the zone
+                else if(this.isInZone(candlesticks1m[i - 1].c, keyZone)) {
+
+                    /**
+                     * For a resistance to be broken, the current price must not be in the zone and must be 
+                     * higher than the previous 3.
+                     */
+                    if (
+                         candlesticks1m[i].c > candlesticks1m[i - 1].c && 
+                         candlesticks1m[i].c > candlesticks1m[i - 2].c && 
+                         candlesticks1m[i].c > candlesticks1m[i - 3].c &&
+                         candlesticks1m[i].c > candlesticks1m[i - 4].c
+                    ) {
+                        // Increase the broke counter
+                        broke += 1;
+
+                        // Log the action
+                        action.push({id: candlesticks1m[i].ct, type: 'broke-resistance', zone: keyZone, price: candlesticks1m[i].c });
+                    }
+
+
+                    /**
+                     * For a support to be broken, the current price must not be in the zone and must be lower
+                     * than the previous 3
+                     */
+                     else if (
+                         candlesticks1m[i].c < candlesticks1m[i - 1].c && 
+                         candlesticks1m[i].c < candlesticks1m[i - 2].c &&
+                         candlesticks1m[i].c < candlesticks1m[i - 3].c &&
+                         candlesticks1m[i].c < candlesticks1m[i - 4].c
+                    ) {
+                        // Increase the broke counter
+                        broke += 1;
+
+                         // Log the action
+                        action.push({id: candlesticks1m[i].ct, type: 'broke-support', zone: keyZone, price: candlesticks1m[i].c });
+                    }
+                }
             }
         }
-
 
         // Return the data
         return {keyZoneAction: {touched: touched, broke: broke}, action: action}
@@ -477,6 +548,18 @@ export class KeyZonesService implements IKeyZonesService {
 
 
 
+
+
+
+    /**
+     * Checks if a price is within a zone's price range.
+     * @param price 
+     * @param zone
+     * @returns boolean
+     */
+    private isInZone(price: number, zone: IKeyZone): boolean {
+        return (price >= zone.start && price <= zone.end);
+    }
 
 
 
