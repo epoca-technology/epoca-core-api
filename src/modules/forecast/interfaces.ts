@@ -63,28 +63,20 @@ export interface IKeyZonesState {
     zonesAbove: IKeyZone[],
     zonesBelow: IKeyZone[],
 
-    // Price Action History
-    actions: IPriceAction[],
+    // Active & Previous Zone
+    activeZone: IKeyZone|undefined,
 
-    // Resistance
+    // Dominance
     resistanceDominance: number,
-    touchedResistance: boolean,
-    brokeResistance: boolean,
-
-    // Support
     supportDominance: number,
+
+    // Touch Action
+    touchedResistance: boolean,
     touchedSupport: boolean,
-    brokeSupport: boolean,
 }
 
 
 
-
-/* Key Zones Data */
-export interface IKeyZonesData {
-    keyZones: IKeyZone[],
-    actions: IPriceAction[]
-}
 
 
 
@@ -97,10 +89,9 @@ export interface IKeyZonePriceRange {
 export interface IKeyZone extends IKeyZonePriceRange {
     id: number,                     // Candlestick Open Timestamp
     reversals: IReversal[],         // List of reversals that took place at the zone, ordered by date ascending
-    volume: number,                 // The accumulated volume that has been processed within the zone
-    volumeScore: number,            // Score from 0 to 10 based on the volume traded
     mutated: boolean,               // Changed it's type from resistance to support or viceversa
-    action: IKeyZonePriceAction,    // The action that took place in the key zone
+    //volume: number,               // The accumulated volume that has been processed within the zone
+    //volumeScore: number,          // Score from 0 to 10 based on the volume traded
 } 
 
 
@@ -133,25 +124,14 @@ export type IReversalType = 'resistance'|'support';
  * Price actions
  * 
  */
-export interface IKeyZonePriceAction {
-    touched: number,
-    broke: number
-}
-
-export interface IPriceAction {
-    id: number,                     // 1 Minute Candlestick Close Time
-    type: IPriceActionType,         // Type of action that took place
-    zone: IKeyZone,                 // The Key Zone in which the action took place
-    price: number,                  // 1 Minute Candlestick Close Price that triggered the action
-}
-
-export type IPriceActionType = 'touched-support'|'broke-support'|'touched-resistance'|'broke-resistance';
-
 
 export interface IPriceActionData {
-    keyZoneAction: IKeyZonePriceAction, 
-    action: IPriceAction[]
+    touchedSupport: boolean,
+    touchedResistance: boolean,
+    currentZone: IKeyZone|undefined
 }
+
+
 
 
 

@@ -230,7 +230,7 @@ export class TradingSimulation implements ITradingSimulation {
 
             // Fees
             netFee: this.balance.fees.netFee.toNumber(),
-            borrowInterestFee: this.balance.fees.borrowInterestFee.toNumber(),
+            //borrowInterestFee: this.balance.fees.borrowInterestFee.toNumber(),
             netTradesFee: this.balance.fees.netTradesFee.toNumber(),
             openTradeFee: this.balance.fees.openTradeFee.toNumber(),
             closeTradeFee: this.balance.fees.closeTradeFee.toNumber(),
@@ -868,7 +868,7 @@ export class TradingSimulation implements ITradingSimulation {
 
         console.log('FEES');
         console.log(`Net: $${r.netFee}`);
-        console.log(`Borrow Interest: $${r.borrowInterestFee}`);
+        //console.log(`Borrow Interest: $${r.borrowInterestFee}`);
         console.log(`Trades Net: $${r.netTradesFee}`);
         console.log(`Open Trade: $${r.openTradeFee}`);
         console.log(`Close Trade: $${r.closeTradeFee}`);

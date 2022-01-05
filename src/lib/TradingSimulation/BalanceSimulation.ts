@@ -48,7 +48,7 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     public fees: IBalanceSimulationAccumulatedFees = {
         netFee: new BigNumber(0),
-        borrowInterestFee: new BigNumber(0),
+        //borrowInterestFee: new BigNumber(0),
         netTradesFee: new BigNumber(0),
         openTradeFee: new BigNumber(0),
         closeTradeFee: new BigNumber(0),
@@ -68,9 +68,10 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     private bankEnabled = true;
     private bankDepositPercent = 3;
-    private leverage: number = 10;
+    private leverage: number = 1;
     private leverageSpecs: ILeverageSpecs = {
-        10: { takeProfit: 1, stopLoss: 1 },
+        1: { takeProfit: 1.5, stopLoss: 1.5 },
+        //10: { takeProfit: 1, stopLoss: 1 },
         //5: { takeProfit: 3, stopLoss: 3 },
         //10: { takeProfit: 3, stopLoss: 4 },
     }
@@ -161,7 +162,7 @@ export class BalanceSimulation implements IBalanceSimulation {
 
         // Calculate the borrow interest fee
         //const borrowInterestFee: number = _utils.calculateFee(borrowedAmount, this.borrowInterestPercent, 2, true);
-        const borrowInterestFee: number = <number>_utils.calculateFee(borrowedAmount, this.borrowInterestPercent, { ru: true });
+        //const borrowInterestFee: number = <number>_utils.calculateFee(borrowedAmount, this.borrowInterestPercent, { ru: true });
 
         // Calculate the open trade fee
         //const openTradeFee: number = _utils.calculateFee(borrowedAmount, this.tradeFeePercent, 2, true);
@@ -223,7 +224,8 @@ export class BalanceSimulation implements IBalanceSimulation {
         }
 
         // Calculate the net fees
-        const netFee: number = new BigNumber(borrowInterestFee).plus(openTradeFee).plus(closeTradeFee).toNumber();
+        //const netFee: number = new BigNumber(borrowInterestFee).plus(openTradeFee).plus(closeTradeFee).toNumber();
+        const netFee: number = new BigNumber(openTradeFee).plus(closeTradeFee).toNumber();
         const netTradesFee: number = new BigNumber(openTradeFee).plus(closeTradeFee).toNumber();
 
         // Deduct the net fee from the current balance
@@ -243,7 +245,7 @@ export class BalanceSimulation implements IBalanceSimulation {
             difference: difference,
             fee: {
                 netFee: netFee,
-                borrowInterestFee: borrowInterestFee,
+                //borrowInterestFee: borrowInterestFee,
                 netTradesFee: netTradesFee,
                 openTradeFee: openTradeFee,
                 closeTradeFee: closeTradeFee
@@ -253,7 +255,7 @@ export class BalanceSimulation implements IBalanceSimulation {
         // Update Fee Accumulators
         this.fees = {
             netFee: this.fees.netFee.plus(netFee),
-            borrowInterestFee: this.fees.borrowInterestFee.plus(borrowInterestFee),
+            //borrowInterestFee: this.fees.borrowInterestFee.plus(borrowInterestFee),
             netTradesFee: this.fees.netTradesFee.plus(netTradesFee),
             openTradeFee: this.fees.openTradeFee.plus(openTradeFee),
             closeTradeFee: this.fees.closeTradeFee.plus(closeTradeFee),
@@ -430,10 +432,12 @@ export class BalanceSimulation implements IBalanceSimulation {
         const h: IBalanceHistory = this.history[this.history.length -1];
 
         // Display Fees - Can be silenced once validated
+        const difference: string = 
+            h.current > h.previous ? `+${new BigNumber(h.difference).minus(h.fee.netFee)}`:`-${new BigNumber(h.difference).plus(h.fee.netFee)}`;
         console.log(`Position Size: ${positionSize}$ x${this.leverage}`);
-        console.log(`${h.previous}$ -> ${h.current}$ (${h.current > h.previous ? '+':'-'}${new BigNumber(h.difference).minus(h.fee.netFee).toNumber()}$)`);
+        console.log(`${h.previous}$ -> ${h.current}$ (${difference}$)`);
         if (this.verbose > 0 && this.bank.isGreaterThan(0)) console.log(`Bank: ${this.bank.toNumber()}$`);
-        if (this.verbose > 1) console.log(`Fee: ${h.fee.netFee}$ | BIF: ${h.fee.borrowInterestFee}$ | OTF: ${h.fee.openTradeFee}$ | CTF: ${h.fee.closeTradeFee}$`);
+        if (this.verbose > 1) console.log(`Fee: ${h.fee.netFee}$ | OTF: ${h.fee.openTradeFee}$ | CTF: ${h.fee.closeTradeFee}$`);
         console.log(' ');
     }
 

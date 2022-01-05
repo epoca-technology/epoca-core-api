@@ -48,7 +48,7 @@ xdescribe('Balance Simulation Tests', function() {
             stopLossPrice: 0,
             outcome: true
         });*/
-        bs.onPositionClose({
+        /*bs.onPositionClose({
             type: 'short',
             forecast: {result: 1},
             openTime: 0,
@@ -57,7 +57,7 @@ xdescribe('Balance Simulation Tests', function() {
             takeProfitPrice: 0,
             stopLossPrice: 0,
             outcome: false
-        });
+        });*/
     });
 
 });

@@ -66,7 +66,7 @@ export interface IBalanceHistory {
 // Fee Object
 export interface IBalanceSimulationFees {
     netFee: number,
-    borrowInterestFee: number,
+    //borrowInterestFee: number,
     netTradesFee: number, // = openTradeFee + closeTradeFee
     openTradeFee: number,
     closeTradeFee: number,
@@ -75,7 +75,7 @@ export interface IBalanceSimulationFees {
 // Accumulated Fee Object
 export interface IBalanceSimulationAccumulatedFees {
     netFee: BigNumber,
-    borrowInterestFee: BigNumber,
+    //borrowInterestFee: BigNumber,
     netTradesFee: BigNumber,
     openTradeFee: BigNumber,
     closeTradeFee: BigNumber,
@@ -128,7 +128,7 @@ export interface ITradingSimulationResult {
 
     // Fees
     netFee: number,
-    borrowInterestFee: number,
+    //borrowInterestFee: number,
     netTradesFee: number,
     openTradeFee: number,
     closeTradeFee: number,

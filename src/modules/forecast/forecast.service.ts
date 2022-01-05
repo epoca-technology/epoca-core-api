@@ -112,12 +112,39 @@ export class ForecastService implements IForecastService {
      * @returns ITendencyForecast
      */
     private forecastTendencyFromKeyZonesState(state: IKeyZonesState, config: IForecastConfig): ITendencyForecast {
-        return 0;
+        // Check if the support zone is strong enough to hold
+        if (
+            state.touchedSupport  &&
+            state.activeZone.reversals.length > 1 &&
+            (state.activeZone.reversals.at(-1).type == 'support' || state.activeZone.mutated)
+        ) {
+            this.logState(state);
+            return 1;
+        }
+
+        // Check if the resistance zone is strong enough to hold
+        else if (
+            state.touchedResistance &&
+            state.activeZone.reversals.length > 1 &&
+            (state.activeZone.reversals.at(-1).type == 'resistance' || state.activeZone.mutated)
+        ) {
+            this.logState(state);
+            return -1;
+        }
+
+        // Otherwise, stand neutral.
+        else { return 0 }
     }
 
 
 
 
+    private logState(state): void {
+        console.log(' ');console.log(' ');
+        console.log(`Touched ${state.touchedSupport ? 'Support': 'Resistance'}: $${state.price}`, state.activeZone);
+        console.log(`Zone Above (${state.zonesAbove.length})`, state.zonesAbove[0]);
+        console.log(`Zone Below (${state.zonesBelow.length})`, state.zonesBelow[0]);
+    }
 
 
 

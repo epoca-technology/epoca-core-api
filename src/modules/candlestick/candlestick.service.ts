@@ -214,10 +214,10 @@ export class CandlestickService implements ICandlestickService {
                 try {
                     await this.syncCandlesticks();
                 } catch (e) {
-                    console.log('Failed to sync candlesticks again, will attempt again in ~50 seconds:', e);
+                    console.log('Failed to sync candlesticks again, will attempt again in ~30 seconds:', e);
                 }
             }
-        }, 60000);
+        }, 30000);
     }
 
 
