@@ -27,6 +27,7 @@ const ForecastRoute = express.Router();
 * @param intervalMinutes? 
 * @param zoneSize?
 * @param zoneMergeDistanceLimit?
+* @param priceActionCandlesticksRequirement?
 * @returns IForecastResult
 */
 ForecastRoute.route(`/forecast`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
@@ -44,6 +45,7 @@ ForecastRoute.route(`/forecast`).get(lowRiskLimit, async (req: express.Request, 
             Number(req.query.end), 
             {
                 intervalMinutes: Number(req.query.intervalMinutes) || undefined,
+                priceActionCandlesticksRequirement: Number(req.query.priceActionCandlesticksRequirement) || undefined,
                 includeCandlesticksInResponse: true
             },
             {

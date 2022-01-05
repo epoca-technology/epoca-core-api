@@ -27,8 +27,17 @@ export class ForecastService implements IForecastService {
      * @intervalMinutes
      * The interval that will be set on the 1m candlesticks before building the key zones.
      */
-     private readonly intervalMinutes: number = 300; // 5 hours
+     private readonly intervalMinutes: number = 600; // 5 hours
 
+
+
+
+    /**
+     * @priceActionCandlesticksRequirement
+     * The number of 1 minute candlesticks that will be used to determine if a zone has been
+     * touched.
+     */
+     private readonly priceActionCandlesticksRequirement: number = 15;
 
 
 
@@ -86,7 +95,11 @@ export class ForecastService implements IForecastService {
         const candlesticks: ICandlestick[] = this._candlestick.alterInterval(candlesticks1m, fConfig.intervalMinutes);
 
         // Build the Key Zones State
-        const state: IKeyZonesState = this._kz.getState(candlesticks, candlesticks1m, kzConfig);
+        const state: IKeyZonesState = this._kz.getState(
+            candlesticks, 
+            candlesticks1m.slice(candlesticks1m.length - fConfig.priceActionCandlesticksRequirement), 
+            kzConfig
+        );
 
         // Return the final result
         return {
@@ -115,8 +128,9 @@ export class ForecastService implements IForecastService {
         // Check if the support zone is strong enough to hold
         if (
             state.touchedSupport  &&
-            state.activeZone.reversals.length > 1 &&
-            (state.activeZone.reversals.at(-1).type == 'support' || state.activeZone.mutated)
+            //state.activeZone.reversals.length >= 2 &&
+            (state.activeZone.reversals.at(-1).type == 'support' && !state.activeZone.mutated) &&
+            state.zonesBelow.length
         ) {
             this.logState(state);
             return 1;
@@ -125,8 +139,9 @@ export class ForecastService implements IForecastService {
         // Check if the resistance zone is strong enough to hold
         else if (
             state.touchedResistance &&
-            state.activeZone.reversals.length > 1 &&
-            (state.activeZone.reversals.at(-1).type == 'resistance' || state.activeZone.mutated)
+            //state.activeZone.reversals.length >= 2 &&
+            (state.activeZone.reversals.at(-1).type == 'resistance' && !state.activeZone.mutated) &&
+            state.zonesAbove.length
         ) {
             this.logState(state);
             return -1;
@@ -168,6 +183,7 @@ export class ForecastService implements IForecastService {
         config = config ? config: {};
         return {
             intervalMinutes: typeof config.intervalMinutes == "number" ? config.intervalMinutes: this.intervalMinutes,
+            priceActionCandlesticksRequirement: typeof config.priceActionCandlesticksRequirement == "number" ? config.priceActionCandlesticksRequirement: this.priceActionCandlesticksRequirement,
             includeCandlesticksInResponse: config.includeCandlesticksInResponse == true,
             verbose: typeof config.verbose == "number" ? config.verbose: this.verbose,
         }

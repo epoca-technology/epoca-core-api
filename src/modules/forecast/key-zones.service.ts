@@ -12,7 +12,6 @@ import {
     IReversal,
     IPriceActionData
 } from "./interfaces";
-import {BigNumber} from "bignumber.js";
 
 
 
@@ -38,7 +37,7 @@ export class KeyZonesService implements IKeyZonesService {
      * @zoneSize
      * The zone's size percentage. The start and end prices are based on this value.
      */
-    private readonly zoneSize: number = 0.6;
+    private readonly zoneSize: number = 0.5;
 
 
 
@@ -48,6 +47,8 @@ export class KeyZonesService implements IKeyZonesService {
      * close to one another.
      */
      private readonly zoneMergeDistanceLimit: number = 1.5;
+
+
 
 
 
@@ -102,7 +103,7 @@ export class KeyZonesService implements IKeyZonesService {
         state.supportDominance = <number>this._utils.calculatePercentageOutOfTotal(state.zonesBelow.length, keyZones.length, {ru: true, dp: 0});
 
         // Retrieve Price Action Data
-        const priceActionData: IPriceActionData = this.getPriceActionData(candlesticks1m.slice(candlesticks1m.length - 10), keyZones);
+        const priceActionData: IPriceActionData = this.getPriceActionData(candlesticks1m, keyZones);
 
         // Active Zone
         state.activeZone = priceActionData.currentZone;
@@ -209,9 +210,6 @@ export class KeyZonesService implements IKeyZonesService {
             // Add the new reversal
             this.zones[zoneIndex].reversals.push({id: candlestick.ot, type: rType});
 
-            // Add the volume
-            //this.zones[zoneIndex].volume = <number>this._utils.outputNumber(new BigNumber(this.zones[zoneIndex].volume).plus(candlestick.v));
-
             // Check if there has been a mutation
             this.zones[zoneIndex].mutated = this.zoneMutated(this.zones[zoneIndex].reversals);
         }
@@ -223,8 +221,6 @@ export class KeyZonesService implements IKeyZonesService {
                 start: range.start,
                 end: range.end,
                 reversals: [{id: candlestick.ot, type: rType}],
-                //volume: candlestick.v,
-                //volumeScore: 0, // Will be populated afterwards
                 mutated: false
             });
         }
@@ -331,8 +327,6 @@ export class KeyZonesService implements IKeyZonesService {
 
         // Check if zones need to be merged and list the key zones volumes
         let merged: boolean = false;
-        //let vols: number[] = [];
-
         for (let i = 0; i < this.zones.length; i++) {
             // Make sure there hasn't been a merge
             if (!merged) {
@@ -343,38 +337,21 @@ export class KeyZonesService implements IKeyZonesService {
                     
                     // Merge the zones if needed
                     if (change <= zoneMergeDistanceLimit) {
-                        const mz: IKeyZone = this.mergeZones(this.zones[i], this.zones[i + 1]);
-                        keyZones.push(mz);
-                        //vols.push(mz.volume);
+                        keyZones.push(this.mergeZones(this.zones[i], this.zones[i + 1]));
                         merged = true;
                     } 
                     
                     // Otherwise, just add the zone
-                    else { 
-                        keyZones.push(this.zones[i]);
-                        //vols.push(this.zones[i].volume);
-                    }
+                    else { keyZones.push(this.zones[i]) }
                 }
 
                 // Checking last zone (unmerged), add it to the final list
-                else { 
-                    keyZones.push(this.zones[i]);
-                    //vols.push(this.zones[i].volume);
-                }
+                else { keyZones.push(this.zones[i]) }
             } 
             
             // The current item has already been merged with the previous one. Just skip it
             else { merged = false }
         }
-
-
-        // Iterate over each selected keyzone and calculate the volume score
-        /*for (let i = 0; i < keyZones.length; i++) {
-            keyZones[i].volumeScore = <number>this._utils.outputNumber(
-                new BigNumber(keyZones[i].volume).times(10).dividedBy(BigNumber.max.apply(null, vols).toNumber()), 
-                {dp: 0, ru: true}
-            );
-        }*/
 
         // Return the Key Zones Data
         return keyZones;
@@ -405,8 +382,6 @@ export class KeyZonesService implements IKeyZonesService {
             end: <number>this._utils.calculateAverage([z1.end, z2.end]),
             reversals: reversals,
             mutated: this.zoneMutated(reversals)
-            //volume: <number>this._utils.outputNumber(new BigNumber(z1.volume).plus(z2.volume)),
-            //volumeScore: 0, // Will be populated afterwards
         }
     }
 
@@ -443,56 +418,52 @@ export class KeyZonesService implements IKeyZonesService {
      * @returns IPriceAction|undefined
      */
     private getPriceActionData(candlesticks1m: ICandlestick[], keyZones: IKeyZone[]): IPriceActionData {
-        // Init the zones for the current & previous price
+        // Check if the price is currently in a zone
         const currentZone: IKeyZone|undefined = this.isInZone(candlesticks1m.at(-1).c, keyZones);
-        let touchedSupport: boolean = false;
-        let touchedResistance: boolean = false;
-        
-        // Make sure it is in a zone
-        if (currentZone) {
-            // Check if it touched resistance
-            if (
-                (candlesticks1m.at(-1).c > candlesticks1m.at(-2).c && !this.isInZone(candlesticks1m.at(-2).c, keyZones)) &&
-                (candlesticks1m.at(-1).c > candlesticks1m.at(-3).c && !this.isInZone(candlesticks1m.at(-3).c, keyZones)) &&
-                (candlesticks1m.at(-1).c > candlesticks1m.at(-4).c && !this.isInZone(candlesticks1m.at(-4).c, keyZones)) &&
-                (candlesticks1m.at(-1).c > candlesticks1m.at(-5).c && !this.isInZone(candlesticks1m.at(-5).c, keyZones)) &&
-                (candlesticks1m.at(-1).c > candlesticks1m.at(-6).c && !this.isInZone(candlesticks1m.at(-6).c, keyZones)) &&
-                (candlesticks1m.at(-1).c > candlesticks1m.at(-7).c && !this.isInZone(candlesticks1m.at(-7).c, keyZones)) &&
-                (candlesticks1m.at(-1).c > candlesticks1m.at(-8).c && !this.isInZone(candlesticks1m.at(-8).c, keyZones)) &&
-                (candlesticks1m.at(-1).c > candlesticks1m.at(-9).c && !this.isInZone(candlesticks1m.at(-9).c, keyZones)) &&
-                (candlesticks1m.at(-1).c > candlesticks1m.at(-10).c && !this.isInZone(candlesticks1m.at(-10).c, keyZones))
-            ) {
-                touchedResistance = true;
+
+        // Return the final values
+        return { 
+            touchedSupport: currentZone ? this.touchedKeyZone(currentZone, candlesticks1m, keyZones, true): false, 
+            touchedResistance: currentZone ? this.touchedKeyZone(currentZone, candlesticks1m, keyZones, false): false, 
+            currentZone: currentZone 
+        };
+    }
+
+
+
+
+
+
+    
+    /**
+     * Checks if a support or a resistance key level has been touched.
+     * @param currentZone 
+     * @param candlesticks1m 
+     * @param support 
+     * @returns boolean
+     */
+    private touchedKeyZone(currentZone: IKeyZone, candlesticks1m: ICandlestick[], keyZones: IKeyZone[], support: boolean): boolean {
+        // Iterate over each candlestick except for the last one
+        for (let i = 0; i < candlesticks1m.length - 1; i++) {
+            // Check if the candlestick is in a zone
+            const zone: IKeyZone|undefined = this.isInZone(candlesticks1m[i].c, keyZones);
+            
+            // Evaluate Support
+            if (support && (candlesticks1m.at(-1).c > candlesticks1m[i].c || (zone && currentZone.id == zone.id))) {
+                return false;
             }
 
-            // Check if it touched support
-            else if (
-                (candlesticks1m.at(-1).c < candlesticks1m.at(-2).c && !this.isInZone(candlesticks1m.at(-2).c, keyZones)) &&
-                (candlesticks1m.at(-1).c < candlesticks1m.at(-3).c && !this.isInZone(candlesticks1m.at(-3).c, keyZones)) &&
-                (candlesticks1m.at(-1).c < candlesticks1m.at(-4).c && !this.isInZone(candlesticks1m.at(-4).c, keyZones)) &&
-                (candlesticks1m.at(-1).c < candlesticks1m.at(-5).c && !this.isInZone(candlesticks1m.at(-5).c, keyZones)) &&
-                (candlesticks1m.at(-1).c < candlesticks1m.at(-6).c && !this.isInZone(candlesticks1m.at(-6).c, keyZones)) &&
-                (candlesticks1m.at(-1).c < candlesticks1m.at(-7).c && !this.isInZone(candlesticks1m.at(-7).c, keyZones)) &&
-                (candlesticks1m.at(-1).c < candlesticks1m.at(-8).c && !this.isInZone(candlesticks1m.at(-8).c, keyZones)) &&
-                (candlesticks1m.at(-1).c < candlesticks1m.at(-9).c && !this.isInZone(candlesticks1m.at(-9).c, keyZones)) &&
-                (candlesticks1m.at(-1).c < candlesticks1m.at(-10).c && !this.isInZone(candlesticks1m.at(-10).c, keyZones))
-            ) {
-                touchedSupport = true;
+            // Evaluate Resistance
+            else if (!support && (candlesticks1m.at(-1).c < candlesticks1m[i].c || (zone && currentZone.id == zone.id))){
+                return false;
             }
         }
 
-
-        // Find the previous zone the price was at
-        /*let previousZone: IKeyZone|undefined = undefined;
-        let i: number = candlesticks1m.length - 3;
-        while (previousZone == undefined) {
-            previousZone = this.isInZone(candlesticks1m[i].c, keyZones);
-            i = i - 1;
-        }*/
-
-        // Return the final values
-        return { touchedSupport: touchedSupport, touchedResistance: touchedResistance, currentZone: currentZone };
+        // If the execution hasn't ended means the keyzone has been touched
+        return true;
     }
+
+
 
 
 
