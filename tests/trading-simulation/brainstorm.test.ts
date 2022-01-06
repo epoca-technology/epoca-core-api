@@ -32,7 +32,7 @@ describe('', function() {
 
     it('-Trading Simulation', async function() {
         //const series: ICandlestick[] = await _candlestick.get(_utils.getTimestamp('01-01-2020'), _utils.getTimestamp('01-12-2020'));
-        const series: ICandlestick[] = await _candlestick.get(_utils.getTimestamp('01-06-2021'));
+        const series: ICandlestick[] = await _candlestick.get(_utils.getTimestamp('01-07-2021'));
         //const series: ICandlestick[] = await _candlestick.get(_utils.getTimestamp('01-06-2020'), _utils.getTimestamp('31-12-2021'));
         //const series: ICandlestick[] = await _candlestick.get();
         try {

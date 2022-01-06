@@ -4,6 +4,7 @@ import {
     IUtilitiesService, 
     INumber, 
     INumberConfig,
+    IAPIResponse
 } from "./interfaces";
 import {BigNumber} from 'bignumber.js';
 import * as moment from 'moment';
@@ -218,7 +219,7 @@ export class UtilitiesService implements IUtilitiesService {
      * @param value 
      * @returns BigNumber
      */
-    private getBigNumber(value: INumber): BigNumber {
+    public getBigNumber(value: INumber): BigNumber {
         if (BigNumber.isBigNumber(value)) { return value } else { return new BigNumber(value) }
     } 
 
@@ -274,18 +275,30 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
-    /* Dates */
+
+
+
+    /* API Response */
+
+
+
 
 
 
 
     /**
-     * Given a date in the following format '19/05/2020' it will return the timestamp.
-     * @param date 
-     * @returns number
+     * Builds a successful or unsuccesful API error object ready to be sent
+     * back to the GUI.
+     * @param data 
+     * @param error 
+     * @returns IAPIResponse
      */
-    public getTimestamp(date: string): number {
-        return moment(date, ["DD-MM-YYYY"]).valueOf();
+    public apiResponse(data?: any, error?: string): IAPIResponse {
+        return {
+            success: error == undefined,
+            data: data,
+            error: error ? this.getErrorMessage(error): undefined
+        }
     }
 
 
@@ -294,13 +307,16 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+
+
     /**
-     * Retrieves the date in a readable format.
-     * @param timestamp 
+     * Given an error and a code, it will build an API error.
+     * @param e 
+     * @param code 
      * @returns string
      */
-    public toDateString(timestamp: number): string {
-        return moment(timestamp).format("DD/MM/YYYY HH:mm:ss");
+    public buildApiError(e: any, code?: number): string {
+        return `${this.getErrorMessage(e)} {(${code || 0})}`;
     }
 
 
@@ -308,7 +324,27 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+    /**
+     * Given an API error, it will extract the error code. If none is found, will return 0
+     * @param apiError 
+     * @returns number
+     */
+    public getCodeFromApiError(error: string): number {
+        // Make sure it is a valid string
+        if (typeof error == "string" && error.length > 5) {
+            // Extract the code
+            const code: number = Number(error.substring(
+                error.indexOf("{(") + 2, 
+                error.lastIndexOf(")}")
+            ));
 
+            // If a code was found, return it
+            if (code) return Number(code);
+        }
+
+        // If a code is not found, return 0 for 'unknown'
+        return 0;
+    }
 
 
 
@@ -362,7 +398,54 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+
+
+
     
+
+
+
+
+
+
+
+
+
+
+
+    /* Dates */
+
+
+
+
+    /**
+     * Given a date in the following format '19/05/2020' it will return the timestamp.
+     * @param date 
+     * @returns number
+     */
+     public getTimestamp(date: string): number {
+        return moment(date, ["DD-MM-YYYY"]).valueOf();
+    }
+
+
+
+
+
+
+
+    /**
+     * Retrieves the date in a readable format.
+     * @param timestamp 
+     * @returns string
+     */
+    public toDateString(timestamp: number): string {
+        return moment(timestamp).format("DD/MM/YYYY HH:mm:ss");
+    }
+
+
+
+
+
 
 
 

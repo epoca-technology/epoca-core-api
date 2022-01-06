@@ -28,7 +28,7 @@ const ForecastRoute = express.Router();
 * @param zoneSize?
 * @param zoneMergeDistanceLimit?
 * @param priceActionCandlesticksRequirement?
-* @returns IForecastResult
+* @returns IAPIResponse<IForecastResult>
 */
 ForecastRoute.route(`/forecast`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Retrieve the token
@@ -55,11 +55,10 @@ ForecastRoute.route(`/forecast`).get(lowRiskLimit, async (req: express.Request, 
         );
 
         // Return the response
-        res.send(data);
+        res.send(_utils.apiResponse(data));
     } catch (e) {
 		console.log(e);
-        res.status(500);
-        res.json({ error: e });
+        res.send(_utils.apiResponse(undefined, e));
     }
 });
 

@@ -25,7 +25,7 @@ const CandlestickRoute = express.Router();
 * @param start 
 * @param end 
 * @param intervalMinutes 
-* @returns ICandlestick[]
+* @returns IAPIResponse<ICandlestick[]>
 */
 CandlestickRoute.route(`/getForPeriod`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Retrieve the token
@@ -43,11 +43,10 @@ CandlestickRoute.route(`/getForPeriod`).get(lowRiskLimit, async (req: express.Re
         );
 
         // Return the response
-        res.send(data);
+        res.send(_utils.apiResponse(data));
     } catch (e) {
 		console.log(e);
-        res.status(500);
-        res.json({ error: e });
+        res.send(_utils.apiResponse(undefined, e));
     }
 });
 

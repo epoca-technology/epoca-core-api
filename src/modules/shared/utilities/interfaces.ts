@@ -10,13 +10,19 @@ export interface IUtilitiesService {
     calculatePercentageOutOfTotal(value: INumber, total: INumber, config?: INumberConfig): INumber,
     calculateFee(value: INumber, feePercentage: INumber, config?: INumberConfig): INumber,
     outputNumber(value: INumber, config?: INumberConfig): INumber,
+    getBigNumber(value: INumber): BigNumber,
+
+    // API Response
+    apiResponse(data?: any, error?: string): IAPIResponse,
+    buildApiError(e: any, code?: number): string,
+    getCodeFromApiError(apiError: string): number,
+
+    // Error Handling
+    getErrorMessage(e: any): string,
 
     // Dates
     getTimestamp(date: string): number,
     toDateString(timestamp: number): string,
-
-    // Error Handling
-    getErrorMessage(e: any): string,
 
     // Async Delay
     asyncDelay(seconds: number): Promise<void>,
@@ -47,3 +53,10 @@ export type INumberOutputFormat = 'n'|'s'|'bn';
 
 
 
+
+/* API Response */
+export interface IAPIResponse {
+    success: boolean,
+    data?: any,
+    error?: string 
+}

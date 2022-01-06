@@ -27,7 +27,7 @@ export class ForecastService implements IForecastService {
      * @intervalMinutes
      * The interval that will be set on the 1m candlesticks before building the key zones.
      */
-     private readonly intervalMinutes: number = 600; // 5 hours
+     private readonly intervalMinutes: number = 1000; // 
 
 
 
@@ -46,7 +46,7 @@ export class ForecastService implements IForecastService {
      * @verbose
      * Displays information based on the number set for debugging purposes
      */
-    private readonly verbose: number = 0;
+    private readonly verbose: number = 1;
 
 
 
@@ -125,25 +125,39 @@ export class ForecastService implements IForecastService {
      * @returns ITendencyForecast
      */
     private forecastTendencyFromKeyZonesState(state: IKeyZonesState, config: IForecastConfig): ITendencyForecast {
-        // Check if the support zone is strong enough to hold
+        /**
+         * Check if the support zone is strong enough to hold the price action:
+         * 1) A minimum of 3 reversals
+         * 2) The reversal type must be a support or it must have mutated
+         * 3) There must be at least 1 key zone below
+         * 4) The number of reversals in the current key zone must be greater than the one below
+         */
         if (
             state.touchedSupport  &&
-            //state.activeZone.reversals.length >= 2 &&
-            (state.activeZone.reversals.at(-1).type == 'support' && !state.activeZone.mutated) &&
-            state.zonesBelow.length
+            //state.activeZone.reversals.length >= 3 &&
+            (state.activeZone.reversals[0].type == 'support' || state.activeZone.mutated) &&
+            state.zonesBelow.length &&
+            state.activeZone.reversals.length > state.zonesBelow[0].reversals.length
         ) {
-            this.logState(state);
+            if (config.verbose > 0) this.logState(state);
             return 1;
         }
 
-        // Check if the resistance zone is strong enough to hold
+        /**
+         * Check if the resistance zone is strong enough to hold the price action:
+         * 1) A minimum of 3 reversals
+         * 2) The reversal type must be a resistance or it must have mutated
+         * 3) There must be at least 1 key zone above
+         * 4) The number of reversals in the current key zone must be greater than the one above
+         */
         else if (
             state.touchedResistance &&
-            //state.activeZone.reversals.length >= 2 &&
-            (state.activeZone.reversals.at(-1).type == 'resistance' && !state.activeZone.mutated) &&
-            state.zonesAbove.length
+            //state.activeZone.reversals.length >= 3 &&
+            (state.activeZone.reversals[0].type == 'resistance'  || state.activeZone.mutated) &&
+            state.zonesAbove.length &&
+            state.activeZone.reversals.length > state.zonesAbove[0].reversals.length
         ) {
-            this.logState(state);
+            if (config.verbose > 0) this.logState(state);
             return -1;
         }
 
@@ -154,12 +168,24 @@ export class ForecastService implements IForecastService {
 
 
 
-    private logState(state): void {
+
+
+    /**
+     * Logs the keyzone state whenever there is a position forecast.
+     * @param state 
+     * @returns void
+     */
+    private logState(state: IKeyZonesState): void {
         console.log(' ');console.log(' ');
         console.log(`Touched ${state.touchedSupport ? 'Support': 'Resistance'}: $${state.price}`, state.activeZone);
         console.log(`Zone Above (${state.zonesAbove.length})`, state.zonesAbove[0]);
         console.log(`Zone Below (${state.zonesBelow.length})`, state.zonesBelow[0]);
     }
+
+
+
+
+
 
 
 

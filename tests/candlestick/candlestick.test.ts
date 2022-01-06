@@ -286,7 +286,7 @@ describe('Candlestick Essentials: ',  function() {
 
 
 
-    it('-Can merge a list of candlesticks into one: ', async function() {
+    it('-Can alter the interval of a candlesticks list: ', async function() {
         // Original
         const original: ICandlestick[] = _candlestick.processBinanceCandlesticks(TEST_BINANCE_CANDLESTICKS);
         expect(_candlestick.alterInterval(original, 30).length).toBe(1);

@@ -42,7 +42,7 @@ describe('Forecast Essentials: ',  function() {
                 verbose: 2
             }*/
         );
-        console.log(res.keyZonesState);
+        console.log(res.state);
     });
 
 

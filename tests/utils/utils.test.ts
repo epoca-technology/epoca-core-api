@@ -3,9 +3,12 @@ import "reflect-metadata";
 import {appContainer, SYMBOLS} from '../../src/ioc';
 import {BigNumber} from 'bignumber.js';
 
+// Object Stringifier
+import * as stringify from 'json-stable-stringify';
+
 
 // Init service
-import { IUtilitiesService } from "../../src/modules/shared/utilities";
+import { IAPIResponse, IUtilitiesService } from "../../src/modules/shared/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
@@ -92,12 +95,9 @@ describe('Number Handling:', function() {
 
 
     it('-Can retrieve a BigNumber from a number, string or BigNumber Instance', function() {
-        //@ts-ignore
         expect(_utils.getBigNumber(100).toNumber()).toEqual(100);
-        //@ts-ignore
         expect(_utils.getBigNumber('100').toNumber()).toEqual(100);
         const bn: BigNumber = new BigNumber(100.55);
-        //@ts-ignore
         expect(_utils.getBigNumber(bn).toNumber()).toEqual(100.55);
     });
 });
@@ -109,19 +109,65 @@ describe('Number Handling:', function() {
 
 
 
+/* API Response */
+describe('API Response:', function() {
+
+    /* API Response Building */
+    it('-Can build a standard API Response:', function() {
+        const r: IAPIResponse = _utils.apiResponse();
+        expect(r.success).toBeTruthy();
+        expect(r.data).toBe(undefined);
+        expect(r.error).toBe(undefined);
+    });
+
+    it('-Can build an API Response with data (number):', function() {
+        const r: IAPIResponse = _utils.apiResponse(5);
+        expect(r.success).toBeTruthy();
+        expect(r.data).toBe(5);
+        expect(r.error).toBe(undefined);
+    });
 
 
-/* Date Handling */
-describe('Date Handling:', function() {
-    it('-Can retrieve a timestamp from a string date.', function() {
-        expect(_utils.getTimestamp('17-12-2021')).toEqual(1639713600000);
-        expect(_utils.getTimestamp('17-08-2017')).toEqual(1502942400000);
-        expect(_utils.getTimestamp('11-08-2020')).toEqual(1597118400000);
+    it('-Can build an API Response with data (string):', function() {
+        const r: IAPIResponse = _utils.apiResponse('Hello World!');
+        expect(r.success).toBeTruthy();
+        expect(r.data).toBe('Hello World!');
+        expect(r.error).toBe(undefined);
+    });
+
+
+
+    it('-Can build an API Response with data (object):', function() {
+        const r: IAPIResponse = _utils.apiResponse({a: 'Foo', b: 'Baz', c: 'Bar', d: 5, e: {hello: 'World'}});
+        expect(r.success).toBeTruthy();
+        expect(stringify(r.data)).toBe(stringify({a: 'Foo', b: 'Baz', c: 'Bar', d: 5, e: {hello: 'World'}}));
+        expect(r.error).toBe(undefined);
+    });
+
+
+
+
+    /* API Error Building */
+    it('-Can build an error with a code:', function() {
+        const r: string = _utils.buildApiError('Nasty Error mate! :(', 101);
+        expect(r).toBe('Nasty Error mate! :( {(101)}');
+    });
+
+    it('-Can build an error without providing a code:', function() {
+        const r: string = _utils.buildApiError('Unknown Nasty Error mate! :(');
+        expect(r).toBe('Unknown Nasty Error mate! :( {(0)}');
+    });
+
+
+    /* API Error Code Extraction */
+    it('-Can extract an error code from a string:', function() {
+        expect(_utils.getCodeFromApiError(_utils.buildApiError('Nasty Error mate! :(', 101))).toBe(101);
+        expect(_utils.getCodeFromApiError('Another random error {(5)}')).toBe(5);
+        expect(_utils.getCodeFromApiError('Another random error')).toBe(0);
+        expect(_utils.getCodeFromApiError(_utils.buildApiError('Nasty Error mate among some other seuff! :(', 2669))).toBe(2669);
+        
     });
 });
-
-
-
 
 
 
@@ -158,3 +204,27 @@ describe('Error Handling:', function() {
         expect(newObj.liz).toEqual(test.liz);
     });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Date Handling */
+describe('Date Handling:', function() {
+    it('-Can retrieve a timestamp from a string date.', function() {
+        expect(_utils.getTimestamp('17-12-2021')).toEqual(1639713600000);
+        expect(_utils.getTimestamp('17-08-2017')).toEqual(1502942400000);
+        expect(_utils.getTimestamp('11-08-2020')).toEqual(1597118400000);
+    });
+});
+

@@ -426,7 +426,7 @@ export class KeyZonesService implements IKeyZonesService {
             touchedSupport: currentZone ? this.touchedKeyZone(currentZone, candlesticks1m, keyZones, true): false, 
             touchedResistance: currentZone ? this.touchedKeyZone(currentZone, candlesticks1m, keyZones, false): false, 
             currentZone: currentZone 
-        };
+        }
     }
 
 
@@ -606,14 +606,4 @@ export class KeyZonesService implements IKeyZonesService {
             touchedSupport: false,
         }
     }
-
-
-
-
-    
-
-
-
-
-
 }

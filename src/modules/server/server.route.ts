@@ -22,7 +22,7 @@ const ServerRoute = express.Router();
  * @returns {success: boolean}
  */
 ServerRoute.route(`/status`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
-    res.send({success: true});
+    res.send(_utils.apiResponse());
 });
 
 
@@ -35,7 +35,7 @@ ServerRoute.route(`/status`).get(lowRiskLimit, async (req: express.Request, res:
  * @returns {ts: number}
  */
  ServerRoute.route(`/time`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
-    res.send({ts: Date.now()});
+    res.send(_utils.apiResponse(Date.now()));
 });
 
 
