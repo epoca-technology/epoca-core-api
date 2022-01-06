@@ -27,7 +27,7 @@ export class ForecastService implements IForecastService {
      * @intervalMinutes
      * The interval that will be set on the 1m candlesticks before building the key zones.
      */
-     private readonly intervalMinutes: number = 1000; // 
+     private readonly intervalMinutes: number = 1440; // 
 
 
 
@@ -135,7 +135,7 @@ export class ForecastService implements IForecastService {
         if (
             state.touchedSupport  &&
             //state.activeZone.reversals.length >= 3 &&
-            (state.activeZone.reversals[0].type == 'support' || state.activeZone.mutated) &&
+            //(state.activeZone.reversals[0].type == 'support' || state.activeZone.mutated) &&
             state.zonesBelow.length &&
             state.activeZone.reversals.length > state.zonesBelow[0].reversals.length
         ) {
@@ -153,7 +153,7 @@ export class ForecastService implements IForecastService {
         else if (
             state.touchedResistance &&
             //state.activeZone.reversals.length >= 3 &&
-            (state.activeZone.reversals[0].type == 'resistance'  || state.activeZone.mutated) &&
+            //(state.activeZone.reversals[0].type == 'resistance'  || state.activeZone.mutated) &&
             state.zonesAbove.length &&
             state.activeZone.reversals.length > state.zonesAbove[0].reversals.length
         ) {
