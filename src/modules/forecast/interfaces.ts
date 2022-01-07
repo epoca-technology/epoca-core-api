@@ -24,7 +24,8 @@ export interface IForecastService {
 
 // Key Zones Service
 export interface IKeyZonesService {
-    getState(candlesticks: ICandlestick[], candlesticks1m: ICandlestick[], config?: IKeyZonesConfig): IKeyZonesState
+    getState(candlesticks: ICandlestick[], candlesticks1m: ICandlestick[], config?: IKeyZonesConfig): IKeyZonesState,
+    getZonesFromPrice(price: number, kz: IKeyZone[], above: boolean): IKeyZone[]
 }
 
 
@@ -61,15 +62,9 @@ export interface IKeyZonesState {
 
     // Key Zones
     zones: IKeyZone[],
-    zonesAbove: IKeyZone[],
-    zonesBelow: IKeyZone[],
 
     // Active & Previous Zone
     activeZone: IKeyZone|undefined,
-
-    // Dominance
-    resistanceDominance: number,
-    supportDominance: number,
 
     // Touch Action
     touchedResistance: boolean,

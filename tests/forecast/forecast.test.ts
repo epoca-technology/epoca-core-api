@@ -22,7 +22,7 @@ const _forecast: IForecastService = appContainer.get<IForecastService>(SYMBOLS.F
 
 
 
-describe('Forecast Essentials: ',  function() {
+xdescribe('Forecast Essentials: ',  function() {
 
     it('-', async function() {
         const series: ICandlestick[] = await _candlestick.getLast(28800);

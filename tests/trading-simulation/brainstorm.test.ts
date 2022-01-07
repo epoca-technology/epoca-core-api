@@ -22,7 +22,7 @@ import {TradingSimulation, ITradingSimulation, ITradingSimulationResult} from ".
 
 
 /*  */
-describe('', function() {
+xdescribe('Trading Simulation: ', function() {
     // Increase the timeout Interval
     beforeAll(() => { 
         jasmine.DEFAULT_TIMEOUT_INTERVAL = 400000;
@@ -30,7 +30,7 @@ describe('', function() {
 
 
 
-    it('-Trading Simulation', async function() {
+    it('-', async function() {
         //const series: ICandlestick[] = await _candlestick.get(_utils.getTimestamp('01-01-2020'), _utils.getTimestamp('01-12-2020'));
         const series: ICandlestick[] = await _candlestick.get(_utils.getTimestamp('01-10-2019'));
         //const series: ICandlestick[] = await _candlestick.get(_utils.getTimestamp('01-06-2020'), _utils.getTimestamp('31-12-2021'));

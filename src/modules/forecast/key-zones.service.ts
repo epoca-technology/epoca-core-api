@@ -93,14 +93,6 @@ export class KeyZonesService implements IKeyZonesService {
 
         // Key Zones
         state.zones = keyZones;
-        state.zonesAbove = this.getZonesFromPrice(state.price, keyZones, true);
-        state.zonesBelow = this.getZonesFromPrice(state.price, keyZones, false);
-
-        // Resistance Dominance
-        state.resistanceDominance = <number>this._utils.calculatePercentageOutOfTotal(state.zonesAbove.length, keyZones.length, {ru: true, dp: 0});
-
-        // Support Dominance
-        state.supportDominance = <number>this._utils.calculatePercentageOutOfTotal(state.zonesBelow.length, keyZones.length, {ru: true, dp: 0});
 
         // Retrieve Price Action Data
         const priceActionData: IPriceActionData = this.getPriceActionData(candlesticks1m, keyZones);
@@ -514,7 +506,7 @@ export class KeyZonesService implements IKeyZonesService {
      * @param above 
      * @returns IKeyZone[]
      */
-     private getZonesFromPrice(price: number, kz: IKeyZone[], above: boolean): IKeyZone[] {
+     public getZonesFromPrice(price: number, kz: IKeyZone[], above: boolean): IKeyZone[] {
         // Init the zones
         let zones: IKeyZone[] = [];
 
@@ -597,13 +589,9 @@ export class KeyZonesService implements IKeyZonesService {
         return {
             price: lastPrice,
             zones: [],
-            zonesAbove: [],
-            zonesBelow: [],
             activeZone: undefined,
-            resistanceDominance: 0,
             touchedResistance: false,
-            supportDominance: 0,
-            touchedSupport: false,
+            touchedSupport: false
         }
     }
 }

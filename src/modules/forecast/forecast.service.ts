@@ -9,7 +9,8 @@ import {
     IKeyZonesConfig, 
     ITendencyForecast,
     IKeyZonesState,
-    IKeyZonesService
+    IKeyZonesService,
+    IKeyZone
 } from "./interfaces";
 
 
@@ -85,7 +86,7 @@ export class ForecastService implements IForecastService {
             }
 
             // Verbose
-            if (fConfig.verbose > 0) console.log(`Retrieving candlesticks from ${startTimestamp} to ${endTimestamp}.`);
+            //if (fConfig.verbose > 0) console.log(`Retrieving candlesticks from ${startTimestamp} to ${endTimestamp}.`);
 
             // Retrieve the candlesticks
             candlesticks1m = await this._candlestick.get(startTimestamp, endTimestamp);
@@ -134,13 +135,16 @@ export class ForecastService implements IForecastService {
          */
         if (
             state.touchedSupport  &&
-            //state.activeZone.reversals.length >= 3 &&
-            //(state.activeZone.reversals[0].type == 'support' || state.activeZone.mutated) &&
-            state.zonesBelow.length &&
-            state.activeZone.reversals.length > state.zonesBelow[0].reversals.length
+            (state.activeZone.reversals[0].type == 'support' || state.activeZone.mutated)
         ) {
-            if (config.verbose > 0) this.logState(state);
-            return 1;
+            // Retrieve the zones below if any
+            const below: IKeyZone[] = this._kz.getZonesFromPrice(state.price, state.zones, false);
+
+            // Make sure there are zones below and that the current zone has as many or more reversals
+            if (below.length && state.activeZone.reversals.length >= below[0].reversals.length) {
+                if (config.verbose > 0) this.logState(state, [], below);
+                return 1;
+            }
         }
 
         /**
@@ -152,17 +156,20 @@ export class ForecastService implements IForecastService {
          */
         else if (
             state.touchedResistance &&
-            //state.activeZone.reversals.length >= 3 &&
-            //(state.activeZone.reversals[0].type == 'resistance'  || state.activeZone.mutated) &&
-            state.zonesAbove.length &&
-            state.activeZone.reversals.length > state.zonesAbove[0].reversals.length
+            (state.activeZone.reversals[0].type == 'resistance'  || state.activeZone.mutated)
         ) {
-            if (config.verbose > 0) this.logState(state);
-            return -1;
+            // Retrieve the zones above if any
+            const above: IKeyZone[] = this._kz.getZonesFromPrice(state.price, state.zones, true);
+
+            // Make sure there are zones below and that the current zone has as many or more reversals
+            if (above.length && state.activeZone.reversals.length >= above[0].reversals.length) {
+                if (config.verbose > 0) this.logState(state, above, []);
+                return -1;
+            }
         }
 
         // Otherwise, stand neutral.
-        else { return 0 }
+        return 0;
     }
 
 
@@ -175,11 +182,11 @@ export class ForecastService implements IForecastService {
      * @param state 
      * @returns void
      */
-    private logState(state: IKeyZonesState): void {
+    private logState(state: IKeyZonesState, above: IKeyZone[], below: IKeyZone[]): void {
         console.log(' ');console.log(' ');
         console.log(`Touched ${state.touchedSupport ? 'Support': 'Resistance'}: $${state.price}`, state.activeZone);
-        console.log(`Zone Above (${state.zonesAbove.length})`, state.zonesAbove[0]);
-        console.log(`Zone Below (${state.zonesBelow.length})`, state.zonesBelow[0]);
+        if (above.length) console.log(`Zone Above (${above.length})`, above[0]);
+        if (below.length) console.log(`Zone Below (${below.length})`, below[0]);
     }
 
 

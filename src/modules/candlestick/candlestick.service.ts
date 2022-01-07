@@ -82,29 +82,31 @@ export class CandlestickService implements ICandlestickService {
     public async get(start?: number, end?: number): Promise<ICandlestick[]> {
         // Init the sql values
         let sql: string = `
-            SELECT ot, ct, o, h, l, c, v, tbv
+            SELECT ot, ct, o, h, l, c, v
             FROM ${this.testMode ? 'test_candlesticks': 'candlesticks'}
         `;
-        let values: any[] = [];
+        let values: number[];
 
         // Check if both timestamps have been provided
         if (typeof start == "number" && typeof end == "number") {
             sql += ' WHERE ot >= $1 AND ot <= $2';
-            values.push(start);
-            values.push(end);
+            values = [start, end];
         }
 
         // If only the start is provided
         else if (typeof start == "number") {
             sql += ' WHERE ot >= $1';
-            values.push(start);
+            values = [start];
         }
 
         // If only the end is provided
         else if (typeof end == "number") {
             sql += ' WHERE ot <= $1';
-            values.push(end);
+            values = [end];
         }
+
+        // Order the candlesticks
+        sql += ' ORDER BY ot ASC'
 
         // Retrieve the candlesticks
         const {rows}: IQueryResult = await this._db.query({text: sql,values: values});
@@ -161,7 +163,7 @@ export class CandlestickService implements ICandlestickService {
         // Retrieve the candlesticks
         const {rows}: IQueryResult = await this._db.query({
             text: `
-                SELECT ot, ct, o, h, l, c, v, tbv
+                SELECT ot, ct, o, h, l, c, v
                 FROM ${this.testMode ? 'test_candlesticks': 'candlesticks'}
                 ORDER BY ot DESC
                 LIMIT $1
@@ -219,6 +221,8 @@ export class CandlestickService implements ICandlestickService {
             }
         }, 30000);
     }
+
+
 
 
 
@@ -300,16 +304,15 @@ export class CandlestickService implements ICandlestickService {
             for (let c of candlesticks) {
                 await client.query({
                     text: `
-                        INSERT INTO ${this.testMode ? 'test_candlesticks': 'candlesticks'}(ot, ct, o, h, l, c, v, tbv) 
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                        INSERT INTO ${this.testMode ? 'test_candlesticks': 'candlesticks'}(ot, ct, o, h, l, c, v) 
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)
                     `,
-                    values: [c.ot, c.ct, c.o, c.h, c.l, c.c, c.v, c.tbv]
+                    values: [c.ot, c.ct, c.o, c.h, c.l, c.c, c.v]
                 });
             }
 
             // Finally, commit the inserts
             await client.query({text: 'COMMIT'});
-
         } catch (e) {
             // Rollback and rethrow the error
             await client.query('ROLLBACK');
@@ -327,19 +330,14 @@ export class CandlestickService implements ICandlestickService {
 
 
 
+    
+
+
+
     /* Helpers */
 
 
 
-
-
-
-
-
-
-
-
-    /* Candlestick Interval Alteration */
 
 
 
@@ -395,16 +393,14 @@ export class CandlestickService implements ICandlestickService {
             l: 0,     // Placeholder
             c: candlesticks[candlesticks.length - 1].c,
             v: 0,     // Placeholder
-            tbv: 0    // Placeholder
         };
 
         // Init the high & low lists
         let high: number[] = [];
         let low: number[] = [];
 
-        // Init the volume accumulators
+        // Init the volume accumulator
         let v: BigNumber = new BigNumber(0);
-        let tbv: BigNumber = new BigNumber(0);
 
         // Iterate over each candlestick
         candlesticks.forEach((c) => {
@@ -414,7 +410,6 @@ export class CandlestickService implements ICandlestickService {
 
             // Accumulate the volumes
             v = v.plus(c.v);
-            tbv = tbv.plus(c.tbv);
         });
 
         // Set the highest high and the lowest low
@@ -423,7 +418,6 @@ export class CandlestickService implements ICandlestickService {
 
         // Set the volume accumulation result
         final.v = v.toNumber();
-        final.tbv = tbv.toNumber();
 
         // Return the final candlestick
         return final;
@@ -470,8 +464,7 @@ export class CandlestickService implements ICandlestickService {
                 h: <number>this._utils.outputNumber(c[2], {dp: 2}),
                 l: <number>this._utils.outputNumber(c[3], {dp: 2}),
                 c: <number>this._utils.outputNumber(c[4], {dp: 2}),
-                v: <number>this._utils.outputNumber(c[7], {dp: 2}),
-                tbv: <number>this._utils.outputNumber(c[10], {dp: 2})
+                v: <number>this._utils.outputNumber(c[7], {dp: 2})
             });
         }
 
