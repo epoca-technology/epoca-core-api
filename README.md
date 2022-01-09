@@ -37,12 +37,15 @@ Database:  `npm run cli-db`
 
 Candlestick Sync:  `npm run cli-candlestick-sync`
 
+Trading Simulation:  `npm run cli-trading-simulation`
+
+##### *Important: In order to stop the trading simulation use `control + \` (SIGQUIT).
+
+
 #
 ## Tests
 
 End-to-end: `npm run test`
-
-Trading Simulation: `npm run test-trading-simulation`
 
 Forecast: `npm run test-forecast`
 
@@ -69,6 +72,8 @@ https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ub
 ## Open PSQL
 sudo -u postgres psql
 
+## Select Database
+\c plutus;
 
 
 ## Setup the password on the postgres user

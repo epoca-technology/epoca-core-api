@@ -65,44 +65,44 @@ export class BinanceService implements IBinanceService {
         endTime?: number, 
         limit?:number
     ): Promise<IBinanceCandlestick[]> {
-            // Build the path based on params
-            let path: string = `/api/v3/klines?symbol=BTCUSDT`;
+        // Build the path based on params
+        let path: string = `/api/v3/klines?symbol=BTCUSDT`;
 
-            // Add the interval
-            path += `&interval=${interval || '1m'}`;
+        // Add the interval
+        path += `&interval=${interval || '1m'}`;
 
-            // Add the start time if provided
-            if (startTime) path += `&startTime=${startTime}`;
+        // Add the start time if provided
+        if (startTime) path += `&startTime=${startTime}`;
 
-            // Add the end time if provided
-            if (endTime) path += `&endTime=${endTime}`;
+        // Add the end time if provided
+        if (endTime) path += `&endTime=${endTime}`;
 
-            // Add the limit
-            path += `&limit=${limit || 1000}`;
+        // Add the limit
+        path += `&limit=${limit || 1000}`;
 
-            // Build options
-            const options: IExternalRequestOptions = {
-                host: 'api.binance.com',
-                path: path,
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            };
-
-            // Retrieve the chainlock status
-            const response: IExternalRequestResponse = await this._er.request(options);
-
-            // Validate the response
-            // @TODO
-
-            // Validate the data
-            if (response.data && typeof response.data != "object") {
-                console.log(response);
-                throw new Error('Binance returned an invalid candlesticks series.');
+        // Build options
+        const options: IExternalRequestOptions = {
+            host: 'api.binance.com',
+            path: path,
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
             }
+        };
 
-            // Return the series
-            return response.data;
+        // Retrieve the chainlock status
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        // @TODO
+
+        // Validate the data
+        if (response.data && typeof response.data != "object") {
+            console.log(response);
+            throw new Error('Binance returned an invalid candlesticks series.');
+        }
+
+        // Return the series
+        return response.data;
     }
 }

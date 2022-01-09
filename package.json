@@ -8,9 +8,9 @@
     "build": "clear && gulp",
     "cli-db": "clear && node ./dist/CLI/db/index.js",
     "cli-candlestick-sync": "clear && node ./dist/CLI/candlestick/sync.js",
+    "cli-trading-simulation": "clear && node ./dist/CLI/trading-simulation/index.js",
     "test": "clear && jasmine-ts --config=jasmine/e2e.json",
     "test-forecast": "clear && jasmine-ts --config=jasmine/forecast.json",
-    "test-trading-simulation": "clear && jasmine-ts --config=jasmine/trading-simulation.json",
     "test-candlestick": "clear && jasmine-ts --config=jasmine/candlestick.json",
     "test-utils": "clear && jasmine-ts --config=jasmine/utils.json",
     "test-db": "clear && jasmine-ts --config=jasmine/database.json"

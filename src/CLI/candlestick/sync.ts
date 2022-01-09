@@ -12,7 +12,7 @@ const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.Ut
 
 
 // Init the Candlestick Service
-import { ICandlestick, ICandlestickService } from "../../modules/candlestick";
+import { ICandlestick, ICandlestickService, ICandlestickPayload } from "../../modules/candlestick";
 const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
 
@@ -40,17 +40,7 @@ prompt.get([], async (e: any, data: prompt.Properties) => {
     let progressBarCounter: number = 0;
 
     // Init the start timestamp
-    let startTime: number;
-
-    // If the start date was provided, retrieve the timestamp for it
-    if (typeof data.startDate == "string" && data.startDate.length) {
-        startTime = _utils.getTimestamp(data.startDate );
-    }
-
-    // Otherwise, retrieve the last saved open time
-    else {
-        startTime = await _candlestick.getLastOpenTimestamp();
-    }
+    let startTime: number = await _candlestick.getLastOpenTimestamp();
 
     // Calculate the estimated remaining hours for the sync to be complete
     const remainingHours: BigNumber = <BigNumber>_utils.outputNumber(new BigNumber(Date.now()).minus(startTime).dividedBy(1000).dividedBy(60).dividedBy(60), {
@@ -74,15 +64,15 @@ prompt.get([], async (e: any, data: prompt.Properties) => {
     while(!fullySynced) {
         try {
             // Save and retrieve the candlesticks from the starting timestamp
-            const candlesticks: ICandlestick[] = await _candlestick.saveCandlesticksFromStart(startTime);
+            const candlesticks: ICandlestickPayload = await _candlestick.syncCandlesticks(startTime);
 
             // Make sure candlesticks were retrieved
-            if (candlesticks.length > 0) {
+            if (candlesticks.standard.length > 1) {
                 // Set the next start time
-                startTime = candlesticks[candlesticks.length -1].ot;
+                startTime = candlesticks.standard.at(-1).ot;
 
                 // Check if finished syncing
-                fullySynced = candlesticks.length < 1000;
+                fullySynced = candlesticks.standard.length < 1000;
             } 
             
             // If no candlesticks were retrieved it means the candlesticks are fully synced or Binance is experiencing an outage

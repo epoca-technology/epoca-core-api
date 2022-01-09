@@ -28,7 +28,7 @@ export class ForecastService implements IForecastService {
      * @intervalMinutes
      * The interval that will be set on the 1m candlesticks before building the key zones.
      */
-     private readonly intervalMinutes: number = 1440; // 
+     private readonly intervalMinutes: number = 720; // 
 
 
 

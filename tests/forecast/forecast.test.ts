@@ -22,27 +22,10 @@ const _forecast: IForecastService = appContainer.get<IForecastService>(SYMBOLS.F
 
 
 
-xdescribe('Forecast Essentials: ',  function() {
+describe('Forecast Essentials: ',  function() {
 
     it('-', async function() {
-        const series: ICandlestick[] = await _candlestick.getLast(28800);
-        const res: IForecastResult = await _forecast.forecast(
-            series,
-            undefined,
-            undefined,
-            /*{
-                intervalMinutes: 30,
-                verbose: 2,
-                includeCandlesticksInResponse: false
-            },
-            {
-                zoneSize: 0.5,
-                zoneMergeDistanceLimit: 1.5,
-                reversalCountRequirement: 1,
-                verbose: 2
-            }*/
-        );
-        console.log(res.state);
+
     });
 
 

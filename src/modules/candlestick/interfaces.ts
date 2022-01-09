@@ -1,23 +1,25 @@
-import { IBinanceCandlestick } from "../shared/binance";
+import { IBinanceCandlestick, IBinanceCandlestickInterval } from "../shared/binance";
 
 
 
 
 export interface ICandlestickService {
-    // Properties
-    genesisCandlestickTimestamp: number,
+    // Candlesticks Configuration
+    standardConfig: ICandlestickConfig,
+    forecastConfig: ICandlestickConfig,
+
+    // Testing
     testMode: boolean,
 
     // Candlestick Retrievers
     getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]>,
-    get(start?: number, end?: number): Promise<ICandlestick[]>,
-    getLastOpenTimestamp(): Promise<number>,
-    getLast(limit?: number): Promise<ICandlestick[]>,
+    get(start?: number, end?: number, forecast?: boolean): Promise<ICandlestick[]>,
+    getLastOpenTimestamp(forecast?: boolean): Promise<number>,
 
     // Candlestick Syncing & Saving
     initializeSync(): Promise<void>,
-    saveCandlesticksFromStart(startTimestamp: number): Promise<ICandlestick[]>,
-    saveCandlesticks(candlesticks: ICandlestick[]): Promise<void>,
+    syncCandlesticks(startTimestamp?: number): Promise<ICandlestickPayload>,
+    saveCandlesticks(candlesticks: ICandlestick[], forecast?: boolean): Promise<void>,
 
     // Helpers
     alterInterval(candlesticks1m: ICandlestick[], intervalMinutes: number): ICandlestick[],
@@ -39,4 +41,27 @@ export interface ICandlestick {
     l: number,                  // Low Price
     c: number,                  // Close Price
     v: number,                  // Volume (USDT)
+}
+
+
+
+
+
+// Candlestick Type
+export interface ICandlestickConfig {
+    interval: number,
+    alias: IBinanceCandlestickInterval,
+    genesis: number,
+    table: string,
+    testTable: string,
+    localLimit: number
+}
+
+
+
+
+// Candlestick Sync Payload
+export interface ICandlestickPayload {
+    standard: ICandlestick[], 
+    forecast: ICandlestick[], 
 }

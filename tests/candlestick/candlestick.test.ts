@@ -16,7 +16,7 @@ const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.Databas
 
 
 // Init the Candlesticks Service
-import { ICandlestickService, ICandlestick } from "../../src/modules/candlestick";
+import { ICandlestickService, ICandlestick, ICandlestickPayload } from "../../src/modules/candlestick";
 const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
 
@@ -43,18 +43,29 @@ import {TEST_BINANCE_CANDLESTICKS} from "./data";
 
 
 
-describe('Candlestick Basic DB Actions: ',  function() {
+describe('Standard Candlesticks DB Actions: ',  function() {
     // Increase the timeout Interval and enable testMode on candlesticks
     beforeAll(() => { 
+        // Increase Timeout Interval to not stop Binance Requests
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 400000;
+
         // Enable test mode on the candlesticks
         _candlestick.testMode = true;
     });
 
     // Clean the table before each test and once all tests have concluded
-    beforeEach(async () => { await _db.query({text: 'DELETE FROM test_candlesticks;'}) });
+    beforeEach(async () => { 
+        await Promise.all([
+            _db.query({text: `DELETE FROM ${_candlestick.standardConfig.testTable};`}),
+            _db.query({text: `DELETE FROM ${_candlestick.forecastConfig.testTable};`}),
+        ]);
+    });
     afterAll(async () => { 
         // Clean the DB
-        await _db.query({text: 'DELETE FROM test_candlesticks;'}) ;
+        await Promise.all([
+            _db.query({text: `DELETE FROM ${_candlestick.standardConfig.testTable};`}),
+            _db.query({text: `DELETE FROM ${_candlestick.forecastConfig.testTable};`}),
+        ]);
 
         // Disable test mode
         _candlestick.testMode = false;
@@ -67,7 +78,7 @@ describe('Candlestick Basic DB Actions: ',  function() {
     it('-Can retrieve the last open timestamp: ', async function() {
         // If no data has been stored, it will retrieve the genesis timestamp
         let ot: number = await _candlestick.getLastOpenTimestamp();
-        expect(ot).toBe(_candlestick.genesisCandlestickTimestamp);
+        expect(ot).toBe(_candlestick.standardConfig.genesis);
         
         // Save some candlesticks
         await _candlestick.saveCandlesticks(_candlestick.processBinanceCandlesticks(tc));
@@ -79,18 +90,6 @@ describe('Candlestick Basic DB Actions: ',  function() {
 
 
 
-
-
-
-    it('-Can retrieve the last candlesticks: ', async function() {
-        // Save some candlesticks
-        await _candlestick.saveCandlesticks(_candlestick.processBinanceCandlesticks(tc));
-
-        // Retrieve the last 2 and make sure they match
-        const c: ICandlestick[] = await _candlestick.getLast(2);
-        expect(c[0].ot).toBe(tc[tc.length - 2][0]);
-        expect(c[1].ot).toBe(tc[tc.length - 1][0]);
-    });
 
 
 
@@ -158,90 +157,62 @@ describe('Candlestick Basic DB Actions: ',  function() {
         expect(processed[1].ot).toBe(c[1].ot);
         expect(processed[2].ot).toBe(c[2].ot);
     });
-});
 
 
 
-
-
-
-
-
-
-
-
-
-
-describe('Candlestick Basic DB Actions: ',  function() {
-    // Increase the timeout Interval and enable testMode on candlesticks
-    beforeAll(() => { 
-        // Increase Timeout Interval to not stop Binance Requests
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 400000;
-
-        // Enable test mode on the candlesticks
-        _candlestick.testMode = true;
-    });
-
-    // Clean the table before each test and once all tests have concluded
-    beforeEach(async () => { await _db.query({text: 'DELETE FROM test_candlesticks;'}) });
-    afterAll(async () => { 
-        // Clean the DB
-        await _db.query({text: 'DELETE FROM test_candlesticks;'}) ;
-
-        // Disable test mode
-        _candlestick.testMode = false;
-    });
-
-
-    
 
 
     it('-Can save candlesticks from genesis with a correct sequence: ', async function() {
         // Retrieve the last candlestick open time - in the first lot it will be the genesis
         let startTS: number = await _candlestick.getLastOpenTimestamp();
-        expect(startTS).toBe(_candlestick.genesisCandlestickTimestamp);
+        expect(startTS).toBe(_candlestick.standardConfig.genesis);
 
         // Save the first lot
-        const firstLot: ICandlestick[] = await _candlestick.saveCandlesticksFromStart(startTS);
-        expect(firstLot.length).toBe(1000);
+        const firstLot: ICandlestickPayload = await _candlestick.syncCandlesticks(startTS);
+        expect(firstLot.standard.length).toBe(1000);
 
         // Retrieve the start ts again
         startTS = await _candlestick.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the first lot
-        expect(firstLot[firstLot.length - 1].ot).toBe(startTS);
+        expect(firstLot.standard.at(-1).ot).toBe(startTS);
 
         // Allow a small delay before saving the next candlesticks
         await _utils.asyncDelay(5);
 
         // Save the second lot
-        const secondLot: ICandlestick[] = await _candlestick.saveCandlesticksFromStart(startTS);
-        expect(secondLot.length).toBe(1000);
+        const secondLot: ICandlestickPayload = await _candlestick.syncCandlesticks(startTS);
+        expect(secondLot.standard.length).toBe(1000);
         
         // Retrieve the start ts again
         startTS = await _candlestick.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the second lot
-        expect(secondLot[secondLot.length - 1].ot).toBe(startTS);
+        expect(secondLot.standard.at(-1).ot).toBe(startTS);
 
         // Allow a small delay before saving the last candlesticks
         await _utils.asyncDelay(5);
 
         // Save the third lot
-        const thirdLot: ICandlestick[] = await _candlestick.saveCandlesticksFromStart(startTS);
-        expect(thirdLot.length).toBe(1000);
+        const thirdLot: ICandlestickPayload = await _candlestick.syncCandlesticks(startTS);
+        expect(thirdLot.standard.length).toBe(1000);
 
         // Retrieve the start ts again
         startTS = await _candlestick.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the first lot
-        expect(thirdLot[thirdLot.length - 1].ot).toBe(startTS);
+        expect(thirdLot.standard.at(-1).ot).toBe(startTS);
 
         // Download all the candlesticks stored in the db
         const candlesticks: ICandlestick[] = await _candlestick.get();
 
-        // There should be 3k candles
-        expect(candlesticks.length).toBe(3000);
+        /**
+         * There should be a total of 2998 candlesticks stored in the db. 
+         * Even though 3 requests were made and should total 3k candlesticks, 
+         * the last candlestick is always retrieved on following requests and 
+         * updated instead of inserted.
+         */
+        expect(candlesticks.length).toBe(2998);
 
         // Iterate over each candlestick and make sure they all follow a perfect sequence
         for (let i = 0; i < candlesticks.length; i++) {
@@ -271,21 +242,42 @@ describe('Candlestick Basic DB Actions: ',  function() {
 
 
 
-
-
-
-
-
-
-
 describe('Candlestick Essentials: ',  function() {
 
+    it('-Can retrieve the genesis candlestick timestamp for both types: ', function() {
+        // @ts-ignore
+       expect(_candlestick.getGenesisTimestamp()).toBe(1502942400000);
+       // @ts-ignore
+       expect(_candlestick.getGenesisTimestamp(true)).toBe(1502928000000);
+    });
 
 
 
+    it('-Can retrieve the db table for each candlestick type and testing mode: ', function() {
+        /* Real Tables */
+        // @ts-ignore
+        expect(_candlestick.getTable()).toBe(_candlestick.standardConfig.table);
+        // @ts-ignore
+        expect(_candlestick.getTable(true)).toBe(_candlestick.forecastConfig.table);
+
+        /* Test Tables */
+        _candlestick.testMode = true;
+        // @ts-ignore
+        expect(_candlestick.getTable()).toBe(_candlestick.standardConfig.testTable);
+        // @ts-ignore
+        expect(_candlestick.getTable(true)).toBe(_candlestick.forecastConfig.testTable);
+        _candlestick.testMode = false;
+
+        /* Real Tables Again */
+        // @ts-ignore
+        expect(_candlestick.getTable()).toBe(_candlestick.standardConfig.table);
+        // @ts-ignore
+        expect(_candlestick.getTable(true)).toBe(_candlestick.forecastConfig.table);
+    });
 
 
-    it('-Can alter the interval of a candlesticks list: ', async function() {
+
+    it('-Can alter the interval of a candlesticks list: ', function() {
         // Original
         const original: ICandlestick[] = _candlestick.processBinanceCandlesticks(TEST_BINANCE_CANDLESTICKS);
         expect(_candlestick.alterInterval(original, 30).length).toBe(1);
@@ -303,7 +295,7 @@ describe('Candlestick Essentials: ',  function() {
 
 
 
-    it('-Can merge a list of candlesticks into one: ', async function() {
+    it('-Can merge a list of candlesticks into one: ', function() {
         // Original
         const original: ICandlestick[] = [
             {ot: 1639676280000, ct: 1639676339999, o: 48106.3, h: 48143.06, l: 48091, c: 48091, v: 1183886.21},
@@ -334,7 +326,7 @@ describe('Candlestick Essentials: ',  function() {
 
 
 
-    it('-Can process Binance candlesticks to the format in which they will be stored: ', async function() {
+    it('-Can process Binance candlesticks to the format in which they will be stored: ', function() {
         // Raw
         const raw: IBinanceCandlestick[] = [
             [1639676280000,"48106.30000000","48143.06000000","48091.00000000","48091.00000000","24.60676000",1639676339999,"1183886.21063830",963,"16.00469000","769983.71660560","0"],
