@@ -1,11 +1,10 @@
 import {inject, injectable} from "inversify";
-import { ICandlestickService, ICandlestick, ICandlestickConfig, ICandlestickPayload } from "./interfaces";
+import { ICandlestickService, ICandlestick, ICandlestickConfig, ILocalCandlesticks } from "./interfaces";
 import { SYMBOLS } from "../../ioc";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../shared/database";
 import { IUtilitiesService } from "../shared/utilities";
 import { IBinanceService, IBinanceCandlestick } from "../shared/binance";
 import BigNumber from "bignumber.js";
-import * as moment from 'moment';
 
 
 @injectable()
@@ -15,10 +14,6 @@ export class CandlestickService implements ICandlestickService {
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
 
-    // Local Candlesticks
-    private standard: ICandlestick[] = [];
-    private forecast: ICandlestick[] = [];
-
     // Standard Candlestick Configuration
     public readonly standardConfig: ICandlestickConfig = {
         interval: 1, // minutes
@@ -27,6 +22,7 @@ export class CandlestickService implements ICandlestickService {
         table: 'candlesticks',
         testTable: 'test_candlesticks',
         localLimit: 60, // ~60 minutes
+        syncIntervalSeconds: 20
     };
 
     // Forecast Candlestick Configuration
@@ -37,10 +33,8 @@ export class CandlestickService implements ICandlestickService {
         table: 'forecast_candlesticks',
         testTable: 'test_forecast_candlesticks',
         localLimit: 730, // ~1 year
+        syncIntervalSeconds: 45
     };
-
-    // Candlestick Syncing Interval
-    private readonly syncSecondsInterval: number = 20;
 
 
     // Test Modes
@@ -88,6 +82,9 @@ export class CandlestickService implements ICandlestickService {
         // Return them based in the provided interval
         return this.alterInterval(candlesticks1m, intervalMinutes);
     }
+
+
+
 
 
 
@@ -152,7 +149,7 @@ export class CandlestickService implements ICandlestickService {
 
 
     /**
-     * Given a symbol, it will retrieve the open time of the last candlestick stored.
+     * Retrieves the open time of the last candlestick stored.
      * If none is found, it will return the genesis candlestick timestamp.
      * @param forecast?
      * @returns Promise<number>
@@ -164,7 +161,7 @@ export class CandlestickService implements ICandlestickService {
             values: []
         });
 
-        // If no results were found, return the symbol's genesis open time
+        // If no results were found, return the genesis open time
         return rows.length > 0 ? rows[0].ot: this.getGenesisTimestamp(forecast);
     }
 
@@ -176,7 +173,34 @@ export class CandlestickService implements ICandlestickService {
 
 
 
+
+
+
+    /**
+     * Retrieves the last candlesticks ordered by ot. If there are no candlesticks it
+     * will return an empty list.
+     * @param forecast?
+     * @param limit?
+     * @returns Promise<ICandlestick[]>
+     */
+     public async getLast(forecast?: boolean, limit?: number): Promise<ICandlestick[]> {
+        // Retrieve the last candlestick
+        const {rows}: IQueryResult = await this._db.query({
+            text: `SELECT ot, ct, o, h, l, c, v FROM ${this.getTable(forecast)} ORDER BY ot DESC LIMIT $1`,
+            values: [limit || 1]
+        });
+
+        // Return the downloaded results
+        return rows.reverse();
+    }
+
+
+
+
     
+
+
+
 
 
 
@@ -203,22 +227,43 @@ export class CandlestickService implements ICandlestickService {
      */
      public async initializeSync(): Promise<void> {
         // Perform the first sync
-        await this.syncCandlesticks();
+        await this.runSync();
+        await this._utils.asyncDelay(3);
+        await this.runSync(true);
 
-        // Initialize the interval that syncs the candlesticks persistently 
-        setInterval(async ()=> {
+        // Initialize the standard interval
+        setInterval(() => { this.runSync() }, this.standardConfig.syncIntervalSeconds * 1000);
+
+        // Initialize the forecast interval
+        setInterval(() => { this.runSync(true) }, this.forecastConfig.syncIntervalSeconds * 1000);
+    }
+
+
+
+
+
+
+    /**
+     * Runs the syncing functionality and updates the local candlesticks
+     * whenever the interval triggers.
+     * @param forecast? 
+     * @returns Promise<void>
+     */
+    private async runSync(forecast?: boolean): Promise<void> {
+        let candlesticks: ICandlestick[];
+        try {
+            candlesticks = await this.syncCandlesticks(forecast);
+            this.updateLocal(candlesticks, forecast);
+        } catch(e) { 
+            console.log(`Failed to sync the ${forecast ? 'Forecast': 'Standard'} Candlesticks, attempting again in a few seconds:`, e);
+            await this._utils.asyncDelay(5);
             try {
-                await this.syncCandlesticks();
-            } catch(e) { 
-                console.log('Failed to sync candlesticks, attempting again in a few seconds:', e);
-                await this._utils.asyncDelay(5);
-                try {
-                    await this.syncCandlesticks();
-                } catch (e) {
-                    console.log(`Failed to sync candlesticks again, will attempt again in ~${this.syncSecondsInterval} seconds:`, e);
-                }
+                candlesticks = await this.syncCandlesticks(forecast);
+                this.updateLocal(candlesticks, forecast);
+            } catch (e) {
+                console.log(`Failed to sync the ${forecast ? 'Forecast': 'Standard'} candlesticks again, will attempt again in a few seconds:`, e);
             }
-        }, this.syncSecondsInterval * 1000);
+        }
     }
 
 
@@ -232,77 +277,39 @@ export class CandlestickService implements ICandlestickService {
 
 
     /**
-     * Retrieves the candlesticks starting at the provided point and stores them in the DB.
-     * It syncs the forecast candlesticks once the standard ones have been saved.
-     * @returns Promise<ICandlestickPayload>
+     * Syncs the last standard or forecast candlesticks.
+     * @param forecast? 
+     * @returns Promise<ICandlestick[]>
      */
-     public async syncCandlesticks(startTimestamp?: number): Promise<ICandlestickPayload> {
+    public async syncCandlesticks(forecast?: boolean): Promise<ICandlestick[]> {
         // Init the timestamp
-        startTimestamp = typeof startTimestamp == "number" ? startTimestamp: await this.getLastOpenTimestamp();
+        const startTimestamp: number = await this.getLastOpenTimestamp(forecast);
 
         // Retrieve the last 1k candlesticks from Binance
-        const bCandlesticks: IBinanceCandlestick[] = await this._binance.getCandlesticks('1m', startTimestamp, undefined, 1000);
+        const bCandlesticks: IBinanceCandlestick[] = await this._binance.getCandlesticks(
+            forecast ? this.forecastConfig.alias: this.standardConfig.alias, 
+            startTimestamp, 
+            undefined, 
+            1000
+        );
 
-        // Make sure new records were extracted
+        // Make sure that records have been extracted
         if (bCandlesticks && bCandlesticks.length) {
             // Process them and retrieve the latest records
-            const standard: ICandlestick[] = this.processBinanceCandlesticks(bCandlesticks);
+            const candlesticks: ICandlestick[] = this.processBinanceCandlesticks(bCandlesticks);
 
             // Store them in the DB
-            await this.saveCandlesticks(standard);
+            await this.saveCandlesticks(candlesticks, forecast);
 
-            // Sync Forecast Candlesticks and retrieve the last saved records
-            const forecast: ICandlestick[] = await this.syncForecastCandlesticks();
-
-            // Return the retrieved list
-            return {standard: standard, forecast: forecast};
+            // Return the payload
+            return candlesticks;
         }
-        // Otherwise, return an empty list
-        else { return {standard: [], forecast: []} }
-    }
 
-
-
-
-
-
-
-
-
-
-    /**
-     * Finds the starting point and saves candlesticks until it is fully synced with
-     * the 1 minute candlestics. Updated & created candlesticks are returned once completed.
-     * @returns Promise<ICandlestick[]>
-     */
-    private async syncForecastCandlesticks(): Promise<ICandlestick[]> {
-        // Build the new forecast candlesticks
-        const candlesticks: ICandlestick[] = await this.buildNewForecastCandlesticks();
-
-        // Save the candlesticks
-        await this.saveCandlesticks(candlesticks, true);
-
-        // Return all saved candlesticks
-        return candlesticks;
-    }
-
-
-
-
-
-
-
-
-    /**
-     * Builds a list of forecast candlesticks that need to be synced.
-     * @returns Promise<ICandlestick[]>
-     */
-    private async buildNewForecastCandlesticks(): Promise<ICandlestick[]> {
-
-
-
-
-        return [];
+        // Otherwise, throw an error
+        else { 
+            console.log(`${forecast ? 'Forecast': 'Standard'} Candlestick Response: `, bCandlesticks);
+            throw new Error('The Binance API should have returned at least 1 candlestick.');
+        }
     }
 
 
@@ -320,58 +327,54 @@ export class CandlestickService implements ICandlestickService {
      * @returns Promise<void>
      */
     public async saveCandlesticks(candlesticks: ICandlestick[], forecast?: boolean): Promise<void> {
-        // Make sure that candlesticks were provided
-        if (!candlesticks || !candlesticks.length) {
-            console.log(candlesticks);
-            throw new Error('A minimum of one candlestick must be provided in order to run saveCandlesticks.');
-        }
+        // Save the candlesticks if any
+        if (candlesticks && candlesticks.length) {
+            // Initialize the client
+            const client: IPoolClient = await this._db.pool.connect();
+            try {
+                // Begin the transaction
+                await client.query({text: 'BEGIN'});
 
-        // Initialize the client
-        const client: IPoolClient = await this._db.pool.connect();
-
-        try {
-            // Begin the transaction
-            await client.query({text: 'BEGIN'});
-
-            // Insert the candlesticks
-            for (let c of candlesticks) {
-                // Check if the candlestick exists
-                const {rows}: IQueryResult = await client.query({
-                    text: `SELECT ct FROM ${this.getTable(forecast)} WHERE ot=$1`,
-                    values: [c.ot]
-                });
-
-                // If the candlestick exists, update it
-                if (rows && rows.length) {
-                    await client.query({
-                        text: `
-                            UPDATE ${this.getTable(forecast)} SET ct=$1, h=$2, l=$3, c=$4, v=$5
-                            WHERE ot=$6
-                        `,
-                        values: [c.ct, c.h, c.l, c.c, c.v, c.ot]
+                // Insert the candlesticks
+                for (let c of candlesticks) {
+                    // Check if the candlestick exists
+                    const {rows}: IQueryResult = await client.query({
+                        text: `SELECT ct FROM ${this.getTable(forecast)} WHERE ot=$1`,
+                        values: [c.ot]
                     });
-                } 
-                
-                // Otherwise, create it
-                else {
-                    await client.query({
-                        text: `
-                            INSERT INTO ${this.getTable(forecast)}(ot, ct, o, h, l, c, v) 
-                            VALUES ($1, $2, $3, $4, $5, $6, $7)
-                        `,
-                        values: [c.ot, c.ct, c.o, c.h, c.l, c.c, c.v]
-                    });
+
+                    // If the candlestick exists, update it
+                    if (rows && rows.length) {
+                        await client.query({
+                            text: `
+                                UPDATE ${this.getTable(forecast)} SET ct=$1, h=$2, l=$3, c=$4, v=$5
+                                WHERE ot=$6
+                            `,
+                            values: [c.ct, c.h, c.l, c.c, c.v, c.ot]
+                        });
+                    } 
+                    
+                    // Otherwise, create it
+                    else {
+                        await client.query({
+                            text: `
+                                INSERT INTO ${this.getTable(forecast)}(ot, ct, o, h, l, c, v) 
+                                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                            `,
+                            values: [c.ot, c.ct, c.o, c.h, c.l, c.c, c.v]
+                        });
+                    }
                 }
-            }
 
-            // Finally, commit the writes
-            await client.query({text: 'COMMIT'});
-        } catch (e) {
-            // Rollback and rethrow the error
-            await client.query('ROLLBACK');
-            throw e;
-        } finally {
-            client.release();
+                // Finally, commit the writes
+                await client.query({text: 'COMMIT'});
+            } catch (e) {
+                // Rollback and rethrow the error
+                await client.query('ROLLBACK');
+                throw e;
+            } finally {
+                client.release();
+            }
         }
     }
 
@@ -388,6 +391,40 @@ export class CandlestickService implements ICandlestickService {
 
 
 
+    /* Local Candlesticks */
+
+
+
+
+
+
+    /**
+     * Retrieves the local candlesticks once it has checked that they have been
+     * set and that they are synced.
+     * @returns ICandlestickPayload
+     */
+    public getLocal(): ILocalCandlesticks {
+        return {
+            standard: [],
+            forecast: []
+        }
+    }
+
+
+
+
+
+
+
+    /**
+     * Updates the local candlesticks with a fresh payload.
+     * @param candlesticks 
+     * @param forecast? 
+     * @returns Promise<void>
+     */
+    private async updateLocal(candlesticks: ICandlestick[], forecast?: boolean): Promise<void> {
+
+    }
 
 
 
@@ -398,6 +435,11 @@ export class CandlestickService implements ICandlestickService {
 
 
     
+
+
+
+
+
 
 
 
@@ -498,11 +540,11 @@ export class CandlestickService implements ICandlestickService {
         // Init the candlestick
         let final: ICandlestick = {
             ot: candlesticks[0].ot,
-            ct: candlesticks[candlesticks.length - 1].ct,
+            ct: candlesticks.at(-1).ct,
             o: candlesticks[0].o,
             h: 0,     // Placeholder
             l: 0,     // Placeholder
-            c: candlesticks[candlesticks.length - 1].c,
+            c: candlesticks.at(-1).c,
             v: 0,     // Placeholder
         };
 
@@ -539,6 +581,9 @@ export class CandlestickService implements ICandlestickService {
 
 
 
+
+
+    
 
 
 

@@ -16,7 +16,7 @@ const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.Databas
 
 
 // Init the Candlesticks Service
-import { ICandlestickService, ICandlestick, ICandlestickPayload } from "../../src/modules/candlestick";
+import { ICandlestickService, ICandlestick } from "../../src/modules/candlestick";
 const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
 
@@ -43,7 +43,7 @@ import {TEST_BINANCE_CANDLESTICKS} from "./data";
 
 
 
-describe('Standard Candlesticks DB Actions: ',  function() {
+describe('Candlesticks DB Actions: ',  function() {
     // Increase the timeout Interval and enable testMode on candlesticks
     beforeAll(() => { 
         // Increase Timeout Interval to not stop Binance Requests
@@ -88,6 +88,18 @@ describe('Standard Candlesticks DB Actions: ',  function() {
         expect(ot).toBe(tc[tc.length - 1][0]);
     });
 
+
+
+
+    it('-Can retrieve the last candlesticks: ', async function() {
+        // Save some candlesticks
+        await _candlestick.saveCandlesticks(_candlestick.processBinanceCandlesticks(tc));
+
+        // Retrieve the last 2 and make sure they match
+        const c: ICandlestick[] = await _candlestick.getLast(false, 2);
+        expect(c[0].ot).toBe(tc[tc.length - 2][0]);
+        expect(c[1].ot).toBe(tc[tc.length - 1][0]);
+    });
 
 
 
@@ -141,6 +153,8 @@ describe('Standard Candlesticks DB Actions: ',  function() {
 
 
 
+
+
     it('-Can retrieve candlesticks from an end timestamp: ', async function() {
         // Processed
         const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(tc);
@@ -162,46 +176,70 @@ describe('Standard Candlesticks DB Actions: ',  function() {
 
 
 
+    
+
+    it('-Can retrieve candlesticks from a start and end timestamp: ', async function() {
+        // Processed
+        const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(tc);
+
+        // Save some candlesticks
+        await _candlestick.saveCandlesticks(processed);
+
+        // Retrieve the candlesticks from second to second to last
+        const c: ICandlestick[] = await _candlestick.get(processed[1].ot, processed[3].ot);
+        expect(c.length).toBe(3);
+
+        // Make sure they match
+        expect(processed[1].ot).toBe(c[0].ot);
+        expect(processed[2].ot).toBe(c[1].ot);
+        expect(processed[3].ot).toBe(c[2].ot);
+    });
+
+
+
+
+
+
     it('-Can save candlesticks from genesis with a correct sequence: ', async function() {
         // Retrieve the last candlestick open time - in the first lot it will be the genesis
         let startTS: number = await _candlestick.getLastOpenTimestamp();
         expect(startTS).toBe(_candlestick.standardConfig.genesis);
 
         // Save the first lot
-        const firstLot: ICandlestickPayload = await _candlestick.syncCandlesticks(startTS);
-        expect(firstLot.standard.length).toBe(1000);
+        const firstLot: ICandlestick[] = await _candlestick.syncCandlesticks();
+        expect(firstLot.length).toBe(1000);
 
         // Retrieve the start ts again
         startTS = await _candlestick.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the first lot
-        expect(firstLot.standard.at(-1).ot).toBe(startTS);
+        expect(firstLot.at(-1).ot).toBe(startTS);
 
         // Allow a small delay before saving the next candlesticks
         await _utils.asyncDelay(5);
 
         // Save the second lot
-        const secondLot: ICandlestickPayload = await _candlestick.syncCandlesticks(startTS);
-        expect(secondLot.standard.length).toBe(1000);
+        const secondLot: ICandlestick[] = await _candlestick.syncCandlesticks();
+        expect(secondLot.length).toBe(1000);
         
         // Retrieve the start ts again
         startTS = await _candlestick.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the second lot
-        expect(secondLot.standard.at(-1).ot).toBe(startTS);
+        expect(secondLot.at(-1).ot).toBe(startTS);
 
         // Allow a small delay before saving the last candlesticks
         await _utils.asyncDelay(5);
 
         // Save the third lot
-        const thirdLot: ICandlestickPayload = await _candlestick.syncCandlesticks(startTS);
-        expect(thirdLot.standard.length).toBe(1000);
+        const thirdLot: ICandlestick[] = await _candlestick.syncCandlesticks();
+        expect(thirdLot.length).toBe(1000);
 
         // Retrieve the start ts again
         startTS = await _candlestick.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the first lot
-        expect(thirdLot.standard.at(-1).ot).toBe(startTS);
+        expect(thirdLot.at(-1).ot).toBe(startTS);
 
         // Download all the candlesticks stored in the db
         const candlesticks: ICandlestick[] = await _candlestick.get();
@@ -318,6 +356,7 @@ describe('Candlestick Essentials: ',  function() {
         expect(merged.c).toBe(48083.35);
         expect(merged.v).toBe(6864765.17);
     });
+
 
 
 

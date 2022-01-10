@@ -13,8 +13,7 @@ export const TABLES: ITable[] = [
             l   NUMERIC(20,2) NOT NULL,
             c   NUMERIC(20,2) NOT NULL,
             v   NUMERIC(20,2) NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS test_ct_index ON test_candlesticks(ct);`
+        );`
     },
     {
         name: 'candlesticks',
@@ -27,8 +26,7 @@ export const TABLES: ITable[] = [
             l   NUMERIC(20,2) NOT NULL,
             c   NUMERIC(20,2) NOT NULL,
             v   NUMERIC(20,2) NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS ct_index ON candlesticks(ct);`
+        );`
     },
     {
         name: 'test_forecast_candlesticks',
@@ -41,8 +39,7 @@ export const TABLES: ITable[] = [
             l   NUMERIC(20,2) NOT NULL,
             c   NUMERIC(20,2) NOT NULL,
             v   NUMERIC(20,2) NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS test_forecast_ct_index ON test_forecast_candlesticks(ct);`
+        );`
     },
     {
         name: 'forecast_candlesticks',
@@ -55,7 +52,6 @@ export const TABLES: ITable[] = [
             l   NUMERIC(20,2) NOT NULL,
             c   NUMERIC(20,2) NOT NULL,
             v   NUMERIC(20,2) NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS forecast_ct_index ON forecast_candlesticks(ct);`
+        );`
     },
 ];

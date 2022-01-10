@@ -63,22 +63,26 @@ Database: `npm run test-db`
 #
 # POSTGRES
 
-## Installation Guide:
+Installation Guide: https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ubuntu-20-04-quickstart
 
-https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ubuntu-20-04-quickstart
+##
+## Commands
+
+PSQL TOOL: `sudo -u postgres psql`
+
+List Databases: `\l`
+
+Select Database: `\c plutus;`
+
+Start Service: `sudo service postgresql start`
+
+Stop Service: `sudo service postgresql stop`
 
 
+##
+## Database User
 
-## Open PSQL
-sudo -u postgres psql
-
-## Select Database
-\c plutus;
-
-
-## Setup the password on the postgres user
-
-ALTER USER postgres WITH PASSWORD '123456';
+Setup the password on the postgres user: `ALTER USER postgres WITH PASSWORD '123456';`
 
 
 
@@ -86,30 +90,27 @@ ALTER USER postgres WITH PASSWORD '123456';
 
 
 #
-# Install PGADMIN4
+# PGADMIN4
 
-## Install the public key for the repository (if not done previously):
+Install the public key for the repository (if not done previously):
 
 `sudo curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo apt-key add`
 
-## Create the repository configuration file:
+#
+
+Create the repository configuration file:
 
 `sudo sh -c 'echo "deb https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs) pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list && apt update'`
 
-
-## Install pgAdmin
-
-### Install for both desktop and web modes:
-
-`sudo apt install pgadmin4`
-
-### Install for desktop mode only:
-`sudo apt install pgadmin4-desktop`
+#
 
 
-### Install for web mode only: 
-`sudo apt install pgadmin4-web `
+Install for both desktop and web modes: `sudo apt install pgadmin4`
+
+Install for desktop mode only: `sudo apt install pgadmin4-desktop`
 
 
-### Configure the webserver, if you installed pgadmin4-web:
-`sudo /usr/pgadmin4/bin/setup-web.sh`
+Install for web mode only: `sudo apt install pgadmin4-web `
+
+
+Configure the webserver, if you installed pgadmin4-web: `sudo /usr/pgadmin4/bin/setup-web.sh`

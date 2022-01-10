@@ -15,11 +15,15 @@ export interface ICandlestickService {
     getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]>,
     get(start?: number, end?: number, forecast?: boolean): Promise<ICandlestick[]>,
     getLastOpenTimestamp(forecast?: boolean): Promise<number>,
+    getLast(forecast?: boolean, limit?: number): Promise<ICandlestick[]>,
 
     // Candlestick Syncing & Saving
     initializeSync(): Promise<void>,
-    syncCandlesticks(startTimestamp?: number): Promise<ICandlestickPayload>,
+    syncCandlesticks(forecast?: boolean): Promise<ICandlestick[]>,
     saveCandlesticks(candlesticks: ICandlestick[], forecast?: boolean): Promise<void>,
+
+    // Local Candlesticks
+    getLocal(): ILocalCandlesticks,
 
     // Helpers
     alterInterval(candlesticks1m: ICandlestick[], intervalMinutes: number): ICandlestick[],
@@ -54,14 +58,15 @@ export interface ICandlestickConfig {
     genesis: number,
     table: string,
     testTable: string,
-    localLimit: number
+    localLimit: number,
+    syncIntervalSeconds: number,
 }
 
 
 
 
-// Candlestick Sync Payload
-export interface ICandlestickPayload {
-    standard: ICandlestick[], 
-    forecast: ICandlestick[], 
+// Local Candlesticks
+export interface ILocalCandlesticks {
+    standard: ICandlestick[],
+    forecast: ICandlestick[]
 }
