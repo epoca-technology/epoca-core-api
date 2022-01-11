@@ -11,9 +11,8 @@ import { ICandlestick } from "../candlestick";
 // Forecast Service
 export interface IForecastService {
     forecast(
-        candlesticks1m?: ICandlestick[],
-        startTimestamp?: number,
-        endTimestamp?: number,
+        startTimestamp: number,
+        endTimestamp: number,
         fConfig?: IForecastConfig,
         kzConfig?: IKeyZonesConfig,
     ): Promise<IForecastResult>
@@ -37,7 +36,6 @@ export interface IKeyZonesService {
 export interface IConfig { verbose?: number }
 
 export interface IForecastConfig extends IConfig {
-    intervalMinutes?: number,
     priceActionCandlesticksRequirement?: number,
     includeCandlesticksInResponse?: boolean,
 }
@@ -58,17 +56,17 @@ export interface IKeyZonesConfig extends IConfig {
 /* Key Zones State */
 export interface IKeyZonesState {
     // Close price of the last candlestick
-    price: number,
+    p: number,
 
     // Key Zones
-    zones: IKeyZone[],
+    kz: IKeyZone[],
 
-    // Active & Previous Zone
-    activeZone: IKeyZone|undefined,
+    // Active & Key Zone
+    akz: IKeyZone|undefined,
 
     // Touch Action
-    touchedResistance: boolean,
-    touchedSupport: boolean,
+    tr: boolean,    // Touched Resistance
+    ts: boolean,    // Touched Support
 }
 
 
@@ -78,14 +76,15 @@ export interface IKeyZonesState {
 
 /* Key Zones */
 export interface IKeyZonePriceRange {
-    start: number,                  // Start Price (Highest High or Lowest Low)
-    end: number,                    // End Price (+/- zoneSize% from start price)
+    s: number,  // Start Price (Highest High or Lowest Low)
+    e: number,  // End Price (+/- zoneSize% from start price)
 }
 
 export interface IKeyZone extends IKeyZonePriceRange {
-    id: number,                     // Candlestick Open Timestamp
-    reversals: IReversal[],         // List of reversals that took place at the zone, ordered by date ascending
-    mutated: boolean,               // Changed it's type from resistance to support or viceversa
+    id: number,         // Candlestick Open Timestamp
+    r: IReversal[],     // Reversals: List of reversals that took place at the zone, ordered by date ascending
+    m: boolean,         // Mutated: Changed it's type from resistance to support or viceversa
+    v: number,          // Volume: The accumulated volume within the key zone
 } 
 
 
@@ -101,11 +100,11 @@ export interface IKeyZone extends IKeyZonePriceRange {
  * Support: Price touches a support zone and reverses.
  */
 export interface IReversal {
-    id: number,                     // Candlestick Open Timestamp
-    type: IReversalType
+    id: number,         // Candlestick Open Timestamp
+    t: IReversalType    // Type of Reversal
 }
 
-export type IReversalType = 'resistance'|'support';
+export type IReversalType = 'r'|'s'; // r = Resistance | s = Support
 
 
 

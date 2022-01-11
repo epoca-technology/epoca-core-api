@@ -16,6 +16,9 @@ import { ICandlestick, ICandlestickService } from "../../modules/candlestick";
 const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
 
+// Delays
+const normalDelay: number = 15;
+const onErrorDelay: number = 30;
 
 
 
@@ -35,15 +38,15 @@ prompt.start();
 prompt.get([], async (e: any, data: prompt.Properties) => {
     if (e) throw e;
 
-    // Sync the forecast candlesticks first
-    await syncCandlesticks(true);
+    // Sync the standard candlesticks first
+    await syncCandlesticks();
 
     // Allow a small delay
-    await _utils.asyncDelay(20);
+    await _utils.asyncDelay(normalDelay);
     console.log(' ');console.log(' ');
 
-    // Sync the standard candlesticks
-    await syncCandlesticks();
+    // Sync the forecast candlesticks
+    await syncCandlesticks(true);
 });
 
 
@@ -94,12 +97,12 @@ async function syncCandlesticks(forecast?: boolean): Promise<void> {
 
             // Update the progress and allow for a small delay before continuing
             progressBar.update(progressBarCounter += 1);
-            if (!fullySynced) await _utils.asyncDelay(20);
+            if (!fullySynced) await _utils.asyncDelay(normalDelay);
         } catch (e) {
             console.log(' ');
             console.log(e);
             console.log(' ');
-            await _utils.asyncDelay(40);
+            await _utils.asyncDelay(onErrorDelay);
         }
     }
 

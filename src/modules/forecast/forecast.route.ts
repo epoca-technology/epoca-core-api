@@ -24,7 +24,6 @@ const ForecastRoute = express.Router();
  * Allows the GUI to verify that the server is running and can take requests.
 * @param start 
 * @param end 
-* @param intervalMinutes? 
 * @param zoneSize?
 * @param zoneMergeDistanceLimit?
 * @param priceActionCandlesticksRequirement?
@@ -40,11 +39,9 @@ ForecastRoute.route(`/forecast`).get(lowRiskLimit, async (req: express.Request, 
 
         // Retrieve the forecast
         const data: IForecastResult = await _forecast.forecast(
-            undefined,
             Number(req.query.start), 
             Number(req.query.end), 
             {
-                intervalMinutes: Number(req.query.intervalMinutes) || undefined,
                 priceActionCandlesticksRequirement: Number(req.query.priceActionCandlesticksRequirement) || undefined,
                 includeCandlesticksInResponse: true
             },

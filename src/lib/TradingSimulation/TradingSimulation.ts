@@ -296,7 +296,7 @@ export class TradingSimulation implements ITradingSimulation {
                 // Based on the forecast decision, open a position if applies
                 else {
                     // Retrieve the forecast
-                    let forecast: IForecastResult = await _forecast.forecast(this.processingSeries);
+                    let forecast: IForecastResult = await _forecast.forecast(this.processingSeries[0].ot, this.processingSeries.at(-1).ct);
 
                     // Check if a position can be opened
                     let canOpenPosition: boolean = this.canOpenPosition(forecast.result);

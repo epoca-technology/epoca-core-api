@@ -12,6 +12,7 @@ import {
     IReversal,
     IPriceActionData
 } from "./interfaces";
+import {BigNumber} from "bignumber.js";
 
 
 
@@ -86,23 +87,23 @@ export class KeyZonesService implements IKeyZonesService {
         config = this.getConfig(config);
 
         // Init the state
-        let state: IKeyZonesState = this.getInitialState(candlesticks.at(-1).c);
+        let state: IKeyZonesState = this.getInitialState(candlesticks1m.at(-1).c);
 
         // Retrieve the Key Zones Data
         const keyZones: IKeyZone[] = this.getKeyZones(candlesticks, config);
 
         // Key Zones
-        state.zones = keyZones;
+        state.kz = keyZones;
 
         // Retrieve Price Action Data
         const priceActionData: IPriceActionData = this.getPriceActionData(candlesticks1m, keyZones);
 
         // Active Zone
-        state.activeZone = priceActionData.currentZone;
+        state.akz = priceActionData.currentZone;
         
         // Price Action
-        state.touchedSupport = priceActionData.touchedSupport;
-        state.touchedResistance = priceActionData.touchedResistance;
+        state.ts = priceActionData.touchedSupport;
+        state.tr = priceActionData.touchedResistance;
 
         // Return the final state
         return state;
@@ -154,7 +155,7 @@ export class KeyZonesService implements IKeyZonesService {
                 candlesticks[i].h > candlesticks[i + 1].h &&
                 candlesticks[i].h > candlesticks[i + 2].h &&
                 candlesticks[i].h > candlesticks[i + 3].h
-            ) { this.onReversal(candlesticks[i], 'resistance', config.zoneSize) }
+            ) { this.onReversal(candlesticks[i], 'r', config.zoneSize) }
 
             // Check if a support reversal has occurred
             else if (
@@ -164,7 +165,7 @@ export class KeyZonesService implements IKeyZonesService {
                 candlesticks[i].l < candlesticks[i + 1].l &&
                 candlesticks[i].l < candlesticks[i + 2].l &&
                 candlesticks[i].l < candlesticks[i + 3].l
-            ) { this.onReversal(candlesticks[i], 'support', config.zoneSize) }
+            ) { this.onReversal(candlesticks[i], 's', config.zoneSize) }
         }
 
         // Build the key zones
@@ -200,20 +201,24 @@ export class KeyZonesService implements IKeyZonesService {
         // The price range matches an existing zone
         if (typeof zoneIndex == "number") {
             // Add the new reversal
-            this.zones[zoneIndex].reversals.push({id: candlestick.ot, type: rType});
+            this.zones[zoneIndex].r.push({id: candlestick.ot, t: rType});
 
             // Check if there has been a mutation
-            this.zones[zoneIndex].mutated = this.zoneMutated(this.zones[zoneIndex].reversals);
+            this.zones[zoneIndex].m = this.zoneMutated(this.zones[zoneIndex].r);
+
+            // Combine the volumes
+            this.zones[zoneIndex].v = new BigNumber(this.zones[zoneIndex].v).plus(candlestick.v).toNumber();
         }
 
         // No zones matched the price range, add the zone
         else {
             this.zones.push({
                 id: candlestick.ot,
-                start: range.start,
-                end: range.end,
-                reversals: [{id: candlestick.ot, type: rType}],
-                mutated: false
+                s: range.s,
+                e: range.e,
+                r: [{id: candlestick.ot, t: rType}],
+                m: false,
+                v: candlestick.v
             });
         }
     }
@@ -236,8 +241,8 @@ export class KeyZonesService implements IKeyZonesService {
         // Iterate over each zone looking for a match
         for (let i = 0; i < this.zones.length; i++) {
             if (
-                (range.start >= this.zones[i].start && range.start <= this.zones[i].end) ||
-                (range.end >= this.zones[i].start && range.end <= this.zones[i].end)
+                (range.s >= this.zones[i].s && range.s <= this.zones[i].e) ||
+                (range.e >= this.zones[i].s && range.e <= this.zones[i].e)
             ) {
                 // A matching zone has been found
                 return i;
@@ -264,15 +269,15 @@ export class KeyZonesService implements IKeyZonesService {
      * @returns IKeyZonePriceRange
      */
      private getZonePriceRange(candlestick: ICandlestick, rType: IReversalType, zoneSize: number): IKeyZonePriceRange {
-        if (rType == 'resistance') {
+        if (rType == 'r') {
             return {
-                start: <number>this._utils.alterNumberByPercentage(candlestick.h, -(zoneSize)),
-                end: candlestick.h
+                s: <number>this._utils.alterNumberByPercentage(candlestick.h, -(zoneSize)),
+                e: candlestick.h
             }
         } else {
             return {
-                start: candlestick.l,
-                end: <number>this._utils.alterNumberByPercentage(candlestick.l, zoneSize)
+                s: candlestick.l,
+                e: <number>this._utils.alterNumberByPercentage(candlestick.l, zoneSize)
             }
         }
     }
@@ -292,8 +297,8 @@ export class KeyZonesService implements IKeyZonesService {
      */
     private zoneMutated(reversals: IReversal[]): boolean {
         let types: IReversalType[] = [];
-        reversals.forEach((r) => { types.push(r.type) });
-        return types.includes('support') && types.includes('resistance');
+        reversals.forEach((r) => { types.push(r.t) });
+        return types.includes('s') && types.includes('r');
     }
 
 
@@ -315,7 +320,7 @@ export class KeyZonesService implements IKeyZonesService {
         let keyZones: IKeyZone[] = [];
 
         // Sort the local zones by start price ascending (low to high)
-        this.zones.sort((a, b) => { return a.start - b.start });
+        this.zones.sort((a, b) => { return a.s - b.s });
 
         // Check if zones need to be merged and list the key zones volumes
         let merged: boolean = false;
@@ -325,7 +330,7 @@ export class KeyZonesService implements IKeyZonesService {
                 // Check if there is a next item before proceeding
                 if (this.zones[i + 1]) {
                     // Calculate the % change between the current end and the next start
-                    const change: number = <number>this._utils.calculatePercentageChange(this.zones[i].end, this.zones[i + 1].start);
+                    const change: number = <number>this._utils.calculatePercentageChange(this.zones[i].e, this.zones[i + 1].s);
                     
                     // Merge the zones if needed
                     if (change <= zoneMergeDistanceLimit) {
@@ -362,7 +367,7 @@ export class KeyZonesService implements IKeyZonesService {
      */
     private mergeZones(z1: IKeyZone, z2: IKeyZone): IKeyZone {
         // Merge the reversals
-        let reversals: IReversal[] = z1.reversals.concat(z2.reversals);
+        let reversals: IReversal[] = z1.r.concat(z2.r);
 
         // Order them by date ascending
         reversals.sort((a, b) => { return a.id - b.id });
@@ -370,10 +375,11 @@ export class KeyZonesService implements IKeyZonesService {
         // Return the unified zone
         return {
             id: z1.id < z2.id ? z1.id: z2.id,
-            start: <number>this._utils.calculateAverage([z1.start, z2.start]),
-            end: <number>this._utils.calculateAverage([z1.end, z2.end]),
-            reversals: reversals,
-            mutated: this.zoneMutated(reversals)
+            s: <number>this._utils.calculateAverage([z1.s, z2.s]),
+            e: <number>this._utils.calculateAverage([z1.e, z2.e]),
+            r: reversals,
+            m: this.zoneMutated(reversals),
+            v: new BigNumber(z1.v).plus(z2.v).toNumber(),
         }
     }
 
@@ -471,7 +477,7 @@ export class KeyZonesService implements IKeyZonesService {
      * @returns IKeyZone|undefined
      */
     private isInZone(price: number, zones: IKeyZone[]): IKeyZone|undefined {
-        for (let zone of zones) if (price >= zone.start && price <= zone.end) return zone;
+        for (let zone of zones) if (price >= zone.s && price <= zone.e) return zone;
         return undefined;
     }
 
@@ -513,10 +519,10 @@ export class KeyZonesService implements IKeyZonesService {
         // Build the zones based on the type
         kz.forEach((z) => { 
             // Build zones that are above the price
-            if (above && z.start > price) { zones.push(z) } 
+            if (above && z.s > price) { zones.push(z) } 
             
             // Build zones that are below the price
-            else if (!above && z.end < price) { zones.push(z)}
+            else if (!above && z.e < price) { zones.push(z)}
         });
 
         /**
@@ -524,8 +530,8 @@ export class KeyZonesService implements IKeyZonesService {
          * Zones Above: Order ascending by price
          * Zones Below: Order descending by price
          */
-        if (above) { zones.sort((a, b) => { return a.start - b.start}) } 
-        else { zones.sort((a, b) => { return b.start - a.start}) }
+        if (above) { zones.sort((a, b) => { return a.s - b.s}) } 
+        else { zones.sort((a, b) => { return b.s - a.s}) }
 
         // Return the zones
         return zones;
@@ -587,11 +593,11 @@ export class KeyZonesService implements IKeyZonesService {
      */
     private getInitialState(lastPrice: number): IKeyZonesState {
         return {
-            price: lastPrice,
-            zones: [],
-            activeZone: undefined,
-            touchedResistance: false,
-            touchedSupport: false
+            p: lastPrice,
+            kz: [],
+            akz: undefined,
+            tr: false,
+            ts: false
         }
     }
 }

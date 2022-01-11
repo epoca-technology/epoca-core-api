@@ -24,14 +24,6 @@ export class ForecastService implements IForecastService {
 
 
 
-    /**
-     * @intervalMinutes
-     * The interval that will be set on the 1m candlesticks before building the key zones.
-     */
-     private readonly intervalMinutes: number = 720; // 
-
-
-
 
     /**
      * @priceActionCandlesticksRequirement
@@ -61,54 +53,37 @@ export class ForecastService implements IForecastService {
 
     /**
      * Given a series of 1m candlesticks, it will predict the next position to be taken.
-     * @param candlesticks1m?
-     * @param startTimestamp?
-     * @param endTimestamp?
+     * @param startTimestamp
+     * @param endTimestamp
      * @param fConfig?
      * @param keyZonesConfig?
      * @returns Promise<IForecastResult>
      */
     public async forecast(
-        candlesticks1m?: ICandlestick[],
-        startTimestamp?: number,
-        endTimestamp?: number,
+        startTimestamp: number,
+        endTimestamp: number,
         fConfig?: IForecastConfig,
         kzConfig?: IKeyZonesConfig,
     ): Promise<IForecastResult> {
         // Init config
         fConfig = this.getConfig(fConfig);
 
-        // Check if the candlesticks were provided, otherwise retrieve them
-        if (!candlesticks1m || !candlesticks1m.length) {
-            // Make sure the timestamps were provided
-            if (typeof startTimestamp != "number" || typeof endTimestamp != "number") {
-                throw new Error(`The startTimestamp ${startTimestamp} and/or the endTimestamp ${endTimestamp} are invalid.`);
-            }
-
-            // Verbose
-            //if (fConfig.verbose > 0) console.log(`Retrieving candlesticks from ${startTimestamp} to ${endTimestamp}.`);
-
-            // Retrieve the candlesticks
-            candlesticks1m = await this._candlestick.get(startTimestamp, endTimestamp);
-        }
-
-        // Scale the candlesticks according to the provided interval
-        const candlesticks: ICandlestick[] = this._candlestick.alterInterval(candlesticks1m, fConfig.intervalMinutes);
+        // Retrieve the forecast & standard candlesticks
+        const values: [ICandlestick[], ICandlestick[]] = await Promise.all([
+            this._candlestick.get(startTimestamp, endTimestamp, true),                      // 0 - Forecast Candlesticks
+            this._candlestick.getLast(false, fConfig.priceActionCandlesticksRequirement)    // 1 - Standard Candlesticks
+        ]);
 
         // Build the Key Zones State
-        const state: IKeyZonesState = this._kz.getState(
-            candlesticks, 
-            candlesticks1m.slice(candlesticks1m.length - fConfig.priceActionCandlesticksRequirement), 
-            kzConfig
-        );
+        const state: IKeyZonesState = this._kz.getState(values[0], values[1], kzConfig);
 
         // Return the final result
         return {
-            start: candlesticks1m[0].ot,
-            end: candlesticks1m.at(-1).ct,
+            start: startTimestamp,
+            end: endTimestamp,
             result: this.forecastTendencyFromKeyZonesState(state, fConfig),
             state: state,
-            candlesticks: fConfig.includeCandlesticksInResponse ? candlesticks: undefined,
+            candlesticks: fConfig.includeCandlesticksInResponse ? values[0]: undefined,
         };
     }
 
@@ -134,14 +109,14 @@ export class ForecastService implements IForecastService {
          * 4) The number of reversals in the current key zone must be greater than the one below
          */
         if (
-            state.touchedSupport  &&
-            (state.activeZone.reversals[0].type == 'support' || state.activeZone.mutated)
+            state.tr  &&
+            (state.akz.r[0].t == 's' || state.akz.m)
         ) {
             // Retrieve the zones below if any
-            const below: IKeyZone[] = this._kz.getZonesFromPrice(state.price, state.zones, false);
+            const below: IKeyZone[] = this._kz.getZonesFromPrice(state.p, state.kz, false);
 
             // Make sure there are zones below and that the current zone has as many or more reversals
-            if (below.length && state.activeZone.reversals.length >= below[0].reversals.length) {
+            if (below.length && state.akz.r.length >= below[0].r.length) {
                 if (config.verbose > 0) this.logState(state, [], below);
                 return 1;
             }
@@ -155,14 +130,14 @@ export class ForecastService implements IForecastService {
          * 4) The number of reversals in the current key zone must be greater than the one above
          */
         else if (
-            state.touchedResistance &&
-            (state.activeZone.reversals[0].type == 'resistance'  || state.activeZone.mutated)
+            state.tr &&
+            (state.akz.r[0].t == 'r'  || state.akz.m)
         ) {
             // Retrieve the zones above if any
-            const above: IKeyZone[] = this._kz.getZonesFromPrice(state.price, state.zones, true);
+            const above: IKeyZone[] = this._kz.getZonesFromPrice(state.p, state.kz, true);
 
             // Make sure there are zones below and that the current zone has as many or more reversals
-            if (above.length && state.activeZone.reversals.length >= above[0].reversals.length) {
+            if (above.length && state.akz.r.length >= above[0].r.length) {
                 if (config.verbose > 0) this.logState(state, above, []);
                 return -1;
             }
@@ -177,6 +152,12 @@ export class ForecastService implements IForecastService {
 
 
 
+
+
+
+
+
+
     /**
      * Logs the keyzone state whenever there is a position forecast.
      * @param state 
@@ -184,7 +165,7 @@ export class ForecastService implements IForecastService {
      */
     private logState(state: IKeyZonesState, above: IKeyZone[], below: IKeyZone[]): void {
         console.log(' ');console.log(' ');
-        console.log(`Touched ${state.touchedSupport ? 'Support': 'Resistance'}: $${state.price}`, state.activeZone);
+        console.log(`Touched ${state.ts ? 'Support': 'Resistance'}: $${state.p}`, state.akz);
         if (above.length) console.log(`Zone Above (${above.length})`, above[0]);
         if (below.length) console.log(`Zone Below (${below.length})`, below[0]);
     }
@@ -215,7 +196,6 @@ export class ForecastService implements IForecastService {
     private getConfig(config?: IForecastConfig): IForecastConfig {
         config = config ? config: {};
         return {
-            intervalMinutes: typeof config.intervalMinutes == "number" ? config.intervalMinutes: this.intervalMinutes,
             priceActionCandlesticksRequirement: typeof config.priceActionCandlesticksRequirement == "number" ? config.priceActionCandlesticksRequirement: this.priceActionCandlesticksRequirement,
             includeCandlesticksInResponse: config.includeCandlesticksInResponse == true,
             verbose: typeof config.verbose == "number" ? config.verbose: this.verbose,

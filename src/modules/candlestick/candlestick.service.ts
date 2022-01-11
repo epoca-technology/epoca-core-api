@@ -1,5 +1,5 @@
 import {inject, injectable} from "inversify";
-import { ICandlestickService, ICandlestick, ICandlestickConfig, ILocalCandlesticks } from "./interfaces";
+import { ICandlestickService, ICandlestick, ICandlestickConfig } from "./interfaces";
 import { SYMBOLS } from "../../ioc";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../shared/database";
 import { IUtilitiesService } from "../shared/utilities";
@@ -60,30 +60,6 @@ export class CandlestickService implements ICandlestickService {
 
 
     /* Candlestick Retrievers */
-
-
-
-
-
-
-    /**
-     * Retrieves the candlesticks for a given period in any interval. 
-     * These candlesticks will be based on the 1 minute candlesticks.
-     * @IMPORTANT This functionality is only for standard candlesticks.
-     * @param start 
-     * @param end 
-     * @param intervalMinutes 
-     * @returns Promise<ICandlestick[]>
-     */
-    public async getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]> {
-        // Retrieve the 1m candlesticks for the given period
-        const candlesticks1m: ICandlestick[] = await this.get(start, end);
-
-        // Return them based in the provided interval
-        return this.alterInterval(candlesticks1m, intervalMinutes);
-    }
-
-
 
 
 
@@ -207,6 +183,35 @@ export class CandlestickService implements ICandlestickService {
 
 
 
+    /**
+     * Retrieves the candlesticks for a given period in any interval. 
+     * These candlesticks will be based on the 1 minute candlesticks.
+     * @IMPORTANT This functionality is only for GUI to be able interact freely 
+     * with the standard candlesticks.
+     * @param start 
+     * @param end 
+     * @param intervalMinutes 
+     * @returns Promise<ICandlestick[]>
+     */
+     public async getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]> {
+        // Retrieve the 1m candlesticks for the given period
+        const candlesticks1m: ICandlestick[] = await this.get(start, end);
+
+        // Return them based in the provided interval
+        return this.alterInterval(candlesticks1m, intervalMinutes);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -253,13 +258,13 @@ export class CandlestickService implements ICandlestickService {
         let candlesticks: ICandlestick[];
         try {
             candlesticks = await this.syncCandlesticks(forecast);
-            this.updateLocal(candlesticks, forecast);
+            //this.updateLocal(candlesticks, forecast);
         } catch(e) { 
             console.log(`Failed to sync the ${forecast ? 'Forecast': 'Standard'} Candlesticks, attempting again in a few seconds:`, e);
             await this._utils.asyncDelay(5);
             try {
                 candlesticks = await this.syncCandlesticks(forecast);
-                this.updateLocal(candlesticks, forecast);
+                //this.updateLocal(candlesticks, forecast);
             } catch (e) {
                 console.log(`Failed to sync the ${forecast ? 'Forecast': 'Standard'} candlesticks again, will attempt again in a few seconds:`, e);
             }
@@ -391,7 +396,7 @@ export class CandlestickService implements ICandlestickService {
 
 
 
-    /* Local Candlesticks */
+    /* Local Candlesticks - Only to be used if the forecasting was to be done in the nodejs service */
 
 
 
@@ -403,12 +408,12 @@ export class CandlestickService implements ICandlestickService {
      * set and that they are synced.
      * @returns ICandlestickPayload
      */
-    public getLocal(): ILocalCandlesticks {
+    /*public getLocal(): ILocalCandlesticks {
         return {
             standard: [],
             forecast: []
         }
-    }
+    }*/
 
 
 
@@ -422,9 +427,9 @@ export class CandlestickService implements ICandlestickService {
      * @param forecast? 
      * @returns Promise<void>
      */
-    private async updateLocal(candlesticks: ICandlestick[], forecast?: boolean): Promise<void> {
+    /*private async updateLocal(candlesticks: ICandlestick[], forecast?: boolean): Promise<void> {
 
-    }
+    }*/
 
 
 

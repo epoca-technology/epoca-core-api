@@ -23,7 +23,7 @@ export interface ICandlestickService {
     saveCandlesticks(candlesticks: ICandlestick[], forecast?: boolean): Promise<void>,
 
     // Local Candlesticks
-    getLocal(): ILocalCandlesticks,
+    //getLocal(): ILocalCandlesticks,
 
     // Helpers
     alterInterval(candlesticks1m: ICandlestick[], intervalMinutes: number): ICandlestick[],
@@ -66,7 +66,7 @@ export interface ICandlestickConfig {
 
 
 // Local Candlesticks
-export interface ILocalCandlesticks {
+/*export interface ILocalCandlesticks {
     standard: ICandlestick[],
     forecast: ICandlestick[]
-}
+}*/
