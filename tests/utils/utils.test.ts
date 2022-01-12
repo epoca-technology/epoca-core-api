@@ -108,6 +108,46 @@ describe('Number Handling:', function() {
 
 
 
+/* UUID */
+describe('UUID:', function() {
+    it('-Can generate valid v4 uuids', function() {
+        // Generate the first uuid
+        const uuid1: string = _utils.generateID();
+        expect(typeof uuid1).toBe("string");
+        expect(uuid1.length).toBe(36);
+        expect(_utils.uuidValid(uuid1)).toBeTruthy();
+
+        // Generate the second uuid
+        const uuid2: string = _utils.generateID();
+        expect(typeof uuid2).toBe("string");
+        expect(uuid2.length).toBe(36);
+        expect(_utils.uuidValid(uuid2)).toBeTruthy();
+
+        // Make sure both are different
+        expect(uuid1 == uuid2).toBeFalsy();
+    });
+
+
+
+    it('-Can validate uuids', function() {
+        expect(_utils.uuidValid('109156be-c4fb-41ea-b1b4-efe1671c5836')).toBeTruthy();
+        expect(_utils.uuidValid('d9428888-122b-11e1-b85c-61cd3cbb3210')).toBeFalsy(); // v1 uuid
+        expect(_utils.uuidValid('')).toBeFalsy();
+        expect(_utils.uuidValid('asdasdasdsad1564sd654a6s1da23sdasd4')).toBeFalsy();
+        // @ts-ignore
+        expect(_utils.uuidValid(45432123132)).toBeFalsy();
+    });
+});
+
+
+
+
+
+
+
+
+
+
 
 /* API Response */
 describe('API Response:', function() {

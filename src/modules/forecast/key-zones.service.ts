@@ -38,7 +38,8 @@ export class KeyZonesService implements IKeyZonesService {
      * @zoneSize
      * The zone's size percentage. The start and end prices are based on this value.
      */
-    private readonly zoneSize: number = 0.7;
+    //private readonly zoneSize: number = 0.7;
+    private readonly zoneSize: number = 4;
 
 
 
@@ -47,8 +48,8 @@ export class KeyZonesService implements IKeyZonesService {
      * Once all zones have been set and ordered by price, it will merge the ones that are 
      * close to one another.
      */
-     private readonly zoneMergeDistanceLimit: number = 1.5;
-
+     //private readonly zoneMergeDistanceLimit: number = 1.5;
+     private readonly zoneMergeDistanceLimit: number = 0.01;
 
 
 
@@ -203,9 +204,6 @@ export class KeyZonesService implements IKeyZonesService {
             // Add the new reversal
             this.zones[zoneIndex].r.push({id: candlestick.ot, t: rType});
 
-            // Check if there has been a mutation
-            this.zones[zoneIndex].m = this.zoneMutated(this.zones[zoneIndex].r);
-
             // Combine the volumes
             this.zones[zoneIndex].v = new BigNumber(this.zones[zoneIndex].v).plus(candlestick.v).toNumber();
         }
@@ -217,7 +215,6 @@ export class KeyZonesService implements IKeyZonesService {
                 s: range.s,
                 e: range.e,
                 r: [{id: candlestick.ot, t: rType}],
-                m: false,
                 v: candlestick.v
             });
         }
@@ -295,7 +292,7 @@ export class KeyZonesService implements IKeyZonesService {
      * @param reversals 
      * @returns boolean
      */
-    private zoneMutated(reversals: IReversal[]): boolean {
+    public zoneMutated(reversals: IReversal[]): boolean {
         let types: IReversalType[] = [];
         reversals.forEach((r) => { types.push(r.t) });
         return types.includes('s') && types.includes('r');
@@ -378,7 +375,6 @@ export class KeyZonesService implements IKeyZonesService {
             s: <number>this._utils.calculateAverage([z1.s, z2.s]),
             e: <number>this._utils.calculateAverage([z1.e, z2.e]),
             r: reversals,
-            m: this.zoneMutated(reversals),
             v: new BigNumber(z1.v).plus(z2.v).toNumber(),
         }
     }
@@ -536,6 +532,9 @@ export class KeyZonesService implements IKeyZonesService {
         // Return the zones
         return zones;
     }
+
+
+
 
 
 

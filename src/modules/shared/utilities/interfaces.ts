@@ -12,6 +12,10 @@ export interface IUtilitiesService {
     outputNumber(value: INumber, config?: INumberConfig): INumber,
     getBigNumber(value: INumber): BigNumber,
 
+    // UUID (Universally Unique IDentifier)
+    generateID(): string,
+    uuidValid(uuid: string): boolean,
+
     // API Response
     apiResponse(data?: any, error?: string): IAPIResponse,
     buildApiError(e: any, code?: number): string,

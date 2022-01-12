@@ -198,7 +198,7 @@ export class CandlestickService implements ICandlestickService {
         const candlesticks1m: ICandlestick[] = await this.get(start, end);
 
         // Return them based in the provided interval
-        return this.alterInterval(candlesticks1m, intervalMinutes);
+        return intervalMinutes > 1 ? this.alterInterval(candlesticks1m, intervalMinutes): candlesticks1m;
     }
 
 

@@ -1,4 +1,5 @@
 import {inject, injectable} from "inversify";
+import moment = require("moment");
 import { SYMBOLS } from "../../ioc";
 import { ICandlestick, ICandlestickService } from "../candlestick";
 import { IUtilitiesService } from "../shared/utilities";
@@ -10,8 +11,11 @@ import {
     ITendencyForecast,
     IKeyZonesState,
     IKeyZonesService,
-    IKeyZone
+    IKeyZone,
+    IStrategy
 } from "./interfaces";
+import { getStrategy } from "./forecast.strategies";
+
 
 
 
@@ -30,7 +34,7 @@ export class ForecastService implements IForecastService {
      * The number of 1 minute candlesticks that will be used to determine if a zone has been
      * touched.
      */
-     private readonly priceActionCandlesticksRequirement: number = 15;
+     private readonly priceActionCandlesticksRequirement: number = 30;
 
 
 
@@ -67,11 +71,15 @@ export class ForecastService implements IForecastService {
     ): Promise<IForecastResult> {
         // Init config
         fConfig = this.getConfig(fConfig);
+        fConfig.strategy = 'FP';
 
         // Retrieve the forecast & standard candlesticks
         const values: [ICandlestick[], ICandlestick[]] = await Promise.all([
-            this._candlestick.get(startTimestamp, endTimestamp, true),                      // 0 - Forecast Candlesticks
-            this._candlestick.getLast(false, fConfig.priceActionCandlesticksRequirement)    // 1 - Standard Candlesticks
+            this._candlestick.get(startTimestamp, endTimestamp, true),      // 0 - Forecast Candlesticks
+            this._candlestick.get(                                          // 1 - Standard Candlesticks
+                moment(endTimestamp).subtract(fConfig.priceActionCandlesticksRequirement, "minutes").valueOf(), 
+                endTimestamp
+            )     
         ]);
 
         // Build the Key Zones State
@@ -81,7 +89,7 @@ export class ForecastService implements IForecastService {
         return {
             start: startTimestamp,
             end: endTimestamp,
-            result: this.forecastTendencyFromKeyZonesState(state, fConfig),
+            result: this.forecastTendency(state, getStrategy(fConfig.strategy)),
             state: state,
             candlesticks: fConfig.includeCandlesticksInResponse ? values[0]: undefined,
         };
@@ -89,69 +97,29 @@ export class ForecastService implements IForecastService {
 
 
 
-    
+
 
 
 
     /**
-     * Given the keyzones state and the configuration, it will determine the next tendency
-     * to be followed.
-     * @param state
-     * @param config
+     * Executes a given strategy in case there has been a key zone touch.
+     * @param state 
+     * @param strategy
      * @returns ITendencyForecast
      */
-    private forecastTendencyFromKeyZonesState(state: IKeyZonesState, config: IForecastConfig): ITendencyForecast {
-        /**
-         * Check if the support zone is strong enough to hold the price action:
-         * 1) A minimum of 3 reversals
-         * 2) The reversal type must be a support or it must have mutated
-         * 3) There must be at least 1 key zone below
-         * 4) The number of reversals in the current key zone must be greater than the one below
-         */
-        if (
-            state.tr  &&
-            (state.akz.r[0].t == 's' || state.akz.m)
-        ) {
-            // Retrieve the zones below if any
-            const below: IKeyZone[] = this._kz.getZonesFromPrice(state.p, state.kz, false);
+     private forecastTendency(state: IKeyZonesState, strategy: IStrategy): ITendencyForecast {
+        // Make sure there is an active state and the minimum reversals are met
+        if (!state.akz || state.akz.r.length < strategy.minReversals) return 0;
 
-            // Make sure there are zones below and that the current zone has as many or more reversals
-            if (below.length && state.akz.r.length >= below[0].r.length) {
-                if (config.verbose > 0) this.logState(state, [], below);
-                return 1;
-            }
-        }
+        // Check if a support was touched
+        if (state.ts) { return this.onKeyZoneTouch(false, state, strategy) }
 
-        /**
-         * Check if the resistance zone is strong enough to hold the price action:
-         * 1) A minimum of 3 reversals
-         * 2) The reversal type must be a resistance or it must have mutated
-         * 3) There must be at least 1 key zone above
-         * 4) The number of reversals in the current key zone must be greater than the one above
-         */
-        else if (
-            state.tr &&
-            (state.akz.r[0].t == 'r'  || state.akz.m)
-        ) {
-            // Retrieve the zones above if any
-            const above: IKeyZone[] = this._kz.getZonesFromPrice(state.p, state.kz, true);
+        // Check if a resistance was touched
+        else if (state.tr) { return this.onKeyZoneTouch(true, state, strategy) }
 
-            // Make sure there are zones below and that the current zone has as many or more reversals
-            if (above.length && state.akz.r.length >= above[0].r.length) {
-                if (config.verbose > 0) this.logState(state, above, []);
-                return -1;
-            }
-        }
-
-        // Otherwise, stand neutral.
-        return 0;
+        // Otherwise stand neutral
+        else { return 0 }
     }
-
-
-
-
-
-
 
 
 
@@ -159,16 +127,68 @@ export class ForecastService implements IForecastService {
 
 
     /**
-     * Logs the keyzone state whenever there is a position forecast.
+     * Determines which forecast tendency to retrieve based on the type of key zone
+     * touched and the strategy.
+     * @param resistance 
      * @param state 
-     * @returns void
+     * @param strategy 
+     * @returns ITendencyForecast
      */
-    private logState(state: IKeyZonesState, above: IKeyZone[], below: IKeyZone[]): void {
-        console.log(' ');console.log(' ');
-        console.log(`Touched ${state.ts ? 'Support': 'Resistance'}: $${state.p}`, state.akz);
-        if (above.length) console.log(`Zone Above (${above.length})`, above[0]);
-        if (below.length) console.log(`Zone Below (${below.length})`, below[0]);
+    private onKeyZoneTouch(resistance: boolean, state: IKeyZonesState, strategy: IStrategy): ITendencyForecast {
+        // Retrieve the key zones from the current price
+        const nextZones: IKeyZone[] = this._kz.getZonesFromPrice(state.p, state.kz, resistance);
+
+        // If there are no zones above or below, stand neutral
+        if (!nextZones.length) return 0;
+
+        // Check if the reversal type needs to be respected
+        if (
+            strategy.respectReversalType && 
+            (
+                (
+                    (resistance && state.akz.r.at(-1).t != 'r') ||
+                    (!resistance && state.akz.r.at(-1).t != 's')
+                )  && 
+                (!strategy.allowMutations || !this._kz.zoneMutated(state.akz.r))
+            )
+        ) {
+            return 0;
+        }
+
+        // Check if it needs and has more reversals than the next key zone
+        if (strategy.moreReversalsThanNext && state.akz.r.length < nextZones[0].r.length) {
+            return 0;
+        }
+
+        // Check if it has less reversals than the next one and if it should act on it
+        if (strategy.actOnLessReversalsThanNext && state.akz.r.length < nextZones[0].r.length) {
+            this.logState(state, resistance ? nextZones: undefined, resistance ? undefined: nextZones);
+            return resistance ? 1: -1;
+        }
+
+        // Check if it needs and has more volume than the next key zone
+        if (strategy.moreVolumeThanNext && state.akz.v < nextZones[0].v) {
+            return 0;
+        }
+
+        // Check if it has less volume than the next one and if it should act on it
+        if (strategy.actOnLessVolumeThanNext && state.akz.v < nextZones[0].v) {
+            this.logState(state, resistance ? nextZones: undefined, resistance ? undefined: nextZones);
+            return resistance ? 1: -1;
+        }
+
+        // Tendency Forecast
+        this.logState(state, resistance ? nextZones: undefined, resistance ? undefined: nextZones);
+        if (strategy.followPrice) {
+            return resistance ? 1: -1;
+        } else {
+            return resistance ? -1: 1;
+        }
     }
+
+
+
+
 
 
 
@@ -184,6 +204,32 @@ export class ForecastService implements IForecastService {
 
 
     /* Misc Helpers */
+
+
+
+
+
+
+
+
+    /**
+     * Logs the keyzone state whenever there is a position forecast.
+     * @param state 
+     * @param above? 
+     * @param below? 
+     * @returns void
+     */
+     private logState(state: IKeyZonesState, above?: IKeyZone[], below?: IKeyZone[]): void {
+        console.log(' ');console.log(' ');
+        console.log(`Touched ${state.ts ? 'Support': 'Resistance'}: $${state.p}`, state.akz);
+        if (above && above.length) console.log(`Zone Above (${above.length} total)`, above[0]);
+        if (below && below.length) console.log(`Zone Below (${below.length} total)`, below[0]);
+    }
+
+
+
+
+
 
 
 

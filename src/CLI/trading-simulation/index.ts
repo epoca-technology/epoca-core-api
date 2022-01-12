@@ -36,9 +36,9 @@ prompt.get([], async (e: any, data: prompt.Properties) => {
     if (e) throw e;
 
     //const series: ICandlestick[] = await _candlestick.get(_utils.getTimestamp('01-01-2020'), _utils.getTimestamp('01-12-2020'));
-    const series: ICandlestick[] = await _candlestick.get(_utils.getTimestamp('01-10-2019'));
+    //const series: ICandlestick[] = await _candlestick.get(_utils.getTimestamp('01-01-2018'));
     //const series: ICandlestick[] = await _candlestick.get(_utils.getTimestamp('01-06-2020'), _utils.getTimestamp('31-12-2021'));
-    //const series: ICandlestick[] = await _candlestick.get();
+    const series: ICandlestick[] = await _candlestick.get();
     //const c = _candlestick.alterInterval(series, 5);
     try {
         const ts: ITradingSimulation = new TradingSimulation({
@@ -54,8 +54,8 @@ prompt.get([], async (e: any, data: prompt.Properties) => {
                 minimumPositionAmount: 80,
                 verbose: 1
             },
-            meditationMinutes: 60,
-            verbose: 2,
+            meditationMinutes: 0,
+            verbose: 1,
         });
         const result: ITradingSimulationResult = await ts.run();
     } catch (e) {

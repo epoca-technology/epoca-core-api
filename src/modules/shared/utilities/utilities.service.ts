@@ -8,8 +8,7 @@ import {
 } from "./interfaces";
 import {BigNumber} from 'bignumber.js';
 import * as moment from 'moment';
-
-
+import { v4 as uuidv4, version as uuidVersion, validate as uuidValidate } from 'uuid';
 
 
 
@@ -262,6 +261,33 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+    /* UUID */
+
+
+
+
+
+
+
+    /**
+     * Generates an Universally Unique IDentifier.
+     * @returns string
+     */
+    public generateID(): string { return uuidv4() }
+
+
+
+
+
+
+
+    /**
+     * Validates a provided uuid. Also makes sure it matches the version used
+     * in the Database
+     * @param uuid 
+     * @returns boolean
+     */
+    public uuidValid(uuid: string): boolean { return uuidValidate(uuid) && uuidVersion(uuid) === 4 }
 
 
 
@@ -270,6 +296,7 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+    
 
 
 
