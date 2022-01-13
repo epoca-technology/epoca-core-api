@@ -39,7 +39,7 @@ export class KeyZonesService implements IKeyZonesService {
      * The zone's size percentage. The start and end prices are based on this value.
      */
     //private readonly zoneSize: number = 0.7;
-    private readonly zoneSize: number = 4;
+    private readonly zoneSize: number = 5;
 
 
 

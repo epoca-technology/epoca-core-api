@@ -25,8 +25,12 @@ export function getStrategy(id: IStrategyID): IStrategy {
 
 /* List of Strategies */
 const STRATEGIES: {[strategyID: string]: IStrategy} = {
+    // Custom
+    "CUSTOM": { minReversals: 1, respectReversalType: true, allowMutations: true, moreVolumeThanNext: true},
+
     // Follow Price
     "FP": { minReversals: 1, followPrice: true}, // Failed
+    "FP_MRTN": { minReversals: 1, followPrice: true, moreVolumeThanNext: true},
 
     // Touch With Minimum Reversals | Respecting Reversal Type | Allowing Mutations | Act on Less Volume Than Next
     "T_1R_RTM_AOLVTN": { minReversals: 1, respectReversalType: true, allowMutations: true, actOnLessVolumeThanNext: true}, // 

@@ -152,8 +152,10 @@ export interface IStrategy {
 
 
 export type IStrategyID = 
+// 
+'CUSTOM'|
 // Follow Price
-'FP'|
+'FP'|'FP_MRTN'|
 
 // Touch With Minimum Reversals | Respecting Reversal Type | Allowing Mutations | Act on Less Volume Than Next
 'T_1R_RTM_AOLVTN'|
