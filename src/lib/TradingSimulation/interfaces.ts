@@ -1,4 +1,4 @@
-import { IForecastResult } from "../../modules/forecast";
+import { IForecast } from "../../modules/shared/forecast";
 import { ICandlestick } from "../../modules/candlestick";
 import {BigNumber} from "bignumber.js";
 
@@ -161,7 +161,7 @@ export interface ITradingSimulationPosition {
     type: 'long'|'short',
 
     // Forecast Result
-    forecast: IForecastResult,
+    forecast: IForecast,
 
     // Open & Close times
     openTime: number,

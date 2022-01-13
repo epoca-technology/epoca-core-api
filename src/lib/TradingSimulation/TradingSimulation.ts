@@ -21,7 +21,7 @@ import { IUtilitiesService } from "../../../src/modules/shared/utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Init Forecast Service
-import { IForecastService, ITendencyForecast, IForecastResult } from "../../modules/forecast";
+import { IForecastService, IForecastPosition, IForecast } from "../../modules/shared/forecast";
 const _forecast: IForecastService = appContainer.get<IForecastService>(SYMBOLS.ForecastService);
 
 
@@ -296,10 +296,10 @@ export class TradingSimulation implements ITradingSimulation {
                 // Based on the forecast decision, open a position if applies
                 else {
                     // Retrieve the forecast
-                    let forecast: IForecastResult = await _forecast.forecast(this.processingSeries[0].ot, this.processingSeries.at(-1).ct);
+                    let forecast: IForecast = await _forecast.forecast(this.processingSeries[0].ot, this.processingSeries.at(-1).ct);
 
                     // Check if a position can be opened
-                    let canOpenPosition: boolean = this.canOpenPosition(forecast.result);
+                    let canOpenPosition: boolean = this.canOpenPosition(forecast.position);
                     if (canOpenPosition) { 
                         // If it is a long and has lost several in a row, interrupt the position and activate meditation
                         /*if (
@@ -377,23 +377,23 @@ export class TradingSimulation implements ITradingSimulation {
      * @param currentItem 
      * @returns void
      */
-    private openPosition(forecast: IForecastResult, currentItem: ICandlestick): void {
+    private openPosition(forecast: IForecast, currentItem: ICandlestick): void {
         // Retrieve the exit parameters
         const ep: IPositionExitParameters = this.balance.getPositionExitParameters();
 
         // Activate the position
         this.activePosition = {
             //state: true,
-            type: forecast.result > 0 ? 'long': 'short',
+            type: forecast.position > 0 ? 'long': 'short',
             forecast: forecast,
             openTime: currentItem.ot,
             openPrice: <number>_utils.outputNumber(currentItem.o, {dp: 2}),
-            takeProfitPrice: forecast.result > 0 ? <number>_utils.alterNumberByPercentage(currentItem.o, ep.takeProfit): <number>_utils.alterNumberByPercentage(currentItem.o, -(ep.takeProfit)),
-            stopLossPrice: forecast.result > 0 ? <number>_utils.alterNumberByPercentage(currentItem.o, -(ep.stopLoss)): <number>_utils.alterNumberByPercentage(currentItem.o, ep.stopLoss),
+            takeProfitPrice: forecast.position > 0 ? <number>_utils.alterNumberByPercentage(currentItem.o, ep.takeProfit): <number>_utils.alterNumberByPercentage(currentItem.o, -(ep.takeProfit)),
+            stopLossPrice: forecast.position > 0 ? <number>_utils.alterNumberByPercentage(currentItem.o, -(ep.stopLoss)): <number>_utils.alterNumberByPercentage(currentItem.o, ep.stopLoss),
         };
 
         // Increment the counter
-        if (forecast.result > 0) { this.longsTotal += 1 } else { this.shortsTotal += 1 };
+        if (forecast.position > 0) { this.longsTotal += 1 } else { this.shortsTotal += 1 };
 
         // Log info if applies
         if (this.verbose > 0) this.displayOpenPosition(this.activePosition);
@@ -576,7 +576,7 @@ export class TradingSimulation implements ITradingSimulation {
      * @param forecastResult 
      * @returns returns boolean
      */
-    private canOpenPosition(forecastResult: ITendencyForecast): boolean {
+    private canOpenPosition(forecastResult: IForecastPosition): boolean {
         // If it is equals or greater than the long requirement it can open a position.
         if (forecastResult >= this.tendencyForecastRequired.long) {
             return true;
@@ -750,7 +750,7 @@ export class TradingSimulation implements ITradingSimulation {
      * @param forecastResult 
      * @returns void
      */
-    private displayStandingNeutral(item: ICandlestick, forecastResult: IForecastResult): void {
+    private displayStandingNeutral(item: ICandlestick, forecastResult: IForecast): void {
         console.log(`Neutral on period: ${_utils.toDateString(item.ot)} - ${_utils.toDateString(item.ct)}`);
         //console.log(`Forecast: ${_utils.toDateString(item[0])} - ${_utils.toDateString(item[6])}`);
         //console.log(forecastResult);

@@ -22,9 +22,6 @@ export interface ICandlestickService {
     syncCandlesticks(forecast?: boolean): Promise<ICandlestick[]>,
     saveCandlesticks(candlesticks: ICandlestick[], forecast?: boolean): Promise<void>,
 
-    // Local Candlesticks
-    //getLocal(): ILocalCandlesticks,
-
     // Helpers
     alterInterval(candlesticks1m: ICandlestick[], intervalMinutes: number): ICandlestick[],
     processBinanceCandlesticks(candlesticks: IBinanceCandlestick[]): ICandlestick[],
@@ -58,15 +55,5 @@ export interface ICandlestickConfig {
     genesis: number,
     table: string,
     testTable: string,
-    localLimit: number,
     syncIntervalSeconds: number,
 }
-
-
-
-
-// Local Candlesticks
-/*export interface ILocalCandlesticks {
-    standard: ICandlestick[],
-    forecast: ICandlestick[]
-}*/

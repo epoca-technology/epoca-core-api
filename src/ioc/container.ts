@@ -6,14 +6,14 @@ import { environment } from "./environment";
 
 // Modules
 import { candlestickModule } from "../modules/candlestick";
-import { forecastModule } from "../modules/forecast";
+
 
 // Shared Modules
 import { binanceModule } from "../modules/shared/binance";
 import { utilitiesModule } from "../modules/shared/utilities";
 import { externalRequestModule } from "../modules/shared/external-request";
 import { databaseModule } from "../modules/shared/database";
-
+import { forecastModule } from "../modules/shared/forecast";
 
 
 // Initialize Inversify

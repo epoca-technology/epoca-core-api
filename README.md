@@ -47,8 +47,6 @@ Trading Simulation:  `npm run cli-trading-simulation`
 
 End-to-end: `npm run test`
 
-Forecast: `npm run test-forecast`
-
 Candlestick: `npm run test-candlestick`
 
 Utilities: `npm run test-utils`

@@ -21,7 +21,6 @@ export class CandlestickService implements ICandlestickService {
         genesis: 1502942400000,
         table: 'candlesticks',
         testTable: 'test_candlesticks',
-        localLimit: 60, // ~60 minutes
         syncIntervalSeconds: 20
     };
 
@@ -32,7 +31,6 @@ export class CandlestickService implements ICandlestickService {
         genesis: 1502928000000,
         table: 'forecast_candlesticks',
         testTable: 'test_forecast_candlesticks',
-        localLimit: 730, // ~1 year
         syncIntervalSeconds: 45
     };
 
@@ -258,13 +256,11 @@ export class CandlestickService implements ICandlestickService {
         let candlesticks: ICandlestick[];
         try {
             candlesticks = await this.syncCandlesticks(forecast);
-            //this.updateLocal(candlesticks, forecast);
         } catch(e) { 
             console.log(`Failed to sync the ${forecast ? 'Forecast': 'Standard'} Candlesticks, attempting again in a few seconds:`, e);
             await this._utils.asyncDelay(5);
             try {
                 candlesticks = await this.syncCandlesticks(forecast);
-                //this.updateLocal(candlesticks, forecast);
             } catch (e) {
                 console.log(`Failed to sync the ${forecast ? 'Forecast': 'Standard'} candlesticks again, will attempt again in a few seconds:`, e);
             }
@@ -383,53 +379,6 @@ export class CandlestickService implements ICandlestickService {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /* Local Candlesticks - Only to be used if the forecasting was to be done in the nodejs service */
-
-
-
-
-
-
-    /**
-     * Retrieves the local candlesticks once it has checked that they have been
-     * set and that they are synced.
-     * @returns ICandlestickPayload
-     */
-    /*public getLocal(): ILocalCandlesticks {
-        return {
-            standard: [],
-            forecast: []
-        }
-    }*/
-
-
-
-
-
-
-
-    /**
-     * Updates the local candlesticks with a fresh payload.
-     * @param candlesticks 
-     * @param forecast? 
-     * @returns Promise<void>
-     */
-    /*private async updateLocal(candlesticks: ICandlestick[], forecast?: boolean): Promise<void> {
-
-    }*/
 
 
 

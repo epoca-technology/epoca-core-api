@@ -5,7 +5,6 @@
  export const SYMBOLS: ISymbols = {
     // Forecast
     ForecastService: Symbol.for("ForecastService"),
-    KeyZonesService: Symbol.for("KeyZonesService"),
 
     // Candlestick
     CandlestickService: Symbol.for("CandlestickService"),
@@ -26,7 +25,6 @@
 
 export interface ISymbols {
     ForecastService: symbol,
-    KeyZonesService: symbol,
     CandlestickService: symbol,
     BinanceService: symbol,
     UtilitiesService: symbol,

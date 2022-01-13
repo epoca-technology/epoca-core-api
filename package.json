@@ -10,7 +10,6 @@
     "cli-candlestick-sync": "clear && node ./dist/CLI/candlestick/sync.js",
     "cli-trading-simulation": "clear && node ./dist/CLI/trading-simulation/index.js",
     "test": "clear && jasmine-ts --config=jasmine/e2e.json",
-    "test-forecast": "clear && jasmine-ts --config=jasmine/forecast.json",
     "test-candlestick": "clear && jasmine-ts --config=jasmine/candlestick.json",
     "test-utils": "clear && jasmine-ts --config=jasmine/utils.json",
     "test-db": "clear && jasmine-ts --config=jasmine/database.json"
@@ -19,7 +18,7 @@
     "type": "git",
     "url": "git+ssh://git@bitbucket.org/projectplutus/api-dev.git"
   },
-  "author": "JessDotJS",
+  "author": "Plutus",
   "license": "ISC",
   "homepage": "https://bitbucket.org/projectplutus/api-dev#readme",
   "dependencies": {
@@ -45,7 +44,7 @@
     "@types/jest": "27.0.3",
     "@types/pg": "8.6.3",
     "@types/prompt": "1.1.1",
-    "@types/uuid": "^8.3.4",
+    "@types/uuid": "8.3.4",
     "cli-progress": "3.9.1",
     "gulp": "4.0.2",
     "gulp-clean": "0.4.0",
