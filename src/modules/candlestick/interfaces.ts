@@ -32,6 +32,17 @@ export interface ICandlestickService {
 
 
 
+// Validations
+export interface ICandlestickValidations {
+    canGetForPeriod(start: number, end: number, intervalMinutes: number): void
+}
+
+
+
+
+
+
+
 
 // Candlestick Record
 export interface ICandlestick {

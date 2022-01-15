@@ -65,26 +65,28 @@ export interface IBalanceHistory {
 
 // Fee Object
 export interface IBalanceSimulationFees {
-    netFee: number,
-    //borrowInterestFee: number,
-    netTradesFee: number, // = openTradeFee + closeTradeFee
+    netFee: number, // openTradeFee + closeTradeFee
     openTradeFee: number,
     closeTradeFee: number,
 }
 
+
+
+
 // Accumulated Fee Object
 export interface IBalanceSimulationAccumulatedFees {
     netFee: BigNumber,
-    //borrowInterestFee: BigNumber,
-    netTradesFee: BigNumber,
     openTradeFee: BigNumber,
     closeTradeFee: BigNumber,
 }
+
+
 
 // Leverage specifications
 export interface ILeverageSpecs {
     [leverage: number]: IPositionExitParameters
 }
+
 
 // Position exit parameters
 export interface IPositionExitParameters {
@@ -128,8 +130,6 @@ export interface ITradingSimulationResult {
 
     // Fees
     netFee: number,
-    //borrowInterestFee: number,
-    netTradesFee: number,
     openTradeFee: number,
     closeTradeFee: number,
 

@@ -14,12 +14,12 @@ const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.Databas
 /**
  * CLI Initializer
  */
-console.log('DATABASE');
-console.log('@param action? // Defaults to 0')
-console.log('0 = Initialize Database');
-console.log('1 = Display Database Size');
-console.log('2 = Backup Database');
-console.log('3 = Restore Database');
+console.log('DATABASE UTILITIES');
+console.log('@param action? // Defaults to init')
+console.log('init = Initialize Database');
+console.log('size = Display Database Size');
+console.log('backup = Backup Database');
+console.log('restore = Restore Database');
 console.log(' ');
 prompt.start();
 
@@ -32,21 +32,18 @@ prompt.start();
 prompt.get(['action'], async (e: any, data: prompt.Properties) => {
     if (e) throw e;
 
-    // Init the action
-    const action: string = typeof data.action == "string" && data.action.length > 0 ? data.action: '0';
-
     // Handle the action accordingly
-    switch(action) {
-        case '0':
+    switch(data.action) {
+        case 'init':
             await initializeDatabase();
             break;
-        case '1':
+        case 'size':
             await displayDatabaseSize();
             break;
-        case '2':
+        case 'backup':
             await backupDatabase();
             break;
-        case '3':
+        case 'restore':
             await restoreDatabase();
             break;
         default:
@@ -150,7 +147,7 @@ async function createDatabase(): Promise<void> {
     try {
         // Retrieve the size of the entire database
         const dbSize: IQueryResult = await client.query(`SELECT pg_size_pretty( pg_database_size('${_db.config.database}') );`);
-        console.log(' ');console.log(`Database: ${dbSize.rows[0].pg_size_pretty}`);
+        console.log(' ');console.log(`Database: ${dbSize.rows[0].pg_size_pretty}`);console.log(' ');
 
         // Retrieve the size for each table
         for (let table of _db.tables) {

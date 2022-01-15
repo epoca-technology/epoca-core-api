@@ -145,14 +145,6 @@ export class TradingSimulation implements ITradingSimulation {
 
 
     /**
-     * 
-     */
-    private lastUnsuccessfulLongs: number = 0;
-    private lastUnsuccessfulShorts: number = 0;
-    private unsuccessfulInARow: number = 0;
-
-
-    /**
      * @verbose
      * Displays additional data of the process for debugging purposes.
      * DEFAULT: 0
@@ -230,8 +222,6 @@ export class TradingSimulation implements ITradingSimulation {
 
             // Fees
             netFee: this.balance.fees.netFee.toNumber(),
-            //borrowInterestFee: this.balance.fees.borrowInterestFee.toNumber(),
-            netTradesFee: this.balance.fees.netTradesFee.toNumber(),
             openTradeFee: this.balance.fees.openTradeFee.toNumber(),
             closeTradeFee: this.balance.fees.closeTradeFee.toNumber(),
 
@@ -296,28 +286,11 @@ export class TradingSimulation implements ITradingSimulation {
                 // Based on the forecast decision, open a position if applies
                 else {
                     // Retrieve the forecast
-                    let forecast: IForecast = await _forecast.forecast(this.processingSeries[0].ot, this.processingSeries.at(-1).ct);
+                    let forecast: IForecast = await _forecast.forecast(this.processingSeries.at(-1).ct);
 
                     // Check if a position can be opened
-                    let canOpenPosition: boolean = this.canOpenPosition(forecast.position);
-                    if (canOpenPosition) { 
-                        // If it is a long and has lost several in a row, interrupt the position and activate meditation
-                        /*if (
-                            (forecast.result == 1 && this.lastUnsuccessfulLongs >= 3) ||
-                            (forecast.result == -1 && this.lastUnsuccessfulShorts >= 3)
-                            //this.unsuccessfulInARow >= 3
-                        ) {
-                            canOpenPosition = false;
-                            this.lastUnsuccessfulLongs = 0;
-                            this.lastUnsuccessfulShorts = 0;
-                            //this.unsuccessfulInARow = 0;
-                            //forecast.result = forecast.result == 1 ? -1: 1;
-                            console.log(`Activating meditation in order to stop losing streak.`);
-                            this.activateMeditation(currentItem[6], true);
-                        }*/
-
-                        // Open the position
-                        if (canOpenPosition) this.openPosition(forecast, currentItem) 
+                    if (this.canOpenPosition(forecast.position)) { 
+                        this.openPosition(forecast, currentItem) 
                     }
 
                     // Otherwise, stand neutral
@@ -529,10 +502,6 @@ export class TradingSimulation implements ITradingSimulation {
             } else {
                 this.successfulShorts += 1;
             }
-
-            this.lastUnsuccessfulLongs = 0;
-            this.lastUnsuccessfulShorts = 0;
-            //this.unsuccessfulInARow = 0;
         } else {
             // Update general counters
             this.unsuccessful += 1;
@@ -540,15 +509,9 @@ export class TradingSimulation implements ITradingSimulation {
             // Update specific type counters
             if (this.activePosition.type == 'long') {
                 this.unsuccessfulLongs += 1;
-                this.lastUnsuccessfulLongs += 1;
-                this.lastUnsuccessfulShorts = 0;
             } else {
                 this.unsuccessfulShorts += 1;
-                this.lastUnsuccessfulShorts += 1;
-                this.lastUnsuccessfulLongs = 0;
             }
-
-            //this.unsuccessfulInARow += 1;
         }
 
         // Log it if applies
@@ -868,8 +831,6 @@ export class TradingSimulation implements ITradingSimulation {
 
         console.log('FEES');
         console.log(`Net: $${r.netFee}`);
-        //console.log(`Borrow Interest: $${r.borrowInterestFee}`);
-        console.log(`Trades Net: $${r.netTradesFee}`);
         console.log(`Open Trade: $${r.openTradeFee}`);
         console.log(`Close Trade: $${r.closeTradeFee}`);
 

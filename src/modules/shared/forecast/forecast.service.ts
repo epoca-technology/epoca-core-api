@@ -22,14 +22,24 @@ export class ForecastService implements IForecastService {
 
 
     /**
-     * Communicates with the RNN in order to retrieve a forecast for a 
-     * given period of time.
-     * @param start
-     * @param end
+     * Communicates with the RNN in order to retrieve a forecast. 
+     * The end parameter can be used with past trading simulations. If none
+     * is provided, it will use Date.now() as end.
+     * @param end?
      * @returns Promise<IForecast>
      */
-    public async forecast(start: number, end: number): Promise<IForecast> {
-        return { position: Math.random() >= 0.5 ? 1: -1, data: undefined };
+    public async forecast(end?: number): Promise<IForecast> {
+        // Init the end
+        end = typeof end == "number" ? end: Date.now();
+
+        // Perform the request
+        // @TODO
+
+        // Return the results
+        return { 
+            position: Math.random() >= 0.5 ? 1: -1, 
+            data: undefined 
+        };
     }
 
 

@@ -6,13 +6,16 @@
   "scripts": {
     "start": "node dist/index.js",
     "build": "clear && gulp",
-    "cli-db": "clear && node ./dist/CLI/db/index.js",
+    "cli-db": "clear && node ./dist/CLI/db/utils.js",
     "cli-candlestick-sync": "clear && node ./dist/CLI/candlestick/sync.js",
-    "cli-trading-simulation": "clear && node ./dist/CLI/trading-simulation/index.js",
+    "cli-trading-simulation-past": "clear && node ./dist/CLI/trading-simulation/past.js",
+    "cli-trading-simulation-future": "clear && node ./dist/CLI/trading-simulation/future.js",
     "test": "clear && jasmine-ts --config=jasmine/e2e.json",
+    "test-trading-simulation": "clear && jasmine-ts --config=jasmine/trading-simulation.json",
     "test-candlestick": "clear && jasmine-ts --config=jasmine/candlestick.json",
     "test-utils": "clear && jasmine-ts --config=jasmine/utils.json",
-    "test-db": "clear && jasmine-ts --config=jasmine/database.json"
+    "test-db": "clear && jasmine-ts --config=jasmine/database.json",
+    "test-validations": "clear && jasmine-ts --config=jasmine/validations.json"
   },
   "repository": {
     "type": "git",

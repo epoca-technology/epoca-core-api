@@ -2,19 +2,7 @@ import { ITable } from "./interfaces";
 
 /* Tables */
 export const TABLES: ITable[] = [
-    {
-        name: 'test_candlesticks',
-        sql: 
-        `CREATE TABLE IF NOT EXISTS test_candlesticks (
-            ot  BIGINT NOT NULL PRIMARY KEY,
-            ct  BIGINT NOT NULL,
-            o   NUMERIC(20,2) NOT NULL,
-            h   NUMERIC(20,2) NOT NULL,
-            l   NUMERIC(20,2) NOT NULL,
-            c   NUMERIC(20,2) NOT NULL,
-            v   NUMERIC(20,2) NOT NULL
-        );`
-    },
+    // Candlesticks
     {
         name: 'candlesticks',
         sql: 
@@ -29,9 +17,24 @@ export const TABLES: ITable[] = [
         );`
     },
     {
-        name: 'test_forecast_candlesticks',
+        name: 'test_candlesticks',
         sql: 
-        `CREATE TABLE IF NOT EXISTS test_forecast_candlesticks (
+        `CREATE TABLE IF NOT EXISTS test_candlesticks (
+            ot  BIGINT NOT NULL PRIMARY KEY,
+            ct  BIGINT NOT NULL,
+            o   NUMERIC(20,2) NOT NULL,
+            h   NUMERIC(20,2) NOT NULL,
+            l   NUMERIC(20,2) NOT NULL,
+            c   NUMERIC(20,2) NOT NULL,
+            v   NUMERIC(20,2) NOT NULL
+        );`
+    },
+
+    // Forecast Candlesticks
+    {
+        name: 'forecast_candlesticks',
+        sql: 
+        `CREATE TABLE IF NOT EXISTS forecast_candlesticks (
             ot  BIGINT NOT NULL PRIMARY KEY,
             ct  BIGINT NOT NULL,
             o   NUMERIC(20,2) NOT NULL,
@@ -42,9 +45,9 @@ export const TABLES: ITable[] = [
         );`
     },
     {
-        name: 'forecast_candlesticks',
+        name: 'test_forecast_candlesticks',
         sql: 
-        `CREATE TABLE IF NOT EXISTS forecast_candlesticks (
+        `CREATE TABLE IF NOT EXISTS test_forecast_candlesticks (
             ot  BIGINT NOT NULL PRIMARY KEY,
             ct  BIGINT NOT NULL,
             o   NUMERIC(20,2) NOT NULL,

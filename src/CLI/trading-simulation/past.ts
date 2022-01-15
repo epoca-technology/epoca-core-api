@@ -22,16 +22,11 @@ import {TradingSimulation, ITradingSimulation, ITradingSimulationResult} from ".
 /**
  * CLI Initializer
  */
-console.log('TRADING SIMULATION');
+console.log('PAST TRADING SIMULATION');
 console.log(' ');
 prompt.start();
 
 
-
-
-/**
- * Database CLI
- */
 prompt.get([], async (e: any, data: prompt.Properties) => {
     if (e) throw e;
 

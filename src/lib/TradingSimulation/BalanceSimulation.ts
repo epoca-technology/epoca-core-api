@@ -48,8 +48,6 @@ export class BalanceSimulation implements IBalanceSimulation {
      */
     public fees: IBalanceSimulationAccumulatedFees = {
         netFee: new BigNumber(0),
-        //borrowInterestFee: new BigNumber(0),
-        netTradesFee: new BigNumber(0),
         openTradeFee: new BigNumber(0),
         closeTradeFee: new BigNumber(0),
     }
@@ -79,17 +77,12 @@ export class BalanceSimulation implements IBalanceSimulation {
 
 
     /**
-     * @borrowInterestPercent
-     * This is the percentual fee charged for borrowing. It is charged when closing a position and is 
-     * based on the borrowed amount.
-     * DEFAULT: 0.02
      * @tradeFeePercent
      * This is the percentual fee charged for trading. This fee has to be calculated twice per position.
      * The first one is based on the borrowed amount pre-trading and the second one is based on the 
      * traded amount and the price of the position close.
      * DEFAULT: 0.04
      */
-    private readonly borrowInterestPercent: number = 0.02;
     private readonly tradeFeePercent: number = 0.04;
 
 
@@ -122,7 +115,6 @@ export class BalanceSimulation implements IBalanceSimulation {
         if (typeof config.leverage == "number") this.leverage = config.leverage;
 
         // Set Fees
-        if (typeof config.borrowInterestPercent == "number") this.borrowInterestPercent = config.borrowInterestPercent;
         if (typeof config.tradeFeePercent == "number") this.tradeFeePercent = config.tradeFeePercent;
 
         // Set Minimum Amount
@@ -160,21 +152,12 @@ export class BalanceSimulation implements IBalanceSimulation {
         const borrowedAmount: number = this.getBorrowedAmount(positionAmount);
         let borrowedAmountBN: BigNumber = new BigNumber(borrowedAmount);
 
-        // Calculate the borrow interest fee
-        //const borrowInterestFee: number = _utils.calculateFee(borrowedAmount, this.borrowInterestPercent, 2, true);
-        //const borrowInterestFee: number = <number>_utils.calculateFee(borrowedAmount, this.borrowInterestPercent, { ru: true });
-
         // Calculate the open trade fee
-        //const openTradeFee: number = _utils.calculateFee(borrowedAmount, this.tradeFeePercent, 2, true);
         const openTradeFee: number = <number>_utils.calculateFee(borrowedAmount, this.tradeFeePercent, { ru: true });
-
-        // Deduct the trade fee from the borrowed amount in order to calculate the correct close trade fee
-        //borrowedAmountBN = borrowedAmountBN.minus(openTradeFee);
 
         /* Handle the rest based on the outcome of the position */
 
         // Calculate the price change
-        //const priceChange: number = _utils.calculatePercentageChange(position.openPrice, position.closePrice);
         const priceChange: number = <number>_utils.calculatePercentageChange(position.openPrice, position.closePrice);
 
         // Alter the borrowed amount based on the price change %
@@ -224,15 +207,12 @@ export class BalanceSimulation implements IBalanceSimulation {
         }
 
         // Calculate the net fees
-        //const netFee: number = new BigNumber(borrowInterestFee).plus(openTradeFee).plus(closeTradeFee).toNumber();
         const netFee: number = new BigNumber(openTradeFee).plus(closeTradeFee).toNumber();
-        const netTradesFee: number = new BigNumber(openTradeFee).plus(closeTradeFee).toNumber();
 
         // Deduct the net fee from the current balance
         this.current = current.minus(netFee).toNumber();
 
         // Update the change
-        //this.currentChange = _utils.calculatePercentageChange(this.initial, this.current, 0, true);
         this.currentChange = <number>_utils.calculatePercentageChange(this.initial, this.current, {
             dp: 0,
             ru: true
@@ -245,8 +225,6 @@ export class BalanceSimulation implements IBalanceSimulation {
             difference: difference,
             fee: {
                 netFee: netFee,
-                //borrowInterestFee: borrowInterestFee,
-                netTradesFee: netTradesFee,
                 openTradeFee: openTradeFee,
                 closeTradeFee: closeTradeFee
             }
@@ -255,8 +233,6 @@ export class BalanceSimulation implements IBalanceSimulation {
         // Update Fee Accumulators
         this.fees = {
             netFee: this.fees.netFee.plus(netFee),
-            //borrowInterestFee: this.fees.borrowInterestFee.plus(borrowInterestFee),
-            netTradesFee: this.fees.netTradesFee.plus(netTradesFee),
             openTradeFee: this.fees.openTradeFee.plus(openTradeFee),
             closeTradeFee: this.fees.closeTradeFee.plus(closeTradeFee),
         }
@@ -277,7 +253,6 @@ export class BalanceSimulation implements IBalanceSimulation {
      * @returns number
      */
     private getBorrowedAmount(positionAmount: number): number {
-        //return _utils.roundNumber(new BigNumber(positionAmount).times(this.leverage), 2);
         return <number>_utils.outputNumber(new BigNumber(positionAmount).times(this.leverage), { dp: 2 });
     }
 
@@ -351,7 +326,6 @@ export class BalanceSimulation implements IBalanceSimulation {
         const savings = new BigNumber(this.current).minus(this.initial);
 
         // Calculate the deposit amount
-        //const depositAmount: number = _utils.alterNumberByPercentage(savings, this.bankDepositPercent - 100);
         const depositAmount: number = <number>_utils.alterNumberByPercentage(savings, this.bankDepositPercent - 100);
 
         // Deduct the savings from the current 
@@ -361,7 +335,6 @@ export class BalanceSimulation implements IBalanceSimulation {
         this.bank = this.bank.plus(depositAmount);
 
         // Update the current change
-        //this.currentChange = _utils.calculatePercentageChange(this.initial, this.current, 0, true);
         this.currentChange = <number>_utils.calculatePercentageChange(this.initial, this.current, {
             dp: 0,
             ru: true

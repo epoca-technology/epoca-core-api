@@ -14,7 +14,6 @@ export interface IUtilitiesService {
 
     // UUID (Universally Unique IDentifier)
     generateID(): string,
-    uuidValid(uuid: string): boolean,
 
     // API Response
     apiResponse(data?: any, error?: string): IAPIResponse,

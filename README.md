@@ -1,4 +1,4 @@
-# PLUTUS API
+# PLUTUS CORE API
 
 ## Requirements
 - NodeJS: v16.13.1
@@ -37,7 +37,9 @@ Database:  `npm run cli-db`
 
 Candlestick Sync:  `npm run cli-candlestick-sync`
 
-Trading Simulation:  `npm run cli-trading-simulation`
+Past Trading Simulation:  `npm run cli-trading-simulation-past`
+
+Future Trading Simulation:  `npm run cli-trading-simulation-future`
 
 ##### *Important: In order to stop the trading simulation use `control + \` (SIGQUIT).
 

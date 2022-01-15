@@ -7,12 +7,14 @@ import {BigNumber} from 'bignumber.js';
 import * as stringify from 'json-stable-stringify';
 
 
-// Init service
+// Utilities Service
 import { IAPIResponse, IUtilitiesService } from "../../src/modules/shared/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
-
+// Validations Service
+import { IValidationsService } from "../../src/modules/shared/validations";
+const _validations = appContainer.get<IValidationsService>(SYMBOLS.ValidationsService);
 
 
 
@@ -115,13 +117,13 @@ describe('UUID:', function() {
         const uuid1: string = _utils.generateID();
         expect(typeof uuid1).toBe("string");
         expect(uuid1.length).toBe(36);
-        expect(_utils.uuidValid(uuid1)).toBeTruthy();
+        expect(_validations.uuidValid(uuid1)).toBeTruthy();
 
         // Generate the second uuid
         const uuid2: string = _utils.generateID();
         expect(typeof uuid2).toBe("string");
         expect(uuid2.length).toBe(36);
-        expect(_utils.uuidValid(uuid2)).toBeTruthy();
+        expect(_validations.uuidValid(uuid2)).toBeTruthy();
 
         // Make sure both are different
         expect(uuid1 == uuid2).toBeFalsy();
@@ -130,12 +132,12 @@ describe('UUID:', function() {
 
 
     it('-Can validate uuids', function() {
-        expect(_utils.uuidValid('109156be-c4fb-41ea-b1b4-efe1671c5836')).toBeTruthy();
-        expect(_utils.uuidValid('d9428888-122b-11e1-b85c-61cd3cbb3210')).toBeFalsy(); // v1 uuid
-        expect(_utils.uuidValid('')).toBeFalsy();
-        expect(_utils.uuidValid('asdasdasdsad1564sd654a6s1da23sdasd4')).toBeFalsy();
+        expect(_validations.uuidValid('109156be-c4fb-41ea-b1b4-efe1671c5836')).toBeTruthy();
+        expect(_validations.uuidValid('d9428888-122b-11e1-b85c-61cd3cbb3210')).toBeFalsy(); // v1 uuid
+        expect(_validations.uuidValid('')).toBeFalsy();
+        expect(_validations.uuidValid('asdasdasdsad1564sd654a6s1da23sdasd4')).toBeFalsy();
         // @ts-ignore
-        expect(_utils.uuidValid(45432123132)).toBeFalsy();
+        expect(_validations.uuidValid(45432123132)).toBeFalsy();
     });
 });
 

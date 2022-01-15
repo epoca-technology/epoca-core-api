@@ -281,15 +281,6 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
-    /**
-     * Validates a provided uuid. Also makes sure it matches the version used
-     * in the Database
-     * @param uuid 
-     * @returns boolean
-     */
-    public uuidValid(uuid: string): boolean { return uuidValidate(uuid) && uuidVersion(uuid) === 4 }
-
-
 
 
 

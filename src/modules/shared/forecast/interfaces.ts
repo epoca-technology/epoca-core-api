@@ -2,7 +2,7 @@
 
 // Forecast Service
 export interface IForecastService {
-    forecast(start: number, end: number): Promise<IForecast>
+    forecast(end?: number): Promise<IForecast>
 }
 
 

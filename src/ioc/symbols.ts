@@ -8,6 +8,7 @@
 
     // Candlestick
     CandlestickService: Symbol.for("CandlestickService"),
+    CandlestickValidations: Symbol.for("CandlestickValidations"),
 
     // Binance
     BinanceService: Symbol.for("BinanceService"),
@@ -18,18 +19,23 @@
     // External Request
     ExternalRequestService: Symbol.for("ExternalRequestService"),
 
-    // Database Service
+    // Database
     DatabaseService: Symbol.for("DatabaseService"),
+
+    // Validations
+    ValidationsService: Symbol.for("ValidationsService"),
 }
 
 
 export interface ISymbols {
     ForecastService: symbol,
     CandlestickService: symbol,
+    CandlestickValidations: symbol,
     BinanceService: symbol,
     UtilitiesService: symbol,
     ExternalRequestService: symbol,
     DatabaseService: symbol,
+    ValidationsService: symbol,
 }
 
 

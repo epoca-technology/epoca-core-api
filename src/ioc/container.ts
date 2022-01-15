@@ -14,6 +14,7 @@ import { utilitiesModule } from "../modules/shared/utilities";
 import { externalRequestModule } from "../modules/shared/external-request";
 import { databaseModule } from "../modules/shared/database";
 import { forecastModule } from "../modules/shared/forecast";
+import { validationsModule } from "../modules/shared/validations";
 
 
 // Initialize Inversify
@@ -29,11 +30,12 @@ appContainer.load(
     // Candlestick
     candlestickModule,
 
-    // Forecast
-    forecastModule,
-
     
     /* Shared */
+
+
+    // Forecast
+    forecastModule,
 
     // Binance
     binanceModule,
@@ -46,6 +48,9 @@ appContainer.load(
 
     // Database
     databaseModule,
+
+    // Validations
+    validationsModule,
 );
 
 

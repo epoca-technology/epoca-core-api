@@ -1,5 +1,5 @@
 import {inject, injectable} from "inversify";
-import { ICandlestickService, ICandlestick, ICandlestickConfig } from "./interfaces";
+import { ICandlestickService, ICandlestick, ICandlestickConfig, ICandlestickValidations } from "./interfaces";
 import { SYMBOLS } from "../../ioc";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../shared/database";
 import { IUtilitiesService } from "../shared/utilities";
@@ -13,6 +13,8 @@ export class CandlestickService implements ICandlestickService {
     @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
+    @inject(SYMBOLS.CandlestickValidations)             private _validations: ICandlestickValidations;
+
 
     // Standard Candlestick Configuration
     public readonly standardConfig: ICandlestickConfig = {
@@ -192,6 +194,9 @@ export class CandlestickService implements ICandlestickService {
      * @returns Promise<ICandlestick[]>
      */
      public async getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]> {
+        // Validate Request
+        this._validations.canGetForPeriod(start, end, intervalMinutes);
+
         // Retrieve the 1m candlesticks for the given period
         const candlesticks1m: ICandlestick[] = await this.get(start, end);
 
