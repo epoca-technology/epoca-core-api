@@ -15,6 +15,12 @@ export class CandlestickService implements ICandlestickService {
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
     @inject(SYMBOLS.CandlestickValidations)             private _validations: ICandlestickValidations;
 
+    /**
+     * The very first candlestick that can be retrieved through Binance's API.
+     * Thursday, August 17, 2017 4:00:00 AM     - GMT
+     * Thursday, August 17, 2017 12:00:00 AM    - Venezuela
+     */
+    public genesisTimestamp: number = 1502942400000;
 
     // Standard Candlestick Configuration
     public readonly standardConfig: ICandlestickConfig = {
