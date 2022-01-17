@@ -51,10 +51,10 @@ describe('Database Essentials: ',  function() {
             for (let c of processed) {
                 await client.query({
                     text: `
-                        INSERT INTO test_candlesticks(ot, ct, o, h, l, c, v) 
-                        VALUES ($1, $2, $3, $4, $5, $6, $7)
+                        INSERT INTO test_candlesticks(ot, ct, o, h, l, c, v, tbv, nt) 
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                     `,
-                    values: [c.ot, c.ct, c.o, c.h, c.l, c.c, c.v]
+                    values: [c.ot, c.ct, c.o, c.h, c.l, c.c, c.v, c.tbv, c.nt]
                 });
             }
 
@@ -63,10 +63,10 @@ describe('Database Essentials: ',  function() {
             try {
                 await client.query({
                     text: `
-                        INSERT INTO test_candlesticks(ot, ct, o, h, l, c, v) 
-                        VALUES ($1, $2, $3, $4, $5, $6, $7)
+                        INSERT INTO test_candlesticks(ot, ct, o, h, l, c, v, tbv, nt) 
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                     `,
-                    values: [last.ot, last.ct, last.o, last.h, last.l, last.c, last.v]
+                    values: [last.ot, last.ct, last.o, last.h, last.l, last.c, last.v, last.tbv, last.nt]
                 });
                 fail(`It should have not inserted a candlestick that already exists ${last.ot}.`);
             } catch (e) {

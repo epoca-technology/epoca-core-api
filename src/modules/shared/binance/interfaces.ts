@@ -2,7 +2,8 @@
 
 // Service
 export interface IBinanceService {
-    
+    // Properties
+    candlestickGenesisTimestamp: number,
 
 
 
@@ -16,7 +17,6 @@ export interface IBinanceService {
         endTime?: number, 
         limit?:number
     ): Promise<IBinanceCandlestick[]>,
-
 }
 
 
@@ -33,16 +33,16 @@ export type IBinanceCandlestickInterval = '1m'|'3m'|'5m'|'15m'|'30m'|'1h'|'2h'|'
 
 // Candlesticks
 export type IBinanceCandlestick = [
-    number,     // 0 = Open time.                       Ej: 1638122400000
-    string,     // 1 = Open.                            Ej: "53896.36000000"
-    string,     // 2 = High.                            Ej: "54186.17000000"
-    string,     // 3 = Low.                             Ej: "53256.64000000"
-    string,     // 4 = Close                            Ej: "54108.99000000"
-    string,     // 5 = Volume                           Ej: "2958.13310000"
-    number,     // 6 = Close time                       Ej: 1638125999999
-    string,     // 7 = Quote asset volume               Ej: "158995079.39633250"
-    number,     // 8 = Number of trades                 Ej: 90424
-    string,     // 9 = Taker buy base asset volume      Ej: "1473.57777000"
-    string,     // 10 = Taker buy quote asset volume    Ej: "79236207.41530900"
+    number,     // 0 = Open time.                       E.g. 1638122400000
+    string,     // 1 = Open.                            E.g. "53896.36000000"
+    string,     // 2 = High.                            E.g. "54186.17000000"
+    string,     // 3 = Low.                             E.g. "53256.64000000"
+    string,     // 4 = Close                            E.g. "54108.99000000"
+    string,     // 5 = Volume                           E.g. "2958.13310000"
+    number,     // 6 = Close time                       E.g. 1638125999999
+    string,     // 7 = Quote asset volume               E.g. "158995079.39633250"
+    number,     // 8 = Number of trades                 E.g. 90424
+    string,     // 9 = Taker buy base asset volume      E.g. "1473.57777000"
+    string,     // 10 = Taker buy quote asset volume    E.g. "79236207.41530900"
     string      // Ignore.
 ]

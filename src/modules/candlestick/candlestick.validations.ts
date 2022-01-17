@@ -7,7 +7,7 @@ import { IValidationsService } from "../shared/validations";
 @injectable()
 export class CandlestickValidations implements ICandlestickValidations {
     // Inject dependencies
-    @inject(SYMBOLS.ValidationsService)                   private _validations: IValidationsService;
+    @inject(SYMBOLS.ValidationsService)               private _validations: IValidationsService;
 
 
 

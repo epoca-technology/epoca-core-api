@@ -13,7 +13,9 @@ export const TABLES: ITable[] = [
             h   NUMERIC(20,2) NOT NULL,
             l   NUMERIC(20,2) NOT NULL,
             c   NUMERIC(20,2) NOT NULL,
-            v   NUMERIC(20,2) NOT NULL
+            v   NUMERIC(20,2) NOT NULL,
+            tbv NUMERIC(20,2) NOT NULL,
+            nt  BIGINT NOT NULL
         );`
     },
     {
@@ -26,7 +28,9 @@ export const TABLES: ITable[] = [
             h   NUMERIC(20,2) NOT NULL,
             l   NUMERIC(20,2) NOT NULL,
             c   NUMERIC(20,2) NOT NULL,
-            v   NUMERIC(20,2) NOT NULL
+            v   NUMERIC(20,2) NOT NULL,
+            tbv NUMERIC(20,2) NOT NULL,
+            nt  BIGINT NOT NULL
         );`
     },
 
@@ -41,7 +45,9 @@ export const TABLES: ITable[] = [
             h   NUMERIC(20,2) NOT NULL,
             l   NUMERIC(20,2) NOT NULL,
             c   NUMERIC(20,2) NOT NULL,
-            v   NUMERIC(20,2) NOT NULL
+            v   NUMERIC(20,2) NOT NULL,
+            tbv NUMERIC(20,2) NOT NULL,
+            nt  BIGINT NOT NULL
         );`
     },
     {
@@ -54,7 +60,9 @@ export const TABLES: ITable[] = [
             h   NUMERIC(20,2) NOT NULL,
             l   NUMERIC(20,2) NOT NULL,
             c   NUMERIC(20,2) NOT NULL,
-            v   NUMERIC(20,2) NOT NULL
+            v   NUMERIC(20,2) NOT NULL,
+            tbv NUMERIC(20,2) NOT NULL,
+            nt  BIGINT NOT NULL
         );`
     },
 ];

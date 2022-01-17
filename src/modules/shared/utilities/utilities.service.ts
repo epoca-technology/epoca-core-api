@@ -174,6 +174,30 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+    /**
+     * Verifies if the difference between 2 numbers is within an accepted range.
+     * @param val1 
+     * @param val2 
+     * @param maxDifference 
+     * @returns boolean
+     */
+    public closeEnough(val1: INumber, val2: INumber, maxDifference: number): boolean {
+        // Init values
+        const v1: BigNumber = this.getBigNumber(val1);
+        const v2: BigNumber = this.getBigNumber(val2);
+
+        // The first value is greater than the second one
+        if (v1.isGreaterThan(v2)) { return v1.minus(v2).isLessThanOrEqualTo(maxDifference) }
+
+        // The second value is greater than the first one
+        else if (v2.isGreaterThan(v1)) { return v2.minus(v1).isLessThanOrEqualTo(maxDifference) }
+
+        // The values are equal
+        else { return true }
+    }
+
+
+
 
 
 

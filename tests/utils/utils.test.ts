@@ -82,6 +82,7 @@ describe('Number Handling:', function() {
     it('-Can round numbers in any format', function() {
         expect(_utils.outputNumber(1.5, {dp: 0})).toEqual(1);
         expect(_utils.outputNumber('1.5', {dp: 0, ru: true})).toEqual(2);
+        expect(_utils.outputNumber('1.01', {dp: 0, ru: true})).toEqual(2);
         expect(_utils.outputNumber(new BigNumber(1.555), {dp: 2, ru: true})).toEqual(1.56);
         expect(_utils.outputNumber(new BigNumber(1.555), {dp: 2})).toEqual(1.55);
     });
@@ -92,6 +93,16 @@ describe('Number Handling:', function() {
         expect(_utils.calculateFee(1000, 1)).toEqual(10);
         expect(_utils.calculateFee(300, 10)).toEqual(30);
         expect(_utils.calculateFee(100, 35)).toEqual(35);
+    });
+
+
+
+
+    it('-Can determine if two numbers are close to eachother', function() {
+        expect(_utils.closeEnough(1, 2, 1)).toBeTruthy();
+        expect(_utils.closeEnough(1, 2.1, 1)).toBeFalsy();
+        expect(_utils.closeEnough(1, 10, 9)).toBeTruthy();
+        expect(_utils.closeEnough(1, 11, 9)).toBeFalsy();
     });
 
 

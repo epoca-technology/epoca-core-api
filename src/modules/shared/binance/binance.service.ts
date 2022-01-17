@@ -13,6 +13,16 @@ export class BinanceService implements IBinanceService {
 
 
 
+    /**
+     * The very first candlestick that can be retrieved through Binance's API.
+     * Thursday, August 17, 2017 4:00:00 AM     - GMT
+     * Thursday, August 17, 2017 12:00:00 AM    - Venezuela
+     */
+     public readonly candlestickGenesisTimestamp: number = 1502942400000;
+
+
+
+
     constructor() {}
 
 

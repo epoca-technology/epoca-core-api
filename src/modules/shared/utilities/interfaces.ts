@@ -9,6 +9,7 @@ export interface IUtilitiesService {
     calculatePercentageChange(oldNumber: INumber, newNumber: INumber, config?: INumberConfig): INumber,
     calculatePercentageOutOfTotal(value: INumber, total: INumber, config?: INumberConfig): INumber,
     calculateFee(value: INumber, feePercentage: INumber, config?: INumberConfig): INumber,
+    closeEnough(val1: INumber, val2: INumber, maxDifference: number): boolean,
     outputNumber(value: INumber, config?: INumberConfig): INumber,
     getBigNumber(value: INumber): BigNumber,
 

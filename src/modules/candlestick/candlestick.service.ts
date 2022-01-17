@@ -5,6 +5,7 @@ import { IDatabaseService, IPoolClient, IQueryResult } from "../shared/database"
 import { IUtilitiesService } from "../shared/utilities";
 import { IBinanceService, IBinanceCandlestick } from "../shared/binance";
 import BigNumber from "bignumber.js";
+import * as moment from 'moment';
 
 
 @injectable()
@@ -15,32 +16,26 @@ export class CandlestickService implements ICandlestickService {
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
     @inject(SYMBOLS.CandlestickValidations)             private _validations: ICandlestickValidations;
 
-    /**
-     * The very first candlestick that can be retrieved through Binance's API.
-     * Thursday, August 17, 2017 4:00:00 AM     - GMT
-     * Thursday, August 17, 2017 12:00:00 AM    - Venezuela
-     */
-    public genesisTimestamp: number = 1502942400000;
+
 
     // Standard Candlestick Configuration
     public readonly standardConfig: ICandlestickConfig = {
-        interval: 1, // minutes
+        intervalMinutes: 1,
         alias: '1m',
-        genesis: 1502942400000,
         table: 'candlesticks',
-        testTable: 'test_candlesticks',
-        syncIntervalSeconds: 20
+        testTable: 'test_candlesticks'
     };
 
     // Forecast Candlestick Configuration
     public readonly forecastConfig: ICandlestickConfig = {
-        interval: 12, // hours
-        alias: '12h',
-        genesis: 1502928000000,
+        intervalMinutes: 30,
+        alias: '30m',
         table: 'forecast_candlesticks',
-        testTable: 'test_forecast_candlesticks',
-        syncIntervalSeconds: 45
+        testTable: 'test_forecast_candlesticks'
     };
+
+    // Candlestick Syncing Interval
+    private readonly syncIntervalSeconds: number = 15;
 
 
     // Test Modes
@@ -49,6 +44,8 @@ export class CandlestickService implements ICandlestickService {
 
 
 
+
+    
     constructor() {}
 
 
@@ -81,19 +78,21 @@ export class CandlestickService implements ICandlestickService {
      * it will return all the candlesticks.
      * @param start? 
      * @param end? 
+     * @param limit? 
      * @param forecast? 
      * @returns Promise<ICandlestick[]>
      */
-    public async get(start?: number, end?: number, forecast?: boolean): Promise<ICandlestick[]> {
+    public async get(start?: number, end?: number, limit?: number, forecast?: boolean): Promise<ICandlestick[]> {
         // Init the sql values
         let sql: string = `
-            SELECT ot, ct, o, h, l, c, v
+            SELECT ot, ct, o, h, l, c, v, tbv, nt
             FROM ${this.getTable(forecast)}
         `;
         let values: number[];
 
         // Check if both timestamps have been provided
         if (typeof start == "number" && typeof end == "number") {
+            if (limit != undefined) throw new Error(`The limit parameter is not allowed when start and end are provided.`);
             sql += ' WHERE ot >= $1 AND ot <= $2';
             values = [start, end];
         }
@@ -106,18 +105,25 @@ export class CandlestickService implements ICandlestickService {
 
         // If only the end is provided
         else if (typeof end == "number") {
+            if (limit != undefined) throw new Error(`The limit parameter is not allowed when only the end timestamp is provided.`);
             sql += ' WHERE ot <= $1';
             values = [end];
         }
 
         // Order the candlesticks
-        sql += ' ORDER BY ot ASC'
+        sql += ' ORDER BY ot ASC';
+
+        // Check if a limit was provided and make sure that only the start or the end were provided
+        if (typeof limit == "number" && values.length == 1) {
+            sql += ' LIMIT $2';
+            values.push(limit);
+        }
 
         // Retrieve the candlesticks
-        const {rows}: IQueryResult = await this._db.query({text: sql,values: values});
+        const {rows}: IQueryResult = await this._db.query({text: sql, values: values});
 
         // Return them
-        return rows || [];
+        return rows;
     }
 
 
@@ -144,7 +150,7 @@ export class CandlestickService implements ICandlestickService {
         });
 
         // If no results were found, return the genesis open time
-        return rows.length > 0 ? rows[0].ot: this.getGenesisTimestamp(forecast);
+        return rows.length > 0 ? rows[0].ot: this._binance.candlestickGenesisTimestamp;
     }
 
 
@@ -168,7 +174,7 @@ export class CandlestickService implements ICandlestickService {
      public async getLast(forecast?: boolean, limit?: number): Promise<ICandlestick[]> {
         // Retrieve the last candlestick
         const {rows}: IQueryResult = await this._db.query({
-            text: `SELECT ot, ct, o, h, l, c, v FROM ${this.getTable(forecast)} ORDER BY ot DESC LIMIT $1`,
+            text: `SELECT ot, ct, o, h, l, c, v, tbv, nt FROM ${this.getTable(forecast)} ORDER BY ot DESC LIMIT $1`,
             values: [limit || 1]
         });
 
@@ -203,11 +209,19 @@ export class CandlestickService implements ICandlestickService {
         // Validate Request
         this._validations.canGetForPeriod(start, end, intervalMinutes);
 
-        // Retrieve the 1m candlesticks for the given period
-        const candlesticks1m: ICandlestick[] = await this.get(start, end);
+        // If the interval minutes match the forecast candlesticks, return those instead
+        if (intervalMinutes == this.forecastConfig.intervalMinutes) {
+            return await this.get(start, end, undefined, true);
+        } 
+        
+        // Otherwise, download the 1m candlesticks and alter their interval if needed.
+        else {
+            // Retrieve the 1m candlesticks for the given period
+            const candlesticks1m: ICandlestick[] = await this.get(start, end);
 
-        // Return them based in the provided interval
-        return intervalMinutes > 1 ? this.alterInterval(candlesticks1m, intervalMinutes): candlesticks1m;
+            // Return them based in the provided interval
+            return intervalMinutes > 1 ? this.alterInterval(candlesticks1m, intervalMinutes): candlesticks1m;
+        }
     }
 
 
@@ -241,41 +255,20 @@ export class CandlestickService implements ICandlestickService {
      */
      public async initializeSync(): Promise<void> {
         // Perform the first sync
-        await this.runSync();
-        await this._utils.asyncDelay(3);
-        await this.runSync(true);
+        await this.syncCandlesticks()
 
-        // Initialize the standard interval
-        setInterval(() => { this.runSync() }, this.standardConfig.syncIntervalSeconds * 1000);
-
-        // Initialize the forecast interval
-        setInterval(() => { this.runSync(true) }, this.forecastConfig.syncIntervalSeconds * 1000);
-    }
-
-
-
-
-
-
-    /**
-     * Runs the syncing functionality and updates the local candlesticks
-     * whenever the interval triggers.
-     * @param forecast? 
-     * @returns Promise<void>
-     */
-    private async runSync(forecast?: boolean): Promise<void> {
-        let candlesticks: ICandlestick[];
-        try {
-            candlesticks = await this.syncCandlesticks(forecast);
-        } catch(e) { 
-            console.log(`Failed to sync the ${forecast ? 'Forecast': 'Standard'} Candlesticks, attempting again in a few seconds:`, e);
-            await this._utils.asyncDelay(5);
-            try {
-                candlesticks = await this.syncCandlesticks(forecast);
-            } catch (e) {
-                console.log(`Failed to sync the ${forecast ? 'Forecast': 'Standard'} candlesticks again, will attempt again in a few seconds:`, e);
+        // Initialize the interval
+        setInterval(async () => { 
+            try { await this.syncCandlesticks() } 
+            catch(e) { 
+                console.log(`Failed to sync the Candlesticks, attempting again in a few seconds:`, e);
+                await this._utils.asyncDelay(5);
+                try { await this.syncCandlesticks() } 
+                catch (e) {
+                    console.log(`Failed to sync the candlesticks again, will attempt again in a few seconds:`, e);
+                }
             }
-        }
+         }, this.syncIntervalSeconds * 1000);
     }
 
 
@@ -288,18 +281,22 @@ export class CandlestickService implements ICandlestickService {
 
 
 
+
+
+
+
+
     /**
-     * Syncs the last standard or forecast candlesticks.
-     * @param forecast? 
+     * Syncs the last standard and forecast candlesticks.
      * @returns Promise<ICandlestick[]>
      */
-    public async syncCandlesticks(forecast?: boolean): Promise<ICandlestick[]> {
+    public async syncCandlesticks(): Promise<ICandlestick[]> {
         // Init the timestamp
-        const startTimestamp: number = await this.getLastOpenTimestamp(forecast);
+        const startTimestamp: number = await this.getLastOpenTimestamp();
 
         // Retrieve the last 1k candlesticks from Binance
         const bCandlesticks: IBinanceCandlestick[] = await this._binance.getCandlesticks(
-            forecast ? this.forecastConfig.alias: this.standardConfig.alias, 
+            this.standardConfig.alias, 
             startTimestamp, 
             undefined, 
             1000
@@ -311,18 +308,171 @@ export class CandlestickService implements ICandlestickService {
             const candlesticks: ICandlestick[] = this.processBinanceCandlesticks(bCandlesticks);
 
             // Store them in the DB
-            await this.saveCandlesticks(candlesticks, forecast);
+            await this.saveCandlesticks(candlesticks);
 
-            // Return the payload
+            // Sync the forecast candlesticks as well
+            await this.syncForecastCandlesticks();
+
+            // Return the 1m payload
             return candlesticks;
         }
 
         // Otherwise, throw an error
         else { 
-            console.log(`${forecast ? 'Forecast': 'Standard'} Candlestick Response: `, bCandlesticks);
+            console.log(`Candlestick Response: `, bCandlesticks);
             throw new Error('The Binance API should have returned at least 1 candlestick.');
         }
     }
+
+
+
+
+
+
+
+    /**
+     * Whenever 1m candlesticks are saved, the forecast candlesticks
+     * are also updated respecting the interval configuration.
+     * @returns Promise<void>
+     */
+    private async syncForecastCandlesticks(): Promise<void> {
+        // Init vars
+        let last: ICandlestick[];
+        let candlesticks1m: ICandlestick[];
+        let futureCandlesticks1m: ICandlestick[];
+        let merged: ICandlestick;
+        let openTime: number;
+        let closeTime: number;
+        let remaining: boolean = true;
+
+        // Iterate until there are no 1m candlesticks left to sync
+        while (remaining) {
+            // Retrieve the last candlestick
+            last = await this.getLast(true, 1);
+           
+            // Check if candlesticks have been found
+            if (last.length) {
+                // Calculate the close time of the current candlestick
+                closeTime = this.getForecastCandlestickCloseTime(last[0].ot);
+
+                // Check if the last candlestick has been completed
+                if (last[0].ct == closeTime) {
+                    // Initialize the new candlestick's times
+                    openTime = closeTime + 1;
+                    closeTime = this.getForecastCandlestickCloseTime(openTime);
+
+                    // Download the candlesticks for the next interval
+                    candlesticks1m = await this.get(openTime, closeTime);
+
+                    // If candlesticks were found, merge and save them.
+                    if (candlesticks1m.length) { 
+                        // Make sure the open time of the first 1m candlestick is correct
+                        candlesticks1m[0].ot = openTime;
+
+                        // Save the merged candlestick
+                        await this.saveCandlesticks([this.mergeCandlesticks(candlesticks1m)], true);
+                    }
+
+                    //  Otherwise, check if they are actually synced
+                    else { 
+                        // Download future candlesticks
+                        futureCandlesticks1m = await this.get(openTime, undefined, 1);
+
+                        /**
+                         * If there are candlesticks in the future means that some data is missing
+                         * on the exchange's end. 
+                         */
+                        if (futureCandlesticks1m.length) {
+                            // Iterate until the next candlestick is found
+                            let nextCandlestickFound: boolean = false;
+                            while (!nextCandlestickFound) {
+                                // Initialize the next candlestick's times
+                                openTime = closeTime + 1;
+                                closeTime = this.getForecastCandlestickCloseTime(openTime);
+
+                                // Retrieve the 1m candlesticks
+                                candlesticks1m = await this.get(openTime, closeTime);
+
+                                // Check if candlesticks were found
+                                if (candlesticks1m.length) {
+                                    // Make sure the open time of the first 1m candlestick is correct
+                                    candlesticks1m[0].ot = openTime;
+
+                                    // Save the merged candlestick
+                                    await this.saveCandlesticks([this.mergeCandlesticks(candlesticks1m)], true);
+
+                                    // The interval has been found
+                                    nextCandlestickFound = true;
+                                }
+                            }
+                        } 
+                        
+                        // Otherwise, it means the forecast candlesticks are in sync
+                        else { remaining = false }
+                    }
+                }
+
+                // The candlestick needs to be completed
+                else {
+                    // Download the candlesticks for the current interval
+                    candlesticks1m = await this.get(last[0].ot, closeTime);
+
+                    // Check if candlesticks were found
+                    if (candlesticks1m.length) { 
+                        // Merge the candlesticks
+                        merged = this.mergeCandlesticks(candlesticks1m);
+
+                        // Update the candlestick
+                        await this.saveCandlesticks([merged], true);
+
+                        // Check if it is in sync
+                        remaining = last[0].ct !== merged.ct;
+                    }
+
+                    // Otherwise, check if they are actually synced
+                    else {
+                        // Download future candlesticks
+                        futureCandlesticks1m = await this.get(last[0].ct, undefined, 1);
+
+                        /**
+                         * If there are candlesticks in the future means that some data is missing
+                         * on the exchange's end. 
+                         */
+                        if (futureCandlesticks1m.length) {
+                            // Update the last candlestick and set the correct close time.
+                            last[0].ct = closeTime;
+
+                            // Update it
+                            await this.saveCandlesticks(last, true);
+                        } 
+                        
+                        // Otherwise, it means the forecast candlesticks are in sync
+                        else { remaining = false }
+                    }
+                }
+            }
+
+            // Otherwise, save the genesis candlestick
+            else {
+                // Calculate the genesis close time
+                closeTime = this.getForecastCandlestickCloseTime(this._binance.candlestickGenesisTimestamp);
+
+                // Retrieve the 1m candlesticks for the given interval
+                candlesticks1m = await this.get(this._binance.candlestickGenesisTimestamp, closeTime);
+
+                // If candlesticks were found, merge and save them.
+                if (candlesticks1m.length) { await this.saveCandlesticks([this.mergeCandlesticks(candlesticks1m)], true) }
+
+                // Otherwise, end the execution as no 1m candlesticks have been found
+                else { remaining = false }
+            }
+        }
+    }
+
+
+
+
+
 
 
 
@@ -355,14 +505,14 @@ export class CandlestickService implements ICandlestickService {
                         values: [c.ot]
                     });
 
-                    // If the candlestick exists, update it
+                    // If the candlestick exists, update it - The open price & open time don't need to be updated
                     if (rows && rows.length) {
                         await client.query({
                             text: `
-                                UPDATE ${this.getTable(forecast)} SET ct=$1, h=$2, l=$3, c=$4, v=$5
-                                WHERE ot=$6
+                                UPDATE ${this.getTable(forecast)} SET ct=$1, h=$2, l=$3, c=$4, v=$5, tbv=$6, nt=$7
+                                WHERE ot=$8
                             `,
-                            values: [c.ct, c.h, c.l, c.c, c.v, c.ot]
+                            values: [c.ct, c.h, c.l, c.c, c.v, c.tbv, c.nt, c.ot]
                         });
                     } 
                     
@@ -370,10 +520,10 @@ export class CandlestickService implements ICandlestickService {
                     else {
                         await client.query({
                             text: `
-                                INSERT INTO ${this.getTable(forecast)}(ot, ct, o, h, l, c, v) 
-                                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                                INSERT INTO ${this.getTable(forecast)}(ot, ct, o, h, l, c, v, tbv, nt) 
+                                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                             `,
-                            values: [c.ot, c.ct, c.o, c.h, c.l, c.c, c.v]
+                            values: [c.ot, c.ct, c.o, c.h, c.l, c.c, c.v, c.tbv, c.nt]
                         });
                     }
                 }
@@ -387,6 +537,9 @@ export class CandlestickService implements ICandlestickService {
             } finally {
                 client.release();
             }
+        } else {
+            console.log(`${forecast ? 'Forecast': 'Standard'} Candlesticks: `, candlesticks);
+            throw new Error('A valid list of candlesticks is required in order to invoke saveCandlesticks.');
         }
     }
 
@@ -413,21 +566,6 @@ export class CandlestickService implements ICandlestickService {
 
     /* Helpers */
 
-
-
-
-
-
-
-    /**
-     * Retrieves the genesis candlestick timestamp based
-     * on the provided type.
-     * @param forecast 
-     * @returs number
-     */
-    private getGenesisTimestamp(forecast?: boolean): number {
-        return forecast ? this.forecastConfig.genesis: this.standardConfig.genesis;
-    }
 
 
 
@@ -507,18 +645,22 @@ export class CandlestickService implements ICandlestickService {
             ot: candlesticks[0].ot,
             ct: candlesticks.at(-1).ct,
             o: candlesticks[0].o,
-            h: 0,     // Placeholder
-            l: 0,     // Placeholder
+            h: 0,   // Placeholder
+            l: 0,   // Placeholder
             c: candlesticks.at(-1).c,
-            v: 0,     // Placeholder
+            v: 0,   // Placeholder
+            tbv: 0, // Placeholder
+            nt: 0,  // Placeholder
         };
 
         // Init the high & low lists
         let high: number[] = [];
         let low: number[] = [];
 
-        // Init the volume accumulator
+        // Init the accumulators
         let v: BigNumber = new BigNumber(0);
+        let tbv: BigNumber = new BigNumber(0);
+        let nt: BigNumber = new BigNumber(0);
 
         // Iterate over each candlestick
         candlesticks.forEach((c) => {
@@ -526,21 +668,44 @@ export class CandlestickService implements ICandlestickService {
             high.push(c.h);
             low.push(c.l);
 
-            // Accumulate the volumes
+            // Update accumulators
             v = v.plus(c.v);
+            tbv = tbv.plus(c.tbv);
+            nt = nt.plus(c.nt);
         });
 
         // Set the highest high and the lowest low
         final.h = BigNumber.max.apply(null, high).toNumber();
         final.l = BigNumber.min.apply(null, low).toNumber();
 
-        // Set the volume accumulation result
+        // Set the accumulator results
         final.v = v.toNumber();
+        final.tbv = tbv.toNumber();
+        final.nt = nt.toNumber();
 
         // Return the final candlestick
         return final;
     }
 
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Given the open time of a candlestick, it will calculate it's close 
+     * time based on the forecast config.
+     * @param ot 
+     * @returns number
+     */
+     private getForecastCandlestickCloseTime(ot: number): number {
+        return moment(ot).add(this.forecastConfig.intervalMinutes, "minutes").subtract(1, "millisecond").valueOf();
+    }
 
 
 
@@ -585,7 +750,9 @@ export class CandlestickService implements ICandlestickService {
                 h: <number>this._utils.outputNumber(c[2], {dp: 2}),
                 l: <number>this._utils.outputNumber(c[3], {dp: 2}),
                 c: <number>this._utils.outputNumber(c[4], {dp: 2}),
-                v: <number>this._utils.outputNumber(c[7], {dp: 2})
+                v: <number>this._utils.outputNumber(c[7], {dp: 2}),
+                tbv: <number>this._utils.outputNumber(c[10], {dp: 2}),
+                nt: c[8],
             });
         }
 

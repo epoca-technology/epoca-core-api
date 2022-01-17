@@ -38,35 +38,12 @@ prompt.start();
 prompt.get([], async (e: any, data: prompt.Properties) => {
     if (e) throw e;
 
-    // Sync the standard candlesticks first
-    await syncCandlesticks();
-
-    // Allow a small delay
-    await _utils.asyncDelay(normalDelay);
-    console.log(' ');console.log(' ');
-
-    // Sync the forecast candlesticks
-    await syncCandlesticks(true);
-});
-
-
-
-
-
-
-
-/**
- * Syncs the candlesticks based on the provided type.
- * @param forecast 
- * @returns Promise<void>
- */
-async function syncCandlesticks(forecast?: boolean): Promise<void> {
     // Init the progress bar
     const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
     let progressBarCounter: number = 0;
 
     // Init the start timestamp
-    let startTime: number = await _candlestick.getLastOpenTimestamp(forecast);
+    let startTime: number = await _candlestick.getLastOpenTimestamp();
 
     // Calculate the estimated remaining hours for the sync to be complete
     const remainingHours: BigNumber = <BigNumber>_utils.outputNumber(new BigNumber(Date.now()).minus(startTime).dividedBy(1000).dividedBy(60).dividedBy(60), {
@@ -76,11 +53,11 @@ async function syncCandlesticks(forecast?: boolean): Promise<void> {
     });
 
     // Since 1k candlesticks are downloaded per request, calculate the estimated amount of requests needed
-    const remainingRequests: number = <number>_utils.outputNumber(remainingHours.dividedBy(forecast ? 12000: 16.66), {dp: 0, ru: true})
+    const remainingRequests: number = <number>_utils.outputNumber(remainingHours.dividedBy(16.66), {dp: 0, ru: true})
 
     // Start the progress bar
     console.log(' ');
-    console.log(`Syncing ${forecast ? 'Forecast': 'Standard'} Candlesticks...`);
+    console.log(`Syncing Candlesticks...`);
     console.log(' ');
     progressBar.start(remainingRequests, progressBarCounter);
 
@@ -90,7 +67,7 @@ async function syncCandlesticks(forecast?: boolean): Promise<void> {
     while(!fullySynced) {
         try {
             // Save and retrieve the candlesticks from the starting timestamp
-            const candlesticks: ICandlestick[] = await _candlestick.syncCandlesticks(forecast);
+            const candlesticks: ICandlestick[] = await _candlestick.syncCandlesticks();
 
             // Check if the sync completed
             fullySynced = candlesticks.length < 1000;
@@ -110,9 +87,6 @@ async function syncCandlesticks(forecast?: boolean): Promise<void> {
     // Sync completed
     progressBar.stop();
     console.log(' ');
-    console.log(`The ${forecast ? 'Forecast': 'Standard'} Candlesticks have been synced.`);
+    console.log(`The Candlesticks have been synced.`);
     console.log('');
-}
-
-
-
+});

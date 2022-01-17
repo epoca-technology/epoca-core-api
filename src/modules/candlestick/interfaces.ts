@@ -12,14 +12,14 @@ export interface ICandlestickService {
     testMode: boolean,
 
     // Candlestick Retrievers
-    getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]>,
-    get(start?: number, end?: number, forecast?: boolean): Promise<ICandlestick[]>,
+    get(start?: number, end?: number, limit?: number, forecast?: boolean): Promise<ICandlestick[]>,
     getLastOpenTimestamp(forecast?: boolean): Promise<number>,
     getLast(forecast?: boolean, limit?: number): Promise<ICandlestick[]>,
+    getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]>,
 
     // Candlestick Syncing & Saving
     initializeSync(): Promise<void>,
-    syncCandlesticks(forecast?: boolean): Promise<ICandlestick[]>,
+    syncCandlesticks(): Promise<ICandlestick[]>,
     saveCandlesticks(candlesticks: ICandlestick[], forecast?: boolean): Promise<void>,
 
     // Helpers
@@ -53,6 +53,8 @@ export interface ICandlestick {
     l: number,                  // Low Price
     c: number,                  // Close Price
     v: number,                  // Volume (USDT)
+    tbv: number,                // Taker Buy Volume (USDT)
+    nt: number,                 // Number of Trades
 }
 
 
@@ -61,10 +63,8 @@ export interface ICandlestick {
 
 // Candlestick Type
 export interface ICandlestickConfig {
-    interval: number,
+    intervalMinutes: number,
     alias: IBinanceCandlestickInterval,
-    genesis: number,
     table: string,
     testTable: string,
-    syncIntervalSeconds: number,
 }
