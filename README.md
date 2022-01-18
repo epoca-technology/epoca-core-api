@@ -17,7 +17,7 @@
 #
 ## Last Database Dump
 
-https://firebasestorage.googleapis.com/v0/b/projectplutus-dev.appspot.com/o/db_backups%2Fbackup.dump?alt=media&token=98adf3c7-1f59-474d-abd6-4ce71dd56041
+https://firebasestorage.googleapis.com/v0/b/projectplutus-dev.appspot.com/o/db_backups%2Fbackup.dump?alt=media&token=f2afbcc6-51f0-4bb3-aa73-80152efecfd6
 
 
 #

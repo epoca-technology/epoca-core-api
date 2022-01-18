@@ -17,8 +17,8 @@ const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(
 
 
 // Delays
-const normalDelay: number = 15;
-const onErrorDelay: number = 30;
+const normalDelay: number = 10;
+const onErrorDelay: number = 20;
 
 
 

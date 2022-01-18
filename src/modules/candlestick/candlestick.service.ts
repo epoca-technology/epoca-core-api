@@ -369,6 +369,9 @@ export class CandlestickService implements ICandlestickService {
                         // Make sure the open time of the first 1m candlestick is correct
                         candlesticks1m[0].ot = openTime;
 
+                        // Make sure the close time doesn't exceed the proper close time
+                        if (candlesticks1m.at(-1).ct > closeTime) candlesticks1m[candlesticks1m.length - 1].ct = closeTime;
+
                         // Save the merged candlestick
                         await this.saveCandlesticks([this.mergeCandlesticks(candlesticks1m)], true);
                     }
@@ -398,6 +401,9 @@ export class CandlestickService implements ICandlestickService {
                                     // Make sure the open time of the first 1m candlestick is correct
                                     candlesticks1m[0].ot = openTime;
 
+                                    // Make sure the close time doesn't exceed the proper close time
+                                    if (candlesticks1m.at(-1).ct > closeTime) candlesticks1m[candlesticks1m.length - 1].ct = closeTime;
+
                                     // Save the merged candlestick
                                     await this.saveCandlesticks([this.mergeCandlesticks(candlesticks1m)], true);
 
@@ -421,6 +427,17 @@ export class CandlestickService implements ICandlestickService {
                     if (candlesticks1m.length) { 
                         // Merge the candlesticks
                         merged = this.mergeCandlesticks(candlesticks1m);
+
+                        // Make sure the close time doesn't exceed the proper close time
+                        if (merged.ct > closeTime) merged.ct = closeTime;
+
+                        /**
+                         * If the candlestick is less than the close time, there shouldn't be any
+                         * data for the future candlestick. If there is, mark the current candlestick
+                         * as closed.
+                         */
+                         futureCandlesticks1m = await this.get(closeTime + 1, undefined, 1);
+                         if (futureCandlesticks1m.length) merged.ct = closeTime;
 
                         // Update the candlestick
                         await this.saveCandlesticks([merged], true);
@@ -461,7 +478,13 @@ export class CandlestickService implements ICandlestickService {
                 candlesticks1m = await this.get(this._binance.candlestickGenesisTimestamp, closeTime);
 
                 // If candlesticks were found, merge and save them.
-                if (candlesticks1m.length) { await this.saveCandlesticks([this.mergeCandlesticks(candlesticks1m)], true) }
+                if (candlesticks1m.length) { 
+                    // Make sure the close time doesn't exceed the proper close time
+                    if (candlesticks1m.at(-1).ct > closeTime) candlesticks1m[candlesticks1m.length - 1].ct = closeTime;
+
+                    // Save the candlesticks
+                    await this.saveCandlesticks([this.mergeCandlesticks(candlesticks1m)], true);
+                }
 
                 // Otherwise, end the execution as no 1m candlesticks have been found
                 else { remaining = false }
