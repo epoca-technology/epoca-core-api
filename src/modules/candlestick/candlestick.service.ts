@@ -35,7 +35,7 @@ export class CandlestickService implements ICandlestickService {
     };
 
     // Candlestick Syncing Interval
-    private readonly syncIntervalSeconds: number = 15;
+    private readonly syncIntervalSeconds: number = 10;
 
 
     // Test Modes
@@ -398,14 +398,25 @@ export class CandlestickService implements ICandlestickService {
 
                                 // Check if candlesticks were found
                                 if (candlesticks1m.length) {
-                                    // Make sure the open time of the first 1m candlestick is correct
-                                    candlesticks1m[0].ot = openTime;
+                                    // Merge the candlesticks
+                                    merged = this.mergeCandlesticks(candlesticks1m);
+
+                                    // Make sure the open time is correct
+                                    merged.ot = openTime;
 
                                     // Make sure the close time doesn't exceed the proper close time
-                                    if (candlesticks1m.at(-1).ct > closeTime) candlesticks1m[candlesticks1m.length - 1].ct = closeTime;
+                                    if (merged.ct > closeTime) merged.ct = closeTime;
+
+                                    /**
+                                     * If the candlestick is less than the close time, there shouldn't be any
+                                     * data for the future candlestick. If there is, mark the current candlestick
+                                     * as closed.
+                                     */
+                                    futureCandlesticks1m = await this.get(closeTime + 1, undefined, 1);
+                                    if (futureCandlesticks1m.length) merged.ct = closeTime;
 
                                     // Save the merged candlestick
-                                    await this.saveCandlesticks([this.mergeCandlesticks(candlesticks1m)], true);
+                                    await this.saveCandlesticks([merged], true);
 
                                     // The interval has been found
                                     nextCandlestickFound = true;
