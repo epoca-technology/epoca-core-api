@@ -255,7 +255,7 @@ export class CandlestickService implements ICandlestickService {
      */
      public async initializeSync(): Promise<void> {
         // Perform the first sync
-        await this.syncCandlesticks();
+        await this.syncCandlesticks()
 
         // Initialize the interval
         setInterval(async () => { 
@@ -335,174 +335,176 @@ export class CandlestickService implements ICandlestickService {
      * are also updated respecting the interval configuration.
      * @returns Promise<void>
      */
-     private async syncForecastCandlesticks(): Promise<void> {
+    private async syncForecastCandlesticks(): Promise<void> {
         // Init vars
-        let candlestick: ICandlestick|undefined;
         let last: ICandlestick[];
+        let candlesticks1m: ICandlestick[];
+        let futureCandlesticks1m: ICandlestick[];
+        let merged: ICandlestick;
+        let openTime: number;
+        let closeTime: number;
         let remaining: boolean = true;
-        
-        // Iterate as long as there are candlesticks to insert/update
+
+        // Iterate until there are no 1m candlesticks left to sync
         while (remaining) {
-            // Retrieve the last stored candlestick 
+            // Retrieve the last candlestick
             last = await this.getLast(true, 1);
+           
+            // Check if candlesticks have been found
+            if (last.length) {
+                // Calculate the close time of the current candlestick
+                closeTime = this.getForecastCandlestickCloseTime(last[0].ot);
 
-            // Retrieve a syncable candlestick if any
-            candlestick = await this.getSyncableForecastCandlestick(last[0]);
+                // Check if the last candlestick has been completed
+                if (last[0].ct == closeTime) {
+                    // Initialize the new candlestick's times
+                    openTime = closeTime + 1;
+                    closeTime = this.getForecastCandlestickCloseTime(openTime);
 
-            // Check if a candlestick was found. If so, insert/update it
-            if (candlestick) await this.saveCandlesticks([candlestick], true);
+                    // Download the candlesticks for the next interval
+                    candlesticks1m = await this.get(openTime, closeTime);
 
-            // If a candlestick was found, continue the iteration
-            remaining = candlestick != undefined;
-        }
-     }
+                    // If candlesticks were found, merge and save them.
+                    if (candlesticks1m.length) { 
+                        // Make sure the open time of the first 1m candlestick is correct
+                        candlesticks1m[0].ot = openTime;
 
+                        // Make sure the close time doesn't exceed the proper close time
+                        if (candlesticks1m.at(-1).ct > closeTime) candlesticks1m[candlesticks1m.length - 1].ct = closeTime;
 
+                        // Save the merged candlestick
+                        await this.saveCandlesticks([this.mergeCandlesticks(candlesticks1m)], true);
+                    }
 
+                    //  Otherwise, check if they are actually synced
+                    else { 
+                        // Download future candlesticks
+                        futureCandlesticks1m = await this.get(openTime, undefined, 1);
 
+                        /**
+                         * If there are candlesticks in the future means that some data is missing
+                         * on the exchange's end. 
+                         */
+                        if (futureCandlesticks1m.length) {
+                            // Iterate until the next candlestick is found
+                            let nextCandlestickFound: boolean = false;
+                            while (!nextCandlestickFound) {
+                                // Initialize the next candlestick's times
+                                openTime = closeTime + 1;
+                                closeTime = this.getForecastCandlestickCloseTime(openTime);
 
+                                // Retrieve the 1m candlesticks
+                                candlesticks1m = await this.get(openTime, closeTime);
 
-     /**
-      * Retrieves the forecast candlestick that has to be inserted or updated.
-      * If it returns undefined, it means the forecase candlesticks are in sync.
-      * @param last
-      * @returns Promise<ICandlestick|undefined>
-      */
-    private async getSyncableForecastCandlestick(last: ICandlestick|undefined): Promise<ICandlestick|undefined> {
-        // Calculate the initial times
-        let openTime: number = last ? last.ot: this._binance.candlestickGenesisTimestamp;
-        let closeTime: number = this.getForecastCandlestickCloseTime(openTime);
+                                // Check if candlesticks were found
+                                if (candlesticks1m.length) {
+                                    // Merge the candlesticks
+                                    merged = this.mergeCandlesticks(candlesticks1m);
 
-        // Retrieve the initial 1m candlesticks for the given interval and merge them if any
-        let candlesticks1m: ICandlestick[] = await this.get(openTime, closeTime);
-        let candlestick: ICandlestick|undefined = candlesticks1m.length ? this.mergeCandlesticks(candlesticks1m): undefined;
+                                    // Make sure the open time is correct
+                                    merged.ot = openTime;
 
-        // Check if there are candlesticks ahead
-        let hasCandlesticksAhead: boolean = await this.hasCandlesticksAhead(closeTime);
+                                    // Make sure the close time doesn't exceed the proper close time
+                                    if (merged.ct > closeTime) merged.ct = closeTime;
 
-        // There is an existing candlestick in the db. Handle the case accordingly
-        if (last && candlestick) {
-            /**
-             * THE LAST CANDLESTICK IS COMPLETE
-             * Since there could be candlesticks missing, it needs to iterate through intervals 
-             * until the next candlestick is found.
-             */
-            if (last.ct == closeTime) {
-                /**
-                 * Update the last candlestick to make sure it has the last close price snapshot before moving to 
-                 * the next candlestick. Also ensure the merged candlestick has correct open & close timestamps.
-                 */
-                await this.updateForecastCandlestick(last, candlestick);
+                                    /**
+                                     * If the candlestick is less than the close time, there shouldn't be any
+                                     * data for the future candlestick. If there is, mark the current candlestick
+                                     * as closed.
+                                     */
+                                    futureCandlesticks1m = await this.get(closeTime + 1, undefined, 1);
+                                    if (futureCandlesticks1m.length) merged.ct = closeTime;
 
-                // If there are candlesticks ahead, iterate until the next one is found
-                if (hasCandlesticksAhead) {
-                    let candlestickFound: boolean = false;
-                    while (!candlestickFound) {
-                        // Initialize the new candlestick's times
-                        openTime = closeTime + 1;
-                        closeTime = this.getForecastCandlestickCloseTime(openTime);
-    
-                        // Download the candlesticks for the next interval
-                        candlesticks1m = await this.get(openTime, closeTime);
-    
-                        // If candlesticks were found, 
-                        if (candlesticks1m.length) {
-                            // Merge the 1m candlesticks
-                            candlestick = this.mergeCandlesticks(candlesticks1m);
-    
-                            // End the iteration
-                            candlestickFound = true;
-                        }
+                                    // Save the merged candlestick
+                                    await this.saveCandlesticks([merged], true);
+
+                                    // The interval has been found
+                                    nextCandlestickFound = true;
+                                }
+                            }
+                        } 
+                        
+                        // Otherwise, it means the forecast candlesticks are in sync
+                        else { remaining = false }
                     }
                 }
 
-                // Otherwise, the candlesticks are in sync
-                else { candlestick = undefined }
+                // The candlestick needs to be completed
+                else {
+                    // Download the candlesticks for the current interval
+                    candlesticks1m = await this.get(last[0].ot, closeTime);
+
+                    // Check if candlesticks were found
+                    if (candlesticks1m.length) { 
+                        // Merge the candlesticks
+                        merged = this.mergeCandlesticks(candlesticks1m);
+
+                        // Make sure the close time doesn't exceed the proper close time
+                        if (merged.ct > closeTime) merged.ct = closeTime;
+
+                        /**
+                         * If the candlestick is less than the close time, there shouldn't be any
+                         * data for the future candlestick. If there is, mark the current candlestick
+                         * as closed.
+                         */
+                        futureCandlesticks1m = await this.get(closeTime + 1, undefined, 1);
+                        if (futureCandlesticks1m.length) merged.ct = closeTime;
+
+                        // Update the candlestick
+                        await this.saveCandlesticks([merged], true);
+
+                        // Check if it is in sync
+                        remaining = last[0].ct !== merged.ct;
+                    }
+
+                    // Otherwise, check if they are actually synced
+                    else {
+                        // Download future candlesticks
+                        futureCandlesticks1m = await this.get(last[0].ct, undefined, 1);
+
+                        /**
+                         * If there are candlesticks in the future means that some data is missing
+                         * on the exchange's end. 
+                         */
+                        if (futureCandlesticks1m.length) {
+                            // Update the last candlestick and set the correct close time.
+                            last[0].ct = closeTime;
+
+                            // Update it
+                            await this.saveCandlesticks(last, true);
+                        } 
+                        
+                        // Otherwise, it means the forecast candlesticks are in sync
+                        else { remaining = false }
+                    }
+                }
             }
 
-            /* THE LAST CANDLESTICK IS INCOMPLETE */
+            // Otherwise, save the genesis candlestick
+            else {
+                // Calculate the genesis close time
+                closeTime = this.getForecastCandlestickCloseTime(this._binance.candlestickGenesisTimestamp);
 
-            /**
-             * If there are no candlesticks ahead and the last candlestick is the same as the 
-             * freshly downloaded one, means the candlesticks are in sync.
-             */
-            else if (!hasCandlesticksAhead && last.ct == candlestick.ct) { 
-                // Make sure the candlestick has the latest snapshot before ending the iteration.
-                await this.updateForecastCandlestick(last, candlestick);
-                candlestick = undefined;
+                // Retrieve the 1m candlesticks for the given interval
+                candlesticks1m = await this.get(this._binance.candlestickGenesisTimestamp, closeTime);
+
+                // If candlesticks were found, merge and save them.
+                if (candlesticks1m.length) { 
+                    // Make sure the close time doesn't exceed the proper close time
+                    if (candlesticks1m.at(-1).ct > closeTime) candlesticks1m[candlesticks1m.length - 1].ct = closeTime;
+
+                    // Save the candlesticks
+                    await this.saveCandlesticks([this.mergeCandlesticks(candlesticks1m)], true);
+                }
+
+                // Otherwise, end the execution as no 1m candlesticks have been found
+                else { remaining = false }
             }
-
-            /**
-             * If there are candlesticks ahead and the freshly downloaded candlestick's close time 
-             * is less than the real close time means there are candlesticks missings. In order to 
-             * move on, set the real close time on the candlestick.
-             */
-            else if (hasCandlesticksAhead && candlestick.ct < closeTime) { candlestick.ct = closeTime }
         }
-
-
-        /**
-         * GENESIS CANDLESTICK
-         * If the close time does not match the real close time and there are candlesticks ahead, 
-         * use the real close time instead.
-         */
-        else if (!last && candlestick && hasCandlesticksAhead && candlestick.ct < closeTime) candlestick.ct = closeTime;
-
-
-        /**
-         * OPEN AND CLOSE TIMES ADJUSTMENTS
-         * As there are many discrepancies in the Candlestick API from Binance's end, 
-         * in order to have perfect intervals, the open and close times need to always
-         * add up perfectly.
-         */
-        if (candlestick) {
-            // Set the correct open time
-            candlestick.ot = openTime;
-
-            // The close time cannot be greater than the calculated one
-            if (candlestick.ct > closeTime) candlestick.ct = closeTime;
-        }
-
-        // Return the syncable candlestick if any
-        return candlestick;
-     }
-
-
-
-
-
-
-
-    /**
-     * Checks if there are 1 minute candlesticks ahead from a given close time.
-     * This functionality is used to identify when Binance had interruptions and
-     * missed 1 minute candlesticks.
-     * @param realCloseTime 
-     * @returns Promise<boolean>
-     */
-    private async hasCandlesticksAhead(realCloseTime: number): Promise<boolean> {
-        const futureCandlesticks1m: ICandlestick[] = await this.get(realCloseTime, undefined, 1);
-        return futureCandlesticks1m.length > 0;
     }
 
 
 
-
-
-
-
-    /**
-     * Given the last candlestick and the latest merge, it updates it in order to 
-     * prevent the loss of existing snapshots.
-     * @param last 
-     * @param lastMerge 
-     * @returns Promise<void>
-     */
-    private async updateForecastCandlestick(last: ICandlestick, lastMerge: ICandlestick): Promise<void> {
-        lastMerge.ot = last.ot;
-        lastMerge.ct = last.ct;
-        await this.saveCandlesticks([lastMerge], true);
-    }
 
 
 
