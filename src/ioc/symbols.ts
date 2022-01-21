@@ -24,6 +24,10 @@
 
     // Validations
     ValidationsService: Symbol.for("ValidationsService"),
+
+    // Server
+    ServerService: Symbol.for("ServerService"),
+    ServerValidations: Symbol.for("ServerValidations"),
 }
 
 
@@ -36,6 +40,8 @@ export interface ISymbols {
     ExternalRequestService: symbol,
     DatabaseService: symbol,
     ValidationsService: symbol,
+    ServerService: symbol,
+    ServerValidations: symbol,
 }
 
 

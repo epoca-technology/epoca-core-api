@@ -16,8 +16,7 @@ const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
 
-/*  */
-describe(':', function() {
+describe('Trading Simulations Brainstorm:', function() {
 
     it('-', function() {
 

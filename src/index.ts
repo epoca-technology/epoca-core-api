@@ -22,7 +22,6 @@ const app = express();
 
 // Initialize the HTTP Logger
 const accessLogStream: morgan.StreamOptions = rfs.createStream('access.log', {
-    interval: '1d',
     path: './logs',
     maxFiles: 200,
     size: '500K',

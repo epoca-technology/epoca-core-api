@@ -2,6 +2,21 @@ import { IRawTable } from "./interfaces";
 
 /* Tables */
 export const TABLES: IRawTable[] = [
+    // Server Alarms
+    {
+        name: 'server_alarms',
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id                  SMALLINT NOT NULL PRIMARY KEY,
+                maxFileSystemUsage  SMALLINT NOT NULL,
+                maxMemoryUsage      SMALLINT NOT NULL,
+                maxCPULoad          SMALLINT NOT NULL,
+                maxCPUTemperature   SMALLINT NOT NULL,
+                maxGPUTemperature   SMALLINT NOT NULL,
+            );`
+        }
+    },
+
     // Candlesticks
     {
         name: 'candlesticks',

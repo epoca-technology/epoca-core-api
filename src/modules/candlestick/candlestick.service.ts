@@ -256,8 +256,14 @@ export class CandlestickService implements ICandlestickService {
      * @returns Promise<void>
      */
      public async initializeSync(): Promise<void> {
-        // Perform the first sync
-        this.broadcastStream(await this.syncCandlesticks());
+        // Perform the first sync persistently to prevent a server crash
+        try { this.broadcastStream(await this.syncCandlesticks()) } 
+        catch (e) {
+            console.log('Initial Candlestick Sync Failed', e);
+            await this._utils.asyncDelay(5);
+            this.broadcastStream(await this.syncCandlesticks());
+        }
+        
 
         // Initialize the interval
         setInterval(async () => { 

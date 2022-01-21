@@ -52,14 +52,10 @@ Utilities: `npm run test-utils`
 
 Database: `npm run test-db`
 
+Server: `npm run test-server`
 
 
 
-
-# 
-# API ERRORS
-
-Go to [API Errors](/docs/API_ERRORS.md)
 
 
 #

@@ -6,6 +6,7 @@ import { environment } from "./environment";
 
 // Modules
 import { candlestickModule } from "../modules/candlestick";
+import { serverModule } from "../modules/server";
 
 
 // Shared Modules
@@ -30,6 +31,8 @@ appContainer.load(
     // Candlestick
     candlestickModule,
 
+    // Server
+    serverModule,
     
     /* Shared */
 
