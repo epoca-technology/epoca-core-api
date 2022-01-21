@@ -1,3 +1,4 @@
+import { BehaviorSubject } from "rxjs";
 import { IBinanceCandlestick, IBinanceCandlestickInterval } from "../shared/binance";
 
 
@@ -11,6 +12,9 @@ export interface ICandlestickService {
     // Testing
     testMode: boolean,
 
+    // Real Time Candlesticks Stream
+    stream: BehaviorSubject<ICandlestickStream>,
+
     // Candlestick Retrievers
     get(start?: number, end?: number, limit?: number, forecast?: boolean): Promise<ICandlestick[]>,
     getLastOpenTimestamp(forecast?: boolean): Promise<number>,
@@ -22,8 +26,13 @@ export interface ICandlestickService {
     syncCandlesticks(): Promise<ICandlestick[]>,
     saveCandlesticks(candlesticks: ICandlestick[], forecast?: boolean): Promise<void>,
 
+    // Stream
+    isStreamInSync(stream: ICandlestickStream): boolean,
+
     // Helpers
     alterInterval(candlesticks1m: ICandlestick[], intervalMinutes: number): ICandlestick[],
+
+    // Candlesticks Proccessors
     processBinanceCandlesticks(candlesticks: IBinanceCandlestick[]): ICandlestick[],
 }
 
@@ -61,10 +70,19 @@ export interface ICandlestick {
 
 
 
-// Candlestick Type
+// Candlestick Config
 export interface ICandlestickConfig {
     intervalMinutes: number,
     alias: IBinanceCandlestickInterval,
-    table: string,
-    testTable: string,
+    table: string
+}
+
+
+
+
+// Candlesticks stream
+export interface ICandlestickStream {
+    lastUpdate: number,
+    candlesticks: ICandlestick[],
+    error?: string
 }

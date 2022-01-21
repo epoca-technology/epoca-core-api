@@ -106,6 +106,13 @@ describe('Database Essentials: ',  function() {
             client.release();
         }
     });
+
+
+
+    it('-Can retrieve test table names: ', function() {
+        expect(_db.getTestTableName('some_cool_table')).toBe('test_some_cool_table');
+        expect(_db.getTestTableName('test_some_cool_table')).toBe('test_test_some_cool_table');
+    });
 });
 
 

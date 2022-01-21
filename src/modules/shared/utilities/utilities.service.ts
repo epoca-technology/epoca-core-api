@@ -8,7 +8,7 @@ import {
 } from "./interfaces";
 import {BigNumber} from 'bignumber.js';
 import * as moment from 'moment';
-import { v4 as uuidv4, version as uuidVersion, validate as uuidValidate } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 
 
@@ -211,7 +211,7 @@ export class UtilitiesService implements IUtilitiesService {
      */
     public outputNumber(value: INumber, config?: INumberConfig): INumber {
         // Init the config
-        config = this.getConfig(config);
+        config = this.getNumberConfig(config);
 
         // Retrieve the Big Number and set the decimal places
         const bn: BigNumber = this.getBigNumber(value).decimalPlaces(config.dp, config.rm);
@@ -261,7 +261,7 @@ export class UtilitiesService implements IUtilitiesService {
      * @param config 
      * @returns INumberConfig
      */
-    private getConfig(config?: INumberConfig): INumberConfig {
+    private getNumberConfig(config?: INumberConfig): INumberConfig {
         // Init the config
         config = config ? config: {};
 
@@ -396,7 +396,16 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
-    /* Error Handling */
+
+
+
+
+
+
+
+
+
+    /* Error Message Extraction */
 
 
 
@@ -443,6 +452,8 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+
+
     
 
 
@@ -465,9 +476,7 @@ export class UtilitiesService implements IUtilitiesService {
      * @param date 
      * @returns number
      */
-     public getTimestamp(date: string): number {
-        return moment(date, ["DD-MM-YYYY"]).valueOf();
-    }
+    public getTimestamp(date: string): number { return moment(date, ["DD-MM-YYYY"]).valueOf() }
 
 
 
@@ -480,9 +489,13 @@ export class UtilitiesService implements IUtilitiesService {
      * @param timestamp 
      * @returns string
      */
-    public toDateString(timestamp: number): string {
-        return moment(timestamp).format("DD/MM/YYYY HH:mm:ss");
-    }
+    public toDateString(timestamp: number): string { return moment(timestamp).format("DD/MM/YYYY HH:mm:ss") }
+
+
+
+
+
+
 
 
 

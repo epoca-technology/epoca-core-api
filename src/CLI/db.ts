@@ -1,12 +1,12 @@
 // Dependencies 
 import "reflect-metadata";
-import { appContainer, SYMBOLS } from "../../ioc";
+import { appContainer, SYMBOLS } from "../ioc";
 import * as prompt from 'prompt';
 import {Client} from "pg";
 import {execute} from "@getvim/execute";
 
 // Init Database
-import { IDatabaseService, IPoolClient, IQueryResult } from "../../modules/shared/database";
+import { IDatabaseService, IPoolClient, IQueryResult } from "../modules/shared/database";
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 

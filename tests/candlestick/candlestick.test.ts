@@ -59,15 +59,15 @@ describe('Candlesticks DB Actions: ',  function() {
     // Clean the table before each test and once all tests have concluded
     beforeEach(async () => { 
         await Promise.all([
-            _db.query({text: `DELETE FROM ${_candlestick.standardConfig.testTable};`}),
-            _db.query({text: `DELETE FROM ${_candlestick.forecastConfig.testTable};`}),
+            _db.query({text: `DELETE FROM ${_db.getTestTableName(_candlestick.standardConfig.table)};`}),
+            _db.query({text: `DELETE FROM ${_db.getTestTableName(_candlestick.forecastConfig.table)};`}),
         ]);
     });
     afterAll(async () => { 
         // Clean the DB
         await Promise.all([
-            _db.query({text: `DELETE FROM ${_candlestick.standardConfig.testTable};`}),
-            _db.query({text: `DELETE FROM ${_candlestick.forecastConfig.testTable};`}),
+            _db.query({text: `DELETE FROM ${_db.getTestTableName(_candlestick.standardConfig.table)};`}),
+            _db.query({text: `DELETE FROM ${_db.getTestTableName(_candlestick.forecastConfig.table)};`}),
         ]);
 
         // Disable test mode
@@ -362,9 +362,9 @@ describe('Candlestick Essentials: ',  function() {
         /* Test Tables */
         _candlestick.testMode = true;
         // @ts-ignore
-        expect(_candlestick.getTable()).toBe(_candlestick.standardConfig.testTable);
+        expect(_candlestick.getTable()).toBe(_db.getTestTableName(_candlestick.standardConfig.table));
         // @ts-ignore
-        expect(_candlestick.getTable(true)).toBe(_candlestick.forecastConfig.testTable);
+        expect(_candlestick.getTable(true)).toBe(_db.getTestTableName(_candlestick.forecastConfig.table));
         _candlestick.testMode = false;
 
         /* Real Tables Again */

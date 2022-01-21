@@ -33,21 +33,18 @@ Run `npm start` to run the server
 #
 ## CLI
 
-Database:  `npm run cli-db`
+Database Utilities:  `npm run cli-db`
 
-Candlestick Sync:  `npm run cli-candlestick-sync`
+Candlesticks Sync:  `npm run cli-candlestick`
 
-Past Trading Simulation:  `npm run cli-trading-simulation-past`
-
-Future Trading Simulation:  `npm run cli-trading-simulation-future`
-
-##### *Important: In order to stop the trading simulation use `control + \` (SIGQUIT).
 
 
 #
 ## Tests
 
 End-to-end: `npm run test`
+
+Trading Simulation: `npm run test-trading-simulation`
 
 Candlestick: `npm run test-candlestick`
 

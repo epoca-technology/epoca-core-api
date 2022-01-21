@@ -15,13 +15,18 @@ export interface IDatabaseService {
     config: IPoolConfig,
     pool: IPool,
     tables: ITable[],
-
     
     // Query
-    query(config: IQueryConfig): Promise<IQueryResult>
+    query(config: IQueryConfig): Promise<IQueryResult>,
+
+
+
+    // Misc Helpers
+    getTestTableName(tableName: string): string,
 }
 
 
 
 // Table
 export interface ITable {name: string, sql: string};
+export interface IRawTable {name: string, sql: Function};

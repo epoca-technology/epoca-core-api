@@ -1,18 +1,18 @@
 // Dependencies 
 import "reflect-metadata";
-import { appContainer, SYMBOLS } from "../../ioc";
+import { appContainer, SYMBOLS } from "../ioc";
 import * as prompt from 'prompt';
 import * as cliProgress from 'cli-progress';
 import BigNumber from "bignumber.js";
 
 
 // Init the Utilities Service
-import { IUtilitiesService } from "../../modules/shared/utilities";
+import { IUtilitiesService } from "../modules/shared/utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
 // Init the Candlestick Service
-import { ICandlestick, ICandlestickService } from "../../modules/candlestick";
+import { ICandlestick, ICandlestickService } from "../modules/candlestick";
 const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
 

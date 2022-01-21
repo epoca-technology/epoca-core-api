@@ -21,7 +21,7 @@ export interface IUtilitiesService {
     buildApiError(e: any, code?: number): string,
     getCodeFromApiError(apiError: string): number,
 
-    // Error Handling
+    // Error Message Extraction
     getErrorMessage(e: any): string,
 
     // Dates

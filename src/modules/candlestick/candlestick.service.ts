@@ -1,11 +1,12 @@
 import {inject, injectable} from "inversify";
-import { ICandlestickService, ICandlestick, ICandlestickConfig, ICandlestickValidations } from "./interfaces";
+import { ICandlestickService, ICandlestick, ICandlestickConfig, ICandlestickValidations, ICandlestickStream } from "./interfaces";
 import { SYMBOLS } from "../../ioc";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../shared/database";
 import { IUtilitiesService } from "../shared/utilities";
 import { IBinanceService, IBinanceCandlestick } from "../shared/binance";
 import BigNumber from "bignumber.js";
 import * as moment from 'moment';
+import { BehaviorSubject } from "rxjs";
 
 
 @injectable()
@@ -22,16 +23,14 @@ export class CandlestickService implements ICandlestickService {
     public readonly standardConfig: ICandlestickConfig = {
         intervalMinutes: 1,
         alias: '1m',
-        table: 'candlesticks',
-        testTable: 'test_candlesticks'
+        table: 'candlesticks'
     };
 
     // Forecast Candlestick Configuration
     public readonly forecastConfig: ICandlestickConfig = {
         intervalMinutes: 30,
         alias: '30m',
-        table: 'forecast_candlesticks',
-        testTable: 'test_forecast_candlesticks'
+        table: 'forecast_candlesticks'
     };
 
     // Candlestick Syncing Interval
@@ -42,6 +41,9 @@ export class CandlestickService implements ICandlestickService {
     public testMode: boolean = false;
 
 
+    // Real Time Candlesticks Stream
+    private readonly streamSyncSecondsTolerance: number = 60;
+    public readonly stream: BehaviorSubject<ICandlestickStream> = new BehaviorSubject({lastUpdate: 0, candlesticks: []});
 
 
 
@@ -255,22 +257,22 @@ export class CandlestickService implements ICandlestickService {
      */
      public async initializeSync(): Promise<void> {
         // Perform the first sync
-        await this.syncCandlesticks();
+        this.broadcastStream(await this.syncCandlesticks());
 
         // Initialize the interval
         setInterval(async () => { 
-            try { await this.syncCandlesticks() } 
+            try { this.broadcastStream(await this.syncCandlesticks()) } 
             catch(e) { 
                 console.log(`Failed to sync the Candlesticks, attempting again in a few seconds:`, e);
                 await this._utils.asyncDelay(5);
-                try { await this.syncCandlesticks() } 
+                try { this.broadcastStream(await this.syncCandlesticks()) } 
                 catch (e) {
                     console.log(`Failed to sync the candlesticks again, will attempt again in a few seconds:`, e);
+                    this.broadcastStream([], e);
                 }
             }
          }, this.syncIntervalSeconds * 1000);
     }
-
 
 
 
@@ -584,7 +586,68 @@ export class CandlestickService implements ICandlestickService {
 
 
 
+
+
+
+    /* Stream */
+
+
+
+
+
+
+
+
+    /**
+     * Given a list of candlesticks, it will broadcast a stream.
+     * @param candlesticks 
+     * @param error?
+     * @returns void
+     */
+    private broadcastStream(candlesticks: ICandlestick[], error?: any): void {
+        this.stream.next({
+            lastUpdate: Date.now(),
+            candlesticks: candlesticks,
+            error: error ? this._utils.getErrorMessage(error): undefined
+        });
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Verifies if a stream is currently in sync. It will check the last update 
+     * and the last candlestick's close times to make sure they are within the
+     * established tolerance.
+     * @param stream 
+     * @returns boolean
+     */
+     public isStreamInSync(stream: ICandlestickStream): boolean {
+        // Make sure there are candlesticks
+        if (!stream || !stream.candlesticks || !stream.candlesticks.length) return false;
+
+        // Calculate the minimum acceptable timestamp
+        const min: number = moment(Date.now()).subtract(this.streamSyncSecondsTolerance, "seconds").valueOf();
+
+        // Make sure the last update is in sync
+        if (stream.lastUpdate < min) return false;
+
+        // Make sure the last candlestick is in sync
+        if (stream.candlesticks.at(-1).ct < min) return false;
+
+        // Otherwise, the stream is in sync
+        return true;
+    }
+
+
     
+
+
 
 
 
@@ -614,9 +677,9 @@ export class CandlestickService implements ICandlestickService {
      */
     private getTable(forecast?: boolean): string {
         if (forecast) {
-            return this.testMode ? this.forecastConfig.testTable: this.forecastConfig.table;
+            return this.testMode ? this._db.getTestTableName(this.forecastConfig.table): this.forecastConfig.table;
         } else {
-            return this.testMode ? this.standardConfig.testTable: this.standardConfig.table;
+            return this.testMode ? this._db.getTestTableName(this.standardConfig.table): this.standardConfig.table;
         }
     }
 
@@ -735,17 +798,18 @@ export class CandlestickService implements ICandlestickService {
      * @param ot 
      * @returns number
      */
-     private getForecastCandlestickCloseTime(ot: number): number {
+    private getForecastCandlestickCloseTime(ot: number): number {
         return moment(ot).add(this.forecastConfig.intervalMinutes, "minutes").subtract(1, "millisecond").valueOf();
     }
 
 
 
 
-
-
-
     
+
+
+
+
 
 
 

@@ -28,7 +28,7 @@ export class DatabaseService implements IDatabaseService {
 
 
     // Database Tables
-    public readonly tables: ITable[] = TABLES;
+    public readonly tables: ITable[] = this.buildDatabaseTables();
 
 
 
@@ -76,4 +76,76 @@ export class DatabaseService implements IDatabaseService {
         }
         finally { client.release() }
     }
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* Misc Helpers */
+
+
+
+
+
+
+    /**
+     * Iterates over the raw tables and processes them. Also adds the testing
+     * tables with the test_ prefix.
+     * @returns ITable[]
+     */
+    private buildDatabaseTables(): ITable[] {
+        // Initialize the list of processed tables
+        let tables: ITable[] = [];
+
+        // Iterate over the raw tables
+        let testTableName: string;
+        TABLES.forEach((t) => { 
+            // Append the real table
+            tables.push({name: t.name, sql: t.sql(t.name)});
+
+            // Append the test table
+            testTableName = this.getTestTableName(t.name);
+            tables.push({name: testTableName, sql: t.sql(testTableName)});
+        });
+
+        // Return the processed list
+        return tables;
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Given a table name, it will add the test prefix to the name.
+     * @param tableName 
+     * @returns string
+     */
+    public getTestTableName(tableName: string): string { return `test_${tableName}` }
 }

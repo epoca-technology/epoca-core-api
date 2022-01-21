@@ -53,3 +53,6 @@ package-lock.json
 
 # Backup Directories
 db_backups
+
+# Logs
+logs
