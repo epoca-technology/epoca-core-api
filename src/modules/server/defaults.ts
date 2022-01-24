@@ -29,26 +29,39 @@ export const defaults: IDefaultData = {
         fqdn: "Unknown"
     },
     softwareVersions: {},
-    networkConnections: [{
-        protocol: "Unknown",
-        localAddress: "Unknown",
-        localPort: "Unknown",
-        peerAddress: "Unknown",
-        peerPort: "Unknown",
-        state: "Unknown"
+    networkInterfaces: [{
+        iface: "Unknown",
+        ifaceName: "Unknown",
+        ip4: "Unknown",
+        ip4subnet: "Unknown",
+        ip6: "Unknown",
+        ip6subnet: "Unknown"
     }],
+    uptime: 0,
+    lastResourceScan: 0,
+    alarms: {
+        max_file_system_usage: 80,
+        max_memory_usage: 75,
+        max_cpu_load: 75,
+        max_cpu_temperature: 70,
+        max_gpu_load: 75,
+        max_gpu_temperature: 80,
+        max_gpu_memory_temperature: 60
+    },
     fileSystems: [{
         fs: "Unknown",
         type: "Unknown",
         size: 0,
         used: 0,
         available: 0,
-        mount: "Unknown"
+        mount: "Unknown",
+        usedPercent: 0
     }],
     memory: {
         total: 0,
         free: 0,
-        used: 0
+        used: 0,
+        usedPercent: 0
     },
     cpu: {
         manufacturer: "Unknown",
@@ -59,7 +72,6 @@ export const defaults: IDefaultData = {
         speed: 0,
         cores: 0,
         physicalCores: 0,
-        socket: "Unknown",
     },
     cpuTemperature: {
         main: 0,
@@ -76,14 +88,5 @@ export const defaults: IDefaultData = {
         temperatureGpu: 0,
         temperatureMemory: 0,
     },
-    lastResourceScan: 0,
-    alarms: {
-        maxFileSystemUsage: 80,
-        maxMemoryUsage: 75,
-        maxCPULoad: 75,
-        maxCPUTemperature: 70,
-        maxGPULoad: 75,
-        maxGPUTemperature: 80,
-        maxGPUMemoryTemperature: 60
-    }
+    runningServices: []
 }

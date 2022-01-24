@@ -32,39 +32,39 @@ export class ServerValidations implements IServerValidations {
             throw new Error(this._utils.buildApiError(`The alarms configuration must be a valid object.`, 6300));
         }
 
-        // Validate the maxFileSystemUsage
-        if (!this._validations.numberValid(alarms.maxFileSystemUsage, 30, 99)) {
-            throw new Error(this._utils.buildApiError(`The maxFileSystemUsage must be a number ranging 30-99, instead received: ${alarms.maxFileSystemUsage}`, 6301));
+        // Validate the max_file_system_usage
+        if (!this._validations.numberValid(alarms.max_file_system_usage, 30, 99)) {
+            throw new Error(this._utils.buildApiError(`The max_file_system_usage must be a number ranging 30-99, instead received: ${alarms.max_file_system_usage}`, 6301));
         }
 
-        // Validate the maxMemoryUsage
-        if (!this._validations.numberValid(alarms.maxMemoryUsage, 30, 99)) {
-            throw new Error(this._utils.buildApiError(`The maxMemoryUsage must be a number ranging 30-99, instead received: ${alarms.maxMemoryUsage}`, 6302));
+        // Validate the max_memory_usage
+        if (!this._validations.numberValid(alarms.max_memory_usage, 30, 99)) {
+            throw new Error(this._utils.buildApiError(`The max_memory_usage must be a number ranging 30-99, instead received: ${alarms.max_memory_usage}`, 6302));
         }
 
-        // Validate the maxCPULoad
-        if (!this._validations.numberValid(alarms.maxCPULoad, 30, 99)) {
-            throw new Error(this._utils.buildApiError(`The maxCPULoad must be a number ranging 30-99, instead received: ${alarms.maxCPULoad}`, 6303));
+        // Validate the max_cpu_load
+        if (!this._validations.numberValid(alarms.max_cpu_load, 30, 99)) {
+            throw new Error(this._utils.buildApiError(`The max_cpu_load must be a number ranging 30-99, instead received: ${alarms.max_cpu_load}`, 6303));
         }
 
-        // Validate the maxCPUTemperature
-        if (!this._validations.numberValid(alarms.maxCPUTemperature, 50, 90)) {
-            throw new Error(this._utils.buildApiError(`The maxCPUTemperature must be a number ranging 50-90, instead received: ${alarms.maxCPUTemperature}`, 6304));
+        // Validate the max_cpu_temperature
+        if (!this._validations.numberValid(alarms.max_cpu_temperature, 50, 90)) {
+            throw new Error(this._utils.buildApiError(`The max_cpu_temperature must be a number ranging 50-90, instead received: ${alarms.max_cpu_temperature}`, 6304));
         }
 
-        // Validate the maxGPULoad
-        if (!this._validations.numberValid(alarms.maxGPULoad, 30, 99)) {
-            throw new Error(this._utils.buildApiError(`The maxGPULoad must be a number ranging 30-99, instead received: ${alarms.maxGPULoad}`, 6305));
+        // Validate the max_gpu_load
+        if (!this._validations.numberValid(alarms.max_gpu_load, 30, 99)) {
+            throw new Error(this._utils.buildApiError(`The max_gpu_load must be a number ranging 30-99, instead received: ${alarms.max_gpu_load}`, 6305));
         }
 
-        // Validate the maxGPUTemperature
-        if (!this._validations.numberValid(alarms.maxGPUTemperature, 50, 120)) {
-            throw new Error(this._utils.buildApiError(`The maxGPUTemperature must be a number ranging 50-120, instead received: ${alarms.maxGPUTemperature}`, 6306));
+        // Validate the max_gpu_temperature
+        if (!this._validations.numberValid(alarms.max_gpu_temperature, 50, 120)) {
+            throw new Error(this._utils.buildApiError(`The max_gpu_temperature must be a number ranging 50-120, instead received: ${alarms.max_gpu_temperature}`, 6306));
         }
 
-        // Validate the maxGPUMemoryTemperature
-        if (!this._validations.numberValid(alarms.maxGPUMemoryTemperature, 50, 90)) {
-            throw new Error(this._utils.buildApiError(`The maxGPUMemoryTemperature must be a number ranging 50-90, instead received: ${alarms.maxGPUMemoryTemperature}`, 6307));
+        // Validate the max_gpu_memory_temperature
+        if (!this._validations.numberValid(alarms.max_gpu_memory_temperature, 50, 90)) {
+            throw new Error(this._utils.buildApiError(`The max_gpu_memory_temperature must be a number ranging 50-90, instead received: ${alarms.max_gpu_memory_temperature}`, 6307));
         }
     }
 

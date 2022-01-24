@@ -14,6 +14,7 @@ import { binanceModule } from "../modules/shared/binance";
 import { utilitiesModule } from "../modules/shared/utilities";
 import { externalRequestModule } from "../modules/shared/external-request";
 import { databaseModule } from "../modules/shared/database";
+import { notificationModule } from "../modules/shared/notification";
 import { forecastModule } from "../modules/shared/forecast";
 import { validationsModule } from "../modules/shared/validations";
 
@@ -51,6 +52,9 @@ appContainer.load(
 
     // Database
     databaseModule,
+
+    // Notification
+    notificationModule,
 
     // Validations
     validationsModule,

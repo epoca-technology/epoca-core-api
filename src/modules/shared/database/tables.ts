@@ -7,12 +7,14 @@ export const TABLES: IRawTable[] = [
         name: 'server_alarms',
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id                  SMALLINT NOT NULL PRIMARY KEY,
-                maxFileSystemUsage  SMALLINT NOT NULL,
-                maxMemoryUsage      SMALLINT NOT NULL,
-                maxCPULoad          SMALLINT NOT NULL,
-                maxCPUTemperature   SMALLINT NOT NULL,
-                maxGPUTemperature   SMALLINT NOT NULL,
+                id                              SMALLINT NOT NULL PRIMARY KEY,
+                max_file_system_usage           SMALLINT NOT NULL,
+                max_memory_usage                SMALLINT NOT NULL,
+                max_cpu_load                    SMALLINT NOT NULL,
+                max_cpu_temperature             SMALLINT NOT NULL,
+                max_gpu_load                    SMALLINT NOT NULL,
+                max_gpu_temperature             SMALLINT NOT NULL,
+                max_gpu_memory_temperature      SMALLINT NOT NULL
             );`
         }
     },
