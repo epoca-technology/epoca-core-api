@@ -218,7 +218,15 @@ describe('API Response:', function() {
         expect(_utils.getCodeFromApiError('Another random error {(5)}')).toBe(5);
         expect(_utils.getCodeFromApiError('Another random error')).toBe(0);
         expect(_utils.getCodeFromApiError(_utils.buildApiError('Nasty Error mate among some other seuff! :(', 2669))).toBe(2669);
-        
+    });
+
+
+    it('-Can extract an error code from an error instance:', function() {
+        try {
+            throw new Error(_utils.buildApiError('Ops this is another error...', 404));
+        } catch (e) {
+            expect(_utils.getCodeFromApiError(e)).toBe(404)
+        }
     });
 });
 

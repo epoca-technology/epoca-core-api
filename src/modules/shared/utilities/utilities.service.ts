@@ -368,10 +368,13 @@ export class UtilitiesService implements IUtilitiesService {
 
     /**
      * Given an API error, it will extract the error code. If none is found, will return 0
-     * @param apiError 
+     * @param error 
      * @returns number
      */
-    public getCodeFromApiError(error: string): number {
+    public getCodeFromApiError(error: any): number {
+        // Retrieve the message if the error is not a string
+        if (typeof error != "string") error = this.getErrorMessage(error);
+        
         // Make sure it is a valid string
         if (typeof error == "string" && error.length > 5) {
             // Extract the code

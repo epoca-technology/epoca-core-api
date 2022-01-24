@@ -350,6 +350,144 @@ describe('Candlesticks DB Actions: ',  function() {
 
 
 
+
+
+describe('Candlestick Endpoint: ', async function() {
+
+    it('-Can retrieve candlesticks with valid parameters: ', async function() {
+        try {
+            await _candlestick.getForPeriod(moment().subtract(1, "days").valueOf(),Date.now(),15);
+        } catch (e) {
+            console.log(e);
+            fail('It should have been able to retrieve candlesticks with valid parameters. 1');
+        }
+
+        try {
+            await _candlestick.getForPeriod(moment().subtract(99, "hours").valueOf(),Date.now(),45);
+        } catch (e) {
+            console.log(e);
+            fail('It should have been able to retrieve candlesticks with valid parameters. 2');
+        }
+
+        try {
+            await _candlestick.getForPeriod(
+                moment().subtract(2, "years").valueOf(),
+                moment().subtract(1, "years").valueOf(),
+                120
+            );
+        } catch (e) {
+            console.log(e);
+            fail('It should have been able to retrieve candlesticks with valid parameters. 3');
+        }
+    });
+
+
+
+    it('-Cannot retrieve candlesticks with an invalid start: ', async function() {
+        try {
+            //@ts-ignore
+            await _candlestick.getForPeriod("asdasd",Date.now(),15);
+            fail('It should have not retrieved candlesticks with an invalid start. 1');
+        } catch (e) {
+            expect(_utils.getCodeFromApiError(e)).toBe(1300);
+        }
+
+        try {
+            //@ts-ignore
+            await _candlestick.getForPeriod("1234123",Date.now(),60);
+            fail('It should have not retrieved candlesticks with an invalid start. 2');
+        } catch (e) {
+            expect(_utils.getCodeFromApiError(e)).toBe(1300);
+        }
+    });
+
+
+    
+
+
+    it('-Cannot retrieve candlesticks with an invalid end: ', async function() {
+        try {
+            //@ts-ignore
+            await _candlestick.getForPeriod(Date.now(), "asdasd",15);
+            fail('It should have not retrieved candlesticks with an invalid end. 1');
+        } catch (e) {
+            expect(_utils.getCodeFromApiError(e)).toBe(1300);
+        }
+
+        try {
+            //@ts-ignore
+            await _candlestick.getForPeriod(Date.now(), "1234123",60);
+            fail('It should have not retrieved candlesticks with an invalid end. 2');
+        } catch (e) {
+            expect(_utils.getCodeFromApiError(e)).toBe(1300);
+        }
+    });
+
+
+
+
+
+    it('-Cannot retrieve candlesticks if the start is equal or greater to the end: ', async function() {
+        try {
+            await _candlestick.getForPeriod(Date.now(), Date.now(),15);
+            fail('It should have not retrieved candlesticks with a start thats equal or greater than the end. 1');
+        } catch (e) {
+            expect(_utils.getCodeFromApiError(e)).toBe(1301);
+        }
+
+        try {
+            await _candlestick.getForPeriod(Date.now() + 1, Date.now(),15);
+            fail('It should have not retrieved candlesticks with a start thats equal or greater than the end. 2');
+        } catch (e) {
+            expect(_utils.getCodeFromApiError(e)).toBe(1301);
+        }
+    });
+
+
+
+
+    it('-Cannot retrieve candlesticks with an invalid interval: ', async function() {
+        try {
+            await _candlestick.getForPeriod(Date.now() - 1000, Date.now(), 0);
+            fail('It should have not retrieved candlesticks with an invalid interval. 1');
+        } catch (e) {
+            expect(_utils.getCodeFromApiError(e)).toBe(1302);
+        }
+
+        try {
+            // @ts-ignore
+            await _candlestick.getForPeriod(Date.now() - 1000, Date.now(), "123");
+            fail('It should have not retrieved candlesticks with an invalid interval. 2');
+        } catch (e) {
+            expect(_utils.getCodeFromApiError(e)).toBe(1302);
+        }
+
+        try {
+            await _candlestick.getForPeriod(Date.now() - 1000, Date.now(), 5001);
+            fail('It should have not retrieved candlesticks with an invalid interval. 3');
+        } catch (e) {
+            expect(_utils.getCodeFromApiError(e)).toBe(1302);
+        }
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 describe('Candlestick Essentials: ',  function() {
 
     it('-Can retrieve the db table for each candlestick type and testing mode: ', function() {

@@ -42,6 +42,7 @@ export class CandlestickService implements ICandlestickService {
 
 
     // Real Time Candlesticks Stream
+    private streamInterval: any;
     private readonly streamSyncSecondsTolerance: number = 60;
     public readonly stream: BehaviorSubject<ICandlestickStream> = new BehaviorSubject({lastUpdate: 0, candlesticks: []});
 
@@ -266,7 +267,7 @@ export class CandlestickService implements ICandlestickService {
         
 
         // Initialize the interval
-        setInterval(async () => { 
+        this.streamInterval = setInterval(async () => { 
             try { this.broadcastStream(await this.syncCandlesticks()) } 
             catch(e) { 
                 console.log(`Failed to sync the Candlesticks, attempting again in a few seconds:`, e);
