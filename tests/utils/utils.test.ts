@@ -275,6 +275,30 @@ describe('Error Handling:', function() {
 
 
 
+/* Conversions Handling */
+describe('Conversions Handling: ', function() {
+
+    it('-Can convert bytes into gigabytes: ', function() {
+        expect(_utils.fromBytesToGigabytes(1e+9)).toBe(1)
+        expect(_utils.fromBytesToGigabytes(2.85e+9)).toBe(2.85)
+        expect(_utils.fromBytesToGigabytes(6.8513e+11)).toBe(685.13)
+    });
+
+
+
+
+    it('-Can convert seconds into hours: ', function() {
+        expect(_utils.fromSecondsToHours(60)).toBe(0.01);
+        expect(_utils.fromSecondsToHours(3600)).toBe(1);
+        expect(_utils.fromSecondsToHours(57060)).toBe(15.85);
+    });
+});
+
+
+
+
+
+
 
 
 

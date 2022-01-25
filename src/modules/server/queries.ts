@@ -2,6 +2,7 @@ import { IServerAPIQueries } from "./interfaces";
 
 export const queries: IServerAPIQueries = {
     system: 'manufacturer, model, version, sku',
+    time: 'uptime',
     baseboard: 'manufacturer, model, version',
     bios: 'vendor, version, releaseDate, revision',
     osInfo: 'platform, distro, release, codename, kernel, arch, hostname, fqdn',

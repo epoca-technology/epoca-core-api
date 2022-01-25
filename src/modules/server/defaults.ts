@@ -80,6 +80,10 @@ export const defaults: IDefaultData = {
         socket: [],
         chipset: 0
     },
+    cpuLoad: {
+        avgLoad: 0,
+        currentLoad: 0
+    },
     gpu: {
         vendor: "Unknown",
         model: "Unknown",
@@ -88,5 +92,5 @@ export const defaults: IDefaultData = {
         temperatureGpu: 0,
         temperatureMemory: 0,
     },
-    runningServices: []
+    runningServices: [],
 }

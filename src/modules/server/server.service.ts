@@ -15,7 +15,11 @@ import {
     IServerSoftwareVersions, 
     IServerSystem,
     IAlarmsConfig,
-    IServerRunningService
+    IServerRunningService,
+    IServerCPULoad,
+    IServerInfo,
+    IServerResources,
+    IServerData
 } from "./interfaces";
 import { defaults } from "./defaults";
 import { queries } from "./queries";
@@ -23,7 +27,6 @@ import { IUtilitiesService } from "../shared/utilities";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../shared/database";
 import { INotificationService } from "../shared/notification";
 import * as si from "systeminformation";
-import {BigNumber} from "bignumber.js";
 
 
 
@@ -43,20 +46,25 @@ export class ServerService implements IServerService {
     private os: IServerOS = defaults.os;
     private softwareVersions: IServerSoftwareVersions = defaults.softwareVersions;
     private networkInterfaces: IServerNetworkInterface[] = defaults.networkInterfaces;
+    private cpu: IServerCPU = defaults.cpu;
 
     // Resources
     private uptime: number = defaults.uptime;
     private lastResourceScan: number = defaults.lastResourceScan;
     private fileSystems: IServerFileSystem[] = defaults.fileSystems;
     private memory: IServerMemory = defaults.memory;
-    private cpu: IServerCPU = defaults.cpu;
     private cpuTemperature: IServerCPUTemperature = defaults.cpuTemperature;
     private gpu: IServerGPU = defaults.gpu;
     private runningServices: IServerRunningService[] = defaults.runningServices;
+    private cpuLoad: IServerCPULoad = defaults.cpuLoad;
     
     // Alarms
-    public alarmsTable: string = 'server_alarms';
+    private alarmsTable: string = 'server_alarms';
     private alarms: IAlarmsConfig = defaults.alarms;
+
+    // Interval
+    private monitorIntervalSeconds: number = 60;
+    private monitorInterval: any;
 
     // Test Mode
     public testMode: boolean = false;
@@ -68,28 +76,137 @@ export class ServerService implements IServerService {
 
 
 
+    /* Retrievers */
 
 
 
-    
 
-
-
-    public async initialize(): Promise<void> {
-
+    /**
+     * Retrieves a collection of the server info and the resources.
+     * @returns 
+     */
+    public getServerData(): IServerData {
+        return {
+            info: this.getServerInfo(),
+            resources: this.getServerResources(),
+        }
     }
 
 
 
 
 
-    public async initializeData(): Promise<void> {
+
+
+
+
+    /**
+     * Retrieves the server info object. This data does not change as time
+     * moves on.
+     * @returns IServerInfo
+     */
+    public getServerInfo(): IServerInfo {
+        return {
+            system: this.system,
+            baseboard: this.baseboard,
+            bios: this.bios,
+            os: this.os,
+            softwareVersions: this.softwareVersions,
+            networkInterfaces: this.networkInterfaces,
+            cpu: this.cpu,
+        }
+    }
+
+
+
+
+
+
+
+    /**
+     * Retrieves the server resources object. This data changes every time the interval
+     * is invoked.
+     * @returns IServerResources
+     */
+    public getServerResources(): IServerResources {
+        return {
+            uptime: this.uptime,
+            lastResourceScan: this.lastResourceScan,
+            alarms: this.alarms,
+            fileSystems: this.fileSystems,
+            memory: this.memory,
+            cpuTemperature: this.cpuTemperature,
+            gpu: this.gpu,
+            runningServices: this.runningServices,
+            cpuLoad: this.cpuLoad
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* Initializers */
+
+
+    
+
+
+
+
+
+    /**
+     * Initializes the server module and the interval that will permanently monitor
+     * the resources to prevent server damage.
+     * @returns Promise<void>
+     */
+    public async initialize(): Promise<void> {
+        try {
+            // Perform a full initialization
+            await this.initializeData();
+
+            // Create the interval 
+            this.monitorInterval = setInterval(async () => {
+                try { await this.updateDynamicData() } 
+                catch (e) {
+                    console.error('The server module encountered an error when updating dynamic data', e);
+                }
+            }, this.monitorIntervalSeconds * 1000);
+        } catch (e) {
+            console.error('The server module could not be initialized: ', e);
+        }
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Initializes the alarms and all of the system's data. It also triggers
+     * the monitoring system for the first time.
+     * @returns Promise<void>
+     */
+    private async initializeData(): Promise<void> {
         // Initialize Alarms
         await this.setAlarmsConfiguration();
 
         // Retrieve the servers info and populate it
         const data: any = await si.get({
             system: queries.system,
+            time: queries.time,
             baseboard: queries.baseboard,
             bios: queries.bios,
             osInfo: queries.osInfo,
@@ -100,11 +217,71 @@ export class ServerService implements IServerService {
             cpu: queries.cpu,
             cpuTemperature: queries.cpuTemperature,
             graphics: queries.graphics,
-            currentLoad: queries.currentLoad,
-            //services: queries.services, Doesnt work
+            currentLoad: queries.currentLoad
         });
-        console.log(data);
-        console.log(await si.services(queries.services));
+
+        // Retrieve the running services
+        const services: IServerRunningService[] = await si.services(queries.services);
+
+        // Set Static values
+        this.setStaticValues({
+            system: data.system,
+            baseboard: data.baseboard,
+            bios: data.bios,
+            os: data.osInfo,
+            softwareVersions: data.versions,
+            networkInterfaces: data.networkInterfaces,
+            cpu: data.cpu,
+        });
+
+        // Set Dynamic values
+        this.setDynamicValues({
+            uptime: this._utils.fromSecondsToHours(data.time.uptime),
+            fileSystems: data.fsSize,
+            memory: data.mem,
+            cpuTemperature: data.cpuTemperature,
+            gpu: data.graphics && data.graphics.controllers ? data.graphics?.controllers[0]: undefined,
+            runningServices: services,
+            cpuLoad: data.currentLoad
+        });
+    }
+
+
+
+
+
+
+
+    /**
+     * Updates the dynamic data as well as monitoring the resources based
+     * on the latest values.
+     * @returns Promise<void>
+     */
+    private async updateDynamicData(): Promise<void> {
+        // Retrieve the servers info and populate it
+        const data: any = await si.get({
+            time: queries.time,
+            fsSize: queries.fsSize,
+            mem: queries.mem,
+            cpu: queries.cpu,
+            cpuTemperature: queries.cpuTemperature,
+            graphics: queries.graphics,
+            currentLoad: queries.currentLoad
+        });
+
+        // Retrieve the running services
+        const services: IServerRunningService[] = await si.services(queries.services);
+
+        // Set Dynamic values
+        this.setDynamicValues({
+            uptime: this._utils.fromSecondsToHours(data.time.uptime),
+            fileSystems: data.fsSize,
+            memory: data.mem,
+            cpuTemperature: data.cpuTemperature,
+            gpu: data.graphics && data.graphics.controllers ? data.graphics?.controllers[0]: undefined,
+            runningServices: services,
+            cpuLoad: data.currentLoad
+        });
     }
 
 
@@ -115,7 +292,80 @@ export class ServerService implements IServerService {
 
 
 
+
+
+
+
     /* Setters */
+
+
+
+
+
+
+    /**
+     * Sets the retrieved static values. This data is only set once.
+     * @param data 
+     * @returns void
+     */
+    private setStaticValues(data: {
+        system: IServerSystem,
+        baseboard: IServerBaseBoard,
+        bios: IServerBIOS,
+        os: IServerOS,
+        softwareVersions: IServerSoftwareVersions,
+        networkInterfaces: IServerNetworkInterface[],
+        cpu: IServerCPU,
+    }): void {
+        this.setSystem(data.system);
+        this.setBaseBoard(data.baseboard);
+        this.setBIOS(data.bios);
+        this.setOS(data.os);
+        this.setSoftwareVersions(data.softwareVersions);
+        this.setNetworkInterfaces(data.networkInterfaces);
+        this.setCPU(data.cpu);
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Sets the retrieved static values and then performs a resource monitoring.
+     * This is a recurrent action
+     * @param data 
+     * @returns void
+     */
+    private setDynamicValues(data: {
+        uptime: number,
+        fileSystems: IServerFileSystem[],
+        memory: IServerMemory,
+        cpuTemperature: IServerCPUTemperature,
+        gpu: IServerGPU,
+        runningServices: IServerRunningService[],
+        cpuLoad: IServerCPULoad
+    }): void {
+        // Set values
+        this.uptime = data.uptime;
+        this.lastResourceScan = Date.now();
+        this.setFileSystems(data.fileSystems);
+        this.setMemory(data.memory);
+        this.setCPUTemperature(data.cpuTemperature);
+        this.setGPU(data.gpu);
+        this.setRunningServices(data.runningServices);
+        this.setCPULoad(data.cpuLoad);
+        
+        // Now that all values have been set, monitor the resources
+        this.monitorResources();
+    }
+
+
+
+
 
 
 
@@ -172,7 +422,14 @@ export class ServerService implements IServerService {
 
     // Software Versions
     private setSoftwareVersions(versions: IServerSoftwareVersions): void {
-        if (versions) { this.softwareVersions = versions }
+        if (versions) { 
+            this.softwareVersions = {};
+            for (let k in versions) {
+                if (versions[k] && versions[k].length) {
+                    this.softwareVersions[k] = versions[k]
+                }
+            }
+        }
     }
 
 
@@ -193,9 +450,9 @@ export class ServerService implements IServerService {
                 this.fileSystems.push({
                     fs: fs.fs || "Unknown",
                     type: fs.type || "Unknown",
-                    size: this.fromBytesToGigabytes(fs.size),
-                    used: this.fromBytesToGigabytes(fs.used),
-                    available: this.fromBytesToGigabytes(fs.available),
+                    size: this._utils.fromBytesToGigabytes(fs.size),
+                    used: this._utils.fromBytesToGigabytes(fs.used),
+                    available: this._utils.fromBytesToGigabytes(fs.available),
                     mount: fs.mount || "Unknown",
                     usedPercent: fs.type && fs.used ? <number>this._utils.calculatePercentageOutOfTotal(fs.used, fs.size): 0
                 });
@@ -208,9 +465,9 @@ export class ServerService implements IServerService {
     // Memory
     private setMemory(memory: IServerMemory): void {
         if (memory) {
-            if (memory.total) this.memory.total = this.fromBytesToGigabytes(memory.total);
-            if (memory.free) this.memory.free = this.fromBytesToGigabytes(memory.free);
-            if (memory.used) this.memory.used = this.fromBytesToGigabytes(memory.used);
+            if (memory.total) this.memory.total = this._utils.fromBytesToGigabytes(memory.total);
+            if (memory.free) this.memory.free = this._utils.fromBytesToGigabytes(memory.free);
+            if (memory.used) this.memory.used = this._utils.fromBytesToGigabytes(memory.used);
             if (memory.used && memory.total) this.memory.usedPercent = <number>this._utils.calculatePercentageOutOfTotal(memory.used, memory.total);
         }
     }
@@ -269,14 +526,188 @@ export class ServerService implements IServerService {
     private setRunningServices(services: IServerRunningService[]): void {
         if (services && services.length) {
             this.runningServices = [];
-            services.forEach((s) => {
-                if (s.running) this.runningServices.push(s)
-            });
+            services.forEach((s) => { if (s.running) this.runningServices.push(s) });
         }
     }
 
 
 
+    // CPU Load
+    private setCPULoad(load: IServerCPULoad): void {
+        if (load) {
+            if (load.avgLoad) this.cpuLoad.avgLoad = load.avgLoad;
+            if (load.currentLoad) this.cpuLoad.currentLoad = load.currentLoad;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* Monitoring */
+
+
+
+
+
+    /**
+     * It will check resource by resource and make sure the states are
+     * in manageable conditions. If a resource is above the allowed value
+     * it will notify users unless test mode is enabled.
+     * @returns void
+     */
+    private async monitorResources(): Promise<void> {
+        if (!this.testMode) {
+            // Monitor the File Systems Usage
+            if (!this.isFileSystemUsageAcceptable()) {
+
+            }
+
+            // Monitor the Memory Usage
+            if (!this.isMemoryUsageAcceptable()) {
+
+            }
+
+            // Monitor the CPU Load
+            if (!this.isCPULoadAcceptable()) {
+
+            }
+
+            // Monitor the CPU Temperature
+            if (!this.isCPUTemperatureAcceptable()) {
+
+            }
+
+            // Monitor the GPU Load
+            if (!this.isGPULoadAcceptable()) {
+
+            }
+
+            // Monitor the GPU Temperature
+            if (!this.isGPUTemperatureAcceptable()) {
+
+            }
+
+            // Monitor the GPU Memory Temperature
+            if (!this.isGPUMemoryTemperatureAcceptable()) {
+
+            }
+        }
+    }
+
+
+
+
+
+
+
+    /**
+     * Checks if the file systems' usage is within the acceptable range.
+     * @returns boolean
+     */
+    private isFileSystemUsageAcceptable(): boolean {
+        for (let fs of this.fileSystems) { if (fs.usedPercent >= this.alarms.max_file_system_usage) return false }
+        return true;
+    }
+
+
+
+
+
+    /**
+     * Checks if the memory's usage is within the acceptable range.
+     * @returns boolean
+     */
+    private isMemoryUsageAcceptable(): boolean {
+        return this.memory.usedPercent < this.alarms.max_memory_usage;
+    }
+
+
+
+
+
+
+
+    /**
+     * Checks if the CPU's load is within the acceptable range.
+     * @returns boolean
+     */
+    private isCPULoadAcceptable(): boolean {
+        return this.cpuLoad.avgLoad < this.alarms.max_cpu_load && this.cpuLoad.currentLoad < this.alarms.max_cpu_load;
+    }
+
+
+
+
+
+
+    /**
+     * Checks if the temperature in all CPU components are within the acceptable
+     * range.
+     * @returns boolean
+     */
+     private isCPUTemperatureAcceptable(): boolean {
+        // Check the main property
+        if (this.cpuTemperature.main >= this.alarms.max_cpu_temperature) return false;
+
+        // Check the chipset
+        if (this.cpuTemperature.chipset >= this.alarms.max_cpu_temperature) return false;
+
+        // Check each core
+        for (let c of this.cpuTemperature.cores) { if (c >= this.alarms.max_cpu_temperature) return false }
+
+        // Check each socket
+        for (let s of this.cpuTemperature.socket) { if (s >= this.alarms.max_cpu_temperature) return false }
+
+        // Otherwise, the temperature is acceptable
+        return true;
+    }
+
+
+
+
+
+
+    /**
+     * Checks if the GPU's load is within the acceptable range.
+     * @returns boolean
+     */
+    private isGPULoadAcceptable(): boolean { return this.gpu.utilizationGpu < this.alarms.max_gpu_load }
+
+
+
+
+
+
+
+
+    /**
+     * Checks if the GPU's temperature is within the acceptable range.
+     * @returns boolean
+     */
+    private isGPUTemperatureAcceptable(): boolean { return this.gpu.temperatureGpu < this.alarms.max_gpu_temperature }
+
+
+
+
+
+
+
+    /**
+     * Checks if the GPU's memory's temperature is within the acceptable range.
+     * @returns boolean
+     */
+     private isGPUMemoryTemperatureAcceptable(): boolean { return this.gpu.temperatureMemory < this.alarms.max_gpu_memory_temperature }
 
 
 
@@ -383,46 +814,11 @@ export class ServerService implements IServerService {
 
 
 
+
+
     /**
      * Retrieves the alarms table to use based on the test mode.
      * @returns string
      */
-    public getAlarmsTable(): string { return this.testMode ? this._db.getTestTableName(this.alarmsTable): this.alarmsTable};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /* Misc Helpers */
-
-
-
-
-
-
-
-
-    /**
-     * Converts bytes into gigabytes. If the provided value is not a number
-     * it will return 0.
-     * @param bytes 
-     * @returns number
-     */
-    private fromBytesToGigabytes(bytes: number): number {
-        if (typeof bytes != "number" || bytes == 0) return 0;
-        return <number>this._utils.outputNumber(new BigNumber(bytes).dividedBy(1000*1000*1000)); 
-    }
+    private getAlarmsTable(): string { return this.testMode ? this._db.getTestTableName(this.alarmsTable): this.alarmsTable};
 }

@@ -3,18 +3,18 @@
 // Service
 export interface IServerService {
     // Properties
-    alarmsTable: string,
     testMode: boolean,
+
+    // Retrievers
+    getServerData(): IServerData,
+    getServerInfo(): IServerInfo,
+    getServerResources(): IServerResources,
 
     // Initializer
     initialize(): Promise<void>,
-    initializeData(): Promise<void>,
 
     // Alarms Management
     setAlarmsConfiguration(c?: IAlarmsConfig): Promise<void>,
-    getAlarmsTable(): string,
-
-    // Misc Helpers
 }
 
 
@@ -139,6 +139,13 @@ export interface IServerCPUTemperature {
 }
 
 
+// Server CPU Load
+export interface IServerCPULoad {
+    avgLoad: number,
+    currentLoad: number
+}
+
+
 // GPU - Used for monitoring and it is updated on every interval
 export interface IServerGPU {
     vendor: string,
@@ -165,9 +172,12 @@ export interface IServerRunningService {
 
 
 
+
+
 /* System Information API Queries */
 export interface IServerAPIQueries {
     system: string,
+    time: string,
     baseboard: string,
     bios: string,
     osInfo: string,
@@ -222,6 +232,7 @@ export interface IServerInfo {
     os: IServerOS,
     softwareVersions: IServerSoftwareVersions,
     networkInterfaces: IServerNetworkInterface[],
+    cpu: IServerCPU,
 }
 
 
@@ -229,13 +240,13 @@ export interface IServerInfo {
 export interface IServerResources {
     uptime: number,
     lastResourceScan: number,
-    alarms: IAlarmsConfig
+    alarms: IAlarmsConfig,
     fileSystems: IServerFileSystem[],
     memory: IServerMemory,
-    cpu: IServerCPU,
     cpuTemperature: IServerCPUTemperature,
     gpu: IServerGPU,
-    runningServices: IServerRunningService[]
+    runningServices: IServerRunningService[],
+    cpuLoad: IServerCPULoad
 }
 
 

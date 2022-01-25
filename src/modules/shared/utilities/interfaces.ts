@@ -24,6 +24,10 @@ export interface IUtilitiesService {
     // Error Message Extraction
     getErrorMessage(e: any): string,
 
+    // Conversions
+    fromBytesToGigabytes(bytes: number): number,
+    fromSecondsToHours(seconds: number): number,
+
     // Dates
     getTimestamp(date: string): number,
     toDateString(timestamp: number): string,

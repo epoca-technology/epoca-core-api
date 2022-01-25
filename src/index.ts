@@ -82,7 +82,7 @@ process.on('unhandledRejection', (err) => logError(err, 'unhandledRejection'));
 process.on('warning', (err) => logError(err, 'warning'));
 function logError(err: any, event: string): void {
     // console.log(event);
-    console.log(err);
+    console.error(err);
 }
 
 
@@ -96,28 +96,6 @@ init()
     console.log('Production: ' + environment.production);
 })
 .catch(e => {
-	console.log(e);
+	console.error(e);
 	throw new Error('The API could not be initialized.');
 });
-
-
-
-/*
-import os = require("os");
-console.log('NodeJS Version: ', process.version);
-console.log('Host Name: ',os.hostname());
-console.log('Load AVG: ',os.loadavg());
-console.log('Uptime: ',os.uptime());
-console.log('Free Memory: ',os.freemem());
-console.log('Total Memory: ',os.totalmem());
-console.log('CPUs: ',os.cpus());
-console.log('Type: ',os.type());
-console.log('Release: ',os.release());
-console.log('Network Interfaces: ',os.networkInterfaces());
-console.log('Arch: ',os.arch());
-console.log('Version: ',os.version());
-console.log('Platform: ',os.platform());
-
-import * as si from "systeminformation";
-si.cpu().then(d => console.log(d)).catch(e => console.log(e))
-si.cpuTemperature().then(d => console.log(d)).catch(e => console.log(e))*/

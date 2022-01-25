@@ -457,8 +457,43 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+
+
+
+    /* Conversions */
+
+
+
     
 
+    /**
+     * Converts bytes into gigabytes. If the provided value is not a number
+     * it will return 0.
+     * @param bytes 
+     * @returns number
+     */
+     public fromBytesToGigabytes(bytes: number): number {
+        if (typeof bytes != "number" || bytes == 0) return 0;
+        return <number>this.outputNumber(new BigNumber(bytes).dividedBy(1000*1000*1000)); 
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Converts seconds into hours.
+     * @param seconds 
+     * @returns number
+     */
+    public fromSecondsToHours(seconds: number): number {
+        if (typeof seconds != "number" || seconds == 0) return 0;
+        return <number>this.outputNumber(new BigNumber(seconds).dividedBy(60).dividedBy(60));
+    }
 
 
 
