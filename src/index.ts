@@ -24,7 +24,7 @@ const app = express();
 const accessLogStream: morgan.StreamOptions = rfs.createStream('access.log', {
     path: './logs',
     maxFiles: 200,
-    size: '500K',
+    size: '300K',
 });
 app.use(morgan('combined', { stream: accessLogStream }));
 

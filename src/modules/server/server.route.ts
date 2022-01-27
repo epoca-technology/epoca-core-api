@@ -53,30 +53,6 @@ ServerRoute.route(`/getServerData`).get(highRiskLimit, async (req: express.Reque
 
 
 
-/**
- * Retrieves the Server's Info. If it hasn't been initialized, the 
- * values will be the defaults.
-* @returns IAPIResponse<IServerInfo>
-*/
-ServerRoute.route(`/getServerInfo`).get(highRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Retrieve the token
-    const token: string = req.get("authorization");
-
-    try {
-        // Validate the token
-        // @TODO
-
-        // Return the response
-        res.send(_utils.apiResponse(_server.getServerInfo()));
-    } catch (e) {
-		console.log(e);
-        res.send(_utils.apiResponse(undefined, e));
-    }
-});
-
-
-
-
 
 
 

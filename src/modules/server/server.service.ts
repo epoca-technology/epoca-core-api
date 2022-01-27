@@ -63,7 +63,7 @@ export class ServerService implements IServerService {
     private alarms: IAlarmsConfig = defaults.alarms;
 
     // Interval
-    private monitorIntervalSeconds: number = 60;
+    private monitorIntervalSeconds: number = 180; // ~3 minutes
     private monitorInterval: any;
 
     // Test Mode
