@@ -10,6 +10,15 @@ const options: rateLimit.Options = {
 
 
 
+/**
+ * Ultra Low risk endpoints.
+ * 300 requests every 15 minutes
+ */
+ export const ultraLowRiskLimit: rateLimit.RateLimit = rateLimit({max: 300, ...options});
+
+
+
+
 
 /**
  * Low risk endpoints.
@@ -40,3 +49,15 @@ const options: rateLimit.Options = {
  * Used for actions that consume significant amount of resources or for any public interaction.
  */
  export const highRiskLimit: rateLimit.RateLimit = rateLimit({max: 15, ...options});
+
+
+
+
+
+
+/**
+ * Ultra High risk endpoints. 
+ * 5 requests every 15 minutes
+ * Used for actions that consume significant amount of resources or are very sensitive.
+ */
+ export const ultraHighRiskLimit: rateLimit.RateLimit = rateLimit({max: 5, ...options});

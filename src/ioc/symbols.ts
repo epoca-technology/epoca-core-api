@@ -21,8 +21,11 @@
 
     // Database
     DatabaseService: Symbol.for("DatabaseService"),
+    DatabaseBackupService: Symbol.for("DatabaseBackupService"),
+    DatabaseRestoreService: Symbol.for("DatabaseRestoreService"),
+    DatabaseValidations: Symbol.for("DatabaseValidations"),
 
-    // Database
+    // Notifications
     NotificationService: Symbol.for("NotificationService"),
 
     // Validations
@@ -42,6 +45,9 @@ export interface ISymbols {
     UtilitiesService: symbol,
     ExternalRequestService: symbol,
     DatabaseService: symbol,
+    DatabaseBackupService: symbol,
+    DatabaseRestoreService: symbol,
+    DatabaseValidations: symbol,
     NotificationService: symbol,
     ValidationsService: symbol,
     ServerService: symbol,

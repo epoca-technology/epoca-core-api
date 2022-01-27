@@ -190,6 +190,14 @@ export class ServerService implements IServerService {
 
 
 
+    /**
+     * Clears the monitor interval if exists.
+     * @returns void
+     */
+    public stop(): void { if (this.monitorInterval) clearInterval(this.monitorInterval)}
+
+
+
 
 
 
@@ -283,6 +291,10 @@ export class ServerService implements IServerService {
             cpuLoad: data.currentLoad
         });
     }
+
+
+
+
 
 
 

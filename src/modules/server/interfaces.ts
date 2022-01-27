@@ -12,6 +12,7 @@ export interface IServerService {
 
     // Initializer
     initialize(): Promise<void>,
+    stop(): void,
 
     // Alarms Management
     setAlarmsConfiguration(c?: IAlarmsConfig): Promise<void>,

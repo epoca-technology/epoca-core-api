@@ -1,4 +1,4 @@
-import { IBinanceCandlestick } from "../../src/modules/shared/binance";
+import { IBinanceCandlestick } from "../../../src/modules/shared/binance";
 
 
 

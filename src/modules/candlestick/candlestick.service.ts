@@ -286,6 +286,17 @@ export class CandlestickService implements ICandlestickService {
 
 
 
+    /**
+     * Clears the stream interval if it has been set and therefore,
+     * stop syncing candlesticks.
+     * @returns void
+     */
+    public stopSync(): void { if (this.streamInterval) clearInterval(this.streamInterval) }
+
+
+
+
+
 
 
 

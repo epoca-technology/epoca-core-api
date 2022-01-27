@@ -1,7 +1,17 @@
 import {injectable} from "inversify";
-import { IDatabaseService, ITable, IPool, IPoolClient, IPoolConfig, IQueryResult, IQueryConfig} from "./interfaces";
+import { 
+    IDatabaseService, 
+    ITable, 
+    IPool, 
+    IPoolClient, 
+    IPoolConfig, 
+    IQueryResult, 
+    IQueryConfig,
+    IDatabaseSummary,
+    IDatabaseSummaryTable,
+} from "./interfaces";
 import { TABLES } from "./tables";
-import {Pool, types} from "pg";
+import {Client, Pool, types} from "pg";
 
 
 @injectable()
@@ -40,10 +50,6 @@ export class DatabaseService implements IDatabaseService {
         // Numeric Parsing
         types.setTypeParser(1700, (val) => { return parseFloat(val) });
     }
-
-
-
-
 
 
 
@@ -91,6 +97,28 @@ export class DatabaseService implements IDatabaseService {
 
 
 
+    /* Initialization */
+
+
+
+
+
+
+    /**
+     * Creates the Database as well as the required tables for the project to run.
+     * @returns Promise<any[]>
+     */
+    public async initialize(): Promise<void> {
+        // Create the DB
+        await this.createDatabase();
+
+        // Init the client
+        const client: IPoolClient = await this.pool.connect();
+
+        // Create the required tables in case they don't exist
+        try { for (let table of this.tables) { await client.query(table.sql) } }
+        finally { client.release() }
+    }
 
 
 
@@ -98,11 +126,34 @@ export class DatabaseService implements IDatabaseService {
 
 
 
+    /**
+     * Checks for the existance of the database. If it doesn't exist, it will create it.
+     * @returns Promise<void>
+     */
+    private async createDatabase(): Promise<void> {
+        // Init a client
+        const client: Client = new Client({
+            host: this.config.host,
+            user: this.config.user,
+            password: this.config.password,
+            port: this.config.port,
+        });
+
+        // Perform the connection
+        await client.connect();
+    
+        try {
+            // Check if the DB exists and create it if it doesn't
+            const {rowCount}: IQueryResult = await client.query('SELECT FROM pg_database WHERE datname = $1', [this.config.database]);
+            if (rowCount == 0) {
+                await client.query(`CREATE DATABASE ${this.config.database}`);
+            }
+        }
+        finally { await client.end() }
+    }
 
 
 
-
-    /* Misc Helpers */
 
 
 
@@ -114,7 +165,7 @@ export class DatabaseService implements IDatabaseService {
      * tables with the test_ prefix.
      * @returns ITable[]
      */
-    private buildDatabaseTables(): ITable[] {
+     private buildDatabaseTables(): ITable[] {
         // Initialize the list of processed tables
         let tables: ITable[] = [];
 
@@ -141,6 +192,69 @@ export class DatabaseService implements IDatabaseService {
 
 
 
+    /* Summary */
+
+
+
+
+
+
+    /**
+     * Builds the Database Summary Data and returns it.
+     * @returns Promise<IDatabaseSummary>
+     */
+    public async getDatabaseSummary(): Promise<IDatabaseSummary> {
+        // Init the client
+        const client: IPoolClient = await this.pool.connect();
+
+        try {
+            // Retrieve the version of the database
+            const version: IQueryResult = await client.query(`SELECT version();`);
+
+            // Retrieve the size of the entire database
+            const dbSize: IQueryResult = await client.query(`SELECT pg_size_pretty( pg_database_size('${this.config.database}') );`);
+
+            // Retrieve the size for each table
+            let tables: IDatabaseSummaryTable[] = []
+            for (let table of this.tables) {
+                const tableSize: IQueryResult = await client.query(`SELECT pg_size_pretty( pg_total_relation_size('${table.name}') );`);
+                tables.push({
+                    name: table.name,
+                    size: tableSize.rows[0].pg_size_pretty
+                });
+            }
+
+            // Return the Summary
+            return {
+                name: this.config.database,
+                version: version.rows[0].version,
+                size: dbSize.rows[0].pg_size_pretty,
+                tables: tables
+            }
+        }
+        finally { client.release() }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* Misc Helpers */
+
+
+
+
 
     /**
      * Given a table name, it will add the test prefix to the name.
@@ -148,4 +262,9 @@ export class DatabaseService implements IDatabaseService {
      * @returns string
      */
     public getTestTableName(tableName: string): string { return `test_${tableName}` }
+
+
+
+
+
 }

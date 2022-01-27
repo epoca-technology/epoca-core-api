@@ -9,7 +9,7 @@ export type IQueryResult = QueryResult;
 export type IClient = Client;
 
 
-// Service
+// Main Service
 export interface IDatabaseService {
     // Properties
     config: IPoolConfig,
@@ -19,7 +19,11 @@ export interface IDatabaseService {
     // Query
     query(config: IQueryConfig): Promise<IQueryResult>,
 
+    // Initialization
+    initialize(): Promise<void>,
 
+    // Summary
+    getDatabaseSummary(): Promise<IDatabaseSummary>,
 
     // Misc Helpers
     getTestTableName(tableName: string): string,
@@ -27,6 +31,45 @@ export interface IDatabaseService {
 
 
 
+// Backup Service
+export interface IDatabaseBackupService {
+
+}
+
+
+
+
+
+// Restore Service
+export interface IDatabaseRestoreService {
+    
+}
+
+
+
+
+// Validations
+export interface IDatabaseValidations {
+    
+}
+
+
+
+
 // Table
 export interface ITable {name: string, sql: string};
 export interface IRawTable {name: string, sql: Function};
+
+
+
+// Summary
+export interface IDatabaseSummary {
+    name: string,
+    version: string,
+    size: string,
+    tables: IDatabaseSummaryTable[]
+}
+export interface IDatabaseSummaryTable {
+    name: string,
+    size: string
+}

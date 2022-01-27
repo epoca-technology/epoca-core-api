@@ -23,6 +23,7 @@ export interface ICandlestickService {
 
     // Candlestick Syncing & Saving
     initializeSync(): Promise<void>,
+    stopSync(): void,
     syncCandlesticks(): Promise<ICandlestick[]>,
     saveCandlesticks(candlesticks: ICandlestick[], forecast?: boolean): Promise<void>,
 
