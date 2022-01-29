@@ -28,7 +28,13 @@ const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.Databas
 /* Server Data Init & Retrieving */
 describe('Server Data Init & Retrieving: ', function() {
     // Initialize the server
-    beforeAll(async () => { await _server.initialize() });
+    beforeAll(async () => { 
+        _server.testMode = true;
+        await _server.initialize()
+    });
+
+    // Disable the test mode
+    afterAll(() => { _server.testMode = false });
 
 
     it('-Can retrieve the server info: ', async function() {

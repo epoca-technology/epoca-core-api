@@ -13,11 +13,11 @@ export interface INotificationService {
 
 // Notification Object
 export interface INotification {
-    sender: ISender,
+    sender: INotificationSender,
     title: string,
     description: string
 }
 
 
 // Senders
-export type ISender = "UNIT_TEST"|"SERVER"|"DATABASE_BACKUP"|"DATABASE_RESTORE";
+export type INotificationSender = "UNIT_TEST"|"SERVER"|"DATABASE_BACKUP"|"DATABASE_RESTORE";

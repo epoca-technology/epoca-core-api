@@ -86,9 +86,8 @@ export class NotificationService implements INotificationService {
         const msg: string = `${notification.sender}\n${notification.title}\n${notification.description}`;
 
         // Send it
-        try {
-            await this.telegraf.telegram.sendMessage(this.chatID, msg);
-        } catch (e) {
+        try { await this.telegraf.telegram.sendMessage(this.chatID, msg) } 
+        catch (e) {
             console.error('Error during sendTelegram. Attemting again in a few seconds', e);
             await this._utils.asyncDelay(3);
             await this.telegraf.telegram.sendMessage(this.chatID, msg);
@@ -114,7 +113,18 @@ export class NotificationService implements INotificationService {
      * @returns Promise<void>
      */
     private async sendPushNotification(notification: INotification): Promise<void> {
+        // Init the message
+        const title: string = `${notification.sender}: ${notification.title}`;
 
+        // Send it
+        try {  
+            // @TODO
+        } 
+        catch (e) {
+            console.error('Error during sendPushNotification. Attemting again in a few seconds', e);
+            await this._utils.asyncDelay(3);
+            // @TODO
+        }
     }
 
 

@@ -1,3 +1,4 @@
+import { INotification } from "../notification";
 
 
 // Service
@@ -174,31 +175,6 @@ export interface IServerRunningService {
 
 
 
-
-/* System Information API Queries */
-export interface IServerAPIQueries {
-    system: string,
-    time: string,
-    baseboard: string,
-    bios: string,
-    osInfo: string,
-    versions: string,
-    networkInterfaces: string,
-    cpu: string,
-    cpuTemperature: string,
-    graphics: string,
-    fsSize: string,
-    mem: string,
-    currentLoad: string,
-    services: string,
-}
-
-
-
-
-
-
-
 /* Alarms Config */
 export interface IAlarmsConfig {
     max_file_system_usage: number,        // %
@@ -262,4 +238,48 @@ export interface IServerData {
 // Default Data
 export interface IDefaultData extends IServerInfo, IServerResources {
     
+}
+
+
+
+
+
+
+/* Helpers */
+
+
+
+
+
+
+// System Information API Queries
+export interface IServerAPIQueries {
+    system: string,
+    time: string,
+    baseboard: string,
+    bios: string,
+    osInfo: string,
+    versions: string,
+    networkInterfaces: string,
+    cpu: string,
+    cpuTemperature: string,
+    graphics: string,
+    fsSize: string,
+    mem: string,
+    currentLoad: string,
+    services: string,
+}
+
+
+
+
+// Server Notifications
+export interface IServerNotifications {
+    fileSystemUsage: INotification,
+    memoryUsage: INotification,
+    cpuLoad: INotification,
+    cpuTemperature: INotification,
+    gpuLoad: INotification,
+    gpuTemperature: INotification,
+    gpuMemoryTemperature: INotification
 }
