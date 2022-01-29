@@ -8,12 +8,12 @@ import * as stringify from 'json-stable-stringify';
 
 
 // Utilities Service
-import { IAPIResponse, IUtilitiesService } from "../../src/modules/shared/utilities";
+import { IAPIResponse, IUtilitiesService } from "../../src/modules/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
 // Validations Service
-import { IValidationsService } from "../../src/modules/shared/validations";
+import { IValidationsService } from "../../src/modules/validations";
 const _validations = appContainer.get<IValidationsService>(SYMBOLS.ValidationsService);
 
 

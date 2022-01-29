@@ -11,7 +11,7 @@
 #
 ## Getting Started
 
-1) Install dependencies with `npm start` 
+1) Install dependencies with `npm install` 
 
 2) Build the project with `npm run build` 
 
@@ -38,12 +38,6 @@ Run `npm run build` to perform a gulp build
 
 Run `npm start` to run the server
 
-#
-## CLI
-
-Database Utilities:  `npm run cli-db`
-
-Candlesticks Sync:  `npm run cli-candlestick`
 
 
 
@@ -52,16 +46,19 @@ Candlesticks Sync:  `npm run cli-candlestick`
 
 End-to-end: `npm run test`
 
-Trading Simulation: `npm run test-trading-simulation`
-
 Candlestick: `npm run test-candlestick`
-
-Utilities: `npm run test-utils`
 
 Database: `npm run test-db`
 
+Notification: `npm run test-notification`
+
 Server: `npm run test-server`
 
+Trading Simulation: `npm run test-trading-simulation`
+
+Utilities: `npm run test-utils`
+
+Validations: `npm run test-validations`
 
 
 

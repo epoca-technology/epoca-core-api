@@ -32,8 +32,11 @@ Stop Service: `sudo service postgresql stop`
 ##
 ## Database User
 
-Setup the password on the postgres user: `ALTER USER postgres WITH PASSWORD '123456';`
+Setup the password on the postgres user: 
 
+`ALTER USER postgres WITH PASSWORD 'C*KQiVaNdBYm,J#q$VU83kkSk|o)J6m.d#6A,$}r1XeKMd2g~d';`
+
+*Important: The password specified above will be the one used for dev. The production machine has a different password.
 
 ##
 ## Clusters

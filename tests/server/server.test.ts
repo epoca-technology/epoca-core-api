@@ -12,12 +12,12 @@ const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
 
 
 // Init Utils
-import { IUtilitiesService } from "../../src/modules/shared/utilities";
+import { IUtilitiesService } from "../../src/modules/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
 // Init the Database
-import { IDatabaseService, IQueryResult } from "../../src/modules/shared/database";
+import { IDatabaseService, IQueryResult } from "../../src/modules/database";
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 

@@ -7,12 +7,12 @@ import * as stringify from 'json-stable-stringify';
 
 
 // Init the Database Service
-import { IDatabaseService, IDatabaseSummary, IPoolClient, IQueryResult } from "../../src/modules/shared/database";
+import { IDatabaseService, IDatabaseSummary, IPoolClient, IQueryResult } from "../../src/modules/database";
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 
 // Tables
-import { TABLES } from "../../src/modules/shared/database/tables";
+import { TABLES } from "../../src/modules/database/tables";
 
 
 
@@ -43,6 +43,7 @@ describe('Database Summary: ',  async function() {
         expect(typeof summary.name).toBe("string");
         expect(typeof summary.version).toBe("string");
         expect(typeof summary.size).toBe("string");
+        expect(typeof summary.port).toBe("number");
         expect(typeof summary.tables).toBe("object");
 
         // Make sure the number of tables is correct

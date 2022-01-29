@@ -8,7 +8,7 @@ import * as stringify from 'json-stable-stringify';
 
 
 // Init service
-import { IAPIResponse, IUtilitiesService } from "../../src/modules/shared/utilities";
+import { IAPIResponse, IUtilitiesService } from "../../src/modules/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 

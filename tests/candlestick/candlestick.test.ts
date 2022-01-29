@@ -9,12 +9,12 @@ import * as moment from 'moment';
 import {BigNumber} from "bignumber.js";
 
 // Init the Utilities Service
-import { IUtilitiesService } from "../../src/modules/shared/utilities";
+import { IUtilitiesService } from "../../src/modules/utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
 // Init the Database Service
-import { IDatabaseService } from "../../src/modules/shared/database";
+import { IDatabaseService } from "../../src/modules/database";
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 
@@ -24,7 +24,7 @@ const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(
 
 
 // Init the Binance Service
-import { IBinanceCandlestick, IBinanceService } from "../../src/modules/shared/binance";
+import { IBinanceCandlestick, IBinanceService } from "../../src/modules/binance";
 const _binance: IBinanceService = appContainer.get<IBinanceService>(SYMBOLS.BinanceService);
 
 

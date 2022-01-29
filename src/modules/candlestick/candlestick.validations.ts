@@ -1,8 +1,8 @@
 import {inject, injectable} from "inversify";
 import { ICandlestickValidations } from "./interfaces";
 import { SYMBOLS } from "../../ioc";
-import { IValidationsService } from "../shared/validations";
-import { IUtilitiesService } from "../shared/utilities";
+import { IValidationsService } from "../validations";
+import { IUtilitiesService } from "../utilities";
 
 
 @injectable()

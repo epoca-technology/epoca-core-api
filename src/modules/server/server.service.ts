@@ -1,5 +1,5 @@
 import {inject, injectable} from "inversify";
-import { SYMBOLS } from "../../ioc";
+import { SYMBOLS, environment } from "../../ioc";
 import { 
     IServerValidations,
     IServerService,
@@ -23,11 +23,10 @@ import {
 } from "./interfaces";
 import { defaults } from "./defaults";
 import { queries } from "./queries";
-import { IUtilitiesService } from "../shared/utilities";
-import { IDatabaseService, IPoolClient, IQueryResult } from "../shared/database";
-import { INotificationService } from "../shared/notification";
+import { IUtilitiesService } from "../utilities";
+import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
+import { INotificationService } from "../notification";
 import * as si from "systeminformation";
-
 
 
 
@@ -87,6 +86,7 @@ export class ServerService implements IServerService {
      */
     public getServerData(): IServerData {
         return {
+            production: environment.production,
             info: this.getServerInfo(),
             resources: this.getServerResources(),
         }

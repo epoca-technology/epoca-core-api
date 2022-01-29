@@ -15,7 +15,7 @@ const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(
 
 
 // Init the Database Service
-import { IDatabaseService, IPoolClient, IQueryResult } from "../../../src/modules/shared/database";
+import { IDatabaseService, IPoolClient, IQueryResult } from "../../../src/modules/database";
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 

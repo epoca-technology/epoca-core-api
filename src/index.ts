@@ -16,17 +16,27 @@ import { environment } from "./ioc";
 BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN, EXPONENTIAL_AT: 32 });
 
 
+
+
 // Init Express App
 const app = express();
+
+
 
 
 // Initialize the HTTP Logger
 const accessLogStream: morgan.StreamOptions = rfs.createStream('access.log', {
     path: './logs',
     maxFiles: 200,
-    size: '300K',
+    size: '200K',
 });
 app.use(morgan('combined', { stream: accessLogStream }));
+
+// Morgan Issue: https://github.com/expressjs/morgan/issues/214
+app.set("trust proxy", true);
+
+
+
 
 
 // Configure app to use bodyParser(), this will let us get the data from a POST
@@ -35,8 +45,13 @@ app.use(bodyParser.json());
 
 
 
+
+
 // Set CORS
 app.use(cors({}));
+
+
+
 
 
 // Set Port
@@ -49,11 +64,10 @@ const port = process.env.PORT || 8075;
 
 
 
-// Routes
+// Import & Register Routes
 import {CandlestickRoute} from './modules/candlestick/candlestick.route';
 import {ServerRoute} from './modules/server/server.route';
-import {DatabaseRoute} from './modules/shared/database/database.route';
-
+import {DatabaseRoute} from './modules/database/database.route';
 
 
 app.use('/candlestick', CandlestickRoute);
@@ -70,10 +84,12 @@ app.listen(port);
 
 
 
+
+
 // Send Welcome Message
-app.get('/', (req: express.Request, res: express.Response) => {
-    res.send("Welcome to Plutus :)");
-})
+app.get('/', (req: express.Request, res: express.Response) => { res.send("Welcome to Plutus :)") })
+
+
 
 
 
@@ -86,6 +102,9 @@ function logError(err: any, event: string): void {
     // console.log(event);
     console.error(err);
 }
+
+
+
 
 
 

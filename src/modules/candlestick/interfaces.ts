@@ -1,5 +1,5 @@
 import { BehaviorSubject } from "rxjs";
-import { IBinanceCandlestick, IBinanceCandlestickInterval } from "../shared/binance";
+import { IBinanceCandlestick, IBinanceCandlestickInterval } from "../binance";
 
 
 

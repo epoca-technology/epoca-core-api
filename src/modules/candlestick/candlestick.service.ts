@@ -1,9 +1,9 @@
 import {inject, injectable} from "inversify";
 import { ICandlestickService, ICandlestick, ICandlestickConfig, ICandlestickValidations, ICandlestickStream } from "./interfaces";
 import { SYMBOLS } from "../../ioc";
-import { IDatabaseService, IPoolClient, IQueryResult } from "../shared/database";
-import { IUtilitiesService } from "../shared/utilities";
-import { IBinanceService, IBinanceCandlestick } from "../shared/binance";
+import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
+import { IUtilitiesService } from "../utilities";
+import { IBinanceService, IBinanceCandlestick } from "../binance";
 import BigNumber from "bignumber.js";
 import * as moment from 'moment';
 import { BehaviorSubject } from "rxjs";

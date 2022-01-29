@@ -4,7 +4,7 @@ import {appContainer, SYMBOLS} from '../../src/ioc';
 
 
 // Validations Service
-import { IValidationsService } from "../../src/modules/shared/validations";
+import { IValidationsService } from "../../src/modules/validations";
 const _validations = appContainer.get<IValidationsService>(SYMBOLS.ValidationsService);
 
 

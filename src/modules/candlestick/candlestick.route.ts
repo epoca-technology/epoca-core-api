@@ -5,7 +5,7 @@ import {appContainer, SYMBOLS} from '../../ioc';
 
 
 // Rate Limit & Utilities
-import {lowRiskLimit, IUtilitiesService} from '../shared/utilities';
+import {lowRiskLimit, IUtilitiesService} from '../utilities';
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
