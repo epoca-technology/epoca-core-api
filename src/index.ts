@@ -25,12 +25,13 @@ const app = express();
 
 
 // Initialize the HTTP Logger
-const accessLogStream: morgan.StreamOptions = rfs.createStream('access.log', {
+/*const accessLogStream: morgan.StreamOptions = rfs.createStream('access.log', {
     path: './logs',
     maxFiles: 200,
     size: '200K',
 });
-app.use(morgan('combined', { stream: accessLogStream }));
+app.use(morgan('combined', { stream: accessLogStream }));*/
+app.use(morgan('combined'));
 
 // Morgan Issue: https://github.com/expressjs/morgan/issues/214
 app.set("trust proxy", true);

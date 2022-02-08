@@ -51,8 +51,6 @@ Thumbs.db
 # package-lock
 package-lock.json
 
-# Backup Directories
+# DB Backup/Restore Directories
 db_backups
-
-# Logs
-logs
+db_restore

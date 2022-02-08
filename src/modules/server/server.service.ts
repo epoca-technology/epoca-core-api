@@ -28,7 +28,7 @@ import { IUtilitiesService } from "../utilities";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
 import { INotificationService } from "../notification";
 import * as si from "systeminformation";
-
+import * as fs from "fs";
 
 
 @injectable()
@@ -40,6 +40,7 @@ export class ServerService implements IServerService {
     @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
 
     // Info
+    private version: string = '0.0.0';
     private system: IServerSystem = defaults.system;
     private baseboard: IServerBaseBoard = defaults.baseboard;
     private bios: IServerBIOS = defaults.bios;
@@ -88,6 +89,7 @@ export class ServerService implements IServerService {
     public getServerData(): IServerData {
         return {
             production: environment.production,
+            version: this.version,
             info: this.getServerInfo(),
             resources: this.getServerResources(),
         }
@@ -253,6 +255,10 @@ export class ServerService implements IServerService {
             runningServices: services,
             cpuLoad: data.currentLoad
         });
+
+        // Set the server's version
+        const packageDotJson: string = fs.readFileSync('./package.json', { encoding: 'utf-8' })
+        if (packageDotJson && packageDotJson.length) this.version = JSON.parse(packageDotJson).version;
     }
 
 

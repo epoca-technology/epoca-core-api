@@ -230,6 +230,7 @@ export interface IServerResources {
 // Server Data
 export interface IServerData {
     production: boolean,
+    version: string,
     info: IServerInfo,
     resources: IServerResources
 }
@@ -239,6 +240,10 @@ export interface IServerData {
 export interface IDefaultData extends IServerInfo, IServerResources {
     
 }
+
+
+
+
 
 
 

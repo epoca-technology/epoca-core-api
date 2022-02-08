@@ -4,8 +4,13 @@ import {appContainer, SYMBOLS} from '../../ioc';
 
 
 
-// Rate Limit & Utilities
-import {lowRiskLimit, IUtilitiesService, highRiskLimit, mediumRiskLimit} from '../utilities';
+// Request Guard
+import {lowRiskLimit, highRiskLimit, mediumRiskLimit, IRequestGuardService} from '../request-guard';
+const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
+
+
+// Utilities
+import {IUtilitiesService} from '../utilities';
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Server Service

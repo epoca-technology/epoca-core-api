@@ -8,4 +8,3 @@ export const utilitiesModule: ContainerModule = new ContainerModule((bind: inter
 });
 
 export * from './interfaces';
-export * from './rate.limit';

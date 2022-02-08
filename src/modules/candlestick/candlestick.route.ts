@@ -3,9 +3,12 @@ import express = require("express");
 import {appContainer, SYMBOLS} from '../../ioc';
 
 
+// Request Guard
+import {lowRiskLimit, IRequestGuardService} from '../request-guard';
+const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
-// Rate Limit & Utilities
-import {lowRiskLimit, IUtilitiesService} from '../utilities';
+// Utilities
+import {IUtilitiesService} from '../utilities';
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 

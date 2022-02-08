@@ -1,6 +1,11 @@
 # PLUTUS CORE API
 
 ## Requirements
+
+- Docker: v20.10.12
+
+### Local Testing
+
 - NodeJS: v16.13.1
 
 - NPM: v8.1.2
@@ -60,6 +65,21 @@ Utilities: `npm run test-utils`
 
 Validations: `npm run test-validations`
 
+
+
+
+
+#
+# DOCKER
+
+Go to [DOCKER](/docs/DOCKER.md)
+
+
+
+#
+# API ERRORS
+
+Go to [API ERRORS](/docs/API_ERRORS.md)
 
 
 
