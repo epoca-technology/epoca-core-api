@@ -23,14 +23,14 @@ export class DatabaseService implements IDatabaseService {
     
     // Pool Config
     public readonly config: IPoolConfig = {
-        host: environment.PGHOST,
-        user: environment.PGUSER,
-        password: environment.PGPASSWORD,
-        database: environment.PGDATABASE,
+        host: environment.POSTGRES_HOST,
+        user: environment.POSTGRES_USER,
+        password: environment.POSTGRES_PASSWORD,
+        database: environment.POSTGRES_DB,
         max: 20,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000,
-        port: environment.PGPORT
+        port: 5432
     }
 
 

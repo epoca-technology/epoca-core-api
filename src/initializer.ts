@@ -31,7 +31,7 @@ export async function init(): Promise<void> {
     await _server.initialize();
 
     // Initialize the Candlestick Syncing
-    await _candlestick.initializeSync();
+    //await _candlestick.initializeSync();
 
     // Initialize the Trading Simulation Module
     // @TODO

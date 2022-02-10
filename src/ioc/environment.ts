@@ -1,11 +1,10 @@
 /* Interfaces */
 export interface IEnvironment {
     production: boolean,
-    PGHOST: string,
-    PGUSER: string,
-    PGPASSWORD: string,
-    PGDATABASE: string,
-    PGPORT: number,
+    POSTGRES_HOST: string,
+    POSTGRES_USER: string,
+    POSTGRES_PASSWORD: string,
+    POSTGRES_DB: string,
     telegraf: ITelegrafConfig,
     recaptchaSecret: string,
     god: IGod,
@@ -57,12 +56,11 @@ export interface IFirebaseServiceAccount {
  * kind of issue it will crash the server startup.
  */
 const environment: IEnvironment = {
-    production: getBoolean('production', process.env.production),
-    PGHOST: getString('PGHOST', process.env.PGHOST),
-    PGUSER: getString('PGUSER', process.env.PGUSER),
-    PGPASSWORD: getString('PGPASSWORD', process.env.PGPASSWORD),
-    PGDATABASE: getString('PGDATABASE', process.env.PGDATABASE),
-    PGPORT: getNumber('PGPORT', process.env.PGPORT),
+    production: getString('NODE_ENV', process.env.NODE_ENV) == 'production',
+    POSTGRES_HOST: getString('POSTGRES_HOST', process.env.POSTGRES_HOST),
+    POSTGRES_USER: getString('POSTGRES_USER', process.env.POSTGRES_USER),
+    POSTGRES_PASSWORD: getString('POSTGRES_PASSWORD', process.env.POSTGRES_PASSWORD),
+    POSTGRES_DB: getString('POSTGRES_DB', process.env.POSTGRES_DB),
     telegraf: <ITelegrafConfig>getObject('telegraf', process.env.telegraf),
     recaptchaSecret: getString('recaptchaSecret', process.env.recaptchaSecret),
     god: <IGod>getObject('god', process.env.god),

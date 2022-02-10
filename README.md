@@ -4,6 +4,8 @@
 
 - Docker: v20.10.12
 
+- Docker Compose: v1.29.2
+
 ### Local Testing
 
 - NodeJS: v16.13.1
