@@ -4,10 +4,8 @@ code_backups
 db_backups
 db_restore
 docs
-jasmine
 .git
 .gitignore
 Dockerfile
 gulpfile.js
 README.md
-tsconfig.json

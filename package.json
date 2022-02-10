@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "build": "clear && gulp",
-    "test": "clear && jasmine-ts --config=jasmine/e2e.json",
+    "test": "clear && jasmine-ts --config=./jasmine/e2e.json",
     "test-trading-simulation": "clear && jasmine-ts --config=jasmine/trading-simulation.json",
     "test-candlestick": "clear && jasmine-ts --config=jasmine/candlestick.json",
     "test-notification": "clear && jasmine-ts --config=jasmine/notification.json",
@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@bitbucket.org/projectplutus/api-dev.git"
+    "url": "git+ssh://git@bitbucket.org/projectplutus/api-development.git"
   },
   "author": "Plutus",
   "license": "ISC",

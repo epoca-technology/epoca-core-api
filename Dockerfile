@@ -9,10 +9,13 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # If you are building your code for production
-RUN npm ci --only=production
+RUN npm install
 
 # Bundle app source
 COPY . .
 
-EXPOSE 8075
+# Expose the port
+EXPOSE 5075
+
+# Initialize the API
 CMD [ "npm", "start" ]
