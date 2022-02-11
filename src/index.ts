@@ -108,7 +108,8 @@ function logError(err: any, event: string): void {
 import {init} from './initializer';
 init()
 .then(() => {
-    console.log('Plutus API Initialized on Port: ' + port);
+    console.log('Plutus API Initialized');
+    console.log('Port: ' + port);
     console.log('Production: ' + environment.production);
     if (environment.testMode) console.log('Test Mode: true');
     if (environment.debugMode) console.log('Debug Mode: true');

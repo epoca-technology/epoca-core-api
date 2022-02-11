@@ -31,6 +31,12 @@ describe('Server Data Init & Retrieving: ', function() {
     // Initialize the server
     beforeAll(async () => { await _server.initialize() });
 
+    // Clean the DB
+    afterAll(async () => { 
+        // @ts-ignore
+        await _db.query({text: `DELETE FROM ${_server.getAlarmsTable()};`})
+    });
+
 
     it('-Can retrieve the server info: ', async function() {
         const data: IServerInfo = _server.getServerInfo();
@@ -78,8 +84,14 @@ describe('Server Data Init & Retrieving: ', function() {
 
 /* Server Monitoring */
 describe('Server Monitoring: ', function() {
-    // Init the test mode and the server
+    // Init the server
     beforeAll(async () => { await _server.initialize() });
+
+    // Clean the DB
+    afterAll(async () => { 
+        // @ts-ignore
+       await _db.query({text: `DELETE FROM ${_server.getAlarmsTable()};`})
+    });
 
 
     /* File Systems */
