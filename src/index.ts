@@ -5,7 +5,6 @@ import bodyParser = require("body-parser");
 import cors = require("cors");
 import {BigNumber} from "bignumber.js";
 import morgan = require("morgan");
-import rfs = require("rotating-file-stream");
 
 
 // Environment
@@ -27,12 +26,6 @@ const app = express();
 
 
 // Initialize the HTTP Logger
-/*const accessLogStream: morgan.StreamOptions = rfs.createStream('access.log', {
-    path: './logs',
-    maxFiles: 200,
-    size: '200K',
-});
-app.use(morgan('combined', { stream: accessLogStream }));*/
 app.use(morgan('combined'));
 
 // Morgan Issue: https://github.com/expressjs/morgan/issues/214
@@ -115,9 +108,10 @@ function logError(err: any, event: string): void {
 import {init} from './initializer';
 init()
 .then(() => {
-    // Hello World
     console.log('Plutus API Initialized on Port: ' + port);
     console.log('Production: ' + environment.production);
+    if (environment.testMode) console.log('Test Mode: true');
+    if (environment.debugMode) console.log('Debug Mode: true');
 })
 .catch(e => {
 	console.error(e);

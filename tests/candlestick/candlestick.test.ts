@@ -1,6 +1,6 @@
 // Dependencies
 import "reflect-metadata";
-import {appContainer, SYMBOLS} from '../../src/ioc';
+import {appContainer, SYMBOLS, environment} from '../../src/ioc';
 
 // Moment
 import * as moment from 'moment';
@@ -41,7 +41,8 @@ import {TEST_BINANCE_CANDLESTICKS} from "./data";
 
 
 
-
+// Make sure the API is running on test mode
+if (!environment.testMode) throw new Error('Unit tests can only be performed when the containers are started in testMode.');
 
 
 
@@ -51,9 +52,6 @@ describe('Candlesticks DB Actions: ',  function() {
     beforeAll(() => { 
         // Increase Timeout Interval to not stop Binance Requests
         jasmine.DEFAULT_TIMEOUT_INTERVAL = 400000;
-
-        // Enable test mode on the candlesticks
-        _candlestick.testMode = true;
     });
 
     // Clean the table before each test and once all tests have concluded
@@ -69,9 +67,6 @@ describe('Candlesticks DB Actions: ',  function() {
             _db.query({text: `DELETE FROM ${_db.getTestTableName(_candlestick.standardConfig.table)};`}),
             _db.query({text: `DELETE FROM ${_db.getTestTableName(_candlestick.forecastConfig.table)};`}),
         ]);
-
-        // Disable test mode
-        _candlestick.testMode = false;
     });
 
 
@@ -492,24 +487,34 @@ describe('Candlestick Essentials: ',  function() {
 
     it('-Can retrieve the db table for each candlestick type and testing mode: ', function() {
         /* Real Tables */
+        //@ts-ignore
+        _candlestick.testMode = false;
         // @ts-ignore
         expect(_candlestick.getTable()).toBe(_candlestick.standardConfig.table);
         // @ts-ignore
         expect(_candlestick.getTable(true)).toBe(_candlestick.forecastConfig.table);
+        //@ts-ignore
+        _candlestick.testMode = true;
 
         /* Test Tables */
+        //@ts-ignore
         _candlestick.testMode = true;
         // @ts-ignore
         expect(_candlestick.getTable()).toBe(_db.getTestTableName(_candlestick.standardConfig.table));
         // @ts-ignore
         expect(_candlestick.getTable(true)).toBe(_db.getTestTableName(_candlestick.forecastConfig.table));
+        //@ts-ignore
         _candlestick.testMode = false;
 
         /* Real Tables Again */
+        //@ts-ignore
+        _candlestick.testMode = false;
         // @ts-ignore
         expect(_candlestick.getTable()).toBe(_candlestick.standardConfig.table);
         // @ts-ignore
         expect(_candlestick.getTable(true)).toBe(_candlestick.forecastConfig.table);
+        //@ts-ignore
+        _candlestick.testMode = true;
     });
 
 

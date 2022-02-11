@@ -1,6 +1,6 @@
 // Dependencies
 import "reflect-metadata";
-import {appContainer, SYMBOLS} from '../../src/ioc';
+import {appContainer, SYMBOLS, environment} from '../../src/ioc';
 
 // Object Stringifier
 import * as stringify from 'json-stable-stringify';
@@ -21,20 +21,15 @@ import { IDatabaseService, IQueryResult } from "../../src/modules/database";
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 
-
+// Make sure the API is running on test mode
+if (!environment.testMode) throw new Error('Unit tests can only be performed when the containers are started in testMode.');
 
 
 
 /* Server Data Init & Retrieving */
 describe('Server Data Init & Retrieving: ', function() {
     // Initialize the server
-    beforeAll(async () => { 
-        _server.testMode = true;
-        await _server.initialize()
-    });
-
-    // Disable the test mode
-    afterAll(() => { _server.testMode = false });
+    beforeAll(async () => { await _server.initialize() });
 
 
     it('-Can retrieve the server info: ', async function() {
@@ -84,13 +79,7 @@ describe('Server Data Init & Retrieving: ', function() {
 /* Server Monitoring */
 describe('Server Monitoring: ', function() {
     // Init the test mode and the server
-    beforeAll(async () => { 
-        _server.testMode = true;
-        await _server.initialize();
-    });
-
-    // Disable the test mode
-    afterAll(() => { _server.testMode = false });
+    beforeAll(async () => { await _server.initialize() });
 
 
     /* File Systems */
@@ -337,21 +326,16 @@ describe('Server Monitoring: ', function() {
 
 /* Alarms Management */
 describe('Server Alarms Management:', async function() {
-    // Init test mode
-    beforeAll(() => { _server.testMode = true });
-
     // Clean the table before each test and once all tests have concluded
     beforeEach(async () => { 
         // @ts-ignore
         await _db.query({text: `DELETE FROM ${_server.getAlarmsTable()};`}) 
     });
+
+    // Clean the DB
     afterAll(async () => { 
-        // Clean the DB
          // @ts-ignore
         await _db.query({text: `DELETE FROM ${_server.getAlarmsTable()};`})
-
-        // Disable test mode
-        _server.testMode = false;
     });
 
 

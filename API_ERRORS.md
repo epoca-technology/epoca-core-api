@@ -1,5 +1,3 @@
-[< Back](../README.md)
-
 # API ERRORS
 
 

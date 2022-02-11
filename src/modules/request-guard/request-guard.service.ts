@@ -11,7 +11,8 @@ export class RequestGuardService implements IRequestGuardService {
     // Inject dependencies
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
-
+    // App Initialization - API can only accept requests when init is complete
+    public initialized: boolean;
 
 
     constructor() {}

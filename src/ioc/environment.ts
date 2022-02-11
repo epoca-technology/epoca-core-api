@@ -1,6 +1,8 @@
 /* Interfaces */
 export interface IEnvironment {
     production: boolean,
+    testMode: boolean,
+    debugMode: boolean,
     POSTGRES_HOST: string,
     POSTGRES_USER: string,
     POSTGRES_PASSWORD: string,
@@ -57,6 +59,8 @@ export interface IFirebaseServiceAccount {
  */
 const environment: IEnvironment = {
     production: getString('NODE_ENV', process.env.NODE_ENV) == 'production',
+    testMode: process.env.testMode == 'true',
+    debugMode: process.env.debugMode == 'true',
     POSTGRES_HOST: getString('POSTGRES_HOST', process.env.POSTGRES_HOST),
     POSTGRES_USER: getString('POSTGRES_USER', process.env.POSTGRES_USER),
     POSTGRES_PASSWORD: getString('POSTGRES_PASSWORD', process.env.POSTGRES_PASSWORD),

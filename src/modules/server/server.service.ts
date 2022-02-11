@@ -67,8 +67,9 @@ export class ServerService implements IServerService {
     private monitorIntervalSeconds: number = 180; // ~3 minutes
     private monitorInterval: any;
 
-    // Test Mode
-    public testMode: boolean = false;
+    // Test & Debug Modes
+    private readonly testMode: boolean = environment.testMode;
+    private readonly debugMode: boolean = environment.debugMode;
 
 
 

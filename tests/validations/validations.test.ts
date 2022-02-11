@@ -1,6 +1,6 @@
 // Dependencies
 import "reflect-metadata";
-import {appContainer, SYMBOLS} from '../../src/ioc';
+import {appContainer, SYMBOLS, environment} from '../../src/ioc';
 
 
 // Validations Service
@@ -8,8 +8,8 @@ import { IValidationsService } from "../../src/modules/validations";
 const _validations = appContainer.get<IValidationsService>(SYMBOLS.ValidationsService);
 
 
-
-
+// Make sure the API is running on test mode
+if (!environment.testMode) throw new Error('Unit tests can only be performed when the containers are started in testMode.');
 
 
 describe('General Validations Tests:', function() {
@@ -45,10 +45,6 @@ describe('General Validations Tests:', function() {
 
 
 
-
-
-
-    /*  */
 
 
 

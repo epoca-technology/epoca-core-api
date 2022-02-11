@@ -1,9 +1,6 @@
 // Dependencies
 import "reflect-metadata";
-import {appContainer, SYMBOLS} from '../../src/ioc';
-
-// Object Stringifier
-import * as stringify from 'json-stable-stringify';
+import {appContainer, SYMBOLS, environment} from '../../src/ioc';
 
 
 // Init the Database Service
@@ -15,7 +12,8 @@ const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.Databas
 import { TABLES } from "../../src/modules/database/tables";
 
 
-
+// Make sure the API is running on test mode
+if (!environment.testMode) throw new Error('Unit tests can only be performed when the containers are started in testMode.');
 
 
 

@@ -3,9 +3,9 @@ npm-debug.log
 code_backups
 db_backups
 db_restore
-docs
 .git
 .gitignore
 Dockerfile
 gulpfile.js
 README.md
+API_ERRORS.md

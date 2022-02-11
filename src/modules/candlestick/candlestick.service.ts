@@ -1,6 +1,6 @@
 import {inject, injectable} from "inversify";
 import { ICandlestickService, ICandlestick, ICandlestickConfig, ICandlestickValidations, ICandlestickStream } from "./interfaces";
-import { SYMBOLS } from "../../ioc";
+import { environment, SYMBOLS } from "../../ioc";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
 import { IUtilitiesService } from "../utilities";
 import { IBinanceService, IBinanceCandlestick } from "../binance";
@@ -37,8 +37,9 @@ export class CandlestickService implements ICandlestickService {
     private readonly syncIntervalSeconds: number = 10;
 
 
-    // Test Modes
-    public testMode: boolean = false;
+    // Test & Debug Modes
+    private readonly testMode: boolean = environment.testMode;
+    private readonly debugMode: boolean = environment.debugMode;
 
 
     // Real Time Candlesticks Stream

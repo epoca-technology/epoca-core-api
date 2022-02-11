@@ -9,9 +9,6 @@ export interface ICandlestickService {
     standardConfig: ICandlestickConfig,
     forecastConfig: ICandlestickConfig,
 
-    // Testing
-    testMode: boolean,
-
     // Real Time Candlesticks Stream
     stream: BehaviorSubject<ICandlestickStream>,
 

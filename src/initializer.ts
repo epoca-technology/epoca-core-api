@@ -1,4 +1,4 @@
-import {appContainer, SYMBOLS} from "./ioc";
+import {appContainer, SYMBOLS, environment} from "./ioc";
 
 
 /* Import Modules */
@@ -15,27 +15,41 @@ const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
 import {ICandlestickService} from './modules/candlestick';
 const _candlestick = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
+// Request Guard
+import {IRequestGuardService} from './modules/request-guard';
+const _guard = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
 
 /**
  * Initializes the API modules.
  */
 export async function init(): Promise<void> {
+    // Make sure that test mode is not being used in production
+    if (environment.production && environment.testMode) {
+        throw new Error('The API couldnt be initialized because test mode is not allowed in production.');
+    }
+
     // Initialize the Database Module
     await _db.initialize();
 
-    // Initiaze the User Module
-    // @TODO
-    
-    // Initialize the Server Module
-    await _server.initialize();
+    // Initialize the rest of the modules if it is not test mode
+    if (!environment.testMode) {
+        // Initiaze the User Module
+        // @TODO
+        
+        // Initialize the Server Module
+        await _server.initialize();
 
-    // Initialize the Candlestick Syncing
-    //await _candlestick.initializeSync();
+        // Initialize the Candlestick Syncing
+        await _candlestick.initializeSync();
 
-    // Initialize the Trading Simulation Module
-    // @TODO
+        // Initialize the Trading Simulation Module
+        // @TODO
 
-    // Initialize the Trading Session Module
-    // @TODO
+        // Initialize the Trading Session Module
+        // @TODO
+    }
+
+    // API is ready to accept requests
+    _guard.initialized = true;
 }

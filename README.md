@@ -1,10 +1,13 @@
 # PLUTUS CORE API
 
+
 ## Requirements
 
 - Docker: v20.10.12
 
 - Docker Compose: v1.29.2
+
+
 
 ### Local Testing
 
@@ -17,6 +20,7 @@
 - Python: v3.7
 
 
+
 #
 ## Getting Started
 
@@ -24,17 +28,9 @@
 
 2) Build the project with `npm run build` 
 
-3) Initialize the DB with `npm run cli-db` 
-
-4) Alternatively, you can restore the database with `npm run cli-db`. Make sure to place the db backup file inside of `./db_backups` before running the CLI
-
-5) Syncronize the candlesticks with `npm run cli-candlestick-sync`
+3) Navigate to the compose project and start the containers with `docker-compose up --build -d`
 
 
-#
-## Last Database Dump
-
-https://firebasestorage.googleapis.com/v0/b/projectplutus-dev.appspot.com/o/db_backups%2Fbackup.dump?alt=media&token=9ab2c402-d8e3-4008-a7b7-3b9ad3dbbea3
 
 
 #
@@ -55,48 +51,40 @@ Run `npm start` to run the server
 #
 ## Tests
 
-End-to-end: `docker exec api docker-entrypoint.sh npm test`
+When running unit tests, it is important that the containers are initialized with the correct configuration:
 
-Candlestick: `docker exec api docker-entrypoint.sh npm run test-candlestick`
-
-Database: `docker exec api docker-entrypoint.sh npm run test-db`
-
-Notification: `docker exec api docker-entrypoint.sh npm run test-notification`
-
-Server: `docker exec api docker-entrypoint.sh npm run test-server`
-
-Trading Simulation: `docker exec api docker-entrypoint.sh npm run test-trading-simulation`
-
-Utilities: `docker exec api docker-entrypoint.sh npm run test-utils`
-
-Validations: `docker exec api docker-entrypoint.sh npm run test-validations`
-
-
-
-
+`testMode=true docker-compose up --build -d`
 
 #
-# DOCKER
 
-Go to [DOCKER](/docs/DOCKER.md)
+End-to-end: 
 
+`docker exec api docker-entrypoint.sh npm test`
 
+Candlestick: 
 
-#
-# API ERRORS
+`docker exec api docker-entrypoint.sh npm run test-candlestick`
 
-Go to [API ERRORS](/docs/API_ERRORS.md)
+Database: 
 
+`docker exec api docker-entrypoint.sh npm run test-db`
 
+Notification: 
 
-#
-# POSTGRES
+`docker exec api docker-entrypoint.sh npm run test-notification`
 
-Go to [POSTGRES](/docs/POSTGRES.md)
+Server: 
 
+`docker exec api docker-entrypoint.sh npm run test-server`
 
+Trading Simulation: 
 
-#
-# PGADMIN4
+`docker exec api docker-entrypoint.sh npm run test-trading-simulation`
 
-Go to [PGADMIN](/docs/PGADMIN.md)
+Utilities: 
+
+`docker exec api docker-entrypoint.sh npm run test-utils`
+
+Validations: 
+
+`docker exec api docker-entrypoint.sh npm run test-validations`

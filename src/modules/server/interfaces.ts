@@ -3,9 +3,6 @@ import { INotification } from "../notification";
 
 // Service
 export interface IServerService {
-    // Properties
-    testMode: boolean,
-
     // Retrievers
     getServerData(): IServerData,
     getServerInfo(): IServerInfo,
