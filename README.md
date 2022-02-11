@@ -14,6 +14,8 @@
 
 - PostgreSQL: v14
 
+- Python: v3.7
+
 
 #
 ## Getting Started
@@ -40,6 +42,8 @@ https://firebasestorage.googleapis.com/v0/b/projectplutus-dev.appspot.com/o/db_b
 
 Run `npm run build` to perform a gulp build
 
+
+
 #
 ## Server
 
@@ -51,21 +55,21 @@ Run `npm start` to run the server
 #
 ## Tests
 
-End-to-end: `npm run test`
+End-to-end: `docker exec api docker-entrypoint.sh npm test`
 
-Candlestick: `npm run test-candlestick`
+Candlestick: `docker exec api docker-entrypoint.sh npm run test-candlestick`
 
-Database: `npm run test-db`
+Database: `docker exec api docker-entrypoint.sh npm run test-db`
 
-Notification: `npm run test-notification`
+Notification: `docker exec api docker-entrypoint.sh npm run test-notification`
 
-Server: `npm run test-server`
+Server: `docker exec api docker-entrypoint.sh npm run test-server`
 
-Trading Simulation: `npm run test-trading-simulation`
+Trading Simulation: `docker exec api docker-entrypoint.sh npm run test-trading-simulation`
 
-Utilities: `npm run test-utils`
+Utilities: `docker exec api docker-entrypoint.sh npm run test-utils`
 
-Validations: `npm run test-validations`
+Validations: `docker exec api docker-entrypoint.sh npm run test-validations`
 
 
 

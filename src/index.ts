@@ -15,7 +15,9 @@ import { environment } from "./ioc";
 // BigNumber Config
 BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN, EXPONENTIAL_AT: 32 });
 
-
+// Moment Timezone
+import * as momenttz from 'moment-timezone';
+momenttz.tz.setDefault("America/Caracas");
 
 
 // Init Express App

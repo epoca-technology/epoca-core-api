@@ -46,6 +46,9 @@ Remove Unused Images & Containers:
 Remove all containers
 `docker rm $(docker ps -aq)`
 
+Remove all images
+`docker image rm $(docker image ls -aq)`
+
 Container Logs
 
 `docker container logs $CONTAINER_ID`

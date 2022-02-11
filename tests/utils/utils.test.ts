@@ -6,6 +6,8 @@ import {BigNumber} from 'bignumber.js';
 // Object Stringifier
 import * as stringify from 'json-stable-stringify';
 
+// Moment Timezone
+import * as momenttz from 'moment-timezone';
 
 // Utilities Service
 import { IAPIResponse, IUtilitiesService } from "../../src/modules/utilities";
@@ -306,6 +308,7 @@ describe('Conversions Handling: ', function() {
 
 /* Date Handling */
 describe('Date Handling:', function() {
+    beforeAll(() => { momenttz.tz.setDefault("America/Caracas") });
     it('-Can retrieve a timestamp from a string date.', function() {
         expect(_utils.getTimestamp('17-12-2021')).toEqual(1639713600000);
         expect(_utils.getTimestamp('17-08-2017')).toEqual(1502942400000);
