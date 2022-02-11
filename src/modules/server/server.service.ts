@@ -15,7 +15,6 @@ import {
     IServerSoftwareVersions, 
     IServerSystem,
     IAlarmsConfig,
-    IServerRunningService,
     IServerCPULoad,
     IServerInfo,
     IServerResources,
@@ -56,7 +55,6 @@ export class ServerService implements IServerService {
     private memory: IServerMemory = defaults.memory;
     private cpuTemperature: IServerCPUTemperature = defaults.cpuTemperature;
     private gpu: IServerGPU = defaults.gpu;
-    private runningServices: IServerRunningService[] = defaults.runningServices;
     private cpuLoad: IServerCPULoad = defaults.cpuLoad;
     
     // Alarms
@@ -141,7 +139,6 @@ export class ServerService implements IServerService {
             memory: this.memory,
             cpuTemperature: this.cpuTemperature,
             gpu: this.gpu,
-            runningServices: this.runningServices,
             cpuLoad: this.cpuLoad
         }
     }
@@ -232,9 +229,6 @@ export class ServerService implements IServerService {
             currentLoad: queries.currentLoad
         });
 
-        // Retrieve the running services
-        const services: IServerRunningService[] = await si.services(queries.services);
-
         // Set Static values
         this.setStaticValues({
             system: data.system,
@@ -253,7 +247,6 @@ export class ServerService implements IServerService {
             memory: data.mem,
             cpuTemperature: data.cpuTemperature,
             gpu: data.graphics && data.graphics.controllers ? data.graphics?.controllers[0]: undefined,
-            runningServices: services,
             cpuLoad: data.currentLoad
         });
 
@@ -285,9 +278,6 @@ export class ServerService implements IServerService {
             currentLoad: queries.currentLoad
         });
 
-        // Retrieve the running services
-        const services: IServerRunningService[] = await si.services(queries.services);
-
         // Set Dynamic values
         this.setDynamicValues({
             uptime: this._utils.fromSecondsToHours(data.time.uptime),
@@ -295,7 +285,6 @@ export class ServerService implements IServerService {
             memory: data.mem,
             cpuTemperature: data.cpuTemperature,
             gpu: data.graphics && data.graphics.controllers ? data.graphics?.controllers[0]: undefined,
-            runningServices: services,
             cpuLoad: data.currentLoad
         });
     }
@@ -366,7 +355,6 @@ export class ServerService implements IServerService {
         memory: IServerMemory,
         cpuTemperature: IServerCPUTemperature,
         gpu: IServerGPU,
-        runningServices: IServerRunningService[],
         cpuLoad: IServerCPULoad
     }): void {
         // Set values
@@ -376,7 +364,6 @@ export class ServerService implements IServerService {
         this.setMemory(data.memory);
         this.setCPUTemperature(data.cpuTemperature);
         this.setGPU(data.gpu);
-        this.setRunningServices(data.runningServices);
         this.setCPULoad(data.cpuLoad);
         
         // Now that all values have been set, monitor the resources
@@ -540,15 +527,6 @@ export class ServerService implements IServerService {
 
 
 
-
-
-    // Running Services
-    private setRunningServices(services: IServerRunningService[]): void {
-        if (services && services.length) {
-            this.runningServices = [];
-            services.forEach((s) => { if (s.running) this.runningServices.push(s) });
-        }
-    }
 
 
 

@@ -61,7 +61,6 @@ describe('Server Data Init & Retrieving: ', function() {
         expect(typeof data.memory).toBe("object");
         expect(typeof data.cpuTemperature).toBe("object");
         expect(typeof data.gpu).toBe("object");
-        expect(typeof data.runningServices).toBe("object");
         expect(typeof data.cpuLoad).toBe("object");
     });
 

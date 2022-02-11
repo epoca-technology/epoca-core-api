@@ -14,5 +14,4 @@ export const queries: IServerAPIQueries = {
     fsSize: 'fs, type, size, used, available, mount',
     mem: 'total, free, used',
     currentLoad: 'avgLoad, currentLoad',
-    services: '*',
 }

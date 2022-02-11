@@ -91,6 +91,5 @@ export const defaults: IDefaultData = {
         utilizationGpu: 0,
         temperatureGpu: 0,
         temperatureMemory: 0,
-    },
-    runningServices: [],
+    }
 }
