@@ -6,6 +6,5 @@ db_restore
 .git
 .gitignore
 Dockerfile
-gulpfile.js
 README.md
 API_ERRORS.md

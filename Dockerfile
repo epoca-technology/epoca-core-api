@@ -13,6 +13,9 @@ RUN npm install
 # Bundle app source
 COPY . .
 
+# Perform Build
+RUN npm run build
+
 # Expose the port
 EXPOSE 5075
 

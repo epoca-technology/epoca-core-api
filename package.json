@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "build": "clear && gulp",
+    "build": "gulp",
     "test": "clear && jasmine-ts --config=./jasmine/e2e.json",
     "test-trading-simulation": "clear && jasmine-ts --config=./jasmine/trading-simulation.json",
     "test-candlestick": "clear && jasmine-ts --config=./jasmine/candlestick.json",
