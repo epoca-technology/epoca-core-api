@@ -1,6 +1,7 @@
 import {injectable, inject} from "inversify";
 import { SYMBOLS, environment } from "../../ioc";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
+import { IUtilitiesService } from "../utilities";
 import { IGuiVersionService } from "./interfaces";
 
 
@@ -10,6 +11,7 @@ import { IGuiVersionService } from "./interfaces";
 export class GuiVersionService implements IGuiVersionService {
     // Inject dependencies
     @inject(SYMBOLS.DatabaseService)                   private _db: IDatabaseService;
+    @inject(SYMBOLS.UtilitiesService)                  private _utils: IUtilitiesService;
 
     // Default Version - Inserted when no data is available
     private readonly defaultVersion: string = '0.0.1';
@@ -63,6 +65,9 @@ export class GuiVersionService implements IGuiVersionService {
 
 
 
+
+
+
     /**
      * Validates and updates the current GUI Version.
      * @param newVersion
@@ -76,7 +81,7 @@ export class GuiVersionService implements IGuiVersionService {
             newVersion.length > 15 ||
             newVersion.split('.').length != 3
         ) {
-            throw new Error(`The provided version (${newVersion}) has an invalid format.`);
+            throw new Error(this._utils.buildApiError(`The provided version (${newVersion}) has an invalid format.`, 7000));
         }
 
         // Perform the update
@@ -85,20 +90,4 @@ export class GuiVersionService implements IGuiVersionService {
             values: [newVersion]
         });
     }
-
-
-
-
-
-
-
-
-
-    
-
-    /* Misc Helpers */
-
-
-
-
 }
