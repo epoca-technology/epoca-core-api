@@ -58,7 +58,6 @@ export class ServerService implements IServerService {
     private cpuLoad: IServerCPULoad = defaults.cpuLoad;
     
     // Alarms
-    private alarmsTable: string = 'server_alarms';
     private alarms: IAlarmsConfig = defaults.alarms;
 
     // Interval
@@ -733,7 +732,7 @@ export class ServerService implements IServerService {
             if (c) {
                 await client.query({
                     text: `
-                        UPDATE ${this.getAlarmsTable()} 
+                        UPDATE ${this._db.tn.server_alarms} 
                         SET max_file_system_usage=$1, max_memory_usage=$2, max_cpu_load=$3, max_cpu_temperature=$4, max_gpu_load=$5, max_gpu_temperature=$6, max_gpu_memory_temperature=$7
                         WHERE id=1
                     `,
@@ -758,7 +757,7 @@ export class ServerService implements IServerService {
                 const {rows}: IQueryResult = await client.query({
                     text: `
                         SELECT max_file_system_usage, max_memory_usage, max_cpu_load, max_cpu_temperature, max_gpu_load, max_gpu_temperature, max_gpu_memory_temperature
-                        FROM ${this.getAlarmsTable()}
+                        FROM ${this._db.tn.server_alarms}
                         WHERE id=1
                     `,
                     values: []
@@ -771,7 +770,7 @@ export class ServerService implements IServerService {
                 else {
                     await client.query({
                         text: `
-                            INSERT INTO ${this.getAlarmsTable()}(id, max_file_system_usage, max_memory_usage, max_cpu_load, max_cpu_temperature, max_gpu_load, max_gpu_temperature, max_gpu_memory_temperature) 
+                            INSERT INTO ${this._db.tn.server_alarms}(id, max_file_system_usage, max_memory_usage, max_cpu_load, max_cpu_temperature, max_gpu_load, max_gpu_temperature, max_gpu_memory_temperature) 
                             VALUES (1, $1, $2, $3, $4, $5, $6, $7)
                         `,
                         values: [
@@ -791,18 +790,4 @@ export class ServerService implements IServerService {
             }
         } finally { client.release() }
     }
-
-    
-
-
-
-
-
-
-
-    /**
-     * Retrieves the alarms table to use based on the test mode.
-     * @returns string
-     */
-    private getAlarmsTable(): string { return this.testMode ? this._db.getTestTableName(this.alarmsTable): this.alarmsTable};
 }

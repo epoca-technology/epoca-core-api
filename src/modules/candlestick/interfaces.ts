@@ -71,8 +71,7 @@ export interface ICandlestick {
 // Candlestick Config
 export interface ICandlestickConfig {
     intervalMinutes: number,
-    alias: IBinanceCandlestickInterval,
-    table: string
+    alias: IBinanceCandlestickInterval
 }
 
 

@@ -2,6 +2,17 @@ import { IRawTable } from "./interfaces";
 
 /* Tables */
 export const TABLES: IRawTable[] = [
+    // GUI Version
+    {
+        name: 'gui_version',
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id          SMALLINT NOT NULL PRIMARY KEY,
+                version     VARCHAR(15) NOT NULL
+            );`
+        }
+    },
+
     // Server Alarms
     {
         name: 'server_alarms',

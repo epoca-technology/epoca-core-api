@@ -51,5 +51,5 @@ export async function init(): Promise<void> {
     }
 
     // API is ready to accept requests
-    _guard.initialized = true;
+    _guard.apiInitialized = true;
 }

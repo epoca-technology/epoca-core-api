@@ -3,6 +3,7 @@ import { environment } from "../../ioc";
 import { 
     IDatabaseService, 
     ITable, 
+    ITableNames,
     IPool, 
     IPoolClient, 
     IPoolConfig, 
@@ -33,15 +34,14 @@ export class DatabaseService implements IDatabaseService {
         port: 5432
     }
 
-
     // Pool
     public readonly pool: IPool = new Pool(this.config);
 
-
     // Database Tables
-    public readonly tables: ITable[] = this.buildDatabaseTables();
+    private readonly tables: ITable[] = this.buildDatabaseTables();
 
-
+    // Table Names
+    public readonly tn: ITableNames = this.buildTableNames(environment.testMode);
 
     
     constructor() {
@@ -193,6 +193,28 @@ export class DatabaseService implements IDatabaseService {
 
 
 
+    /**
+     * Builds the table names object based on the kind of process.
+     * @param testMode 
+     * @returns ITableNames
+     */
+    private buildTableNames(testMode?: boolean): ITableNames {
+        let tn: ITableNames|object = {};
+        for (let table of TABLES) {
+            tn[table.name] = testMode ? this.getTestTableName(table.name): table.name;
+        }
+        return <ITableNames>tn;
+    }
+
+
+
+
+
+
+
+
+
+
     /* Summary */
 
 
@@ -263,10 +285,5 @@ export class DatabaseService implements IDatabaseService {
      * @param tableName 
      * @returns string
      */
-    public getTestTableName(tableName: string): string { return `test_${tableName}` }
-
-
-
-
-
+    private getTestTableName(tableName: string): string { return `test_${tableName}` }
 }

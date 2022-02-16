@@ -14,7 +14,7 @@ export interface IDatabaseService {
     // Properties
     config: IPoolConfig,
     pool: IPool,
-    tables: ITable[],
+    tn: ITableNames,
     
     // Query
     query(config: IQueryConfig): Promise<IQueryResult>,
@@ -24,9 +24,6 @@ export interface IDatabaseService {
 
     // Summary
     getDatabaseSummary(): Promise<IDatabaseSummary>,
-
-    // Misc Helpers
-    getTestTableName(tableName: string): string,
 }
 
 
@@ -59,6 +56,16 @@ export interface IDatabaseValidations {
 // Table
 export interface ITable {name: string, sql: string};
 export interface IRawTable {name: string, sql: Function};
+
+// Table Names
+export interface ITableNames {
+    gui_version: string,
+    server_alarms: string,
+    candlesticks: string,
+    forecast_candlesticks: string,
+}
+
+
 
 
 

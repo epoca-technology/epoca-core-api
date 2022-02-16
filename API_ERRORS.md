@@ -76,3 +76,10 @@
 6306: `The maxGPUTemperature must be a number ranging 50-120, instead received: ${alarms.maxGPUTemperature}`
 
 6307: `The maxGPUMemoryTemperature must be a number ranging 50-90, instead received: ${alarms.maxGPUMemoryTemperature}`
+
+
+
+#
+## GUI Version (7.000 - 7.999)
+
+7000: `The provided version (${newVersion}) has an invalid format.`

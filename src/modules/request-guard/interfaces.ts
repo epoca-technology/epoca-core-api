@@ -4,6 +4,6 @@
 
 export interface IRequestGuardService {
     // Properties
-    initialized: boolean,
+    apiInitialized: boolean,
     
 }

@@ -12,6 +12,7 @@
     "test-notification": "clear && jasmine-ts --config=./jasmine/notification.json",
     "test-utils": "clear && jasmine-ts --config=./jasmine/utils.json",
     "test-db": "clear && jasmine-ts --config=./jasmine/database.json",
+    "test-gui-version": "clear && jasmine-ts --config=./jasmine/gui-version.json",
     "test-validations": "clear && jasmine-ts --config=./jasmine/validations.json",
     "test-server": "clear && jasmine-ts --config=./jasmine/server.json"
   },

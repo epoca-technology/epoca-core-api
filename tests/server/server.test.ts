@@ -33,8 +33,7 @@ describe('Server Data Init & Retrieving: ', function() {
 
     // Clean the DB
     afterAll(async () => { 
-        // @ts-ignore
-        await _db.query({text: `DELETE FROM ${_server.getAlarmsTable()};`})
+        await _db.query({text: `DELETE FROM ${_db.tn.server_alarms};`})
     });
 
 
@@ -88,8 +87,7 @@ describe('Server Monitoring: ', function() {
 
     // Clean the DB
     afterAll(async () => { 
-        // @ts-ignore
-       await _db.query({text: `DELETE FROM ${_server.getAlarmsTable()};`})
+       await _db.query({text: `DELETE FROM ${_db.tn.server_alarms};`})
     });
 
 
@@ -340,13 +338,13 @@ describe('Server Alarms Management:', async function() {
     // Clean the table before each test and once all tests have concluded
     beforeEach(async () => { 
         // @ts-ignore
-        await _db.query({text: `DELETE FROM ${_server.getAlarmsTable()};`}) 
+        await _db.query({text: `DELETE FROM ${_db.tn.server_alarms};`}) 
     });
 
     // Clean the DB
     afterAll(async () => { 
          // @ts-ignore
-        await _db.query({text: `DELETE FROM ${_server.getAlarmsTable()};`})
+        await _db.query({text: `DELETE FROM ${_db.tn.server_alarms};`})
     });
 
 
@@ -554,12 +552,10 @@ describe('Server Alarms Management:', async function() {
  * @returns Promise<IAlarmsConfig|undefined>
  */
 async function getAlarmsSnapshot(): Promise<IAlarmsConfig|undefined> {
-    // @ts-ignore
-    const table: string = _server.getAlarmsTable();
     const {rows}: IQueryResult = await _db.query({
         text: `
             SELECT max_file_system_usage, max_memory_usage, max_cpu_load, max_cpu_temperature, max_gpu_load, max_gpu_temperature, max_gpu_memory_temperature
-            FROM ${table}
+            FROM ${_db.tn.server_alarms}
             WHERE id=1
         `,
         values: []

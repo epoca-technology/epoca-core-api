@@ -22,23 +22,20 @@ export class CandlestickService implements ICandlestickService {
     // Standard Candlestick Configuration
     public readonly standardConfig: ICandlestickConfig = {
         intervalMinutes: 1,
-        alias: '1m',
-        table: 'candlesticks'
+        alias: '1m'
     };
 
     // Forecast Candlestick Configuration
     public readonly forecastConfig: ICandlestickConfig = {
         intervalMinutes: 30,
-        alias: '30m',
-        table: 'forecast_candlesticks'
+        alias: '30m'
     };
 
     // Candlestick Syncing Interval
     private readonly syncIntervalSeconds: number = 10;
 
 
-    // Test & Debug Modes
-    private readonly testMode: boolean = environment.testMode;
+    // Debug Mode
     private readonly debugMode: boolean = environment.debugMode;
 
 
@@ -695,11 +692,7 @@ export class CandlestickService implements ICandlestickService {
      * @returns string
      */
     private getTable(forecast?: boolean): string {
-        if (forecast) {
-            return this.testMode ? this._db.getTestTableName(this.forecastConfig.table): this.forecastConfig.table;
-        } else {
-            return this.testMode ? this._db.getTestTableName(this.standardConfig.table): this.standardConfig.table;
-        }
+        return forecast ? this._db.tn.forecast_candlesticks: this._db.tn.candlesticks;
     }
 
 

@@ -35,6 +35,9 @@
     ServerService: Symbol.for("ServerService"),
     ServerValidations: Symbol.for("ServerValidations"),
 
+    // GUI Version
+    GuiVersionService: Symbol.for("GuiVersionService"),
+
     // Request Guard
     RequestGuardService: Symbol.for("RequestGuardService"),
 }
@@ -55,6 +58,7 @@ export interface ISymbols {
     ValidationsService: symbol,
     ServerService: symbol,
     ServerValidations: symbol,
+    GuiVersionService: symbol,
     RequestGuardService: symbol,
 }
 

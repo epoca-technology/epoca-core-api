@@ -4,7 +4,7 @@ import {appContainer, SYMBOLS, environment} from '../../src/ioc';
 
 
 // Init the Database Service
-import { IDatabaseService, IDatabaseSummary, IPoolClient, IQueryResult } from "../../src/modules/database";
+import { IDatabaseService, IDatabaseSummary, IPoolClient, IQueryResult, ITableNames } from "../../src/modules/database";
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 
@@ -25,6 +25,23 @@ describe('Database Init: ',  function() {
     });
 
     
+    it('-Can build the correct table names with the testMode disabled: ', function() {
+        //@ts-ignore
+        const tn: ITableNames = _db.buildTableNames(false);
+        expect(tn.server_alarms).toBe('server_alarms');
+        expect(tn.gui_version).toBe('gui_version');
+        expect(tn.candlesticks).toBe('candlesticks');
+        expect(tn.forecast_candlesticks).toBe('forecast_candlesticks');
+    }); 
+    
+    it('-Can build the correct table names with the testMode enabled: ', function() {
+        //@ts-ignore
+        const tn: ITableNames = _db.buildTableNames(true);
+        expect(tn.server_alarms).toBe('test_server_alarms');
+        expect(tn.gui_version).toBe('test_gui_version');
+        expect(tn.candlesticks).toBe('test_candlesticks');
+        expect(tn.forecast_candlesticks).toBe('test_forecast_candlesticks');
+    }); 
 });
 
 
@@ -62,7 +79,9 @@ describe('Database Summary: ',  async function() {
 /* Misc Helpers */
 describe('Database Misc Helpers: ',  function() {
     it('-Can retrieve test table names: ', function() {
+        // @ts-ignore
         expect(_db.getTestTableName('some_cool_table')).toBe('test_some_cool_table');
+        // @ts-ignore
         expect(_db.getTestTableName('test_some_cool_table')).toBe('test_test_some_cool_table');
     });
 

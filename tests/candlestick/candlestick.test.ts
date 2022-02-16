@@ -57,15 +57,15 @@ describe('Candlesticks DB Actions: ',  function() {
     // Clean the table before each test and once all tests have concluded
     beforeEach(async () => { 
         await Promise.all([
-            _db.query({text: `DELETE FROM ${_db.getTestTableName(_candlestick.standardConfig.table)};`}),
-            _db.query({text: `DELETE FROM ${_db.getTestTableName(_candlestick.forecastConfig.table)};`}),
+            _db.query({text: `DELETE FROM ${_db.tn.candlesticks};`}),
+            _db.query({text: `DELETE FROM ${_db.tn.forecast_candlesticks};`}),
         ]);
     });
     afterAll(async () => { 
         // Clean the DB
         await Promise.all([
-            _db.query({text: `DELETE FROM ${_db.getTestTableName(_candlestick.standardConfig.table)};`}),
-            _db.query({text: `DELETE FROM ${_db.getTestTableName(_candlestick.forecastConfig.table)};`}),
+            _db.query({text: `DELETE FROM ${_db.tn.candlesticks};`}),
+            _db.query({text: `DELETE FROM ${_db.tn.forecast_candlesticks};`}),
         ]);
     });
 
@@ -484,39 +484,6 @@ describe('Candlestick Endpoint: ', async function() {
 
 
 describe('Candlestick Essentials: ',  function() {
-
-    it('-Can retrieve the db table for each candlestick type and testing mode: ', function() {
-        /* Real Tables */
-        //@ts-ignore
-        _candlestick.testMode = false;
-        // @ts-ignore
-        expect(_candlestick.getTable()).toBe(_candlestick.standardConfig.table);
-        // @ts-ignore
-        expect(_candlestick.getTable(true)).toBe(_candlestick.forecastConfig.table);
-        //@ts-ignore
-        _candlestick.testMode = true;
-
-        /* Test Tables */
-        //@ts-ignore
-        _candlestick.testMode = true;
-        // @ts-ignore
-        expect(_candlestick.getTable()).toBe(_db.getTestTableName(_candlestick.standardConfig.table));
-        // @ts-ignore
-        expect(_candlestick.getTable(true)).toBe(_db.getTestTableName(_candlestick.forecastConfig.table));
-        //@ts-ignore
-        _candlestick.testMode = false;
-
-        /* Real Tables Again */
-        //@ts-ignore
-        _candlestick.testMode = false;
-        // @ts-ignore
-        expect(_candlestick.getTable()).toBe(_candlestick.standardConfig.table);
-        // @ts-ignore
-        expect(_candlestick.getTable(true)).toBe(_candlestick.forecastConfig.table);
-        //@ts-ignore
-        _candlestick.testMode = true;
-    });
-
 
 
     it('-Can alter the interval of a candlesticks list: ', function() {

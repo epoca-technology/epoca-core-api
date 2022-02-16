@@ -17,6 +17,7 @@ import { databaseModule } from "../modules/database";
 import { notificationModule } from "../modules/notification";
 import { forecastModule } from "../modules/forecast";
 import { validationsModule } from "../modules/validations";
+import { guiVersionModule } from "../modules/gui-version";
 import { requestGuardModule } from "../modules/request-guard";
 
 
@@ -63,6 +64,9 @@ appContainer.load(
 
     // Validations
     validationsModule,
+
+    // GUI Version
+    guiVersionModule,
 
     // Request Guard
     requestGuardModule,
