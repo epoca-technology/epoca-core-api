@@ -37,6 +37,7 @@
     "moment": "2.29.1",
     "moment-timezone": "0.5.34",
     "morgan": "1.10.0",
+    "otplib": "12.0.1",
     "pg": "8.7.1",
     "reflect-metadata": "0.1.13",
     "rxjs": "7.5.2",

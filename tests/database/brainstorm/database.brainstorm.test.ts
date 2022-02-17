@@ -38,7 +38,9 @@ describe('Database Brainstorm: ',  function() {
 
         try {
             // Initialize the first and last open timestamps
+            //@ts-ignore
             const first: ICandlestick = _candlestick.processBinanceCandlesticks([TEST_BINANCE_CANDLESTICKS[0]])[0];
+            //@ts-ignore
             const last: ICandlestick = _candlestick.processBinanceCandlesticks([TEST_BINANCE_CANDLESTICKS[TEST_BINANCE_CANDLESTICKS.length - 1]])[0];
 
             // There should be no records stored
@@ -46,6 +48,7 @@ describe('Database Brainstorm: ',  function() {
             expect(empty.rows.length).toBe(0);
 
             // Process the raw candlesticks
+            //@ts-ignore
             const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(TEST_BINANCE_CANDLESTICKS);
 
             // Insert the candlesticks in the db

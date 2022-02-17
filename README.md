@@ -99,7 +99,11 @@ Validations:
 #
 ## Candlestick (1.000 - 1.999)
 
-1000: ``
+1000: `The Binance API should have returned at least 1 candlestick.`
+
+### Model
+
+1200: `A valid list of candlesticks is required in order to invoke saveCandlesticks.`
 
 ### Validations
 

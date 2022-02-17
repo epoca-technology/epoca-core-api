@@ -1,40 +1,48 @@
 import { BehaviorSubject } from "rxjs";
-import { IBinanceCandlestick, IBinanceCandlestickInterval } from "../binance";
+import { IBinanceCandlestickInterval } from "../binance";
 
 
 
-
+// Service
 export interface ICandlestickService {
+    // Real Time Candlesticks Stream
+    stream: BehaviorSubject<ICandlestickStream>,
+
+    // Candlestick Retrievers
+    getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]>,
+
+    // Candlestick Syncing
+    startSync(): Promise<void>,
+    stopSync(): void,
+
+    // Stream
+    isStreamInSync(stream: ICandlestickStream): boolean,
+}
+
+
+
+
+// Model
+export interface ICandlestickModel {
     // Candlesticks Configuration
     standardConfig: ICandlestickConfig,
     forecastConfig: ICandlestickConfig,
-
-    // Real Time Candlesticks Stream
-    stream: BehaviorSubject<ICandlestickStream>,
 
     // Candlestick Retrievers
     get(start?: number, end?: number, limit?: number, forecast?: boolean): Promise<ICandlestick[]>,
     getLastOpenTimestamp(forecast?: boolean): Promise<number>,
     getLast(forecast?: boolean, limit?: number): Promise<ICandlestick[]>,
-    getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]>,
 
-    // Candlestick Syncing & Saving
-    initializeSync(): Promise<void>,
-    stopSync(): void,
-    syncCandlesticks(): Promise<ICandlestick[]>,
+    // Candlestick Saving
     saveCandlesticks(candlesticks: ICandlestick[], forecast?: boolean): Promise<void>,
 
-    // Stream
-    isStreamInSync(stream: ICandlestickStream): boolean,
-
-    // Helpers
+    // Candlestick Merging
     alterInterval(candlesticks1m: ICandlestick[], intervalMinutes: number): ICandlestick[],
+    mergeCandlesticks(candlesticks: ICandlestick[]): ICandlestick,
 
-    // Candlesticks Proccessors
-    processBinanceCandlesticks(candlesticks: IBinanceCandlestick[]): ICandlestick[],
+    // Misc Helpers
+    getForecastCandlestickCloseTime(ot: number): number,
 }
-
-
 
 
 

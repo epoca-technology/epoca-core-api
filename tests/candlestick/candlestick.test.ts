@@ -19,8 +19,9 @@ const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.Databas
 
 
 // Init the Candlesticks Service
-import { ICandlestickService, ICandlestick } from "../../src/modules/candlestick";
+import { ICandlestickService, ICandlestickModel, ICandlestick } from "../../src/modules/candlestick";
 const _candlestick: ICandlestickService = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
+const _model: ICandlestickModel = appContainer.get<ICandlestickModel>(SYMBOLS.CandlestickModel);
 
 
 // Init the Binance Service
@@ -75,14 +76,15 @@ describe('Candlesticks DB Actions: ',  function() {
 
     it('-Can retrieve the last open timestamp: ', async function() {
         // If no data has been stored, it will retrieve the genesis timestamp
-        let ot: number = await _candlestick.getLastOpenTimestamp();
+        let ot: number = await _model.getLastOpenTimestamp();
         expect(ot).toBe(_binance.candlestickGenesisTimestamp);
         
         // Save some candlesticks
-        await _candlestick.saveCandlesticks(_candlestick.processBinanceCandlesticks(tc));
+        // @ts-ignore
+        await _model.saveCandlesticks(_candlestick.processBinanceCandlesticks(tc));
 
         // Retrieve the last open timestamp again and should match the last saved candle
-        ot = await _candlestick.getLastOpenTimestamp();
+        ot = await _model.getLastOpenTimestamp();
         expect(ot).toBe(tc[tc.length - 1][0]);
     });
 
@@ -91,10 +93,11 @@ describe('Candlesticks DB Actions: ',  function() {
 
     it('-Can retrieve the last candlesticks: ', async function() {
         // Save some candlesticks
-        await _candlestick.saveCandlesticks(_candlestick.processBinanceCandlesticks(tc));
+        // @ts-ignore
+        await _model.saveCandlesticks(_candlestick.processBinanceCandlesticks(tc));
 
         // Retrieve the last 2 and make sure they match
-        const c: ICandlestick[] = await _candlestick.getLast(false, 2);
+        const c: ICandlestick[] = await _model.getLast(false, 2);
         expect(c[0].ot).toBe(tc[tc.length - 2][0]);
         expect(c[1].ot).toBe(tc[tc.length - 1][0]);
     });
@@ -108,13 +111,14 @@ describe('Candlesticks DB Actions: ',  function() {
 
     it('-Can retrieve all the candlesticks: ', async function() {
         // Processed
+        // @ts-ignore
         const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(tc);
 
         // Save some candlesticks
-        await _candlestick.saveCandlesticks(processed);
+        await _model.saveCandlesticks(processed);
 
         // Retrieve all the candlesticks and make sure they match the originals
-        const c: ICandlestick[] = await _candlestick.get();
+        const c: ICandlestick[] = await _model.get();
         for (let i = 0; i < tc.length; i++) {
             // The records must be identical
             expect(processed[i].ot).toBe(c[i].ot);
@@ -136,13 +140,14 @@ describe('Candlesticks DB Actions: ',  function() {
 
     it('-Can retrieve candlesticks from a start timestamp: ', async function() {
         // Processed
+        // @ts-ignore
         const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(tc);
 
         // Save some candlesticks
-        await _candlestick.saveCandlesticks(processed);
+        await _model.saveCandlesticks(processed);
 
         // Retrieve the last 2 candlesticks
-        const c: ICandlestick[] = await _candlestick.get(processed[processed.length - 2].ot);
+        const c: ICandlestick[] = await _model.get(processed[processed.length - 2].ot);
         expect(c.length).toBe(2);
 
         // Make sure they match
@@ -156,13 +161,14 @@ describe('Candlesticks DB Actions: ',  function() {
 
     it('-Can retrieve candlesticks from a start timestamp limiting results: ', async function() {
         // Processed
+        // @ts-ignore
         const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(tc);
 
         // Save some candlesticks
-        await _candlestick.saveCandlesticks(processed);
+        await _model.saveCandlesticks(processed);
 
         // Retrieve the first 2 candlesticks
-        let c: ICandlestick[] = await _candlestick.get(processed[0].ot, undefined, 2);
+        let c: ICandlestick[] = await _model.get(processed[0].ot, undefined, 2);
         expect(c.length).toBe(2);
 
         // Make sure they match
@@ -170,7 +176,7 @@ describe('Candlesticks DB Actions: ',  function() {
         expect(processed[1].ot).toBe(c[1].ot);
 
         // Retrieve the last 3 candlesticks
-        c = await _candlestick.get(processed[processed.length - 3].ot, undefined, 3);
+        c = await _model.get(processed[processed.length - 3].ot, undefined, 3);
         expect(c.length).toBe(3);
 
         // Make sure they match
@@ -184,13 +190,14 @@ describe('Candlesticks DB Actions: ',  function() {
 
     it('-Can retrieve candlesticks from an end timestamp: ', async function() {
         // Processed
+        // @ts-ignore
         const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(tc);
 
         // Save some candlesticks
-        await _candlestick.saveCandlesticks(processed);
+        await _model.saveCandlesticks(processed);
 
         // Retrieve the first 3 candlesticks
-        const c: ICandlestick[] = await _candlestick.get(undefined, processed[2].ot);
+        const c: ICandlestick[] = await _model.get(undefined, processed[2].ot);
         expect(c.length).toBe(3);
 
         // Make sure they match
@@ -208,13 +215,14 @@ describe('Candlesticks DB Actions: ',  function() {
 
     it('-Can retrieve candlesticks from a start and end timestamp: ', async function() {
         // Processed
+        // @ts-ignore
         const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(tc);
 
         // Save some candlesticks
-        await _candlestick.saveCandlesticks(processed);
+        await _model.saveCandlesticks(processed);
 
         // Retrieve the candlesticks from second to second to last
-        const c: ICandlestick[] = await _candlestick.get(processed[1].ot, processed[3].ot);
+        const c: ICandlestick[] = await _model.get(processed[1].ot, processed[3].ot);
         expect(c.length).toBe(3);
 
         // Make sure they match
@@ -230,15 +238,16 @@ describe('Candlesticks DB Actions: ',  function() {
 
     it('-Can save candlesticks from genesis with a correct sequence: ', async function() {
         // Retrieve the last candlestick open time - in the first lot it will be the genesis
-        let startTS: number = await _candlestick.getLastOpenTimestamp();
+        let startTS: number = await _model.getLastOpenTimestamp();
         expect(startTS).toBe(_binance.candlestickGenesisTimestamp);
 
         // Save the first lot
+        // @ts-ignore
         const firstLot: ICandlestick[] = await _candlestick.syncCandlesticks();
         expect(firstLot.length).toBe(1000);
 
         // Retrieve the start ts again
-        startTS = await _candlestick.getLastOpenTimestamp();
+        startTS = await _model.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the first lot
         expect(firstLot.at(-1).ot).toBe(startTS);
@@ -247,11 +256,12 @@ describe('Candlesticks DB Actions: ',  function() {
         await _utils.asyncDelay(5);
 
         // Save the second lot
+        // @ts-ignore
         const secondLot: ICandlestick[] = await _candlestick.syncCandlesticks();
         expect(secondLot.length).toBe(1000);
         
         // Retrieve the start ts again
-        startTS = await _candlestick.getLastOpenTimestamp();
+        startTS = await _model.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the second lot
         expect(secondLot.at(-1).ot).toBe(startTS);
@@ -260,17 +270,18 @@ describe('Candlesticks DB Actions: ',  function() {
         await _utils.asyncDelay(5);
 
         // Save the third lot
+        // @ts-ignore
         const thirdLot: ICandlestick[] = await _candlestick.syncCandlesticks();
         expect(thirdLot.length).toBe(1000);
 
         // Retrieve the start ts again
-        startTS = await _candlestick.getLastOpenTimestamp();
+        startTS = await _model.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the first lot
         expect(thirdLot.at(-1).ot).toBe(startTS);
 
         // Download all the candlesticks stored in the db
-        const candlesticks: ICandlestick[] = await _candlestick.get();
+        const candlesticks: ICandlestick[] = await _model.get();
 
         /**
          * There should be a total of 2998 candlesticks stored in the db. 
@@ -299,11 +310,11 @@ describe('Candlesticks DB Actions: ',  function() {
         /* Forecast Candlesticks */
 
         // Download the existing forecast candlesticks
-        const forecast: ICandlestick[] = await _candlestick.get(undefined, undefined, undefined, true);
+        const forecast: ICandlestick[] = await _model.get(undefined, undefined, undefined, true);
 
         // Check if the number of candlesticks is valid
         const qty: number = <number>_utils.outputNumber(
-            new BigNumber(2998).dividedBy(_candlestick.forecastConfig.intervalMinutes),
+            new BigNumber(2998).dividedBy(_model.forecastConfig.intervalMinutes),
             {dp: 0, ru: true}
         );
         const safeQty: number = qty - 1; // Ignores the last candlestick in case it is incomplete
@@ -316,11 +327,12 @@ describe('Candlesticks DB Actions: ',  function() {
         // Download the forecast candlesticks directly from Binance and compare them with the ones in the db
         await _utils.asyncDelay(5);
         const bCandlesticks: IBinanceCandlestick[] = await _binance.getCandlesticks(
-            _candlestick.forecastConfig.alias, 
+            _model.forecastConfig.alias, 
             _binance.candlestickGenesisTimestamp, 
             undefined, 
             safeQty
         );
+        // @ts-ignore
         const bProcessed: ICandlestick[] = _candlestick.processBinanceCandlesticks(bCandlesticks);
 
         // Iterate over each candlestick and make sure they match
@@ -488,14 +500,15 @@ describe('Candlestick Essentials: ',  function() {
 
     it('-Can alter the interval of a candlesticks list: ', function() {
         // Original
+        // @ts-ignore
         const original: ICandlestick[] = _candlestick.processBinanceCandlesticks(TEST_BINANCE_CANDLESTICKS);
-        expect(_candlestick.alterInterval(original, 30).length).toBe(1);
-        expect(_candlestick.alterInterval(original, 15).length).toBe(2);
-        expect(_candlestick.alterInterval(original, 10).length).toBe(3);
-        expect(_candlestick.alterInterval(original, 5).length).toBe(6);
-        expect(_candlestick.alterInterval(original, 3).length).toBe(10);
-        expect(_candlestick.alterInterval(original, 2).length).toBe(15);
-        expect(_candlestick.alterInterval(original, 1).length).toBe(30);
+        expect(_model.alterInterval(original, 30).length).toBe(1);
+        expect(_model.alterInterval(original, 15).length).toBe(2);
+        expect(_model.alterInterval(original, 10).length).toBe(3);
+        expect(_model.alterInterval(original, 5).length).toBe(6);
+        expect(_model.alterInterval(original, 3).length).toBe(10);
+        expect(_model.alterInterval(original, 2).length).toBe(15);
+        expect(_model.alterInterval(original, 1).length).toBe(30);
     });
 
 
@@ -515,8 +528,7 @@ describe('Candlestick Essentials: ',  function() {
         ];
 
         // Merge them into one
-        // @ts-ignore
-        const merged: ICandlestick = _candlestick.mergeCandlesticks(original);
+        const merged: ICandlestick = _model.mergeCandlesticks(original);
         
         // Validate the results
         expect(merged.ot).toBe(1639676280000);
@@ -558,6 +570,7 @@ describe('Candlestick Essentials: ',  function() {
         ];
 
         // Process the raw candlesticks
+        // @ts-ignore
         const processed: ICandlestick[] = _candlestick.processBinanceCandlesticks(raw);
 
         // Iterate over each candlestick and make sure the processed values are correct
@@ -584,15 +597,10 @@ describe('Candlestick Essentials: ',  function() {
      * This test needs to be adjusted manually whenever the forecast interval is changed.
      */
     it('-Can calculate the close time of a forecast candlestick: ', function() {
-        // @ts-ignore
-        expect(_candlestick.getForecastCandlestickCloseTime(1502942400000)).toBe(1502944199999);
-        // @ts-ignore
-        expect(_candlestick.getForecastCandlestickCloseTime(1502944200000)).toBe(1502945999999);
-        // @ts-ignore
-        expect(_candlestick.getForecastCandlestickCloseTime(1502946000000)).toBe(1502947799999);
-        // @ts-ignore
-        expect(_candlestick.getForecastCandlestickCloseTime(1502947800000)).toBe(1502949599999);
-        // @ts-ignore
-        expect(_candlestick.getForecastCandlestickCloseTime(1502949600000)).toBe(1502951399999);
+        expect(_model.getForecastCandlestickCloseTime(1502942400000)).toBe(1502944199999);
+        expect(_model.getForecastCandlestickCloseTime(1502944200000)).toBe(1502945999999);
+        expect(_model.getForecastCandlestickCloseTime(1502946000000)).toBe(1502947799999);
+        expect(_model.getForecastCandlestickCloseTime(1502947800000)).toBe(1502949599999);
+        expect(_model.getForecastCandlestickCloseTime(1502949600000)).toBe(1502951399999);
     });
 });

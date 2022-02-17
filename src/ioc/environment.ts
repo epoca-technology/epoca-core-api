@@ -23,6 +23,7 @@ export interface ITelegrafConfig {
 
 // God User
 export interface IGod {
+    uid: string,
     email: string,
     password: string,
     otpSecret: string

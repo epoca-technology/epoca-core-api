@@ -13,6 +13,7 @@
 
     // Candlestick
     CandlestickService: Symbol.for("CandlestickService"),
+    CandlestickModel: Symbol.for("CandlestickModel"),
     CandlestickValidations: Symbol.for("CandlestickValidations"),
 
     // Binance
@@ -54,6 +55,7 @@ export interface ISymbols {
     AuthValidations: symbol,
     ForecastService: symbol,
     CandlestickService: symbol,
+    CandlestickModel: symbol,
     CandlestickValidations: symbol,
     BinanceService: symbol,
     UtilitiesService: symbol,
