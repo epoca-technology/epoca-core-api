@@ -13,7 +13,7 @@ import {IUtilitiesService} from '../utilities';
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
-// Database Service
+// GUI Version Service
 import {IGuiVersionService} from './interfaces';
 const _version: IGuiVersionService = appContainer.get<IGuiVersionService>(SYMBOLS.GuiVersionService);
 
@@ -53,7 +53,7 @@ GuiVersionRoute.route(`/get`).get(highRiskLimit, async (req: express.Request, re
 
 /**
 * Updates the current version.
-* @param newVersion
+* @param version
 * @returns IAPIResponse<void>
 */
 GuiVersionRoute.route(`/update`).post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {

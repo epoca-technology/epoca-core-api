@@ -9,6 +9,7 @@ import {
 import {BigNumber} from 'bignumber.js';
 import * as moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
+import {generate, GenerateOptions} from 'generate-password';
 
 
 
@@ -533,6 +534,42 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+
+
+
+
+
+
+
+    
+
+
+    /* Password */
+
+
+
+
+
+    /**
+     * Generates a random password based on provided options.
+     * @param options?
+     * @returns string
+     */
+     public generatePassword(options?: GenerateOptions): string {
+        // Init options in case they weren't provided
+        options = options ? options: {};
+
+        // Generate and return the password
+        return generate({
+            length: typeof options.length == "number" ? options.length: 20,
+            numbers: typeof options.numbers == "boolean" ? options.numbers: true,
+            symbols: typeof options.symbols == "boolean" ? options.symbols: false,
+            lowercase: typeof options.lowercase == "boolean" ? options.lowercase: true,
+            uppercase: typeof options.uppercase == "boolean" ? options.uppercase: true,
+            exclude: `"'=`,
+            strict: true
+        });
+    }
 
 
 

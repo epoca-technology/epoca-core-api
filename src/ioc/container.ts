@@ -5,20 +5,18 @@ import {Container} from "inversify";
 import { environment } from "./environment";
 
 // Modules
-import { candlestickModule } from "../modules/candlestick";
-import { serverModule } from "../modules/server";
-
-
-// Shared Modules
+import { authModule } from "../modules/auth";
 import { binanceModule } from "../modules/binance";
-import { utilitiesModule } from "../modules/utilities";
-import { externalRequestModule } from "../modules/external-request";
+import { candlestickModule } from "../modules/candlestick";
 import { databaseModule } from "../modules/database";
-import { notificationModule } from "../modules/notification";
+import { externalRequestModule } from "../modules/external-request";
 import { forecastModule } from "../modules/forecast";
-import { validationsModule } from "../modules/validations";
 import { guiVersionModule } from "../modules/gui-version";
+import { notificationModule } from "../modules/notification";
 import { requestGuardModule } from "../modules/request-guard";
+import { serverModule } from "../modules/server";
+import { utilitiesModule } from "../modules/utilities";
+import { validationsModule } from "../modules/validations";
 
 
 // Initialize Inversify
@@ -33,43 +31,41 @@ const firebaseApp: App = initializeApp({credential: cert(<ServiceAccount>environ
 
 // Load the container
 appContainer.load(
-    /* Main */
-
-    // Candlestick
-    candlestickModule,
-
-    // Server
-    serverModule,
-    
-    /* Shared */
-
-
-    // Forecast
-    forecastModule,
+    // Auth
+    authModule,
 
     // Binance
     binanceModule,
 
-    // Utilities
-    utilitiesModule,
-
-    // External Request
-    externalRequestModule,
+    // Candlestick
+    candlestickModule,
 
     // Database
     databaseModule,
 
-    // Notification
-    notificationModule,
+    // External Request
+    externalRequestModule,
 
-    // Validations
-    validationsModule,
+    // Forecast
+    forecastModule,
 
     // GUI Version
     guiVersionModule,
 
+    // Notification
+    notificationModule,
+
     // Request Guard
     requestGuardModule,
+
+    // Server
+    serverModule,
+
+    // Utilities
+    utilitiesModule,
+
+    // Validations
+    validationsModule,
 );
 
 

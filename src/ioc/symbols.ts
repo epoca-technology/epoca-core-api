@@ -3,6 +3,11 @@
  */
 
  export const SYMBOLS: ISymbols = {
+    // Auth
+    AuthService: Symbol.for("AuthService"),
+    AuthModel: Symbol.for("AuthModel"),
+    AuthValidations: Symbol.for("AuthValidations"),
+
     // Forecast
     ForecastService: Symbol.for("ForecastService"),
 
@@ -44,6 +49,9 @@
 
 
 export interface ISymbols {
+    AuthService: symbol,
+    AuthModel: symbol,
+    AuthValidations: symbol,
     ForecastService: symbol,
     CandlestickService: symbol,
     CandlestickValidations: symbol,

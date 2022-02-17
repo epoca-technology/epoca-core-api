@@ -1,4 +1,5 @@
 import {BigNumber} from 'bignumber.js';
+import { GenerateOptions } from 'generate-password';
 
 
 // Service
@@ -31,6 +32,9 @@ export interface IUtilitiesService {
     // Dates
     getTimestamp(date: string): number,
     toDateString(timestamp: number): string,
+
+    // Password
+    generatePassword(options?: GenerateOptions): string,
 
     // Async Delay
     asyncDelay(seconds: number): Promise<void>,

@@ -1,20 +1,21 @@
 {
-  "name": "api-dev",
+  "name": "api-development",
   "version": "0.0.2",
-  "description": "Bitcoin Trading System",
+  "description": "Plutus is an automated trading system for Bitcoin which leverages the latest technologies.",
   "main": "index.js",
   "scripts": {
     "start": "node dist/index.js",
     "build": "gulp",
     "test": "clear && jasmine-ts --config=./jasmine/e2e.json",
-    "test-trading-simulation": "clear && jasmine-ts --config=./jasmine/trading-simulation.json",
+    "test-auth": "clear && jasmine-ts --config=./jasmine/auth.json",
     "test-candlestick": "clear && jasmine-ts --config=./jasmine/candlestick.json",
-    "test-notification": "clear && jasmine-ts --config=./jasmine/notification.json",
-    "test-utils": "clear && jasmine-ts --config=./jasmine/utils.json",
-    "test-db": "clear && jasmine-ts --config=./jasmine/database.json",
+    "test-database": "clear && jasmine-ts --config=./jasmine/database.json",
     "test-gui-version": "clear && jasmine-ts --config=./jasmine/gui-version.json",
-    "test-validations": "clear && jasmine-ts --config=./jasmine/validations.json",
-    "test-server": "clear && jasmine-ts --config=./jasmine/server.json"
+    "test-notification": "clear && jasmine-ts --config=./jasmine/notification.json",
+    "test-server": "clear && jasmine-ts --config=./jasmine/server.json",
+    "test-trading-simulation": "clear && jasmine-ts --config=./jasmine/trading-simulation.json",
+    "test-utils": "clear && jasmine-ts --config=./jasmine/utils.json",
+    "test-validations": "clear && jasmine-ts --config=./jasmine/validations.json"
   },
   "repository": {
     "type": "git",
@@ -30,6 +31,7 @@
     "express": "4.17.1",
     "express-rate-limit": "5.5.1",
     "firebase-admin": "10.0.2",
+    "generate-password": "1.7.0",
     "https": "1.0.0",
     "inversify": "6.0.1",
     "moment": "2.29.1",

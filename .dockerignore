@@ -7,4 +7,3 @@ db_restore
 .gitignore
 Dockerfile
 README.md
-API_ERRORS.md

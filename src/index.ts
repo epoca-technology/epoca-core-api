@@ -60,13 +60,15 @@ const port = process.env.PORT || 5075;
 
 
 
-// Import & Register Routes
+// Import Routes
+import {AuthRoute} from './modules/auth/auth.route';
 import {CandlestickRoute} from './modules/candlestick/candlestick.route';
 import {ServerRoute} from './modules/server/server.route';
 import {DatabaseRoute} from './modules/database/database.route';
 import {GuiVersionRoute} from './modules/gui-version/gui-version.route';
 
-
+// Register Routes
+app.use('/auth', AuthRoute);
 app.use('/candlestick', CandlestickRoute);
 app.use('/server', ServerRoute);
 app.use('/database', DatabaseRoute);

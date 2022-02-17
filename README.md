@@ -1,4 +1,4 @@
-# PLUTUS CORE API
+# PLUTUS API
 
 
 ## Requirements
@@ -21,29 +21,19 @@
 
 
 
+
 #
 ## Getting Started
 
-1) Install dependencies with `npm install` 
+Navigate to the compose project and start the containers with:
 
-2) Build the project with `npm run build` 
+`docker-compose up --build -d`
 
-3) Navigate to the compose project and start the containers with `docker-compose up --build -d`
+In order to enable the test mode, run the following:
 
-
-
-
-#
-## Build
-
-Run `npm run build` to perform a gulp build
+`testMode=true docker-compose up --build -d`
 
 
-
-#
-## Server
-
-Run `npm start` to run the server
 
 
 
@@ -51,15 +41,15 @@ Run `npm start` to run the server
 #
 ## Tests
 
-When running unit tests, it is important that the containers are initialized with the correct configuration:
-
-`testMode=true docker-compose up --build -d`
-
 #
 
 End-to-end: 
 
 `docker exec api docker-entrypoint.sh npm test`
+
+Auth: 
+
+`docker exec api docker-entrypoint.sh npm run test-auth`
 
 Candlestick: 
 
@@ -92,6 +82,7 @@ Utilities:
 Validations: 
 
 `docker exec api docker-entrypoint.sh npm run test-validations`
+
 
 
 

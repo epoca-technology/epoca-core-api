@@ -1,5 +1,5 @@
 import {injectable, inject} from "inversify";
-import { SYMBOLS, environment } from "../../ioc";
+import { SYMBOLS } from "../../ioc";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
 import { IUtilitiesService } from "../utilities";
 import { IGuiVersionService } from "./interfaces";

@@ -318,3 +318,32 @@ describe('Date Handling:', function() {
     });
 });
 
+
+
+
+
+
+
+
+
+/* Password Generation */
+describe('Password Generation:', function() {
+    it('-Can generate a series of valid random passwords', function() {
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+    });
+});
+
