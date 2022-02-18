@@ -66,5 +66,18 @@ export const TABLES: IRawTable[] = [
         }
     },
 
-    
+    // Users
+    {
+        name: 'users',
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                uid         uuid NOT NULL PRIMARY KEY,
+                email       VARCHAR(150) NOT NULL UNIQUE,
+                otp_secret  VARCHAR(60) NOT NULL,
+                authority   SMALLINT NOT NULL,
+                fcm_token   VARCHAR(300) NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_email ON ${tableName}(email);`
+        }
+    },
 ];

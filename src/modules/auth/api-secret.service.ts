@@ -1,7 +1,6 @@
 import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../ioc";
-import {getAuth, Auth, } from "firebase-admin/auth";
-import { IAuthModel, IUserRecord } from "./interfaces";
+import { IApiSecretService } from "./interfaces";
 import { IDatabaseService } from "../database";
 import { IUtilitiesService } from "../utilities";
 
@@ -9,13 +8,11 @@ import { IUtilitiesService } from "../utilities";
 
 
 @injectable()
-export class AuthModel implements IAuthModel {
+export class ApiSecretService implements IApiSecretService {
     // Inject dependencies
     @inject(SYMBOLS.DatabaseService)                   private _db: IDatabaseService;
     @inject(SYMBOLS.UtilitiesService)                  private _utils: IUtilitiesService;
 
-    // Auth Instance
-    private readonly auth: Auth = getAuth();
 
 
     constructor() {}
@@ -25,13 +22,5 @@ export class AuthModel implements IAuthModel {
 
 
 
-    /* Retrievers */
-
-
-
-
-    public async getFirebaseUser(uid: string): Promise<any> {
-        
-    }
 
 }

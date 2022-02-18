@@ -14,6 +14,9 @@ export class RequestGuardService implements IRequestGuardService {
     // App Initialization - API can only accept requests when init is complete
     public apiInitialized: boolean;
 
+    // Test Mode
+    private readonly testMode: boolean = environment.testMode;
+
 
     constructor() {}
 

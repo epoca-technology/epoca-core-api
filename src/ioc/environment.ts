@@ -10,7 +10,7 @@ export interface IEnvironment {
     telegraf: ITelegrafConfig,
     recaptchaSecret: string,
     god: IGod,
-    firebaseServiceAccount: IFirebaseServiceAccount,
+    firebase: IFirebaseConfig,
 }
 
 
@@ -30,18 +30,21 @@ export interface IGod {
 }
 
 
-// Firebase Service Account
-export interface IFirebaseServiceAccount { 
-    type: string,
-    project_id: string,
-    private_key_id: string,
-    private_key: string,
-    client_email: string,
-    client_id: string,
-    auth_uri: string,
-    token_uri: string,
-    auth_provider_x509_cert_url: string,
-    client_x509_cert_url: string
+// Firebase
+export interface IFirebaseConfig {
+    serviceAccount: { 
+        type: string,
+        project_id: string,
+        private_key_id: string,
+        private_key: string,
+        client_email: string,
+        client_id: string,
+        auth_uri: string,
+        token_uri: string,
+        auth_provider_x509_cert_url: string,
+        client_x509_cert_url: string
+    },
+    databaseURL: string
 }
 
 
@@ -69,7 +72,7 @@ const environment: IEnvironment = {
     telegraf: <ITelegrafConfig>getObject('telegraf', process.env.telegraf),
     recaptchaSecret: getString('recaptchaSecret', process.env.recaptchaSecret),
     god: <IGod>getObject('god', process.env.god),
-    firebaseServiceAccount: <IFirebaseServiceAccount>getObject('firebaseServiceAccount', process.env.firebaseServiceAccount),
+    firebase: <IFirebaseConfig>getObject('firebase', process.env.firebase),
 }
 
 

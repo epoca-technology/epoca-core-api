@@ -1,4 +1,6 @@
 import {Pool, PoolConfig, QueryConfig, QueryResult, PoolClient, Client} from "pg";
+import { Reference, DataSnapshot } from "firebase-admin/database";
+
 
 // Postgres Types
 export type IPool = Pool;
@@ -9,12 +11,21 @@ export type IQueryResult = QueryResult;
 export type IClient = Client;
 
 
+
+// Firebase Types
+export type IReference = Reference;
+export type IDataSnapshot = DataSnapshot;
+
+
+
+
 // Main Service
 export interface IDatabaseService {
     // Properties
     config: IPoolConfig,
     pool: IPool,
     tn: ITableNames,
+    apiSecretRef: IReference,
     
     // Query
     query(config: IQueryConfig): Promise<IQueryResult>,
@@ -63,6 +74,7 @@ export interface ITableNames {
     server_alarms: string,
     candlesticks: string,
     forecast_candlesticks: string,
+    users: string,
 }
 
 

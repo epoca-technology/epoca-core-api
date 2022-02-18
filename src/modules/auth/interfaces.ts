@@ -1,3 +1,8 @@
+import {UserRecord} from "firebase-admin/auth";
+
+
+// General Types
+export type IUserRecord = UserRecord;
 
 
 
@@ -20,6 +25,12 @@ export interface IAuthValidations {
 
 }
 
+
+
+// API Secret
+export interface IApiSecretService {
+    
+}
 
 
 

@@ -25,7 +25,10 @@ const appContainer: Container = new Container({skipBaseClassChecks: true, defaul
 
 // Initialize Firebase
 import {initializeApp, ServiceAccount, cert, App} from "firebase-admin/app";
-const firebaseApp: App = initializeApp({credential: cert(<ServiceAccount>environment.firebaseServiceAccount)});
+const firebaseApp: App = initializeApp({
+    credential: cert(<ServiceAccount>environment.firebase.serviceAccount),
+    databaseURL: environment.firebase.databaseURL
+});
 
 
 

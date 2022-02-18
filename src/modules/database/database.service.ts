@@ -11,15 +11,16 @@ import {
     IQueryConfig,
     IDatabaseSummary,
     IDatabaseSummaryTable,
+    IReference
 } from "./interfaces";
 import { TABLES } from "./tables";
 import {Client, Pool, types} from "pg";
+import {getDatabase, Database} from "firebase-admin/database";
 
 
 @injectable()
 export class DatabaseService implements IDatabaseService {
     // Inject dependencies
-
 
     
     // Pool Config
@@ -42,6 +43,10 @@ export class DatabaseService implements IDatabaseService {
 
     // Table Names
     public readonly tn: ITableNames = this.buildTableNames(environment.testMode);
+
+    // Firebase DB
+    private readonly firebaseDB: Database = getDatabase();
+    public readonly apiSecretRef: IReference = this.firebaseDB.ref('apiSecret');
 
     
     constructor() {

@@ -7,6 +7,7 @@
     AuthService: Symbol.for("AuthService"),
     AuthModel: Symbol.for("AuthModel"),
     AuthValidations: Symbol.for("AuthValidations"),
+    ApiSecretService: Symbol.for("ApiSecretService"),
 
     // Forecast
     ForecastService: Symbol.for("ForecastService"),
@@ -53,6 +54,7 @@ export interface ISymbols {
     AuthService: symbol,
     AuthModel: symbol,
     AuthValidations: symbol,
+    ApiSecretService: symbol,
     ForecastService: symbol,
     CandlestickService: symbol,
     CandlestickModel: symbol,
