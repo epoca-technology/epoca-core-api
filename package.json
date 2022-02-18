@@ -14,8 +14,7 @@
     "test-notification": "clear && jasmine-ts --config=./jasmine/notification.json",
     "test-server": "clear && jasmine-ts --config=./jasmine/server.json",
     "test-trading-simulation": "clear && jasmine-ts --config=./jasmine/trading-simulation.json",
-    "test-utils": "clear && jasmine-ts --config=./jasmine/utils.json",
-    "test-validations": "clear && jasmine-ts --config=./jasmine/validations.json"
+    "test-utils": "clear && jasmine-ts --config=./jasmine/utils.json"
   },
   "repository": {
     "type": "git",

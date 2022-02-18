@@ -9,22 +9,13 @@
     AuthValidations: Symbol.for("AuthValidations"),
     ApiSecretService: Symbol.for("ApiSecretService"),
 
-    // Forecast
-    ForecastService: Symbol.for("ForecastService"),
+    // Binance
+    BinanceService: Symbol.for("BinanceService"),
 
     // Candlestick
     CandlestickService: Symbol.for("CandlestickService"),
     CandlestickModel: Symbol.for("CandlestickModel"),
     CandlestickValidations: Symbol.for("CandlestickValidations"),
-
-    // Binance
-    BinanceService: Symbol.for("BinanceService"),
-
-    // Utilities
-    UtilitiesService: Symbol.for("UtilitiesService"),
-
-    // External Request
-    ExternalRequestService: Symbol.for("ExternalRequestService"),
 
     // Database
     DatabaseService: Symbol.for("DatabaseService"),
@@ -32,21 +23,28 @@
     DatabaseRestoreService: Symbol.for("DatabaseRestoreService"),
     DatabaseValidations: Symbol.for("DatabaseValidations"),
 
+    // External Request
+    ExternalRequestService: Symbol.for("ExternalRequestService"),
+
+    // Forecast
+    ForecastService: Symbol.for("ForecastService"),
+
+    // GUI Version
+    GuiVersionService: Symbol.for("GuiVersionService"),
+
     // Notifications
     NotificationService: Symbol.for("NotificationService"),
 
-    // Validations
-    ValidationsService: Symbol.for("ValidationsService"),
+    // Request Guard
+    RequestGuardService: Symbol.for("RequestGuardService"),
 
     // Server
     ServerService: Symbol.for("ServerService"),
     ServerValidations: Symbol.for("ServerValidations"),
 
-    // GUI Version
-    GuiVersionService: Symbol.for("GuiVersionService"),
-
-    // Request Guard
-    RequestGuardService: Symbol.for("RequestGuardService"),
+    // Utilities
+    UtilitiesService: Symbol.for("UtilitiesService"),
+    ValidationsService: Symbol.for("ValidationsService"),
 }
 
 
@@ -55,23 +53,33 @@ export interface ISymbols {
     AuthModel: symbol,
     AuthValidations: symbol,
     ApiSecretService: symbol,
-    ForecastService: symbol,
+
+    BinanceService: symbol,
+
     CandlestickService: symbol,
     CandlestickModel: symbol,
     CandlestickValidations: symbol,
-    BinanceService: symbol,
-    UtilitiesService: symbol,
-    ExternalRequestService: symbol,
+
     DatabaseService: symbol,
     DatabaseBackupService: symbol,
     DatabaseRestoreService: symbol,
     DatabaseValidations: symbol,
+
+    ExternalRequestService: symbol,
+
+    ForecastService: symbol,
+
+    GuiVersionService: symbol,
+
     NotificationService: symbol,
-    ValidationsService: symbol,
+
+    RequestGuardService: symbol,
+
     ServerService: symbol,
     ServerValidations: symbol,
-    GuiVersionService: symbol,
-    RequestGuardService: symbol,
+    
+    UtilitiesService: symbol,
+    ValidationsService: symbol,
 }
 
 

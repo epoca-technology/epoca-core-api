@@ -9,12 +9,9 @@ import * as stringify from 'json-stable-stringify';
 import {  IDatabaseService, IDataSnapshot } from "../../src/modules/database";
 const _db = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
-// Init Utils
-import {  IUtilitiesService } from "../../src/modules/utilities";
+// Init Utils & Validations
+import {  IUtilitiesService, IValidationsService } from "../../src/modules/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
-
-// Init Validations
-import {  IValidationsService } from "../../src/modules/validations";
 const _validations = appContainer.get<IValidationsService>(SYMBOLS.ValidationsService);
 
 

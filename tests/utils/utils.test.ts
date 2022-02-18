@@ -9,13 +9,9 @@ import * as stringify from 'json-stable-stringify';
 // Moment Timezone
 import * as momenttz from 'moment-timezone';
 
-// Utilities Service
-import { IAPIResponse, IUtilitiesService } from "../../src/modules/utilities";
+// Utilities & Validations Service
+import { IAPIResponse, IUtilitiesService, IValidationsService } from "../../src/modules/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
-
-
-// Validations Service
-import { IValidationsService } from "../../src/modules/validations";
 const _validations = appContainer.get<IValidationsService>(SYMBOLS.ValidationsService);
 
 

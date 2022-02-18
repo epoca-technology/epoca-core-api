@@ -1,5 +1,6 @@
 import {BigNumber} from 'bignumber.js';
 import { GenerateOptions } from 'generate-password';
+import { IAuthority } from '../auth';
 
 
 // Service
@@ -39,6 +40,29 @@ export interface IUtilitiesService {
     // Async Delay
     asyncDelay(seconds: number): Promise<void>,
 }
+
+
+
+
+
+// Validations Service
+export interface IValidationsService {
+    // UUID
+    uuidValid(uuid: string): boolean,
+
+    // Auth
+    emailValid(email: string): boolean,
+    passwordValid(password: string): boolean,
+    authorityValid(authority: IAuthority, maxAuthority?: IAuthority): boolean,
+
+    // API Secret
+    apiSecretValid(secret: string): boolean,
+
+    // Numbers
+    numberValid(value: number, min?: number, max?: number): boolean,
+
+}
+
 
 
 

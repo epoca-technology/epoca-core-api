@@ -16,7 +16,6 @@ import { notificationModule } from "../modules/notification";
 import { requestGuardModule } from "../modules/request-guard";
 import { serverModule } from "../modules/server";
 import { utilitiesModule } from "../modules/utilities";
-import { validationsModule } from "../modules/validations";
 
 
 // Initialize Inversify
@@ -66,9 +65,6 @@ appContainer.load(
 
     // Utilities
     utilitiesModule,
-
-    // Validations
-    validationsModule,
 );
 
 

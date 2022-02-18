@@ -5,7 +5,7 @@ import { IAuthority } from "../../src/modules/auth";
 
 
 // Validations Service
-import { IValidationsService } from "../../src/modules/validations";
+import { IValidationsService } from "../../src/modules/utilities";
 const _validations = appContainer.get<IValidationsService>(SYMBOLS.ValidationsService);
 
 

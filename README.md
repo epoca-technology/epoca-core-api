@@ -79,10 +79,6 @@ Utilities:
 
 `docker exec api docker-entrypoint.sh npm run test-utils`
 
-Validations: 
-
-`docker exec api docker-entrypoint.sh npm run test-validations`
-
 
 
 

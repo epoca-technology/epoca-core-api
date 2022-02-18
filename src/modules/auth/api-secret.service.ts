@@ -2,8 +2,7 @@ import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { IApiSecretService, IApiSecretRecord, IApiSecrets } from "./interfaces";
 import { IDatabaseService, IFanoutObject } from "../database";
-import { IUtilitiesService } from "../utilities";
-import { IValidationsService } from "../validations";
+import { IUtilitiesService, IValidationsService } from "../utilities";
 import * as moment from 'moment';
 
 
