@@ -31,7 +31,7 @@ export class AuthModel implements IAuthModel {
 
 
     public async getFirebaseUser(uid: string): Promise<any> {
-        
+        return await this.auth.getUser('asd');
     }
 
 }

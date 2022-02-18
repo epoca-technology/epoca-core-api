@@ -74,6 +74,27 @@ describe('Auth Validation Tests:', function() {
 
 
 
+describe('API Secret Tests:', function() {
+    it('-Can identify valid secrets: ', function() {
+        expect(_validations.apiSecretValid('123456asd9')).toBeTruthy();
+        expect(_validations.apiSecretValid('4564564554')).toBeTruthy();
+        expect(_validations.apiSecretValid('asdasdasdd')).toBeTruthy();
+    });
+
+    it('-Can identify invalid secrets: ', function() {
+        expect(_validations.apiSecretValid('123456asd')).toBeFalsy();
+        expect(_validations.apiSecretValid('4564564554sad')).toBeFalsy();
+        // @ts-ignore
+        expect(_validations.apiSecretValid(564654121)).toBeFalsy();
+    });
+});
+
+
+
+
+
+
+
 
 
 

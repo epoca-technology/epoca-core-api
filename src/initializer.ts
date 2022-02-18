@@ -34,7 +34,7 @@ export async function init(): Promise<void> {
 
     // Initialize the rest of the modules if it is not test mode
     if (!environment.testMode) {
-        // Initiaze the User Module
+        // Initiaze the Auth Module
         // @TODO
         
         // Initialize the Server Module
@@ -42,6 +42,9 @@ export async function init(): Promise<void> {
 
         // Initialize the Candlestick Syncing
         await _candlestick.startSync();
+
+        // Initialize the IP Blacklist Module
+        // @TODO
 
         // Initialize the Trading Simulation Module
         // @TODO

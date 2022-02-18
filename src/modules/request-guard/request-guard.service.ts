@@ -12,7 +12,7 @@ export class RequestGuardService implements IRequestGuardService {
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
     // App Initialization - API can only accept requests when init is complete
-    public apiInitialized: boolean;
+    public apiInitialized: boolean = false;
 
     // Test Mode
     private readonly testMode: boolean = environment.testMode;

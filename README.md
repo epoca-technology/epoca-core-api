@@ -176,3 +176,34 @@ Validations:
 ## GUI Version (7.000 - 7.999)
 
 7000: `The provided version (${newVersion}) has an invalid format.`
+
+
+
+#
+## Auth (8.000 - 8.999)
+
+8000: ``
+
+
+### Model
+
+8300: ``
+
+
+### Validations
+
+8300: ``
+
+
+#
+## API Secret (9.000 - 9.999)
+
+9000: `A list of valid uids must be provided in order to refresh the api secrets.`
+
+9001: `A valid secrets object must be provided in order to update the local secrets.`
+
+9002: `The uid (${uid}) was not found in the local secrets object.`
+
+9003: `The uid (${uid}) provided an api secret with an invalid format: ${secret}.`
+
+9004: `The uid (${uid}) provided an api secret that didnt match the one stored locally: ${secret}.`

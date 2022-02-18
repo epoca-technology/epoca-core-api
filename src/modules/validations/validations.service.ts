@@ -124,6 +124,19 @@ export class ValidationsService implements IValidationsService {
 
 
 
+    /* API Secret */
+
+
+
+    /**
+     * Verifies if an API secret is valid.
+     * @param secret 
+     * @returns boolean
+     */
+    public apiSecretValid(secret: string): boolean { return typeof secret == "string" && secret.length == 10 }
+
+
+
 
 
 

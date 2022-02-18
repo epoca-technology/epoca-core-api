@@ -93,3 +93,11 @@ export interface IDatabaseSummaryTable {
     name: string,
     size: string
 }
+
+
+
+
+// Firebase Fanout
+export interface IFanoutObject {
+    [refPath: string]: any
+}

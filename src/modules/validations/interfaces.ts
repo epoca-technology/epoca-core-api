@@ -11,6 +11,9 @@ export interface IValidationsService {
     passwordValid(password: string): boolean,
     authorityValid(authority: IAuthority, maxAuthority?: IAuthority): boolean,
 
+    // API Secret
+    apiSecretValid(secret: string): boolean,
+
     // Numbers
     numberValid(value: number, min?: number, max?: number): boolean,
 
