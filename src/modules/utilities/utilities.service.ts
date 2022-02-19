@@ -8,6 +8,7 @@ import {
 } from "./interfaces";
 import {BigNumber} from 'bignumber.js';
 import * as moment from 'moment';
+import * as momenttz from 'moment-timezone';
 import { v4 as uuidv4 } from 'uuid';
 import {generate, GenerateOptions} from 'generate-password';
 
@@ -18,7 +19,13 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+    constructor() {
+        // BigNumber Config
+        BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN, EXPONENTIAL_AT: 32 });
 
+        // Moment Timezone Config
+        momenttz.tz.setDefault("America/Caracas");
+    }
 
 
 

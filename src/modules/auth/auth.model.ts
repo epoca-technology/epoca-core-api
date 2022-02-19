@@ -4,7 +4,7 @@ import {getAuth, Auth, } from "firebase-admin/auth";
 import { IAuthModel, IUserRecord } from "./interfaces";
 import { IDatabaseService } from "../database";
 import { IUtilitiesService } from "../utilities";
-
+import { authenticator } from 'otplib';
 
 
 
@@ -18,7 +18,13 @@ export class AuthModel implements IAuthModel {
     private readonly auth: Auth = getAuth();
 
 
-    constructor() {}
+    constructor() {
+        // Set the authenticator options
+        authenticator.options = { 
+            window: 2,
+            step: 30
+        };
+    }
 
 
 
@@ -33,5 +39,16 @@ export class AuthModel implements IAuthModel {
     public async getFirebaseUser(uid: string): Promise<any> {
         return await this.auth.getUser('asd');
     }
+
+
+
+
+
+
+
+
+
+
+
 
 }

@@ -52,7 +52,8 @@ export interface IUser {
     email: string,
     otp_secret: string,
     authority: IAuthority,
-    fcm_token?: string
+    fcm_token?: string,
+    creation: number
 }
 
 

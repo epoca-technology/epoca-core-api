@@ -58,6 +58,9 @@ export interface IValidationsService {
     // API Secret
     apiSecretValid(secret: string): boolean,
 
+    // OTP Token
+    otpTokenValid(token: string): boolean,
+
     // Numbers
     numberValid(value: number, min?: number, max?: number): boolean,
 

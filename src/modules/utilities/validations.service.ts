@@ -63,6 +63,8 @@ export class ValidationsService implements IValidationsService {
 
 
 
+
+
 	
 	/*
 	 * Verifies a password has a valid format. For a password to be valid it must contain:
@@ -134,6 +136,31 @@ export class ValidationsService implements IValidationsService {
      * @returns boolean
      */
     public apiSecretValid(secret: string): boolean { return typeof secret == "string" && secret.length == 10 }
+
+
+
+
+
+
+
+
+
+
+
+    /* OTP Token */
+
+
+
+
+
+    /**
+     * Verifies if an OTP Token is valid.
+     * @param token 
+     * @returns boolean
+     */
+    public otpTokenValid(token: string): boolean { return typeof token == "string"  && /^[0-9]{6}$/.test(token) }
+
+
 
 
 

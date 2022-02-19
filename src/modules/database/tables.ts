@@ -75,7 +75,8 @@ export const TABLES: IRawTable[] = [
                 email       VARCHAR(150) NOT NULL UNIQUE,
                 otp_secret  VARCHAR(60) NOT NULL,
                 authority   SMALLINT NOT NULL,
-                fcm_token   VARCHAR(300) NULL
+                fcm_token   VARCHAR(300) NULL,
+                creation    BIGINT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS ${tableName}_email ON ${tableName}(email);`
         }

@@ -95,6 +95,22 @@ describe('API Secret Tests:', function() {
 
 
 
+describe('OTP Token Tests:', function() {
+    it('-Can identify valid otp tokens: ', function() {
+        expect(_validations.otpTokenValid('123456')).toBeTruthy();
+        expect(_validations.otpTokenValid('654321')).toBeTruthy();
+        expect(_validations.otpTokenValid('199452')).toBeTruthy();
+    });
+
+    it('-Can identify invalid otp tokens: ', function() {
+        expect(_validations.otpTokenValid('123456asd')).toBeFalsy();
+        expect(_validations.otpTokenValid('4564564554sad')).toBeFalsy();
+        // @ts-ignore
+        expect(_validations.otpTokenValid(123456)).toBeFalsy();
+    });
+});
+
+
 
 
 
