@@ -183,7 +183,9 @@ Utilities:
 
 ### Model
 
-8300: ``
+8300: `Couldnt retrieve the users as the table is currently empty.`
+
+8301: `Could not retrieve the otp secret because the uid (${uid}) was not found.`
 
 
 ### Validations

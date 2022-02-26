@@ -1,4 +1,5 @@
 import {UserRecord} from "firebase-admin/auth";
+import { IQueryResult } from "../database";
 
 
 // General Types
@@ -15,11 +16,20 @@ export interface IAuthService {
 
 // Model
 export interface IAuthModel {
-
-
     // Retrievers
-
+    getAll(): Promise<IUser[]>,
+    getUser(uid: string): Promise<IUser|undefined>,
+    getUserByEmail(email: string): Promise<IUser|undefined>,
     getFirebaseUserRecord(uid: string): Promise<IUserRecord|undefined>,
+
+    // Users Management
+    createUser(authority: IAuthority, email?: string): Promise<string>,
+    createFirebaseUser(uid: string, email: string, password: string): Promise<IUserRecord>,
+    insertUserIntoDatabase(uid: string, email: string, otp_secret: string, authority: IAuthority): Promise<IQueryResult>,
+    deleteUser(uid: string): Promise<void>,
+
+    // OTP Verification
+    checkOTPToken(uid: string, otpToken: string): Promise<boolean>
 }
 
 
@@ -50,8 +60,8 @@ export interface IUser {
 }
 
 
-// User Build
-export interface IUserBuild {
+// User Creation Build
+export interface IUserCreationBuild {
     user: IUser,
     password: string
 }

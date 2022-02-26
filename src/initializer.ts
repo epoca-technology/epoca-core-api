@@ -49,7 +49,7 @@ export async function init(): Promise<void> {
         // Initialize the Trading Simulation Module
         // @TODO
 
-        // Initialize the Trading Session Module
+        // Initialize the Trading Sessions Module
         // @TODO
     }
 
