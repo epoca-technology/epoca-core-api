@@ -16,6 +16,10 @@ export interface IAuthService {
 // Model
 export interface IAuthModel {
 
+
+    // Retrievers
+
+    getFirebaseUserRecord(uid: string): Promise<IUserRecord|undefined>,
 }
 
 
@@ -25,17 +29,6 @@ export interface IAuthValidations {
 
 }
 
-
-
-// API Secret
-export interface IApiSecretService {
-    // Secrets Management
-    refreshSecrets(uids: string[]): Promise<void>,
-    removeSecret(uid: string): Promise<void>,
-
-    // Secret Verification
-    verifySecret(uid: string, secret: string): Promise<void>,
-}
 
 
 
@@ -57,11 +50,28 @@ export interface IUser {
 }
 
 
+// User Build
+export interface IUserBuild {
+    user: IUser,
+    password: string
+}
+
 
 
 
 
 /* API Secret  */
+
+
+// API Secret Service
+export interface IApiSecretService {
+    // Secrets Management
+    refreshSecrets(uids: string[]): Promise<void>,
+    removeSecret(uid: string): Promise<void>,
+
+    // Secret Verification
+    verifySecret(uid: string, secret: string): Promise<void>,
+}
 
 // Secrets Object
 export interface IApiSecrets {

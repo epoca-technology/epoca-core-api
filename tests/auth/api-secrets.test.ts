@@ -145,13 +145,15 @@ describe('API Secrets Management:', async function() {
         // Retrieve the datasnapshot and make sure that both have been created
         const secrets: IApiSecrets = await getSnapVal();
         const keys: string[] = Object.keys(secrets);
-        expect(keys.length).toBe(2);
+        expect(keys.length >= 2).toBeTruthy();
         expect(keys.includes(uids[0])).toBeTruthy();
         expect(keys.includes(uids[1])).toBeTruthy();
 
         // Compare it to the secret stored in the local object
         // @ts-ignore
-        expect(stringify(secrets) == stringify(_secret.secrets)).toBeTruthy();
+        expect(stringify(secrets[uids[0]]) == stringify(_secret.secrets[uids[0]])).toBeTruthy();
+        // @ts-ignore
+        expect(stringify(secrets[uids[1]]) == stringify(_secret.secrets[uids[1]])).toBeTruthy();
     });
 });
 
