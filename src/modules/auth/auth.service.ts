@@ -53,6 +53,11 @@ export class AuthService implements IAuthService {
         // Retrieve all the users
         const users: IUser[] = await this._model.getAll();
 
+        // Make sure there is at least 1 user registered
+        if (!users.length) {
+            throw new Error(this._utils.buildApiError(`Couldnt initialize the Auth Module because there are no users stored in the db.`, 8000));
+        }
+
         // Initialize the authorities object
         users.forEach((u: IUser) => { this.authorities[u.uid] = u.authority });
 
@@ -157,13 +162,13 @@ export class AuthService implements IAuthService {
 
 
     /**
-     * Creates a new user and it also generates the API secret. If an error is thrown, it 
-     * will attempt to rollback the creation.
+     * Creates a new user and it also generates the API secret and returns the uid. 
+     * If an error is thrown, it will attempt to rollback the creation.
      * @param email 
      * @param authority 
-     * @returns Promise<void>
+     * @returns Promise<string>
      */
-    public async createUser(email: string, authority: IAuthority): Promise<void> {
+    public async createUser(email: string, authority: IAuthority): Promise<string> {
         // Validate the request
         await this._validations.canUserBeCreated(email, authority);
 
@@ -179,6 +184,9 @@ export class AuthService implements IAuthService {
 
             // Add it to the authorities object
             this.authorities[uid] = authority;
+
+            // Return the uid
+            return uid;
         } catch (e) {
             // Delete the user safely
             try { await this._model.deleteUser(uid) } 
@@ -229,18 +237,21 @@ export class AuthService implements IAuthService {
 
     /**
      * Updates a user's password on Firebase.
-     * @param uid 
+     * @param email 
      * @param newPassword
      * @param otp
      * @param recaptcha
      * @returns Promise<void>
      */
-     public async updatePassword(uid: string, newPassword: string, otp: string, recaptcha: string): Promise<void> {
+     public async updatePassword(email: string, newPassword: string, otp: string, recaptcha: string): Promise<void> {
+        // Retrieve the user by email
+        const user: IUser|undefined = await this._model.getUserByEmail(email);
+
         // Validate the request
-        await this._validations.canPasswordBeUpdated(uid, newPassword, otp, recaptcha);
+        await this._validations.canPasswordBeUpdated(user, newPassword, otp, recaptcha);
 
         // Perform the action
-        await this._model.updatePassword(uid, newPassword);
+        await this._model.updatePassword(user.uid, newPassword);
     }
 
 
@@ -286,7 +297,7 @@ export class AuthService implements IAuthService {
         const user: IUser|undefined = await this._model.getUser(uid);
 
         // Validate the request
-        await this._validations.canAuthorityBeUpdated(uid, user, newAuthority);
+        this._validations.canAuthorityBeUpdated(uid, user, newAuthority);
 
         // Perform the action
         await this._model.updateAuthority(uid, newAuthority);
@@ -369,6 +380,9 @@ export class AuthService implements IAuthService {
       * @returns Promise<string>
       */
      public async getSignInToken(email: string, password: string, otp: string, recaptcha: string,): Promise<string> {
+        // Make sure the email is lowercased if provided
+        email = typeof email == "string" ? email.toLowerCase(): email;
+
         // Retrieve the user by email
         const user: IUser|undefined = await this._model.getUserByEmail(email);
 
@@ -402,6 +416,35 @@ export class AuthService implements IAuthService {
      * @param otpToken 
      * @returns Promise<void>
      */
-    public async checkOTPToken(uid: string, otpToken: string): Promise<void> { return this._model.checkOTPToken(uid, otpToken) }
+    public validateOTPToken(uid: string, otpToken: string): Promise<void> { return this._validations.validateOTPToken(uid, otpToken) }
 
+
+
+
+
+
+
+
+
+
+    
+
+    /* ID Token */
+
+
+
+
+
+    /**
+     * Validates an ID Token and attempts to decode it. If successful, it returns the uid.
+     * @param token 
+     * @returns Promise<string>
+     */
+    public verifyIDToken(token: string): Promise<string> {
+        // Validate the token
+        this._validations.canVerifyIDToken(token);
+
+        // Decode it and return the uid
+        return this._model.verifyIDToken(token);
+    }
 }

@@ -81,7 +81,7 @@ describe('OTP Management:', async function() {
         expect(authenticator.check(token, secret)).toBeTruthy();
 
         // It should be invalid after the 2 windows
-        MockDate.set(moment().add(30, "seconds").valueOf());
+        MockDate.set(moment().add(60, "seconds").valueOf());
         expect(authenticator.check(token, secret)).toBeFalsy();
     });
 });

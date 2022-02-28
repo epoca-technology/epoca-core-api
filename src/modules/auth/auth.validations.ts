@@ -18,6 +18,9 @@ export class AuthValidations implements IAuthValidations {
     // Test Mode
     private readonly testMode: boolean = environment.testMode;
 
+    // Firebase API Key
+    private readonly firebaseApiKey: string = environment.firebase.apiKey;
+
 
     constructor() {}
 
@@ -105,16 +108,16 @@ export class AuthValidations implements IAuthValidations {
 
     /**
      * Checks if a password can be updated. Otherwise it throws an error.
-     * @param uid 
+     * @param user 
      * @param newPassword 
      * @param otp 
      * @param recaptcha 
      * @returns Promise<void>
      */
-    public async canPasswordBeUpdated(uid: string, newPassword: string, otp: string, recaptcha: string): Promise<void> {
-        // Firstly, make sure the uid is valid
-        if (!this._validations.uuidValid(uid)) {
-            throw new Error(this._utils.buildApiError(`The provided uid (${uid}) is invalid.`, 8504));
+    public async canPasswordBeUpdated(user: IUser|undefined, newPassword: string, otp: string, recaptcha: string): Promise<void> {
+        // Firstly, make sure the user was actually found
+        if (!user) {
+            throw new Error(this._utils.buildApiError(`The password cannot be updated because the user couldnt be found.`, 8503));
         }
 
         // Validate the password
@@ -123,17 +126,12 @@ export class AuthValidations implements IAuthValidations {
         }
 
         // Make sure the user is not god
-        if (uid == this._model.god.uid) {
+        if (user.uid == this._model.god.uid) {
             throw new Error(this._utils.buildApiError(`The god user is inmutable, the password cannot be updated.`, 8509));
         }
 
-        // Validate the OTP Token's Format
-        if (!this._validations.otpTokenValid(otp)) {
-            throw new Error(this._utils.buildApiError(`The provided OTP Token (${otp}) has an invalid format.`, 8510));
-        }
-
-        // Make sure the token is still valid
-        await this._model.checkOTPToken(uid, otp);
+        // Validate the OTP Token
+        await this.validateOTPToken(user.uid, otp);
 
         // Validate the reCAPTCHA unless test mode is active
         if (!this.testMode) {
@@ -141,12 +139,6 @@ export class AuthValidations implements IAuthValidations {
             if (!reCATPCHAValid) {
                 throw new Error(this._utils.buildApiError(`The provided reCAPTCHA is invalid.`, 8511));
             }
-        }
-
-        // Make sure the user actually exists
-        const user: IUser|undefined = await this._model.getUser(uid);
-        if (!user) {
-            throw new Error(this._utils.buildApiError(`The provided uid (${uid}) didnt match any users in the database.`, 8506));
         }
     }
 
@@ -196,9 +188,9 @@ export class AuthValidations implements IAuthValidations {
      * Checks if the user's authority can be updated.
      * @param uid 
      * @param newAuthority 
-     * @returns Promise<void>
+     * @returns void
      */
-     public async canAuthorityBeUpdated(uid: string, user: IUser|undefined, newAuthority: IAuthority): Promise<void> {
+     public canAuthorityBeUpdated(uid: string, user: IUser|undefined, newAuthority: IAuthority): void {
         // Firstly, make sure the user was actually found
         if (!user) {
             throw new Error(this._utils.buildApiError(`The authority cannot be updated because the user (${uid}) couldnt be found.`, 8503));
@@ -287,6 +279,10 @@ export class AuthValidations implements IAuthValidations {
 
 
 
+
+
+
+    
     /* Sign In */
 
 
@@ -326,13 +322,8 @@ export class AuthValidations implements IAuthValidations {
             throw new Error(this._utils.buildApiError(`The provided password is invalid.`, 8505));
         }
 
-        // Validate the OTP Token's Format
-        if (!this._validations.otpTokenValid(otp)) {
-            throw new Error(this._utils.buildApiError(`The provided OTP Token (${otp}) has an invalid format.`, 8510));
-        }
-
-        // Make sure the token is still valid
-        await this._model.checkOTPToken(user.uid, otp);
+        // Validate the OTP Token
+        await this.validateOTPToken(user.uid, otp);
 
         // Validate the reCAPTCHA unless test mode is active
         if (!this.testMode) {
@@ -360,11 +351,10 @@ export class AuthValidations implements IAuthValidations {
      * @returns Promise<void>
      */
     private async verifyCredentials(email: string, password: string): Promise<void> {
-
         // Build options
         const options: IExternalRequestOptions = {
             host: 'identitytoolkit.googleapis.com',
-            path: `/v1/accounts:signInWithPassword?key=${environment.firebase.apiKey}`,
+            path: `/v1/accounts:signInWithPassword?key=${this.firebaseApiKey}`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -381,6 +371,69 @@ export class AuthValidations implements IAuthValidations {
         // If the status code is different to 200, the credentials are invalid
         if (response.statusCode != 200) {
             throw new Error(this._utils.buildApiError(`The provided credentials are invalid.`, 8512));
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* OTP Verification */
+
+
+
+
+
+    /**
+     * Verifies if an OTP Token has a valid format and can be checked. If invalid
+     * or expired, it throws an error.
+     * @param uid 
+     * @param otp 
+     * @returns Promise<void>
+     */
+    public async validateOTPToken(uid: string, otp: string): Promise<void> {
+        // Firstly, make sure the uid is valid
+        if (!this._validations.uuidValid(uid)) {
+            throw new Error(this._utils.buildApiError(`The provided uid (${uid}) is invalid.`, 8504));
+        }
+
+        // Validate the OTP Token's Format
+        if (!this._validations.otpTokenValid(otp)) {
+            throw new Error(this._utils.buildApiError(`The provided OTP Token (${otp}) has an invalid format.`, 8510));
+        }
+
+        // Make sure the token is still valid
+        await this._model.checkOTPToken(uid, otp);
+    }
+
+
+
+
+
+
+
+
+    /* ID Token */
+
+
+
+
+    /**
+     * Verifies that an ID token has a valid format.
+     * @param token 
+     * @returns void
+     */
+    public canVerifyIDToken(token: string): void {
+        if (!this._validations.idTokenValid(token)) {
+            throw new Error(this._utils.buildApiError(`The provided ID Token has an invalid format.`, 8513));
         }
     }
 }

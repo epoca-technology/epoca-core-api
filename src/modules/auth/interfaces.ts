@@ -20,9 +20,9 @@ export interface IAuthService {
     getFCMTokens(): Promise<string[]>,
 
     // User Management
-    createUser(email: string, authority: IAuthority): Promise<void>,
+    createUser(email: string, authority: IAuthority): Promise<string>,
     updateEmail(uid: string, newEmail: string): Promise<void>,
-    updatePassword(uid: string, newPassword: string, otp: string, recaptcha: string): Promise<void>,
+    updatePassword(email: string, newPassword: string, otp: string, recaptcha: string): Promise<void>,
     updateOTPSecret(uid: string): Promise<void>,
     updateAuthority(uid: string, newAuthority: IAuthority): Promise<void>,
     updateFCMToken(uid: string, newFCMToken: string): Promise<void>,
@@ -32,7 +32,10 @@ export interface IAuthService {
     getSignInToken(email: string, password: string, otp: string, recaptcha: string,): Promise<string>,
 
     // OTP Verification
-    checkOTPToken(uid: string, otpToken: string): Promise<void>,
+    validateOTPToken(uid: string, otpToken: string): Promise<void>,
+
+    // ID Token
+    verifyIDToken(token: string): Promise<string>,
 }
 
 
@@ -65,6 +68,9 @@ export interface IAuthModel {
 
     // OTP Verification
     checkOTPToken(uid: string, otpToken: string): Promise<void>,
+
+    // ID Token
+    verifyIDToken(token: string): Promise<string>,
 }
 
 
@@ -74,9 +80,9 @@ export interface IAuthValidations {
     // User Management
     canUserBeCreated(email: string, authority: IAuthority): Promise<void>,
     canEmailBeUpdated(uid: string, user: IUser|undefined, newEmail: string): Promise<void>,
-    canPasswordBeUpdated(uid: string, newPassword: string, otp: string, recaptcha: string): Promise<void>,
+    canPasswordBeUpdated(user: IUser|undefined, newPassword: string, otp: string, recaptcha: string): Promise<void>,
     canOTPSecretBeUpdated(uid: string): Promise<void>,
-    canAuthorityBeUpdated(uid: string, user: IUser|undefined, newAuthority: IAuthority): Promise<void>,
+    canAuthorityBeUpdated(uid: string, user: IUser|undefined, newAuthority: IAuthority): void,
     canFCMTokenBeUpdated(uid: string, newFCMToken: string): Promise<void>,
     canUserBeDeleted(uid: string): Promise<void>,
 
@@ -88,6 +94,12 @@ export interface IAuthValidations {
         otp: string,
         recaptcha: string,
     ): Promise<void>,
+
+    // OTP Token
+    validateOTPToken(uid: string, otp: string): Promise<void>,
+
+    // ID Token
+    canVerifyIDToken(token: string): void,
 }
 
 

@@ -196,6 +196,23 @@ export class ValidationsService implements IValidationsService {
 
 
 
+    /* ID Token */
+
+
+
+    /**
+     * Verifies if a ID Token is valid.
+     * @param token 
+     * @returns boolean
+     */
+     public idTokenValid(token: string): boolean { return typeof token == "string" && token.length >= 100 && token.length <= 3000 }
+
+
+
+
+
+
+
 
 
 

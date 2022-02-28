@@ -69,7 +69,7 @@ export class ExternalRequestService implements IExternalRequestService {
 
                 // Append params if applicable
                 const finalParams: string|undefined = this.getFinalParams(params);
-                if (finalParams != undefined) request.write(params);
+                if (finalParams != undefined) request.write(finalParams);
 
                 // End request
                 request.end();

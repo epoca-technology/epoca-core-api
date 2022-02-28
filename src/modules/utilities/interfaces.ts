@@ -64,6 +64,9 @@ export interface IValidationsService {
     // OTP Token
     otpTokenValid(token: string): boolean,
 
+    // ID Token
+    idTokenValid(token: string): boolean,
+
     // Numbers
     numberValid(value: number, min?: number, max?: number): boolean,
 

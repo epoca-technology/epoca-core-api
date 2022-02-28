@@ -1,6 +1,6 @@
 import {injectable, inject} from "inversify";
 import { environment, IGod, SYMBOLS } from "../../ioc";
-import {getAuth, Auth, } from "firebase-admin/auth";
+import {getAuth, Auth, DecodedIdToken} from "firebase-admin/auth";
 import { IAuthModel, IUserRecord, IAuthority, IUser, IUserCreationBuild } from "./interfaces";
 import { IDatabaseService } from "../database";
 import { IUtilitiesService } from "../utilities";
@@ -52,15 +52,8 @@ export class AuthModel implements IAuthModel {
             values: []
         });
 
-        // Make sure that there is at least 1 user
-        if (rows.length) {
-            return rows;
-        } 
-        
-        // Otherwise, throw an error
-        else {
-            throw new Error(this._utils.buildApiError(`Couldnt retrieve the users as the table is currently empty.`, 8300));
-        }
+        // Return the list
+        return rows;
     }
 
 
@@ -671,5 +664,39 @@ export class AuthModel implements IAuthModel {
 
         // Return the result
         return rows[0].otp_secret;
+    }
+
+
+
+
+
+
+
+
+    
+
+
+    /* ID Token */
+
+
+
+
+
+    /**
+     * Verifies if an ID Token is valid and active. If so, returns the uid.
+     * @param token 
+     * @returns Promise<string>
+     */
+    public async verifyIDToken(token: string): Promise<string> {
+        // Decode the token
+        const decodedToken: DecodedIdToken = await this.auth.verifyIdToken(token);
+
+        // Make sure the token was retrieved
+        if (!decodedToken || typeof decodedToken.uid != "string") {
+            throw new Error(this._utils.buildApiError(`The uid couldnt be extracted when verifying the ID Token.`, 8303));
+        }
+
+        // Finally, return the uid
+        return decodedToken.uid;
     }
 }

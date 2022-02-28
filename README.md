@@ -45,7 +45,7 @@ In order to enable the test mode, run the following:
 
 End-to-end: 
 
-`docker exec api docker-entrypoint.sh npm test`
+`docker exec api docker-entrypoint.sh npm run test`
 
 Auth: 
 
@@ -184,16 +184,18 @@ Utilities:
 #
 ## Auth (8.000 - 8.999)
 
-8000: ``
+8000: `Couldnt initialize the Auth Module because there are no users stored in the db.`
 
 
 ### Auth Model
 
-8300: `Couldnt retrieve the users as the table is currently empty.`
+8300: ``
 
 8301: `Could not retrieve the otp secret because the uid (${uid}) was not found.`
 
 8302: `The provided OTP token (${otpToken}) is invalid or no longer active for uid: ${uid}.`
+
+8303: `The uid couldnt be extracted when verifying the ID Token.`
 
 
 ### Auth Validations
@@ -224,7 +226,7 @@ Utilities:
 
 8512: `The provided credentials are invalid.`
 
-8513: ``
+8513: `The provided ID Token has an invalid format.`
 
 
 
