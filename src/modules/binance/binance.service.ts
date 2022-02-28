@@ -109,7 +109,7 @@ export class BinanceService implements IBinanceService {
         // Validate the data
         if (response.data && typeof response.data != "object") {
             console.log(response);
-            throw new Error('Binance returned an invalid candlesticks series.');
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid candlesticks series.`, 1));
         }
 
         // Return the series

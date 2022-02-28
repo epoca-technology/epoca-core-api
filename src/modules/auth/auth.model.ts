@@ -2,7 +2,7 @@ import {injectable, inject} from "inversify";
 import { environment, IGod, SYMBOLS } from "../../ioc";
 import {getAuth, Auth, } from "firebase-admin/auth";
 import { IAuthModel, IUserRecord, IAuthority, IUser, IUserCreationBuild } from "./interfaces";
-import { IDatabaseService, IQueryResult } from "../database";
+import { IDatabaseService } from "../database";
 import { IUtilitiesService } from "../utilities";
 import { authenticator } from 'otplib';
 
@@ -18,7 +18,7 @@ export class AuthModel implements IAuthModel {
     private readonly auth: Auth = getAuth();
 
     // God Account
-    private readonly god: IGod = environment.god;
+    public readonly god: IGod = environment.god;
 
 
     constructor() {
@@ -144,6 +144,27 @@ export class AuthModel implements IAuthModel {
 
 
 
+    /**
+     * Retrieves a list of all the registered FCM Tokens. Beware the list may be empty.
+     * @returns Promise<string[]>
+     */
+     public async getFCMTokens(): Promise<string[]> {
+        // Retrieve all the users
+        const { rows } = await this._db.query({
+            text: `SELECT fcm_token FROM ${this._db.tn.users} WHERE fcm_token IS NOT NULL`,
+            values: []
+        });
+
+        // Make sure that there is at least 1 token
+        if (rows.length) {
+            let tokens: string[] = [];
+            rows.forEach((d) => { tokens.push(d.fcm_token) });
+            return tokens;
+        } 
+        
+        // Otherwise, return an empty list
+        else { return [] }
+    }
 
 
 
@@ -154,13 +175,16 @@ export class AuthModel implements IAuthModel {
 
 
 
-    /* Users Management */
+
+
+    /* User Management */
 
 
 
 
 
 
+    // User Creation
 
 
     /**
@@ -286,10 +310,10 @@ export class AuthModel implements IAuthModel {
      * @param email 
      * @param otp_secret 
      * @param authority 
-     * @returns Promise<IQueryResult>
+     * @returns Promise<void>
      */
-    public async insertUserIntoDatabase(uid: string, email: string, otp_secret: string, authority: IAuthority): Promise<IQueryResult> {
-        return this._db.query({
+    public async insertUserIntoDatabase(uid: string, email: string, otp_secret: string, authority: IAuthority): Promise<void> {
+        await this._db.query({
             text: `
                 INSERT INTO ${this._db.tn.users}(uid, email, otp_secret, authority, creation) 
                 VALUES ($1, $2, $3, $4, $5)
@@ -304,6 +328,176 @@ export class AuthModel implements IAuthModel {
 
 
 
+
+
+    // User Email Update
+
+
+
+
+
+    /**
+     * Updates the user's email. In case there is an issue, it will rollback the changes.
+     * @param uid 
+     * @param newEmail 
+     * @param oldEmail 
+     * @returns Promise<void>
+     */
+    public async updateEmail(uid: string, newEmail: string, oldEmail: string): Promise<void> {
+        // Firstly, update the email on Firebase
+        await this.updateFirebaseEmailPersistently(uid, newEmail);
+
+        // Update the email on the db, in case of failure, rollback the email change on Firebase
+        try {
+            await this._db.query({
+                text: `UPDATE ${this._db.tn.users} SET email = $1 WHERE uid = $2`,
+                values: [newEmail, uid]
+            });
+        } catch (e) {
+            // Rollback email changes on firebase safely
+            try { await this.updateFirebaseEmailPersistently(uid, oldEmail) }
+            catch (e) {
+                // Log API Error
+                console.error('There was an error when rolling back the Firebase Email Update.', e);
+                // @TODO
+            }
+
+            // Rethrow the original error
+            throw e;
+        }
+    }
+
+
+
+
+
+    /**
+     * Attempts to update a firebase user email in a persistent way.
+     * @param uid 
+     * @param email 
+     * @returns Promise<void>
+     */
+     private async updateFirebaseEmailPersistently(uid: string, email: string): Promise<void> {
+        try { await this.auth.updateUser(uid, {email: email}) }
+        catch (e) {
+            // Log the error and try again in a few seconds
+            console.error(`Error when trying to update a Firebase User Email (1), attempting again in a few seconds. `, e);
+            await this._utils.asyncDelay(5);
+
+            try { await this.auth.updateUser(uid, {email: email}) }
+            catch (e) {
+                // Log the error and try again in a few seconds
+                console.error(`Error when trying to update a Firebase User Email (2), attempting again in a few seconds. `, e);
+                await this._utils.asyncDelay(5);
+                await this.auth.updateUser(uid, {email: email});
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+    // User Password Update
+
+
+
+
+
+    /**
+     * Updates the user's password.
+     * @param uid 
+     * @param newPassword 
+     * @returns Promise<void>
+     */
+    public async updatePassword(uid: string, newPassword: string): Promise<void> {
+        await this.auth.updateUser(uid, {password: newPassword});
+    }
+
+
+
+
+
+
+    // User OTP Secret
+
+
+
+
+
+    /**
+     * Updates the user's OTP Secret.
+     * @param uid 
+     * @returns Promise<void>
+     */
+    public async updateOTPSecret(uid: string): Promise<void> {
+        await this._db.query({
+            text: `UPDATE ${this._db.tn.users} SET otp_secret = $1 WHERE uid = $2`,
+            values: [authenticator.generateSecret(), uid]
+        });
+    }
+
+
+
+
+
+
+
+    // User Authority
+
+
+
+
+    /**
+     * Updates the user's Authority.
+     * @param uid 
+     * @param newAuthority 
+     * @returns Promise<void>
+     */
+    public async updateAuthority(uid: string, newAuthority: IAuthority): Promise<void> {
+        await this._db.query({
+            text: `UPDATE ${this._db.tn.users} SET authority = $1 WHERE uid = $2`,
+            values: [newAuthority, uid]
+        });
+    }
+
+
+
+
+
+
+    
+    // User FCM Token
+
+
+
+
+    /**
+     * Updates the user's FCM Token.
+     * @param uid 
+     * @param newFCMToken 
+     * @returns Promise<void>
+     */
+     public async updateFCMToken(uid: string, newFCMToken: string): Promise<void> {
+        await this._db.query({
+            text: `UPDATE ${this._db.tn.users} SET fcm_token = $1 WHERE uid = $2`,
+            values: [newFCMToken, uid]
+        });
+    }
+
+
+
+
+
+
+
+
+
+    // User Deletion
 
 
 
@@ -357,7 +551,6 @@ export class AuthModel implements IAuthModel {
                 await this.auth.deleteUser(uid)
             }
         }
-        
     }
 
 
@@ -391,7 +584,39 @@ export class AuthModel implements IAuthModel {
 
 
 
+
+
+
+
+    /* Sign In */
+
+
+
+
+
+    /**
+     * Given a uid and an authority, it will generate a sign in token.
+     * @param uid 
+     * @param authority 
+     * @returns Promise<string>
+     */
+    public getSignInToken(uid: string, authority: IAuthority): Promise<string> {
+        return this.auth.createCustomToken(uid, {authority: authority});
+    }
+
+
+
+
+
     
+
+
+
+
+    
+
+
+
 
 
 
@@ -404,16 +629,19 @@ export class AuthModel implements IAuthModel {
 
     /**
      * Retrieves the OTP Secret and checks if the provided otp token is valid and
-     * active.
+     * active. Otherwise, it throws an error.
      * @param uid 
      * @param otpToken 
+     * @returns Promise<void>
      */
-    public async checkOTPToken(uid: string, otpToken: string): Promise<boolean> {
+    public async checkOTPToken(uid: string, otpToken: string): Promise<void> {
         // Retrieve the secret
         const secret: string = await this.getOTPSecret(uid);
 
-        // Perform the check
-        return authenticator.check(otpToken, secret);
+        // Perform the check, if it is invalid, throw an error
+        if (!authenticator.check(otpToken, secret)) {
+            throw new Error(this._utils.buildApiError(`The provided OTP token (${otpToken}) is invalid or no longer active for uid: ${uid}.`, 8302));
+        }
     }
 
 

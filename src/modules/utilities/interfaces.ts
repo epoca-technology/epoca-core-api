@@ -55,6 +55,9 @@ export interface IValidationsService {
     passwordValid(password: string): boolean,
     authorityValid(authority: IAuthority, maxAuthority?: IAuthority): boolean,
 
+    // FCM
+    fcmTokenValid(token: string): boolean,
+
     // API Secret
     apiSecretValid(secret: string): boolean,
 
@@ -64,6 +67,10 @@ export interface IValidationsService {
     // Numbers
     numberValid(value: number, min?: number, max?: number): boolean,
 
+    // reCAPTCHA
+    recaptchaValid(recaptcha: string): Promise<boolean>,
+
+    
 }
 
 
@@ -98,4 +105,18 @@ export interface IAPIResponse {
     success: boolean,
     data?: any,
     error?: string 
+}
+
+
+
+
+
+
+
+/* reCATPCHA */
+export interface IRecaptchaVerificationResponse {
+    "success": boolean,
+    "challenge_ts": string,     // timestamp of the challenge load (ISO format yyyy-MM-dd'T'HH:mm:ssZZ)
+    "hostname": string,         // the hostname of the site where the reCAPTCHA was solved
+    "error-codes": any[]        // optional
 }

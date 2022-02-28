@@ -88,7 +88,7 @@ Utilities:
 
 ## Binance (1 - 999)
 
-1: ``
+1: `Binance returned an invalid candlesticks series.`
 
 
 
@@ -97,11 +97,11 @@ Utilities:
 
 1000: `The Binance API should have returned at least 1 candlestick.`
 
-### Model
+### Candlestick Model
 
 1200: `A valid list of candlesticks is required in order to invoke saveCandlesticks.`
 
-### Validations
+### Candlestick Validations
 
 1300: `The provided start (${start}) and|or end (${end}) timestamps are not valid numbers.`
 
@@ -148,7 +148,7 @@ Utilities:
 
 6000: ``
 
-### Validations
+### Server Validations
 
 6300: `The alarms configuration must be a valid object.`
 
@@ -168,10 +168,16 @@ Utilities:
 
 
 
+
+
+
 #
 ## GUI Version (7.000 - 7.999)
 
 7000: `The provided version (${newVersion}) has an invalid format.`
+
+
+
 
 
 
@@ -181,16 +187,46 @@ Utilities:
 8000: ``
 
 
-### Model
+### Auth Model
 
 8300: `Couldnt retrieve the users as the table is currently empty.`
 
 8301: `Could not retrieve the otp secret because the uid (${uid}) was not found.`
 
+8302: `The provided OTP token (${otpToken}) is invalid or no longer active for uid: ${uid}.`
 
-### Validations
 
-8300: ``
+### Auth Validations
+
+8500: `The provided email (${email}) has an invalid format.`
+
+8501: `The provided authority (${authority}) is invalid.`
+
+8502: `The provided email (${email}) is being used by another user.`
+
+8503: `The email cannot be updated because the user (${uid}) couldnt be found.`
+
+8504: `The provided uid (${uid}) is invalid.`
+
+8505: `The provided password is invalid.`
+
+8506: `The provided uid (${uid}) didnt match any users in the database.`
+
+8507: `The new authority cannot be the same as the on in the DB for user (${uid}).`
+
+8508: `The provided FCM Token (${newFCMToken}) is invalid.`
+
+8509: `The god user is inmutable, the value (${newEmail}) cannot be set.`
+
+8510: `The provided OTP Token (${otpToken}) has an invalid format.`
+
+8511: `The provided reCAPTCHA is invalid.`
+
+8512: `The provided credentials are invalid.`
+
+8513: ``
+
+
 
 
 #
@@ -205,3 +241,12 @@ Utilities:
 9003: `The uid (${uid}) provided an api secret with an invalid format: ${secret}.`
 
 9004: `The uid (${uid}) provided an api secret that didnt match the one stored locally: ${secret}.`
+
+
+
+
+
+#
+## Validations (10.000 - 10.999)
+
+10000: `The reCAPTCHA could not be validated because Googles API returned an invalid verification response.`

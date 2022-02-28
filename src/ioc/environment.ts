@@ -44,7 +44,8 @@ export interface IFirebaseConfig {
         auth_provider_x509_cert_url: string,
         client_x509_cert_url: string
     },
-    databaseURL: string
+    databaseURL: string,
+    apiKey: string
 }
 
 

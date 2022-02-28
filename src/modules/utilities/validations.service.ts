@@ -1,13 +1,19 @@
-import {injectable} from "inversify";
-import { IValidationsService } from "./interfaces";
+import {injectable, inject} from "inversify";
+import { SYMBOLS, environment } from "../../ioc";
+import { IValidationsService, IUtilitiesService } from "./interfaces";
 import { version as uuidVersion, validate as uuidValidate } from 'uuid';
 import { IAuthority } from "../auth";
+import { IExternalRequestOptions, IExternalRequestResponse, IExternalRequestService } from "../external-request";
 
 
 @injectable()
 export class ValidationsService implements IValidationsService {
+    // Inject Dependencies
+    @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
+    @inject(SYMBOLS.ExternalRequestService)             private _er: IExternalRequestService;
 
-
+    // reCAPTCHA Secret
+    private readonly recaptchaSecret = environment.recaptchaSecret;
 
     constructor() {}
 
@@ -126,6 +132,28 @@ export class ValidationsService implements IValidationsService {
 
 
 
+    /* FCM */
+
+
+
+    /**
+     * Verifies if a FCM Token is valid.
+     * @param token 
+     * @returns boolean
+     */
+     public fcmTokenValid(token: string): boolean { return typeof token == "string" && token.length >= 50 && token.length <= 300 }
+
+
+
+
+
+
+
+
+
+
+
+
     /* API Secret */
 
 
@@ -203,4 +231,46 @@ export class ValidationsService implements IValidationsService {
 
 
 
+
+    /* reCAPTCHA */
+
+
+
+
+
+
+
+    /**
+     * Verifies that a provided reCAPTCHA challenge response is valid.
+     * @param recaptcha 
+     * @returns Promise<boolean>
+     */
+    public async recaptchaValid(recaptcha: string): Promise<boolean> {
+        // Make sure the format has a valid format
+        if (typeof recaptcha != "string" || recaptcha.length < 15 || recaptcha.length > 3000) {
+            return false;
+        }
+
+        // Build options
+        const options: IExternalRequestOptions = {
+            host: 'google.com',
+            path: `/recaptcha/api/siteverify?secret=${this.recaptchaSecret}&response=${recaptcha}`,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+
+        // Send the HTTP Request
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the data
+        if (!response || typeof response.data != "object" || typeof response.data.success != "boolean") {
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`The reCAPTCHA could not be validated because Googles API returned an invalid verification response.`, 10000));
+        }
+
+        // Return the result of the verification
+        return response.data.success;
+    }
 }

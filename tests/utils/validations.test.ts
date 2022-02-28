@@ -73,6 +73,29 @@ describe('Auth Validation Tests:', function() {
 
 
 
+describe('FCM Token Validation Tests:', function() {
+    it('-Can identify valid FCM Tokens: ', function() {
+        expect(_validations.fcmTokenValid('eZv8YG3fNTa8vPVnfOoXpM:APA91bHCNfVwEieNLhMZVdEqln40zMT7FSCGdogTf0LMfffGwZS9rNcAXXMH8e4dznw3GvhkhfFhctZfi_xO2p-_LJ-IwkzcmWr1fLcv08mToqbBdd9j8-mjzsp1eEtY5rEwtzgEwRsy')).toBeTruthy();
+        expect(_validations.fcmTokenValid('el9dYLXOT3g:APA91bHPXjh6hSYhlbA4EW89dMrN2WPPFAXtKhhTS_nyeMVyStICymLLi0VTvTIGHW2mekWySPa9ZCwmbwgUHEEe6D6he9FMUdXe9HU6KfooWeMMvbdwhwlsdT6Csba51yiKyiKwP3FS')).toBeTruthy();
+        expect(_validations.fcmTokenValid('cQahaFLtSZ6BogfCVRWPpQ:APA91bEmfFa_riXJMfZzxTBha5jyJ0hddmt90mFQfraBl_bDh8sy_eC1H41Vl1wPfwYrJMzXi6LBvtJLpi5q3K6lNv9oX5I2wO05j2QCu9lwyMgycFjAOxKYxF5H-nQTqzAnZ02cpoVJ')).toBeTruthy();
+        expect(_validations.fcmTokenValid('f0gj-FU1KM7umZnt04IT8q:APA91bGRdsAx5Ii0n2lyfYZ5bDwXLCWJ-vO9JVwCBim6dzwMnBKrhAfw9b1-f84DZRYXv3ZsLb_I4t1WnXiaIe2cyzGJEx3wnBRZDa0c-LL_EtlXO42gtU0yNh9eOorINFgAzSzeSGsb')).toBeTruthy();
+        expect(_validations.fcmTokenValid('eEX9ufPX05c:APA91bEjK8RL4lMWMl6t3knHncKvyuIoyZ1EWlzn5EIo2nQVfqKageY7qh2xpFQEoMxCSFdk6FGVePLhi8lCFV135QX2khjptet5_MqRUXpzCcpqkT1JlEijZWtUobMLKl-kPvFq51kF')).toBeTruthy();
+        expect(_validations.fcmTokenValid('el9dYLXOT3g:APA91bHPXjh6hSYhlbA4EW89dMrN2WPPFAXtKhhTS_nyeMVyStICymLLi0VTvTIGHW2mekWySPa9ZCwmbwgUHEEe6D6he9FMUdXe9HU6KfooWeMMvbdwhwlsdT6Csba51yiKyiKwP3FS')).toBeTruthy();
+        expect(_validations.fcmTokenValid('eEX9ufPX05c:APA91bEjK8RL4lMWMl6t3knHncKvyuIoyZ1EWlzn5EIo2nQVfqKageY7qh2xpFQEoMxCSFdk6FGVePLhi8lCFV135QX2khjptet5_MqRUXpzCcpqkT1JlEijZWtUobMLKl-kPvFq51kF')).toBeTruthy();
+    });
+
+
+    it('-Can identify invalid FCM Tokens: ', function() {
+        expect(_validations.fcmTokenValid('asd')).toBeFalsy();
+        expect(_validations.fcmTokenValid('eEX9ufPX05c:APA91bEjK8RL4lMWMl6t3knHncKvyuIoyZ1EWlzn5EIo2nQVfqKageY7qh2xpFQEoMxCSFdk6FGVePLhi8lCFV135QX2khjptet5_MqRUXpzCcpqkT1JlEijZWtUobMLKl-kPvFq51kFeEX9ufPX05c:APA91bEjK8RL4lMWMl6t3knHncKvyuIoyZ1EWlzn5EIo2nQVfqKageY7qh2xpFQEoMxCSFdk6FGVePLhi8lCFV135QX2khjptet5_MqRUXpzCcpqkT1JlEijZWtUobMLKl-kPvFq51kF')).toBeFalsy();
+    });
+});
+
+
+
+
+
+
 
 describe('API Secret Tests:', function() {
     it('-Can identify valid secrets: ', function() {

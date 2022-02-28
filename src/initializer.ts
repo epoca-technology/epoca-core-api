@@ -7,6 +7,10 @@ import {appContainer, SYMBOLS, environment} from "./ioc";
 import {IDatabaseService} from './modules/database';
 const _db = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
+// Auth
+import {IAuthService} from './modules/auth';
+const _auth = appContainer.get<IAuthService>(SYMBOLS.AuthService);
+
 // Server
 import {IServerService} from './modules/server';
 const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
@@ -35,7 +39,7 @@ export async function init(): Promise<void> {
     // Initialize the rest of the modules if it is not test mode
     if (!environment.testMode) {
         // Initiaze the Auth Module
-        // @TODO
+        await _auth.initialize();
         
         // Initialize the Server Module
         await _server.initialize();
