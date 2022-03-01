@@ -11,7 +11,7 @@ import {  IUtilitiesService } from "../../src/modules/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Init Auth
-import { IAuthService, IAuthModel, IUser, IUserRecord, IAuthValidations } from "../../src/modules/auth";
+import { IAuthService, IAuthModel, IUser, IUserRecord, IAuthValidations, ISignInToken } from "../../src/modules/auth";
 const _service = appContainer.get<IAuthService>(SYMBOLS.AuthService);
 const _model = appContainer.get<IAuthModel>(SYMBOLS.AuthModel);
 const _validations = appContainer.get<IAuthValidations>(SYMBOLS.AuthValidations);
@@ -122,9 +122,10 @@ describe('User Creation:', async function() {
 
             // Verify the credentials
             otpToken = authenticator.generate(user.otp_secret);
-            const signInToken: string = await _service.getSignInToken(_test.users[i].email, _test.users[i].password, otpToken, '');
-            expect(typeof signInToken).toBe("string");
-            expect(signInToken.length).toBeTruthy();
+            const signInToken: ISignInToken = await _service.getSignInToken(_test.users[i].email, _test.users[i].password, otpToken, '');
+            expect(typeof signInToken).toBe("object");
+            expect(typeof signInToken.token.length).toBeTruthy();
+            expect(signInToken.authority).toBe(_test.users[i].authority);
 
             // Delete the user
             await _service.deleteUser(uid);
@@ -175,9 +176,10 @@ describe('User Email Update:', async function() {
 
         // Verify the credentials
         otpToken = authenticator.generate(user.otp_secret);
-        let signInToken: string = await _service.getSignInToken(_test.users[0].email, _test.users[0].password, otpToken, '');
-        expect(typeof signInToken).toBe("string");
-        expect(signInToken.length).toBeTruthy();
+        let signInToken: ISignInToken = await _service.getSignInToken(_test.users[0].email, _test.users[0].password, otpToken, '');
+        expect(typeof signInToken).toBe("object");
+        expect(typeof signInToken.token.length).toBeTruthy();
+        expect(signInToken.authority).toBe(_test.users[0].authority);
 
         // Update the email
         await _service.updateEmail(uid, _test.users[1].email);
@@ -193,8 +195,9 @@ describe('User Email Update:', async function() {
         // Verify the credentials again
         otpToken = authenticator.generate(user.otp_secret);
         signInToken = await _service.getSignInToken(_test.users[1].email, _test.users[0].password, otpToken, '');
-        expect(typeof signInToken).toBe("string");
-        expect(signInToken.length).toBeTruthy();
+        expect(typeof signInToken).toBe("object");
+        expect(typeof signInToken.token.length).toBeTruthy();
+        expect(signInToken.authority).toBe(_test.users[0].authority);
     });
 
 
@@ -268,8 +271,8 @@ describe('User Password Update:', async function() {
 
         // Verify the credentials
         otpToken = authenticator.generate(user.otp_secret);
-        let signInToken: string = await _service.getSignInToken(_test.users[0].email, _test.users[0].password, otpToken, '');
-        expect(typeof signInToken).toBe("string");
+        let signInToken: ISignInToken = await _service.getSignInToken(_test.users[0].email, _test.users[0].password, otpToken, '');
+        expect(typeof signInToken.token).toBe("string");
 
         // Set a new password on the account again
         otpToken = authenticator.generate(user.otp_secret);
@@ -278,7 +281,7 @@ describe('User Password Update:', async function() {
         // Verify the credentials again
         otpToken = authenticator.generate(user.otp_secret);
         signInToken = await _service.getSignInToken(_test.users[0].email, _test.users[1].password, otpToken, '');
-        expect(typeof signInToken).toBe("string");
+        expect(typeof signInToken.token).toBe("string");
     });
 
 
