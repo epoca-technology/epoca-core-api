@@ -14,7 +14,7 @@ const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.Ut
 
 
 // Auth Service
-import {IAuthService, IUser} from './interfaces';
+import {IAuthService, ISignInToken, IUser} from './interfaces';
 const _auth: IAuthService = appContainer.get<IAuthService>(SYMBOLS.AuthService);
 
 
@@ -23,6 +23,9 @@ const AuthRoute = express.Router();
 
 
 
+
+
+/* Retrievers */
 
 
 /**
@@ -55,6 +58,12 @@ AuthRoute.route(`/getAll`).get(highRiskLimit, async (req: express.Request, res: 
 
 
 
+
+
+
+
+
+/* User Management */
 
 
 
@@ -250,7 +259,7 @@ AuthRoute.route(`/updateAuthority`).post(ultraHighRiskLimit, async (req: express
  * @requires id-token
  * @requires api-secret
  * @param newFCMToken 
-* @returns IAPIResponse<IUser[]>
+* @returns IAPIResponse<void>
 */
 AuthRoute.route(`/updateFCMToken`).post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
@@ -311,6 +320,48 @@ AuthRoute.route(`/deleteUser`).post(ultraHighRiskLimit, async (req: express.Requ
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+/* Sign In */
+
+
+
+
+/**
+ * After verifying the provided credentials are valid, it generates the sign in token.
+ * @param email 
+ * @param password 
+ * @param otp 
+ * @param recaptcha 
+* @returns IAPIResponse<ISignInToken>
+*/
+AuthRoute.route(`/getSignInToken`).post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
+    try {
+       // Validate the request
+       // @TODO
+
+       // Perform Action
+       const token: ISignInToken = await _auth.getSignInToken(req.body.email, req.body.password, req.body.otp, req.body.recaptcha);
+
+       // Return the response
+       res.send(_utils.apiResponse(token));
+   } catch (e) {
+       console.log(e);
+       res.send(_utils.apiResponse(undefined, e));
+   }
+});
+
+
 
 
 

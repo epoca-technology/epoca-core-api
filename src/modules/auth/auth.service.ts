@@ -380,7 +380,7 @@ export class AuthService implements IAuthService {
       * @param recaptcha 
       * @returns Promise<ISignInToken>
       */
-     public async getSignInToken(email: string, password: string, otp: string, recaptcha: string,): Promise<ISignInToken> {
+     public async getSignInToken(email: string, password: string, otp: string, recaptcha: string): Promise<ISignInToken> {
         // Make sure the email is lowercased if provided
         email = typeof email == "string" ? email.toLowerCase(): email;
 
