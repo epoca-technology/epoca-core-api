@@ -29,11 +29,15 @@ const GuiVersionRoute = express.Router();
 * @returns IAPIResponse<string>
 */
 GuiVersionRoute.route(`/get`).get(highRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Retrieve the token
-    const token: string = req.get("authorization");
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
 
-     try {
-        // Validate the token
+    try {
+        // Validate the request
         // @TODO
 
         // Perform Action
@@ -57,11 +61,15 @@ GuiVersionRoute.route(`/get`).get(highRiskLimit, async (req: express.Request, re
 * @returns IAPIResponse<void>
 */
 GuiVersionRoute.route(`/update`).post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Retrieve the token
-    const token: string = req.get("authorization");
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
 
-     try {
-        // Validate the token
+    try {
+        // Validate the request
         // @TODO
 
         // Perform Action

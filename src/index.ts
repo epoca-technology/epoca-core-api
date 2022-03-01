@@ -4,6 +4,7 @@ import express = require("express");
 import bodyParser = require("body-parser");
 import cors = require("cors");
 import morgan = require("morgan");
+import requestIp = require('request-ip');
 
 
 // Environment
@@ -24,7 +25,8 @@ app.use(morgan('combined'));
 app.set("trust proxy", true);
 
 
-
+// Set the request ip middleware
+app.use(requestIp.mw());
 
 
 // Configure app to use bodyParser(), this will let us get the data from a POST
