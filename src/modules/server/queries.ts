@@ -12,6 +12,6 @@ export const queries: IServerAPIQueries = {
     cpuTemperature: 'main, cores, max, socket',
     graphics: 'controllers',
     fsSize: 'fs, type, size, used, available, mount',
-    mem: 'total, free, used',
+    mem: 'total, free, active',
     currentLoad: 'avgLoad, currentLoad',
 }

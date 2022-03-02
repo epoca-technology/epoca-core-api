@@ -1,8 +1,10 @@
 import {injectable, inject} from "inversify";
+import { Telegraf} from 'telegraf';
+import { getMessaging, Messaging, MulticastMessage } from "firebase-admin/messaging"
 import { SYMBOLS, environment } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
-import { INotificationService, INotification } from "./interfaces";
-import { Telegraf} from 'telegraf';
+import { IAuthService } from "../auth";
+import { INotificationService, INotification, INotificationChannel } from "./interfaces";
 
 
 
@@ -11,13 +13,19 @@ import { Telegraf} from 'telegraf';
 export class NotificationService implements INotificationService {
     // Inject dependencies
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
+    @inject(SYMBOLS.AuthService)                        private _auth: IAuthService;
+
+    // Priority Channel
+    private readonly priorityChannel: INotificationChannel = 'telegram';
 
     // Telegraf
     private readonly token: string = environment.telegraf.token;
     private readonly chatID: number = environment.telegraf.chatID;
     private readonly telegraf: Telegraf = new Telegraf(this.token);
 
-
+    // Firebase Messaging
+    private readonly messaging: Messaging = getMessaging();
+    private readonly iconURL: string = 'https://firebasestorage.googleapis.com/v0/b/projectplutus-prod.appspot.com/o/public%2Ffcm.png?alt=media&token=2fd0d0e1-ee6d-4f4f-b04d-891a4fa82bac';
 
 
     constructor() {}
@@ -48,16 +56,20 @@ export class NotificationService implements INotificationService {
      * @param notification 
      */
     public async broadcast(notification: INotification): Promise<void> {
-        // Attempt to send the notification through telegram
-        try { await this.sendTelegram(notification) } 
-        catch (e) {
+        // Attempt to send the notification through the priority channel
+        try { 
+            if (this.priorityChannel == 'telegram') { await this.sendTelegram(notification) }
+            else { await this.sendPushNotification(notification) }
+        } catch (e) {
             // Log the error
             // @TODO
             console.error('The Notification could not be sent through Telegram:', e);
 
-            // Attempt to send the notification through FCM
-            try { await this.sendPushNotification(notification) } 
-            catch (e) {
+            // Attempt to send the notification through the secondary channel
+            try { 
+                if (this.priorityChannel == 'telegram') { await this.sendPushNotification(notification) }
+                else { await this.sendTelegram(notification) }
+            } catch (e) {
                 // Log the error
                 // @TODO
                 console.error('The Notification could not be sent through FCM:', e);
@@ -113,25 +125,28 @@ export class NotificationService implements INotificationService {
      * @returns Promise<void>
      */
     private async sendPushNotification(notification: INotification): Promise<void> {
-        // Init the message
-        const title: string = `${notification.sender}: ${notification.title}`;
+        // Retrieve the tokens
+        const fcmTokens: string[] = await this._auth.getFCMTokens();
 
-        // Send it
-        try {  
-            // @TODO
-        } 
-        catch (e) {
-            console.error('Error during sendPushNotification. Attemting again in a few seconds', e);
-            await this._utils.asyncDelay(3);
-            // @TODO
+        // Broadcast the notification if tokens are found
+        if (fcmTokens.length) {
+            // Init the Message
+            const message: MulticastMessage = {
+                notification: {
+                    title: `PLUTUS_${notification.sender}: ${notification.title}`,
+                    body: notification.description,
+                    imageUrl: this.iconURL
+                },
+                tokens: fcmTokens
+            };
+
+            // Send it
+            try { await this.messaging.sendMulticast(message) } 
+            catch (e) {
+                console.error('Error during sendPushNotification. Attemting again in a few seconds', e);
+                await this._utils.asyncDelay(3);
+                await this.messaging.sendMulticast(message);
+            }
         }
     }
-
-
-
-
-
-
-    
-
 }

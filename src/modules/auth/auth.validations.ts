@@ -309,7 +309,7 @@ export class AuthValidations implements IAuthValidations {
     ): Promise<void> {
         // Firstly, make sure the user was actually found
         if (!user) {
-            throw new Error(this._utils.buildApiError(`The authority cannot be updated because the user (${email}) couldnt be found.`, 8503));
+            throw new Error(this._utils.buildApiError(`Cannot generate a sign in token because the user (${email}) couldnt be found.`, 8503));
         }
 
         // Make sure the email has a valid format

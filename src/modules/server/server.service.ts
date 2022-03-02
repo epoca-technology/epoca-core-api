@@ -473,8 +473,8 @@ export class ServerService implements IServerService {
         if (memory) {
             if (memory.total) this.memory.total = this._utils.fromBytesToGigabytes(memory.total);
             if (memory.free) this.memory.free = this._utils.fromBytesToGigabytes(memory.free);
-            if (memory.used) this.memory.used = this._utils.fromBytesToGigabytes(memory.used);
-            if (memory.used && memory.total) this.memory.usedPercent = <number>this._utils.calculatePercentageOutOfTotal(memory.used, memory.total);
+            if (memory.active) this.memory.active = this._utils.fromBytesToGigabytes(memory.active);
+            if (memory.active && memory.total) this.memory.usedPercent = <number>this._utils.calculatePercentageOutOfTotal(memory.active, memory.total);
         }
     }
 

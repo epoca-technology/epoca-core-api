@@ -270,6 +270,7 @@ AuthRoute.route(`/updateFCMToken`).post(ultraHighRiskLimit, async (req: express.
      try {
         // Validate the request
         // @TODO
+        reqUid = await _auth.verifyIDToken(idToken);
 
         // Perform Action
         await _auth.updateFCMToken(reqUid, req.body.newFCMToken);

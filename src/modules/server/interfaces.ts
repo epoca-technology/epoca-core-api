@@ -110,7 +110,7 @@ export interface IServerFileSystem {
 export interface IServerMemory {
     total: number,  // Bytes converted into Gigabytes
     free: number,   // Bytes converted into Gigabytes
-    used: number,   // Bytes converted into Gigabytes
+    active: number,   // Bytes converted into Gigabytes
     usedPercent: number, // Populated in the service
 }
 

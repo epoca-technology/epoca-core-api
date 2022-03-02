@@ -60,7 +60,7 @@ export const defaults: IDefaultData = {
     memory: {
         total: 0,
         free: 0,
-        used: 0,
+        active: 0,
         usedPercent: 0
     },
     cpu: {

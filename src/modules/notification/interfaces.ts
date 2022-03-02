@@ -4,11 +4,11 @@
 export interface INotificationService {
     // Main Broadcaster
     broadcast(notification: INotification): Promise<void>,
-
-
 }
 
 
+// Channels
+export type INotificationChannel = 'telegram'|'fcm';
 
 
 // Notification Object
