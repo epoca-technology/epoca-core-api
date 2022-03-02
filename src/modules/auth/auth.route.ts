@@ -14,7 +14,7 @@ const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.Ut
 
 
 // Auth Service
-import {IAuthService, ISignInToken, IUser} from './interfaces';
+import {IAuthService, IUser} from './interfaces';
 const _auth: IAuthService = appContainer.get<IAuthService>(SYMBOLS.AuthService);
 
 
@@ -344,7 +344,7 @@ AuthRoute.route(`/deleteUser`).post(ultraHighRiskLimit, async (req: express.Requ
  * @param password 
  * @param otp 
  * @param recaptcha 
-* @returns IAPIResponse<ISignInToken>
+* @returns IAPIResponse<string>
 */
 AuthRoute.route(`/getSignInToken`).post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
     try {
@@ -352,7 +352,7 @@ AuthRoute.route(`/getSignInToken`).post(ultraHighRiskLimit, async (req: express.
        // @TODO
 
        // Perform Action
-       const token: ISignInToken = await _auth.getSignInToken(req.body.email, req.body.password, req.body.otp, req.body.recaptcha);
+       const token: string = await _auth.getSignInToken(req.body.email, req.body.password, req.body.otp, req.body.recaptcha);
 
        // Return the response
        res.send(_utils.apiResponse(token));

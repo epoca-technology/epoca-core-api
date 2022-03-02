@@ -29,7 +29,7 @@ export interface IAuthService {
     deleteUser(uid: string): Promise<void>,
 
     // Sign In
-    getSignInToken(email: string, password: string, otp: string, recaptcha: string): Promise<ISignInToken>,
+    getSignInToken(email: string, password: string, otp: string, recaptcha: string): Promise<string>,
 
     // OTP Verification
     validateOTPToken(uid: string, otpToken: string): Promise<void>,
@@ -128,15 +128,6 @@ export interface IUserCreationBuild {
     user: IUser,
     password: string
 }
-
-
-
-// Sign In Token
-export interface ISignInToken {
-    token: string,
-    authority: IAuthority
-}
-
 
 
 

@@ -11,7 +11,6 @@ import {
     IApiSecretService, 
     IAuthorities,
     IAuthority,
-    ISignInToken
 } from "./interfaces";
 
 
@@ -378,9 +377,9 @@ export class AuthService implements IAuthService {
       * @param password 
       * @param otp 
       * @param recaptcha 
-      * @returns Promise<ISignInToken>
+      * @returns Promise<string>
       */
-     public async getSignInToken(email: string, password: string, otp: string, recaptcha: string): Promise<ISignInToken> {
+     public async getSignInToken(email: string, password: string, otp: string, recaptcha: string): Promise<string> {
         // Make sure the email is lowercased if provided
         email = typeof email == "string" ? email.toLowerCase(): email;
 
@@ -391,13 +390,7 @@ export class AuthService implements IAuthService {
         await this._validations.canGetSignInToken(user, email, password, otp, recaptcha);
 
         // Generate the token
-        const token = await this._model.getSignInToken(user.uid, this.authorities[user.uid]);
-
-        // Return the token object
-        return {
-            token: token,
-            authority: this.authorities[user.uid]
-        }
+        return await this._model.getSignInToken(user.uid, this.authorities[user.uid]);
     }
 
 
