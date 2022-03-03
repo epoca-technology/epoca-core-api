@@ -122,7 +122,7 @@ IPBlacklistRoute.route(`/updateNotes`).post(ultraLowRiskLimit, async (req: expre
         // @TODO
 
         // Perform Action
-        await _blacklist.registerIP(req.body.ip, req.body.newNotes);
+        await _blacklist.updateNotes(req.body.ip, req.body.newNotes);
 
         // Retrieve the new list
         const list: IIPBlacklistRecord[] = await _blacklist.getAll();
