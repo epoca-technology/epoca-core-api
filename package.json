@@ -11,6 +11,7 @@
     "test-candlestick": "clear && jasmine-ts --config=./jasmine/candlestick.json",
     "test-database": "clear && jasmine-ts --config=./jasmine/database.json",
     "test-gui-version": "clear && jasmine-ts --config=./jasmine/gui-version.json",
+    "test-ip-blacklist": "clear && jasmine-ts --config=./jasmine/ip-blacklist.json",
     "test-notification": "clear && jasmine-ts --config=./jasmine/notification.json",
     "test-server": "clear && jasmine-ts --config=./jasmine/server.json",
     "test-trading-simulation": "clear && jasmine-ts --config=./jasmine/trading-simulation.json",

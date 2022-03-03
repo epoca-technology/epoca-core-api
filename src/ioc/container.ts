@@ -12,6 +12,7 @@ import { databaseModule } from "../modules/database";
 import { externalRequestModule } from "../modules/external-request";
 import { forecastModule } from "../modules/forecast";
 import { guiVersionModule } from "../modules/gui-version";
+import { ipBlacklistModule } from "../modules/ip-blacklist";
 import { notificationModule } from "../modules/notification";
 import { requestGuardModule } from "../modules/request-guard";
 import { serverModule } from "../modules/server";
@@ -53,6 +54,9 @@ appContainer.load(
 
     // GUI Version
     guiVersionModule,
+
+    // IP Blacklist
+    ipBlacklistModule,
 
     // Notification
     notificationModule,

@@ -3,25 +3,31 @@ import {appContainer, SYMBOLS, environment} from "./ioc";
 
 /* Import Modules */
 
-// Database
-import {IDatabaseService} from './modules/database';
-const _db = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
-
 // Auth
 import {IAuthService} from './modules/auth';
 const _auth = appContainer.get<IAuthService>(SYMBOLS.AuthService);
 
-// Server
-import {IServerService} from './modules/server';
-const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
+// Database
+import {IDatabaseService} from './modules/database';
+const _db = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 // Candlesticks
 import {ICandlestickService} from './modules/candlestick';
 const _candlestick = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
+// IP Blacklist
+import {IIPBlacklistService} from './modules/ip-blacklist';
+const _ipBlacklist = appContainer.get<IIPBlacklistService>(SYMBOLS.IPBlacklistService);
+
 // Request Guard
 import {IRequestGuardService} from './modules/request-guard';
 const _guard = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
+
+// Server
+import {IServerService} from './modules/server';
+const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
+
+
 
 
 /**
@@ -48,7 +54,7 @@ export async function init(): Promise<void> {
         await _candlestick.startSync();
 
         // Initialize the IP Blacklist Module
-        // @TODO
+        await _ipBlacklist.initialize();
 
         // Initialize the Trading Simulation Module
         // @TODO

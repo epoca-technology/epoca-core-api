@@ -63,6 +63,10 @@ GUI Version:
 
 `docker exec api docker-entrypoint.sh npm run test-gui-version`
 
+IP Blacklist: 
+
+`docker exec api docker-entrypoint.sh npm run test-ip-blacklist`
+
 Notification: 
 
 `docker exec api docker-entrypoint.sh npm run test-notification`
@@ -252,3 +256,30 @@ Utilities:
 ## Validations (10.000 - 10.999)
 
 10000: `The reCAPTCHA could not be validated because Googles API returned an invalid verification response.`
+
+
+
+
+
+
+
+#
+## IP Blacklist (11.000 - 11.999)
+
+11000: `The IP ${ip} is currently blacklisted and therefore cannot interact with the API`
+
+
+### IP Blacklist Validations
+
+11300: `The provided IP has an invalid format: ${ip}`
+
+11301: `If the notes are provided, they must be valid: ${notes}`
+
+11302: `The IP you are trying to blacklist is already registered: ${ip}`
+
+11303: `The IP you are trying to update the notes for, does not exist: ${ip}`
+
+
+
+
+

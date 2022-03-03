@@ -81,4 +81,16 @@ export const TABLES: IRawTable[] = [
             CREATE INDEX IF NOT EXISTS ${tableName}_email ON ${tableName}(email);`
         }
     },
+
+    // IP Blacklist
+    {
+        name: 'ip_blacklist',
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                ip  VARCHAR(300) NOT NULL PRIMARY KEY,
+                n   VARCHAR(3000) NULL,
+                c   BIGINT NOT NULL
+            );`
+        }
+    },
 ];

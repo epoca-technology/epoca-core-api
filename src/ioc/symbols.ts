@@ -32,6 +32,11 @@
     // GUI Version
     GuiVersionService: Symbol.for("GuiVersionService"),
 
+    // IP Blacklist
+    IPBlacklistService: Symbol.for("IPBlacklistService"),
+    IPBlacklistModel: Symbol.for("IPBlacklistModel"),
+    IPBlacklistValidations: Symbol.for("IPBlacklistValidations"),
+
     // Notifications
     NotificationService: Symbol.for("NotificationService"),
 
@@ -70,6 +75,10 @@ export interface ISymbols {
     ForecastService: symbol,
 
     GuiVersionService: symbol,
+
+    IPBlacklistService: symbol,
+    IPBlacklistModel: symbol,
+    IPBlacklistValidations: symbol,
 
     NotificationService: symbol,
 

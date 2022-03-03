@@ -184,5 +184,43 @@ describe('Number Validation Tests:', function() {
         expect(_validations.numberValid(3, 1, 3)).toBeTruthy();
         expect(_validations.numberValid(1500, 1501, 2000)).toBeFalsy();
     });
+});
 
+
+
+
+
+
+
+
+
+
+
+describe('IP Validation Tests:', function() {
+    it('-Can identify valid IPs: ', function() {
+        expect(_validations.ipValid('192.168.1.1')).toBeTruthy();
+        expect(_validations.ipValid('ffff:192.168.1.1')).toBeTruthy();
+        expect(_validations.ipValid('ffff:192.168.1.1:5465:12')).toBeTruthy();
+        expect(_validations.ipValid('ffff:192.168.1.1:5465:12-_')).toBeTruthy();
+    });
+
+    it('-Can identify invalid IPs: ', function() {
+        expect(_validations.ipValid('asds')).toBeFalsy();
+        expect(_validations.ipValid('asadasdjasdkl;ajsdkl;ahskjglkjasbdkjashdjkhgasjdjhkasgdjhkagsdjhkgasjhkdgkjasdbmansdb,mhagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asd3541as23d14a3s4d56as4d65as4d65as4d56a4sd32as51d3as1d32as4d34asdagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564')).toBeFalsy();
+        // @ts-ignore
+        expect(_validations.ipValid({foo: 'bar'})).toBeFalsy();
+    });
+
+
+
+    it('-Can identify valid IP Notes: ', function() {
+        expect(_validations.ipNotesValid('This is just a valid note, anything under 5 and 3k characters should work.')).toBeTruthy();
+    });
+
+    it('-Can identify invalid IP Notes: ', function() {
+        expect(_validations.ipNotesValid('asds')).toBeFalsy();
+        expect(_validations.ipNotesValid('asadasdjasdkl;ajsdkl;ahskjglkjasbdkjashdjkhgasjdjhkasgdjhkagsdjhkgasjhkdgkjasdbmansdb,mhagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asd3541as23d14a3s4d56as4d65as4d65as4d56a4sd32as51d3as1d32as4d34asdagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asadasdjasdkl;ajsdkl;ahskjglkjasbdkjashdjkhgasjdjhkasgdjhkagsdjhkgasjhkdgkjasdbmansdb,mhagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asd3541as23d14a3s4d56as4d65as4d65as4d56a4sd32as51d3as1d32as4d34asdagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asadasdjasdkl;ajsdkl;ahskjglkjasbdkjashdjkhgasjdjhkasgdjhkagsdjhkgasjhkdgkjasdbmansdb,mhagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asd3541as23d14a3s4d56as4d65as4d65as4d56a4sd32as51d3as1d32as4d34asdagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asadasdjasdkl;ajsdkl;ahskjglkjasbdkjashdjkhgasjdjhkasgdjhkagsdjhkgasjhkdgkjasdbmansdb,mhagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asd3541as23d14a3s4d56as4d65as4d65as4d56a4sd32as51d3as1d32as4d34asdagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asadasdjasdkl;ajsdkl;ahskjglkjasbdkjashdjkhgasjdjhkasgdjhkagsdjhkgasjhkdgkjasdbmansdb,mhagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asd3541as23d14a3s4d56as4d65as4d65as4d56a4sd32as51d3as1d32as4d34asdagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asadasdjasdkl;ajsdkl;ahskjglkjasbdkjashdjkhgasjdjhkasgdjhkagsdjhkgasjhkdgkjasdbmansdb,mhagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asd3541as23d14a3s4d56as4d65as4d65as4d56a4sd32as51d3as1d32as4d34asdagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asadasdjasdkl;ajsdkl;ahskjglkjasbdkjashdjkhgasjdjhkasgdjhkagsdjhkgasjhkdgkjasdbmansdb,mhagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asd3541as23d14a3s4d56as4d65as4d65as4d56a4sd32as51d3as1d32as4d34asdagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asadasdjasdkl;ajsdkl;ahskjglkjasbdkjashdjkhgasjdjhkasgdjhkagsdjhkgasjhkdgkjasdbmansdb,mhagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asd3541as23d14a3s4d56as4d65as4d65as4d56a4sd32as51d3as1d32as4d34asdagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asadasdjasdkl;ajsdkl;ahskjglkjasbdkjashdjkhgasjdjhkasgdjhkagsdjhkgasjhkdgkjasdbmansdb,mhagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asd3541as23d14a3s4d56as4d65as4d65as4d56a4sd32as51d3as1d32as4d34asdagsdkjlasgbdabsdjkhgaskdkljahsbgdlasbdm,nasdb,hgasdasdsdasdasddas564d1a3s2d12as4d5a4sd564asadasdjasdkl;ajsdkl;ahskjglkjasbdkjashdjkhgasjdjhkasgdjhkagsdjhkg')).toBeFalsy();
+        // @ts-ignore
+        expect(_validations.ipNotesValid({foo: 'bar'})).toBeFalsy();
+    });
 });

@@ -73,7 +73,9 @@ export interface IValidationsService {
     // reCAPTCHA
     recaptchaValid(recaptcha: string): Promise<boolean>,
 
-    
+    // IP
+    ipValid(ip: string): boolean,
+    ipNotesValid(notes: string): boolean,
 }
 
 

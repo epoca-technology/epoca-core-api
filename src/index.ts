@@ -59,6 +59,7 @@ import {AuthRoute} from './modules/auth/auth.route';
 import {CandlestickRoute} from './modules/candlestick/candlestick.route';
 import {DatabaseRoute} from './modules/database/database.route';
 import {GuiVersionRoute} from './modules/gui-version/gui-version.route';
+import {IPBlacklistRoute} from './modules/ip-blacklist/ip-blacklist.route';
 import {ServerRoute} from './modules/server/server.route';
 
 // Register Routes
@@ -66,6 +67,7 @@ app.use('/auth', AuthRoute);
 app.use('/candlestick', CandlestickRoute);
 app.use('/database', DatabaseRoute);
 app.use('/guiVersion', GuiVersionRoute);
+app.use('/ipBlacklist', IPBlacklistRoute);
 app.use('/server', ServerRoute);
 
 

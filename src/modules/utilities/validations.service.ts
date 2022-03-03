@@ -290,4 +290,40 @@ export class ValidationsService implements IValidationsService {
         // Return the result of the verification
         return response.data.success;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    /* IP */
+
+
+
+    /**
+     * Verifies if a provided IP is valid.
+     * @param ip 
+     * @returns boolean
+     */
+    public ipValid(ip: string): boolean { return typeof ip == "string" && ip.length >= 5 && ip.length <= 300 }
+
+
+
+
+
+
+
+    /**
+     * Verifies if the provided IP Notes are valid.
+     * @param notes 
+     * @returns boolean
+     */
+    public ipNotesValid(notes: string): boolean { return typeof notes == "string" && notes.length >= 5 && notes.length <= 3000 }
 }
