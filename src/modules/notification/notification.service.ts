@@ -1,9 +1,10 @@
 import {injectable, inject} from "inversify";
+import { SYMBOLS, environment } from "../../ioc";
 import { Telegraf} from 'telegraf';
 import { getMessaging, Messaging, MulticastMessage } from "firebase-admin/messaging"
-import { SYMBOLS, environment } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { IAuthService } from "../auth";
+import { IApiErrorService } from "../api-error";
 import { INotificationService, INotification, INotificationChannel } from "./interfaces";
 
 
@@ -14,6 +15,7 @@ export class NotificationService implements INotificationService {
     // Inject dependencies
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
     @inject(SYMBOLS.AuthService)                        private _auth: IAuthService;
+    @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
 
     // Priority Channel
     private readonly priorityChannel: INotificationChannel = 'telegram';
@@ -62,8 +64,8 @@ export class NotificationService implements INotificationService {
             else { await this.sendPushNotification(notification) }
         } catch (e) {
             // Log the error
-            // @TODO
             console.error('The Notification could not be sent through Telegram:', e);
+            this._apiError.log('NotificationService.broadcast', e, undefined, undefined, notification);
 
             // Attempt to send the notification through the secondary channel
             try { 
@@ -71,8 +73,8 @@ export class NotificationService implements INotificationService {
                 else { await this.sendTelegram(notification) }
             } catch (e) {
                 // Log the error
-                // @TODO
                 console.error('The Notification could not be sent through FCM:', e);
+                this._apiError.log('NotificationService.broadcast', e, undefined, undefined, notification);
             }
         }
     }

@@ -7,6 +7,7 @@
     "start": "node dist/index.js",
     "build": "gulp",
     "test": "clear && jasmine-ts --config=./jasmine/e2e.json",
+    "test-api-error": "clear && jasmine-ts --config=./jasmine/api-error.json",
     "test-auth": "clear && jasmine-ts --config=./jasmine/auth.json",
     "test-candlestick": "clear && jasmine-ts --config=./jasmine/candlestick.json",
     "test-database": "clear && jasmine-ts --config=./jasmine/database.json",

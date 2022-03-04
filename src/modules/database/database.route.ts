@@ -7,6 +7,9 @@ import {appContainer, SYMBOLS} from '../../ioc';
 import {highRiskLimit, IRequestGuardService} from '../request-guard';
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
+// API Error
+import {IApiErrorService} from '../api-error';
+const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.ApiErrorService);
 
 // Utilities
 import {IUtilitiesService} from '../utilities';
@@ -49,6 +52,7 @@ DatabaseRoute.route(`/getDatabaseSummary`).get(highRiskLimit, async (req: expres
         res.send(_utils.apiResponse(summary));
     } catch (e) {
 		console.log(e);
+        _apiError.log('DatabaseRoute.getDatabaseSummary', e, reqUid, ip);
         res.send(_utils.apiResponse(undefined, e));
     }
 });

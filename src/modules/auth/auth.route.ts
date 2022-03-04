@@ -7,6 +7,9 @@ import {appContainer, SYMBOLS} from '../../ioc';
 import {highRiskLimit, ultraHighRiskLimit, IRequestGuardService} from '../request-guard';
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
+// API Error
+import {IApiErrorService} from '../api-error';
+const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.ApiErrorService);
 
 // Utilities
 import {IUtilitiesService} from '../utilities';
@@ -32,7 +35,7 @@ const AuthRoute = express.Router();
  * Retrieves a list with all the registered users.
  * @requires id-token
  * @requires api-secret
- * @requires authority: 5
+ * @requires authority: 4
  * @returns IAPIResponse<IUser[]>
  */
 AuthRoute.route(`/getAll`).get(highRiskLimit, async (req: express.Request, res: express.Response) => {
@@ -44,7 +47,7 @@ AuthRoute.route(`/getAll`).get(highRiskLimit, async (req: express.Request, res: 
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5);
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4);
 
         // Perform Action
         const users: IUser[] = await _auth.getAll();
@@ -53,6 +56,7 @@ AuthRoute.route(`/getAll`).get(highRiskLimit, async (req: express.Request, res: 
         res.send(_utils.apiResponse(users));
     } catch (e) {
 		console.log(e);
+        _apiError.log('AuthRoute.getAll', e, reqUid, ip);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -103,6 +107,7 @@ AuthRoute.route(`/getAll`).get(highRiskLimit, async (req: express.Request, res: 
         res.send(_utils.apiResponse(users));
     } catch (e) {
 		console.log(e);
+        _apiError.log('AuthRoute.createUser', e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -146,6 +151,7 @@ AuthRoute.route(`/getAll`).get(highRiskLimit, async (req: express.Request, res: 
         res.send(_utils.apiResponse(users));
     } catch (e) {
 		console.log(e);
+        _apiError.log('AuthRoute.updateEmail', e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -178,6 +184,7 @@ AuthRoute.route(`/updatePassword`).post(ultraHighRiskLimit, async (req: express.
         res.send(_utils.apiResponse());
     } catch (e) {
 		console.log(e);
+        _apiError.log('AuthRoute.updatePassword', e, undefined, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -218,6 +225,7 @@ AuthRoute.route(`/updateOTPSecret`).post(ultraHighRiskLimit, async (req: express
         res.send(_utils.apiResponse(users));
     } catch (e) {
 		console.log(e);
+        _apiError.log('AuthRoute.updateOTPSecret', e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -258,6 +266,7 @@ AuthRoute.route(`/updateAuthority`).post(ultraHighRiskLimit, async (req: express
         res.send(_utils.apiResponse(users));
     } catch (e) {
 		console.log(e);
+        _apiError.log('AuthRoute.updateAuthority', e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -293,6 +302,7 @@ AuthRoute.route(`/updateFCMToken`).post(ultraHighRiskLimit, async (req: express.
         res.send(_utils.apiResponse());
     } catch (e) {
 		console.log(e);
+        _apiError.log('AuthRoute.updateFCMToken', e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -334,6 +344,7 @@ AuthRoute.route(`/deleteUser`).post(ultraHighRiskLimit, async (req: express.Requ
         res.send(_utils.apiResponse(users));
     } catch (e) {
 		console.log(e);
+        _apiError.log('AuthRoute.deleteUser', e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -377,6 +388,7 @@ AuthRoute.route(`/getSignInToken`).post(ultraHighRiskLimit, async (req: express.
        res.send(_utils.apiResponse(token));
    } catch (e) {
        console.log(e);
+       _apiError.log('AuthRoute.getSignInToken', e, undefined, ip, req.body);
        res.send(_utils.apiResponse(undefined, e));
    }
 });

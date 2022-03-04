@@ -7,6 +7,10 @@ import {appContainer, SYMBOLS} from '../../ioc';
 import {lowRiskLimit, IRequestGuardService} from '../request-guard';
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
+// API Error
+import {IApiErrorService} from '../api-error';
+const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.ApiErrorService);
+
 // Utilities
 import {IUtilitiesService} from '../utilities';
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
@@ -55,6 +59,7 @@ CandlestickRoute.route(`/getForPeriod`).get(lowRiskLimit, async (req: express.Re
         res.send(_utils.apiResponse(data));
     } catch (e) {
 		console.log(e);
+        _apiError.log('CandlestickRoute.getForPeriod', e, reqUid, ip, req.query);
         res.send(_utils.apiResponse(undefined, e));
     }
 });

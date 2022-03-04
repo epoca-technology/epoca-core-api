@@ -3,6 +3,9 @@
  */
 
  export const SYMBOLS: ISymbols = {
+    // API Error
+    ApiErrorService: Symbol.for("ApiErrorService"),
+
     // Auth
     AuthService: Symbol.for("AuthService"),
     AuthModel: Symbol.for("AuthModel"),
@@ -54,6 +57,8 @@
 
 
 export interface ISymbols {
+    ApiErrorService: symbol,
+
     AuthService: symbol,
     AuthModel: symbol,
     AuthValidations: symbol,

@@ -93,4 +93,19 @@ export const TABLES: IRawTable[] = [
             );`
         }
     },
+
+    // API Errors
+    {
+        name: 'api_errors',
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                o       VARCHAR(300) NOT NULL,
+                e       VARCHAR(3000) NOT NULL,
+                c       BIGINT NOT NULL,
+                uid     uuid NULL,
+                ip      VARCHAR(300) NULL,
+                p       JSONB NULL
+            );`
+        }
+    },
 ];

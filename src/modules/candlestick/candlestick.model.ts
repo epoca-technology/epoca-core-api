@@ -1,11 +1,11 @@
 import {inject, injectable} from "inversify";
-import { ICandlestickModel, ICandlestick, ICandlestickConfig } from "./interfaces";
 import { environment, SYMBOLS } from "../../ioc";
+import BigNumber from "bignumber.js";
+import * as moment from 'moment';
 import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
 import { IUtilitiesService } from "../utilities";
 import { IBinanceService } from "../binance";
-import BigNumber from "bignumber.js";
-import * as moment from 'moment';
+import { ICandlestickModel, ICandlestick, ICandlestickConfig } from "./interfaces";
 
 
 @injectable()

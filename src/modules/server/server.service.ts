@@ -1,5 +1,14 @@
 import {inject, injectable} from "inversify";
 import { SYMBOLS, environment } from "../../ioc";
+import * as si from "systeminformation";
+import * as fs from "fs";
+import { defaults } from "./defaults";
+import { queries } from "./queries";
+import { notifications } from "./notifications";
+import { IUtilitiesService } from "../utilities";
+import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
+import { IApiErrorService } from "../api-error";
+import { INotificationService } from "../notification";
 import { 
     IServerValidations,
     IServerService,
@@ -20,14 +29,6 @@ import {
     IServerResources,
     IServerData
 } from "./interfaces";
-import { defaults } from "./defaults";
-import { queries } from "./queries";
-import { notifications } from "./notifications";
-import { IUtilitiesService } from "../utilities";
-import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
-import { INotificationService } from "../notification";
-import * as si from "systeminformation";
-import * as fs from "fs";
 
 
 @injectable()
@@ -37,6 +38,7 @@ export class ServerService implements IServerService {
     @inject(SYMBOLS.ServerValidations)                  private _validations: IServerValidations;
     @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
     @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
+    @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
 
     // Info
     private version: string = '0.0.0';
@@ -179,10 +181,12 @@ export class ServerService implements IServerService {
                 try { await this.updateDynamicData() } 
                 catch (e) {
                     console.error('The server module encountered an error when updating dynamic data', e);
+                    this._apiError.log('ServerService.initialize', e);
                 }
             }, this.monitorIntervalSeconds * 1000);
         } catch (e) {
             console.error('The server module could not be initialized: ', e);
+            this._apiError.log('ServerService.initialize', e);
         }
     }
 

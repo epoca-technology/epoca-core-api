@@ -5,6 +5,7 @@ import {Container} from "inversify";
 import { environment } from "./environment";
 
 // Modules
+import { apiErrorModule } from "../modules/api-error";
 import { authModule } from "../modules/auth";
 import { binanceModule } from "../modules/binance";
 import { candlestickModule } from "../modules/candlestick";
@@ -34,6 +35,9 @@ const firebaseApp: App = initializeApp({
 
 // Load the container
 appContainer.load(
+    // API Error
+    apiErrorModule,
+    
     // Auth
     authModule,
 

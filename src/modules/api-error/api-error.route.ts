@@ -7,34 +7,31 @@ import {appContainer, SYMBOLS} from '../../ioc';
 import {ultraHighRiskLimit, IRequestGuardService, ultraLowRiskLimit} from '../request-guard';
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
-// API Error
-import {IApiErrorService} from '../api-error';
-const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.ApiErrorService);
 
 // Utilities
 import {IUtilitiesService} from '../utilities';
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 
-// GUI Version Service
-import {IGuiVersionService} from './interfaces';
-const _version: IGuiVersionService = appContainer.get<IGuiVersionService>(SYMBOLS.GuiVersionService);
+// API Error Service
+import {IApiErrorService, IApiError} from './interfaces';
+const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.ApiErrorService);
 
 
 // Init Route
-const GuiVersionRoute = express.Router();
+const ApiErrorRoute = express.Router();
 
 
 
 
 /**
-* Retrieves the current GUI Version
+* Retrieves the full list of Api Errors.
 * @requires id-token
 * @requires api-secret
-* @requires authority: 1
-* @returns IAPIResponse<string>
+* @requires authority: 4
+* @returns IAPIResponse<IApiError[]>
 */
-GuiVersionRoute.route(`/get`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+ApiErrorRoute.route(`/getAll`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -43,16 +40,16 @@ GuiVersionRoute.route(`/get`).get(ultraLowRiskLimit, async (req: express.Request
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4);
 
         // Perform Action
-        const version: string = await _version.get();
+        const errors: IApiError[] = await _apiError.getAll();
 
         // Return the response
-        res.send(_utils.apiResponse(version));
+        res.send(_utils.apiResponse(errors));
     } catch (e) {
 		console.log(e);
-        _apiError.log('GuiVersionRoute.get', e, reqUid, ip);
+        _apiError.log('ApiErrorRoute.getAll', e, reqUid, ip);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -62,7 +59,7 @@ GuiVersionRoute.route(`/get`).get(ultraLowRiskLimit, async (req: express.Request
 
 
 /**
-* Updates the current version.
+* Deletes all API Errors that are currently stored.
 * @requires id-token
 * @requires api-secret
 * @requires otp
@@ -70,7 +67,7 @@ GuiVersionRoute.route(`/get`).get(ultraLowRiskLimit, async (req: express.Request
 * @param version
 * @returns IAPIResponse<void>
 */
-GuiVersionRoute.route(`/update`).post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
+ApiErrorRoute.route(`/deleteAll`).post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -80,16 +77,16 @@ GuiVersionRoute.route(`/update`).post(ultraHighRiskLimit, async (req: express.Re
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ['version'], req.body, otp || '');
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, undefined, undefined, otp || '');
 
         // Perform Action
-        await _version.update(req.body.version);
+        await _apiError.deleteAll();
 
         // Return the response
         res.send(_utils.apiResponse());
     } catch (e) {
 		console.log(e);
-        _apiError.log('GuiVersionRoute.update', e, reqUid, ip, req.body);
+        _apiError.log('ApiErrorRoute.deleteAll', e, reqUid, ip);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -100,5 +97,5 @@ GuiVersionRoute.route(`/update`).post(ultraHighRiskLimit, async (req: express.Re
 
 
 // Export Routes
-export {GuiVersionRoute}
+export {ApiErrorRoute}
 

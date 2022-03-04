@@ -76,6 +76,7 @@ export interface ITableNames {
     forecast_candlesticks: string,
     users: string,
     ip_blacklist: string,
+    api_errors: string
 }
 
 

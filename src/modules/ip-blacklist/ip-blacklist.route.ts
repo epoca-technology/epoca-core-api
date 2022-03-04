@@ -7,6 +7,9 @@ import {appContainer, SYMBOLS} from '../../ioc';
 import {ultraLowRiskLimit, IRequestGuardService} from '../request-guard';
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
+// API Error
+import {IApiErrorService} from '../api-error';
+const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.ApiErrorService);
 
 // Utilities
 import {IUtilitiesService} from '../utilities';
@@ -50,6 +53,7 @@ IPBlacklistRoute.route(`/getAll`).get(ultraLowRiskLimit, async (req: express.Req
         res.send(_utils.apiResponse(list));
     } catch (e) {
 		console.log(e);
+        _apiError.log('IPBlacklistRoute.getAll', e, reqUid, ip);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -93,6 +97,7 @@ IPBlacklistRoute.route(`/registerIP`).post(ultraLowRiskLimit, async (req: expres
         res.send(_utils.apiResponse(list));
     } catch (e) {
 		console.log(e);
+        _apiError.log('IPBlacklistRoute.registerIP', e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -133,6 +138,7 @@ IPBlacklistRoute.route(`/updateNotes`).post(ultraLowRiskLimit, async (req: expre
         res.send(_utils.apiResponse(list));
     } catch (e) {
 		console.log(e);
+        _apiError.log('IPBlacklistRoute.updateNotes', e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -172,6 +178,7 @@ IPBlacklistRoute.route(`/unregisterIP`).post(ultraLowRiskLimit, async (req: expr
         res.send(_utils.apiResponse(list));
     } catch (e) {
 		console.log(e);
+        _apiError.log('IPBlacklistRoute.unregisterIP', e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });

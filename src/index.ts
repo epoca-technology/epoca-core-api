@@ -55,6 +55,7 @@ const port = process.env.PORT || 5075;
 
 
 // Import Routes
+import {ApiErrorRoute} from './modules/api-error/api-error.route';
 import {AuthRoute} from './modules/auth/auth.route';
 import {CandlestickRoute} from './modules/candlestick/candlestick.route';
 import {DatabaseRoute} from './modules/database/database.route';
@@ -63,6 +64,7 @@ import {IPBlacklistRoute} from './modules/ip-blacklist/ip-blacklist.route';
 import {ServerRoute} from './modules/server/server.route';
 
 // Register Routes
+app.use('/apiError', ApiErrorRoute);
 app.use('/auth', AuthRoute);
 app.use('/candlestick', CandlestickRoute);
 app.use('/database', DatabaseRoute);

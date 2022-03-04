@@ -1,7 +1,7 @@
 import {inject, injectable} from "inversify";
-import { IServerValidations, IAlarmsConfig } from "./interfaces";
 import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService, IValidationsService } from "../utilities";
+import { IServerValidations, IAlarmsConfig } from "./interfaces";
 
 
 @injectable()

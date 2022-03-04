@@ -1,10 +1,11 @@
 import {injectable, inject} from "inversify";
 import { environment, IGod, SYMBOLS } from "../../ioc";
 import {getAuth, Auth, DecodedIdToken} from "firebase-admin/auth";
-import { IAuthModel, IUserRecord, IAuthority, IUser, IUserCreationBuild } from "./interfaces";
+import { authenticator } from 'otplib';
 import { IDatabaseService } from "../database";
 import { IUtilitiesService } from "../utilities";
-import { authenticator } from 'otplib';
+import { IApiErrorService } from "../api-error";
+import { IAuthModel, IUserRecord, IAuthority, IUser, IUserCreationBuild } from "./interfaces";
 
 
 
@@ -13,6 +14,7 @@ export class AuthModel implements IAuthModel {
     // Inject dependencies
     @inject(SYMBOLS.DatabaseService)                   private _db: IDatabaseService;
     @inject(SYMBOLS.UtilitiesService)                  private _utils: IUtilitiesService;
+    @inject(SYMBOLS.ApiErrorService)                   private _apiError: IApiErrorService;
 
     // Auth Instance
     private readonly auth: Auth = getAuth();
@@ -211,7 +213,10 @@ export class AuthModel implements IAuthModel {
             catch (e) { 
                 // Log the API Error
                 console.error(`The user ${build.user.email} (${build.user.uid}) couldnt be deleted from Firebase: `, e);
-                // @TODO
+                this._apiError.log('AuthModel.createUser', e, undefined, undefined, {
+                    authority: authority,
+                    email: email || ''
+                });
             }
             
             // Rethrow the original error
@@ -352,7 +357,10 @@ export class AuthModel implements IAuthModel {
             catch (e) {
                 // Log API Error
                 console.error('There was an error when rolling back the Firebase Email Update.', e);
-                // @TODO
+                this._apiError.log('AuthModel.updateEmail', e, uid, undefined, {
+                    newEmail: newEmail,
+                    oldEmail: oldEmail
+                });
             }
 
             // Rethrow the original error

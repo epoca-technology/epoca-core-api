@@ -8,6 +8,9 @@ import {appContainer, SYMBOLS} from '../../ioc';
 import {lowRiskLimit, highRiskLimit, mediumRiskLimit, IRequestGuardService} from '../request-guard';
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
+// API Error
+import {IApiErrorService} from '../api-error';
+const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.ApiErrorService);
 
 // Utilities
 import {IUtilitiesService} from '../utilities';
@@ -53,6 +56,7 @@ ServerRoute.route(`/getServerData`).get(highRiskLimit, async (req: express.Reque
         res.send(_utils.apiResponse(_server.getServerData()));
     } catch (e) {
 		console.log(e);
+        _apiError.log('ServerRoute.getServerData', e, reqUid, ip);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -86,6 +90,7 @@ ServerRoute.route(`/getServerResources`).get(mediumRiskLimit, async (req: expres
         res.send(_utils.apiResponse(_server.getServerResources()));
     } catch (e) {
 		console.log(e);
+        _apiError.log('ServerRoute.getServerResources', e, reqUid, ip);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -111,7 +116,7 @@ ServerRoute.route(`/getServerResources`).get(mediumRiskLimit, async (req: expres
  * @requires id-token
  * @requires api-secret
  * @requires otp
- * @requires authority: 3
+ * @requires authority: 4
  * @param max_file_system_usage
  * @param max_memory_usage
  * @param max_cpu_load
@@ -135,7 +140,7 @@ ServerRoute.route(`/setAlarmsConfiguration`).post(highRiskLimit, async (req: exp
             idToken, 
             apiSecret, 
             ip, 
-            5, 
+            4, 
             ['max_file_system_usage', 'max_memory_usage', 'max_cpu_load', 'max_cpu_temperature', 'max_gpu_load', 'max_gpu_temperature', 'max_gpu_memory_temperature'], 
             req.body, 
             otp || ''
@@ -148,6 +153,7 @@ ServerRoute.route(`/setAlarmsConfiguration`).post(highRiskLimit, async (req: exp
         res.send(_utils.apiResponse());
     } catch (e) {
 		console.log(e);
+        _apiError.log('ServerRoute.setAlarmsConfiguration', e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });

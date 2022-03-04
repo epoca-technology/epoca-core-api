@@ -1,5 +1,8 @@
 import {injectable} from "inversify";
 import { environment } from "../../ioc";
+import {getDatabase, Database} from "firebase-admin/database";
+import {Client, Pool, types} from "pg";
+import { TABLES } from "./tables";
 import { 
     IDatabaseService, 
     ITable, 
@@ -13,9 +16,6 @@ import {
     IDatabaseSummaryTable,
     IReference
 } from "./interfaces";
-import { TABLES } from "./tables";
-import {Client, Pool, types} from "pg";
-import {getDatabase, Database} from "firebase-admin/database";
 
 
 @injectable()

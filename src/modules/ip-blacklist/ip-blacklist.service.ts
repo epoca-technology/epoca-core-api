@@ -94,7 +94,7 @@ export class IPBlacklistService implements IIPBlacklistService {
 
         // Make sure it is a valid string before proceeding
         if (typeof ip == "string" && ip.length && this.blacklist[ip]) {
-            throw new Error(this._utils.buildApiError(`The IP ${ip} is currently blacklisted and therefore cannot interact with the API`, 11000));
+            throw new Error(this._utils.buildApiError(`The IP ${ip} is currently blacklisted and therefore cannot interact with the API.`, 11000));
         }
     }
 

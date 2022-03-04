@@ -3,6 +3,7 @@ import { ICandlestickService, ICandlestick, ICandlestickValidations, ICandlestic
 import { environment, SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { IBinanceService, IBinanceCandlestick } from "../binance";
+import { IApiErrorService } from "../api-error";
 import * as moment from 'moment';
 import { BehaviorSubject } from "rxjs";
 
@@ -14,6 +15,7 @@ export class CandlestickService implements ICandlestickService {
     @inject(SYMBOLS.CandlestickValidations)             private _validations: ICandlestickValidations;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
+    @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
 
 
     // Candlestick Syncing Interval
@@ -134,7 +136,8 @@ export class CandlestickService implements ICandlestickService {
                 await this._utils.asyncDelay(5);
                 try { this.broadcastStream(await this.syncCandlesticks()) } 
                 catch (e) {
-                    console.log(`Failed to sync the candlesticks again, will attempt again in a few seconds:`, e);
+                    console.log(`Failed to sync the candlesticks again, will attempt again when the interval triggers:`, e);
+                    this._apiError.log('CandlestickService.startSync', e);
                     this.broadcastStream([], e);
                 }
             }

@@ -47,6 +47,10 @@ End-to-end:
 
 `docker exec api docker-entrypoint.sh npm run test`
 
+API Error: 
+
+`docker exec api docker-entrypoint.sh npm run test-api-error`
+
 Auth: 
 
 `docker exec api docker-entrypoint.sh npm run test-auth`
@@ -299,3 +303,16 @@ Utilities:
 12001: `The API cannot accept requests because it has not yet been initialized.`
 
 12002: `The param (${paramKey}) is required but was not provided.`
+
+
+
+
+
+
+
+
+
+#
+## API Error (13.000 - 13.999)
+
+13000: ``

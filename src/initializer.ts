@@ -1,3 +1,4 @@
+// API Container
 import {appContainer, SYMBOLS, environment} from "./ioc";
 
 /* Request Guard */
@@ -11,13 +12,13 @@ const _guard = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardServic
 import {IAuthService} from './modules/auth';
 const _auth = appContainer.get<IAuthService>(SYMBOLS.AuthService);
 
-// Database
-import {IDatabaseService} from './modules/database';
-const _db = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
-
 // Candlesticks
 import {ICandlestickService} from './modules/candlestick';
 const _candlestick = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
+
+// Database
+import {IDatabaseService} from './modules/database';
+const _db = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 // IP Blacklist
 import {IIPBlacklistService} from './modules/ip-blacklist';

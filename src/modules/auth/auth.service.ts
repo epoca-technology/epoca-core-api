@@ -1,5 +1,6 @@
 import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../ioc";
+import { IApiErrorService } from "../api-error";
 import { IUtilitiesService } from "../utilities";
 import { 
     IAuthService, 
@@ -22,6 +23,7 @@ export class AuthService implements IAuthService {
     @inject(SYMBOLS.AuthModel)                         private _model: IAuthModel;
     @inject(SYMBOLS.AuthValidations)                   private _validations: IAuthValidations;
     @inject(SYMBOLS.ApiSecretService)                  private _apiSecret: IApiSecretService;
+    @inject(SYMBOLS.ApiErrorService)                   private _apiError: IApiErrorService;
 
     // Authorities Object
     private authorities: IAuthorities = {};
@@ -191,7 +193,7 @@ export class AuthService implements IAuthService {
             catch (e) {
                 // Log API Error
                 console.error(`Error when deleting a user (${email}) on creation error: `, e);
-                // @TODO
+                this._apiError.log('AuthService.createUser', e, undefined, undefined, { email: email, authority: authority });
             }
 
             // Rethrow the original error

@@ -3,6 +3,7 @@ import { SYMBOLS } from "../../ioc";
 import { IApiSecretService, IApiSecretRecord, IApiSecrets } from "./interfaces";
 import { IDatabaseService, IFanoutObject } from "../database";
 import { IUtilitiesService, IValidationsService } from "../utilities";
+import { IApiErrorService } from "../api-error";
 import * as moment from 'moment';
 
 
@@ -14,6 +15,7 @@ export class ApiSecretService implements IApiSecretService {
     @inject(SYMBOLS.DatabaseService)                   private _db: IDatabaseService;
     @inject(SYMBOLS.UtilitiesService)                  private _utils: IUtilitiesService;
     @inject(SYMBOLS.ValidationsService)                private _validations: IValidationsService;
+    @inject(SYMBOLS.ApiErrorService)                   private _apiError: IApiErrorService;
 
     // Secret Duration Minutes
     private readonly secretDuration: number = 10;
@@ -177,7 +179,7 @@ export class ApiSecretService implements IApiSecretService {
                 console.error(`There was an error when refreshing the secret for ${uid}.`, e);
 
                 // Save API Error
-                // @TODO
+                this._apiError.log('ApiSecretService.verifySecret', e, uid, undefined, {secret: secret});
             }
         }
     }
