@@ -4,7 +4,7 @@ import {appContainer, SYMBOLS} from '../../ioc';
 
 
 // Request Guard
-import {highRiskLimit, ultraHighRiskLimit, IRequestGuardService} from '../request-guard';
+import {ultraHighRiskLimit, IRequestGuardService, ultraLowRiskLimit} from '../request-guard';
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
 
@@ -31,7 +31,7 @@ const GuiVersionRoute = express.Router();
 * @requires authority: 1
 * @returns IAPIResponse<string>
 */
-GuiVersionRoute.route(`/get`).get(highRiskLimit, async (req: express.Request, res: express.Response) => {
+GuiVersionRoute.route(`/get`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");

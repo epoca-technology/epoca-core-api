@@ -688,15 +688,26 @@ export class AuthModel implements IAuthModel {
      * @returns Promise<string>
      */
     public async verifyIDToken(token: string): Promise<string> {
-        // Decode the token
-        const decodedToken: DecodedIdToken = await this.auth.verifyIdToken(token);
+        try {
+            // Decode the token
+            const decodedToken: DecodedIdToken = await this.auth.verifyIdToken(token);
 
-        // Make sure the token was retrieved
-        if (!decodedToken || typeof decodedToken.uid != "string") {
-            throw new Error(this._utils.buildApiError(`The uid couldnt be extracted when verifying the ID Token.`, 8303));
+            // Make sure the token was retrieved
+            if (!decodedToken || typeof decodedToken.uid != "string") {
+                throw new Error(this._utils.buildApiError(`The uid couldnt be extracted when verifying the ID Token.`, 8303));
+            }
+
+            // Finally, return the uid
+            return decodedToken.uid;
+        } catch (e) {
+            // Handle the error if the ID Token expired
+            if (e.code == "auth/id-token-expired") {
+                throw new Error(this._utils.buildApiError(`The ID Token has expired. Please generate a new one and try again.`, 8304));
+            }
+
+            // Otherwise, rethrow the error
+            throw e;
         }
 
-        // Finally, return the uid
-        return decodedToken.uid;
     }
 }

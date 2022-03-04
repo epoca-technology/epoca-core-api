@@ -205,6 +205,8 @@ Utilities:
 
 8303: `The uid couldnt be extracted when verifying the ID Token.`
 
+8304: `The uid couldnt be extracted when verifying the ID Token.`
+
 
 ### Auth Validations
 
