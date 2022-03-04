@@ -4,7 +4,7 @@ import {appContainer, SYMBOLS} from '../../ioc';
 
 
 // Request Guard
-import {ultraHighRiskLimit, IRequestGuardService, ultraLowRiskLimit} from '../request-guard';
+import {ultraLowRiskLimit, mediumRiskLimit, IRequestGuardService} from '../request-guard';
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
 
@@ -67,7 +67,7 @@ ApiErrorRoute.route(`/getAll`).get(ultraLowRiskLimit, async (req: express.Reques
 * @param version
 * @returns IAPIResponse<void>
 */
-ApiErrorRoute.route(`/deleteAll`).post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
+ApiErrorRoute.route(`/deleteAll`).post(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
