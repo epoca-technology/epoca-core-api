@@ -4,7 +4,7 @@ import {appContainer, SYMBOLS} from '../../ioc';
 
 
 // Request Guard
-import {highRiskLimit, ultraHighRiskLimit, IRequestGuardService} from '../request-guard';
+import {highRiskLimit, IRequestGuardService} from '../request-guard';
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
 
@@ -26,15 +26,21 @@ const DatabaseRoute = express.Router();
 
 /**
  * Retrieves the Database Summary.
-* @returns IAPIResponse<IDatabaseSummary>
+ * @requires id-token
+ * @requires api-secret
+ * @requires authority: 5
+ * @returns IAPIResponse<IDatabaseSummary>
 */
 DatabaseRoute.route(`/getDatabaseSummary`).get(highRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Retrieve the token
-    const token: string = req.get("authorization");
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
 
-     try {
-        // Validate the token
-        // @TODO
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5);
 
         // Perform Action
         const summary: IDatabaseSummary = await _db.getDatabaseSummary();

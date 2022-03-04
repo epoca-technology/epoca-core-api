@@ -190,6 +190,10 @@ Utilities:
 
 8000: `Couldnt initialize the Auth Module because there are no users stored in the db.`
 
+8001: `The uid ${uid} was not found in the local authorities object.`
+
+8002: `The user ${uid} is not authorized to perform the action. Has ${this.authorities[uid]} and needs ${requiredAuthority}`
+
 
 ### Auth Model
 
@@ -283,3 +287,13 @@ Utilities:
 
 
 
+
+
+#
+## Request Guard (12.000 - 12.999)
+
+12000: `The API cannot accept requests because it is running on test mode.`
+
+12001: `The API cannot accept requests because it has not yet been initialized.`
+
+12002: `The param (${paramKey}) is required but was not provided.`

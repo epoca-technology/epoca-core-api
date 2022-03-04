@@ -9,9 +9,6 @@ export type IUserRecord = UserRecord;
 
 // Service
 export interface IAuthService {
-    // Properties
-    authorities: IAuthorities,
-
     // Initialization
     initialize(): Promise<void>,
 
@@ -36,6 +33,9 @@ export interface IAuthService {
 
     // ID Token
     verifyIDToken(token: string): Promise<string>,
+
+    // Authorization
+    isUserAuthorized(uid: string, requiredAuthority: IAuthority): void,
 }
 
 

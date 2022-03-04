@@ -1,7 +1,11 @@
 import {appContainer, SYMBOLS, environment} from "./ioc";
 
+/* Request Guard */
+import {IRequestGuardService} from './modules/request-guard';
+const _guard = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
-/* Import Modules */
+
+/* Import Modules that require initialization */
 
 // Auth
 import {IAuthService} from './modules/auth';
@@ -18,10 +22,6 @@ const _candlestick = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickSe
 // IP Blacklist
 import {IIPBlacklistService} from './modules/ip-blacklist';
 const _ipBlacklist = appContainer.get<IIPBlacklistService>(SYMBOLS.IPBlacklistService);
-
-// Request Guard
-import {IRequestGuardService} from './modules/request-guard';
-const _guard = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
 // Server
 import {IServerService} from './modules/server';

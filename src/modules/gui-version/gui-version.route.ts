@@ -26,19 +26,21 @@ const GuiVersionRoute = express.Router();
 
 /**
 * Retrieves the current GUI Version
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
 * @returns IAPIResponse<string>
 */
 GuiVersionRoute.route(`/get`).get(highRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
-    const otp: string = req.get("otp");
     const ip: string = req.clientIp;
     let reqUid: string;
 
     try {
         // Validate the request
-        // @TODO
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
 
         // Perform Action
         const version: string = await _version.get();
@@ -57,6 +59,10 @@ GuiVersionRoute.route(`/get`).get(highRiskLimit, async (req: express.Request, re
 
 /**
 * Updates the current version.
+* @requires id-token
+* @requires api-secret
+* @requires otp
+* @requires authority: 4
 * @param version
 * @returns IAPIResponse<void>
 */
@@ -70,7 +76,7 @@ GuiVersionRoute.route(`/update`).post(ultraHighRiskLimit, async (req: express.Re
 
     try {
         // Validate the request
-        // @TODO
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ['version'], req.body, otp || '');
 
         // Perform Action
         await _version.update(req.body.version);

@@ -32,17 +32,19 @@ const AuthRoute = express.Router();
  * Retrieves a list with all the registered users.
  * @requires id-token
  * @requires api-secret
+ * @requires authority: 5
  * @returns IAPIResponse<IUser[]>
  */
 AuthRoute.route(`/getAll`).get(highRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
     let reqUid: string;
 
-     try {
+    try {
         // Validate the request
-        // @TODO
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5);
 
         // Perform Action
         const users: IUser[] = await _auth.getAll();
@@ -74,6 +76,7 @@ AuthRoute.route(`/getAll`).get(highRiskLimit, async (req: express.Request, res: 
  * @requires id-token
  * @requires api-secret
  * @requires otp
+ * @requires authority: 5
  * @param email 
  * @param authority 
  * @returns IAPIResponse<IUser[]>
@@ -83,11 +86,12 @@ AuthRoute.route(`/getAll`).get(highRiskLimit, async (req: express.Request, res: 
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
     const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
     let reqUid: string;
 
      try {
         // Validate the request
-        // @TODO
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5, ['email', 'authority'], req.body, otp || '');
 
         // Perform Action
         await _auth.createUser(req.body.email, req.body.authority);
@@ -115,6 +119,7 @@ AuthRoute.route(`/getAll`).get(highRiskLimit, async (req: express.Request, res: 
  * @requires id-token
  * @requires api-secret
  * @requires otp
+ * @requires authority: 5
  * @param uid 
  * @param newEmail 
 * @returns IAPIResponse<IUser[]>
@@ -124,11 +129,12 @@ AuthRoute.route(`/getAll`).get(highRiskLimit, async (req: express.Request, res: 
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
     const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
     let reqUid: string;
 
     try {
         // Validate the request
-        // @TODO
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5, ['uid', 'newEmail'], req.body, otp || '');
 
         // Perform Action
         await _auth.updateEmail(req.body.uid, req.body.newEmail);
@@ -158,9 +164,12 @@ AuthRoute.route(`/getAll`).get(highRiskLimit, async (req: express.Request, res: 
 * @returns IAPIResponse<void>
 */
 AuthRoute.route(`/updatePassword`).post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
-     try {
+    // Init values
+    const ip: string = req.clientIp;
+
+    try {
         // Validate the request
-        // @TODO
+        _guard.validatePublicRequest(ip, ['email', 'newPassword', 'otp', 'recaptcha'], req.body)
 
         // Perform Action
         await _auth.updatePassword(req.body.email, req.body.newPassword, req.body.otp, req.body.recaptcha);
@@ -183,6 +192,7 @@ AuthRoute.route(`/updatePassword`).post(ultraHighRiskLimit, async (req: express.
  * @requires id-token
  * @requires api-secret
  * @requires otp
+ * @requires authority: 5
  * @param uid 
 * @returns IAPIResponse<IUser[]>
 */
@@ -191,11 +201,12 @@ AuthRoute.route(`/updateOTPSecret`).post(ultraHighRiskLimit, async (req: express
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
     const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
     let reqUid: string;
 
      try {
         // Validate the request
-        // @TODO
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5, ['uid'], req.body, otp || '');
 
         // Perform Action
         await _auth.updateOTPSecret(req.body.uid);
@@ -220,6 +231,7 @@ AuthRoute.route(`/updateOTPSecret`).post(ultraHighRiskLimit, async (req: express
  * @requires id-token
  * @requires api-secret
  * @requires otp
+ * @requires authority: 5
  * @param uid 
  * @param newAuthority 
 * @returns IAPIResponse<IUser[]>
@@ -229,11 +241,12 @@ AuthRoute.route(`/updateAuthority`).post(ultraHighRiskLimit, async (req: express
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
     const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
     let reqUid: string;
 
      try {
         // Validate the request
-        // @TODO
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5, ['uid', 'newAuthority'], req.body, otp || '');
 
         // Perform Action
         await _auth.updateAuthority(req.body.uid, req.body.newAuthority);
@@ -258,6 +271,7 @@ AuthRoute.route(`/updateAuthority`).post(ultraHighRiskLimit, async (req: express
  * Updates a user's authority on the DB and on the local object.
  * @requires id-token
  * @requires api-secret
+ * @requires authority: 1
  * @param newFCMToken 
 * @returns IAPIResponse<void>
 */
@@ -265,12 +279,12 @@ AuthRoute.route(`/updateFCMToken`).post(ultraHighRiskLimit, async (req: express.
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
     let reqUid: string;
 
      try {
         // Validate the request
-        // @TODO
-        reqUid = await _auth.verifyIDToken(idToken);
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ['newFCMToken'], req.body);
 
         // Perform Action
         await _auth.updateFCMToken(reqUid, req.body.newFCMToken);
@@ -294,6 +308,7 @@ AuthRoute.route(`/updateFCMToken`).post(ultraHighRiskLimit, async (req: express.
  * @requires id-token
  * @requires api-secret
  * @requires otp
+ * @requires authority: 5
  * @param uid 
 * @returns IAPIResponse<IUser[]>
 */
@@ -302,11 +317,12 @@ AuthRoute.route(`/deleteUser`).post(ultraHighRiskLimit, async (req: express.Requ
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
     const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
     let reqUid: string;
 
      try {
         // Validate the request
-        // @TODO
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5, ['uid'], req.body, otp || '');
 
         // Perform Action
         await _auth.deleteUser(req.body.uid);
@@ -347,9 +363,12 @@ AuthRoute.route(`/deleteUser`).post(ultraHighRiskLimit, async (req: express.Requ
 * @returns IAPIResponse<string>
 */
 AuthRoute.route(`/getSignInToken`).post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const ip: string = req.clientIp;
+
     try {
        // Validate the request
-       // @TODO
+       _guard.validatePublicRequest(ip, ['email', 'password', 'otp', 'recaptcha'], req.body);
 
        // Perform Action
        const token: string = await _auth.getSignInToken(req.body.email, req.body.password, req.body.otp, req.body.recaptcha);

@@ -29,19 +29,19 @@ const IPBlacklistRoute = express.Router();
  * Retrieves the list of currently blacklisted IPs.
  * @requires id-token
  * @requires api-secret
+ * @requires authority: 4
  * @returns IAPIResponse<IIPBlacklistRecord[]>
 */
 IPBlacklistRoute.route(`/getAll`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
-    const otp: string = req.get("otp");
     const ip: string = req.clientIp;
     let reqUid: string;
 
     try {
         // Validate the request
-        // @TODO
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4);
 
         // Perform Action
         const list: IIPBlacklistRecord[] = await _blacklist.getAll();
@@ -66,6 +66,7 @@ IPBlacklistRoute.route(`/getAll`).get(ultraLowRiskLimit, async (req: express.Req
  * @requires id-token
  * @requires api-secret
  * @requires otp
+ * @requires authority: 4
  * @param ip
  * @param notes
  * @returns IAPIResponse<IIPBlacklistRecord[]>
@@ -80,7 +81,7 @@ IPBlacklistRoute.route(`/registerIP`).post(ultraLowRiskLimit, async (req: expres
 
     try {
         // Validate the request
-        // @TODO
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5, ['ip', 'notes'], req.body, otp || '');
 
         // Perform Action
         await _blacklist.registerIP(req.body.ip, req.body.notes);
@@ -105,6 +106,7 @@ IPBlacklistRoute.route(`/registerIP`).post(ultraLowRiskLimit, async (req: expres
  * @requires id-token
  * @requires api-secret
  * @requires otp
+ * @requires authority: 4
  * @param ip
  * @param newNotes
  * @returns IAPIResponse<IIPBlacklistRecord[]>
@@ -119,7 +121,7 @@ IPBlacklistRoute.route(`/updateNotes`).post(ultraLowRiskLimit, async (req: expre
 
     try {
         // Validate the request
-        // @TODO
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ['ip', 'newNotes'], req.body, otp || '');
 
         // Perform Action
         await _blacklist.updateNotes(req.body.ip, req.body.newNotes);
@@ -144,6 +146,7 @@ IPBlacklistRoute.route(`/updateNotes`).post(ultraLowRiskLimit, async (req: expre
  * @requires id-token
  * @requires api-secret
  * @requires otp
+ * @requires authority: 4
  * @param ip
  * @returns IAPIResponse<IIPBlacklistRecord[]>
 */
@@ -157,7 +160,7 @@ IPBlacklistRoute.route(`/unregisterIP`).post(ultraLowRiskLimit, async (req: expr
 
     try {
         // Validate the request
-        // @TODO
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ['ip'], req.body, otp || '');
 
         // Perform Action
         await _blacklist.unregisterIP(req.body.ip);
@@ -172,6 +175,8 @@ IPBlacklistRoute.route(`/unregisterIP`).post(ultraLowRiskLimit, async (req: expr
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
 
 
 

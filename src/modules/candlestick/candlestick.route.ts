@@ -25,18 +25,24 @@ const CandlestickRoute = express.Router();
 
 /**
  * Allows the GUI to verify that the server is running and can take requests.
-* @param start 
-* @param end 
-* @param intervalMinutes 
-* @returns IAPIResponse<ICandlestick[]>
+ * @requires id-token
+ * @requires api-secret
+ * @requires authority: 3
+ * @param start 
+ * @param end 
+ * @param intervalMinutes 
+ * @returns IAPIResponse<ICandlestick[]>
 */
 CandlestickRoute.route(`/getForPeriod`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Retrieve the token
-    const token: string = req.get("authorization");
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
 
-     try {
-        // Validate the token
-        // @TODO
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 3, ['start', 'end', 'intervalMinutes'], req.query);
 
         // Retrieve the candlesticks
         const data: ICandlestick[] = await _candlestick.getForPeriod(

@@ -1,6 +1,5 @@
 import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../ioc";
-import { IDatabaseService } from "../database";
 import { IUtilitiesService } from "../utilities";
 import { 
     IAuthService, 
@@ -19,14 +18,13 @@ import {
 @injectable()
 export class AuthService implements IAuthService {
     // Inject dependencies
-    @inject(SYMBOLS.DatabaseService)                   private _db: IDatabaseService;
     @inject(SYMBOLS.UtilitiesService)                  private _utils: IUtilitiesService;
     @inject(SYMBOLS.AuthModel)                         private _model: IAuthModel;
     @inject(SYMBOLS.AuthValidations)                   private _validations: IAuthValidations;
     @inject(SYMBOLS.ApiSecretService)                  private _apiSecret: IApiSecretService;
 
     // Authorities Object
-    public authorities: IAuthorities = {};
+    private authorities: IAuthorities = {};
 
 
     constructor() {}
@@ -446,5 +444,38 @@ export class AuthService implements IAuthService {
 
         // Decode it and return the uid
         return this._model.verifyIDToken(token);
+    }
+
+
+
+
+
+
+
+
+    /* Authorization */
+
+
+
+
+
+
+    /**
+     * Checks if an user is authorized to perform an action. In case it isnt, it will
+     * throw an error.
+     * @param uid 
+     * @param requiredAuthority 
+     * @returns void
+     */
+    public isUserAuthorized(uid: string, requiredAuthority: IAuthority): void {
+        // Make sure the uid is in the local object
+        if (!this.authorities[uid]) {
+            throw new Error(this._utils.buildApiError(`The uid ${uid} was not found in the local authorities object.`, 8001));
+        }
+
+        // Make sure the user has sufficient authority
+        if (this.authorities[uid] < requiredAuthority) {
+            throw new Error(this._utils.buildApiError(`The user ${uid} is not authorized to perform the action. Has ${this.authorities[uid]} and needs ${requiredAuthority}`, 8002));
+        }
     }
 }

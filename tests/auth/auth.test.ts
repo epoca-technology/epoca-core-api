@@ -110,6 +110,7 @@ describe('User Creation:', async function() {
             expect(firebaseUser.email).toBe(_test.users[i].email);
 
             // Make sure the user was added to the local authorities object
+            // @ts-ignore
             expect(_service.authorities[uid]).toBe(_test.users[i].authority);
 
             // If the user is retrieved by email should be exactly the same as the one retrieved by uid
@@ -139,6 +140,7 @@ describe('User Creation:', async function() {
             expect(firebaseUser).toBe(undefined);
 
             // The user should have also been removed from the local authorities
+            // @ts-ignore
             expect(_service.authorities[uid]).toBe(undefined);
         }
     });
@@ -420,6 +422,7 @@ describe('User Authority Update:', async function() {
         expect(user.authority).toBe(_test.users[0].authority);
 
         // Make sure it matches the local object
+            // @ts-ignore
         expect(_service.authorities[uid]).toBe(_test.users[0].authority);
 
         // Update it
@@ -432,6 +435,7 @@ describe('User Authority Update:', async function() {
         expect(user.authority).toBe(1);
 
         // Make sure it matches the local object
+        // @ts-ignore
         expect(_service.authorities[uid]).toBe(1);
     });
 
@@ -470,6 +474,29 @@ describe('User Authority Update:', async function() {
             await _service.updateAuthority(uid, 6);
             fail('It should have not updated the Authority with an invalid value (3).')
         } catch (e) { expect(_utils.getCodeFromApiError(e)).toBe(8501) }
+    });
+
+
+
+    it('-Can create and identify if it is authorized to perform actions: ', async function() {
+        // Create the user
+        const uid: string = await _test.createTestUser(0);
+
+        // Cannot verify the authority with a non existent uid
+        try {
+            _service.isUserAuthorized('someRandomUid', 4);
+            fail('It should have not authorized a uid that does not exist.');
+        } catch (e) { expect(_utils.getCodeFromApiError(e)).toBe(8001) }
+
+
+        // Can identify if the user cannot perform an action
+        try {
+            _service.isUserAuthorized(uid, 5);
+            fail('It should have not authorized a uid that does not have sufficient authority.');
+        } catch (e) { expect(_utils.getCodeFromApiError(e)).toBe(8002) }
+
+        // Can identify the user is authorized
+        _service.isUserAuthorized(uid, 4);
     });
 });
 

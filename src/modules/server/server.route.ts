@@ -35,15 +35,19 @@ const ServerRoute = express.Router();
 /**
  * Retrieves the Server's Data. If it hasn't been initialized, the 
  * values will be the defaults.
-* @returns IAPIResponse<IServerData>
+ * @requires authority: 3
+ * @returns IAPIResponse<IServerData>
 */
 ServerRoute.route(`/getServerData`).get(highRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Retrieve the token
-    const token: string = req.get("authorization");
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
 
     try {
-        // Validate the token
-        // @TODO
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 3);
 
         // Return the response
         res.send(_utils.apiResponse(_server.getServerData()));
@@ -64,15 +68,19 @@ ServerRoute.route(`/getServerData`).get(highRiskLimit, async (req: express.Reque
 /**
  * Retrieves the Server's Resources. If it hasn't been initialized, the 
  * values will be the defaults.
-* @returns IAPIResponse<IServerResources>
+ * @requires authority: 3
+ * @returns IAPIResponse<IServerResources>
 */
 ServerRoute.route(`/getServerResources`).get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Retrieve the token
-    const token: string = req.get("authorization");
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
 
     try {
-        // Validate the token
-        // @TODO
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 3);
 
         // Return the response
         res.send(_utils.apiResponse(_server.getServerResources()));
@@ -100,15 +108,38 @@ ServerRoute.route(`/getServerResources`).get(mediumRiskLimit, async (req: expres
 
 /**
  * Updates the Server Alarms Configuration.
-* @returns IAPIResponse<void>
+ * @requires id-token
+ * @requires api-secret
+ * @requires otp
+ * @requires authority: 3
+ * @param max_file_system_usage
+ * @param max_memory_usage
+ * @param max_cpu_load
+ * @param max_cpu_temperature
+ * @param max_gpu_load
+ * @param max_gpu_temperature
+ * @param max_gpu_memory_temperature
+ * @returns IAPIResponse<void>
 */
 ServerRoute.route(`/setAlarmsConfiguration`).post(highRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Retrieve the token
-    const token: string = req.get("authorization");
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
 
     try {
-        // Validate the token
-        // @TODO
+        // Validate the request
+        reqUid = await _guard.validateRequest(
+            idToken, 
+            apiSecret, 
+            ip, 
+            5, 
+            ['max_file_system_usage', 'max_memory_usage', 'max_cpu_load', 'max_cpu_temperature', 'max_gpu_load', 'max_gpu_temperature', 'max_gpu_memory_temperature'], 
+            req.body, 
+            otp || ''
+        );
 
         // Perform Action
         await _server.setAlarmsConfiguration(req.body);
