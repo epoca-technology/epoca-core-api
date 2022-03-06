@@ -1,18 +1,22 @@
 // Dependencies
 import "reflect-metadata";
-import {appContainer} from '../../src/ioc';
+import {appContainer, SYMBOLS, environment} from '../../src/ioc';
 import {BigNumber} from 'bignumber.js';
-import { ICandlestickSeries, SYMBOLS } from "../../src/types";
 
+// Object Stringifier
+import * as stringify from 'json-stable-stringify';
 
-// Init service
-import { IUtilitiesService } from "../../src/modules/shared/utilities";
+// Moment Timezone
+import * as momenttz from 'moment-timezone';
+
+// Utilities & Validations Service
+import { IAPIResponse, IUtilitiesService, IValidationsService } from "../../src/modules/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
+const _validations = appContainer.get<IValidationsService>(SYMBOLS.ValidationsService);
 
 
-
-
-
+// Make sure the API is running on test mode
+if (!environment.testMode) throw new Error('Unit tests can only be performed when the containers are started in testMode.');
 
 
 /* Number Handling */
@@ -62,9 +66,9 @@ describe('Number Handling:', function() {
 
 
     it('-Can calculate the percentage change between 2 numbers', function() {
-        expect(_utils.calculatePercentageChange(100, 50)).toEqual(-50);
-        expect(_utils.calculatePercentageChange(100, 150)).toEqual(50);
-        expect(_utils.calculatePercentageChange(100, 100)).toEqual(0);
+        expect(_utils.calculatePercentageChange(100, 50, {of: 's'})).toEqual('-50');
+        expect(_utils.calculatePercentageChange(100, 150, {of: 's'})).toEqual('50');
+        expect(_utils.calculatePercentageChange(100, 100, {of: 's'})).toEqual('0');
     });
 
 
@@ -76,26 +80,29 @@ describe('Number Handling:', function() {
 
 
     it('-Can round numbers in any format', function() {
-        expect(_utils.roundNumber(1.5, 0)).toEqual(1);
-        expect(_utils.roundNumber('1.5', 0, true)).toEqual(2);
-        expect(_utils.roundNumber(new BigNumber(1.555), 2, true)).toEqual(1.56);
-        expect(_utils.roundNumber(new BigNumber(1.555), 2)).toEqual(1.55);
+        expect(_utils.outputNumber(1.5, {dp: 0})).toEqual(1);
+        expect(_utils.outputNumber('1.5', {dp: 0, ru: true})).toEqual(2);
+        expect(_utils.outputNumber('1.01', {dp: 0, ru: true})).toEqual(2);
+        expect(_utils.outputNumber(new BigNumber(1.555), {dp: 2, ru: true})).toEqual(1.56);
+        expect(_utils.outputNumber(new BigNumber(1.555), {dp: 2})).toEqual(1.55);
+    });
+
+    
+
+    it('-Can calculate a fee', function() {
+        expect(_utils.calculateFee(1000, 1)).toEqual(10);
+        expect(_utils.calculateFee(300, 10)).toEqual(30);
+        expect(_utils.calculateFee(100, 35)).toEqual(35);
     });
 
 
 
-    it('-Can retrieve the correct number of decimals', function() {
-        expect(_utils.getDecimalPlaces()).toEqual(2);
-        expect(_utils.getDecimalPlaces(0)).toEqual(0);
-        expect(_utils.getDecimalPlaces(3)).toEqual(3);
-    });
 
-
-
-    it('-Can retrieve the correct rounding mode', function() {
-        expect(_utils.getRoundingMode()).toEqual(1);
-        expect(_utils.getRoundingMode(false)).toEqual(1);
-        expect(_utils.getRoundingMode(true)).toEqual(0);
+    it('-Can determine if two numbers are close to eachother', function() {
+        expect(_utils.closeEnough(1, 2, 1)).toBeTruthy();
+        expect(_utils.closeEnough(1, 2.1, 1)).toBeFalsy();
+        expect(_utils.closeEnough(1, 10, 9)).toBeTruthy();
+        expect(_utils.closeEnough(1, 11, 9)).toBeFalsy();
     });
 
 
@@ -114,196 +121,34 @@ describe('Number Handling:', function() {
 
 
 
+/* UUID */
+describe('UUID:', function() {
+    it('-Can generate valid v4 uuids', function() {
+        // Generate the first uuid
+        const uuid1: string = _utils.generateID();
+        expect(typeof uuid1).toBe("string");
+        expect(uuid1.length).toBe(36);
+        expect(_validations.uuidValid(uuid1)).toBeTruthy();
 
+        // Generate the second uuid
+        const uuid2: string = _utils.generateID();
+        expect(typeof uuid2).toBe("string");
+        expect(uuid2.length).toBe(36);
+        expect(_validations.uuidValid(uuid2)).toBeTruthy();
 
-
-
-
-
-
-
-
-/* List Filtering */
-describe('List Filtering:', function() {
-    it('-Can build a new list from a series with a specific key or index.', function() {
-        // Init list
-        const series: number[][] = [
-            [
-                1635206400000,
-                63228.21382584213
-            ],
-            [
-                1635292800000,
-                60604.18888794746
-            ],
-            [
-                1635379200000,
-                58641.00147419492
-            ],
-        ];
-
-        // Build the timestamp list
-        const timestampList: number[] = _utils.filterList(series, 0);
-
-        // Build the price list
-        const priceList: number[] = _utils.filterList(series, 1);
-
-        // Iterate over each item and compare
-        for (let i = 0; i < series.length; i++) {
-            expect(series[i][0]).toEqual(timestampList[i]);
-            expect(series[i][1]).toEqual(priceList[i]);
-        }
+        // Make sure both are different
+        expect(uuid1 == uuid2).toBeFalsy();
     });
 
 
 
-
-    it('-Can build a new list from a candlestick series with a specific key or index.', function() {
-        // Init list
-        const series: ICandlestickSeries = [
-            [
-                1638136800000,
-                "56273.23000000",
-                "56729.72000000",
-                "56023.01000000",
-                "56029.82000000",
-                "2427.77250000",
-                1638140399999,
-                "136925605.72282380",
-                86653,
-                "1214.82610000",
-                "68524696.12001700",
-                "0"
-            ],
-            [
-                1638140400000,
-                "56029.81000000",
-                "57445.05000000",
-                "56000.00000000",
-                "57274.88000000",
-                "3468.78753000",
-                1638143999999,
-                "197760088.12035750",
-                97925,
-                "1959.72750000",
-                "111749292.27241160",
-                "0"
-            ],
-            [
-                1638144000000,
-                "57274.89000000",
-                "57495.00000000",
-                "57202.05000000",
-                "57355.71000000",
-                "621.43840000",
-                1638147599999,
-                "35656318.41093860",
-                19094,
-                "313.95947000",
-                "18014843.65910670",
-                "0"
-            ]
-        ];
-
-        // Build the lists
-        const open: string[] = _utils.filterList(series, 1);
-        const high: string[] = _utils.filterList(series, 2);
-        const low: string[] = _utils.filterList(series, 3);
-        const close: string[] = _utils.filterList(series, 4);
-
-        // Iterate over each item and compare
-        for (let i = 0; i < series.length; i++) {
-            expect(series[i][1]).toEqual(open[i]);
-            expect(series[i][2]).toEqual(high[i]);
-            expect(series[i][3]).toEqual(low[i]);
-            expect(series[i][4]).toEqual(close[i]);
-        }
-    });
-
-
-
-
-    it('-Can build a new list from a candlestick series with a specific key or index and change its format to a number.', function() {
-        // Init list
-        const series: ICandlestickSeries = [
-            [
-                1638136800000,
-                "56273.23000000",
-                "56729.72000000",
-                "56023.01000000",
-                "56029.82000000",
-                "2427.77250000",
-                1638140399999,
-                "136925605.72282380",
-                86653,
-                "1214.82610000",
-                "68524696.12001700",
-                "0"
-            ],
-            [
-                1638140400000,
-                "56029.81000000",
-                "57445.05000000",
-                "56000.00000000",
-                "57274.88000000",
-                "3468.78753000",
-                1638143999999,
-                "197760088.12035750",
-                97925,
-                "1959.72750000",
-                "111749292.27241160",
-                "0"
-            ],
-            [
-                1638144000000,
-                "57274.89000000",
-                "57495.00000000",
-                "57202.05000000",
-                "57355.71000000",
-                "621.43840000",
-                1638147599999,
-                "35656318.41093860",
-                19094,
-                "313.95947000",
-                "18014843.65910670",
-                "0"
-            ]
-        ];
-
-        // Build the lists
-        const close: number[] = _utils.filterList(series, 4, 'toNumber');
-
-        // Iterate over each item and compare
-        for (let i = 0; i < series.length; i++) {
-            expect(_utils.roundNumber(series[i][4], 2)).toEqual(close[i]);
-            expect(typeof close[i]).toEqual("number");
-        }
-    });
-
-
-
-
-
-
-    it('-Can build a new list from object keys.', function() {
-        // Init list
-        const series: {a: number, b: string, c: string}[] = [
-            {a: 1, b: 'Hello from 1!', c: 'Goodbye from 1!'},
-            {a: 2, b: 'Hello from 2!', c: 'Goodbye from 2!'},
-            {a: 3, b: 'Hello from 3!', c: 'Goodbye from 3!'},
-        ];
-
-        // Build Lists
-        const a: number[] = _utils.filterList(series, 'a');
-        const b: string[] = _utils.filterList(series, 'b');
-        const c: string[] = _utils.filterList(series, 'c');
-
-        // Iterate over each item and compare
-        for (let i = 0; i < series.length; i++) {
-            expect(series[i].a).toEqual(a[i]);
-            expect(series[i].b).toEqual(b[i]);
-            expect(series[i].c).toEqual(c[i]);
-        }
+    it('-Can validate uuids', function() {
+        expect(_validations.uuidValid('109156be-c4fb-41ea-b1b4-efe1671c5836')).toBeTruthy();
+        expect(_validations.uuidValid('d9428888-122b-11e1-b85c-61cd3cbb3210')).toBeFalsy(); // v1 uuid
+        expect(_validations.uuidValid('')).toBeFalsy();
+        expect(_validations.uuidValid('asdasdasdsad1564sd654a6s1da23sdasd4')).toBeFalsy();
+        // @ts-ignore
+        expect(_validations.uuidValid(45432123132)).toBeFalsy();
     });
 });
 
@@ -317,10 +162,73 @@ describe('List Filtering:', function() {
 
 
 
+/* API Response */
+describe('API Response:', function() {
+
+    /* API Response Building */
+    it('-Can build a standard API Response:', function() {
+        const r: IAPIResponse = _utils.apiResponse();
+        expect(r.success).toBeTruthy();
+        expect(r.data).toBe(undefined);
+        expect(r.error).toBe(undefined);
+    });
+
+    it('-Can build an API Response with data (number):', function() {
+        const r: IAPIResponse = _utils.apiResponse(5);
+        expect(r.success).toBeTruthy();
+        expect(r.data).toBe(5);
+        expect(r.error).toBe(undefined);
+    });
+
+
+    it('-Can build an API Response with data (string):', function() {
+        const r: IAPIResponse = _utils.apiResponse('Hello World!');
+        expect(r.success).toBeTruthy();
+        expect(r.data).toBe('Hello World!');
+        expect(r.error).toBe(undefined);
+    });
+
+
+
+    it('-Can build an API Response with data (object):', function() {
+        const r: IAPIResponse = _utils.apiResponse({a: 'Foo', b: 'Baz', c: 'Bar', d: 5, e: {hello: 'World'}});
+        expect(r.success).toBeTruthy();
+        expect(stringify(r.data)).toBe(stringify({a: 'Foo', b: 'Baz', c: 'Bar', d: 5, e: {hello: 'World'}}));
+        expect(r.error).toBe(undefined);
+    });
 
 
 
 
+    /* API Error Building */
+    it('-Can build an error with a code:', function() {
+        const r: string = _utils.buildApiError('Nasty Error mate! :(', 101);
+        expect(r).toBe('Nasty Error mate! :( {(101)}');
+    });
+
+    it('-Can build an error without providing a code:', function() {
+        const r: string = _utils.buildApiError('Unknown Nasty Error mate! :(');
+        expect(r).toBe('Unknown Nasty Error mate! :( {(0)}');
+    });
+
+
+    /* API Error Code Extraction */
+    it('-Can extract an error code from a string:', function() {
+        expect(_utils.getCodeFromApiError(_utils.buildApiError('Nasty Error mate! :(', 101))).toBe(101);
+        expect(_utils.getCodeFromApiError('Another random error {(5)}')).toBe(5);
+        expect(_utils.getCodeFromApiError('Another random error')).toBe(0);
+        expect(_utils.getCodeFromApiError(_utils.buildApiError('Nasty Error mate among some other seuff! :(', 2669))).toBe(2669);
+    });
+
+
+    it('-Can extract an error code from an error instance:', function() {
+        try {
+            throw new Error(_utils.buildApiError('Ops this is another error...', 404));
+        } catch (e) {
+            expect(_utils.getCodeFromApiError(e)).toBe(404)
+        }
+    });
+});
 
 
 
@@ -357,3 +265,84 @@ describe('Error Handling:', function() {
         expect(newObj.liz).toEqual(test.liz);
     });
 });
+
+
+
+
+
+
+
+
+
+
+/* Conversions Handling */
+describe('Conversions Handling: ', function() {
+
+    it('-Can convert bytes into gigabytes: ', function() {
+        expect(_utils.fromBytesToGigabytes(1e+9)).toBe(1)
+        expect(_utils.fromBytesToGigabytes(2.85e+9)).toBe(2.85)
+        expect(_utils.fromBytesToGigabytes(6.8513e+11)).toBe(685.13)
+    });
+
+
+
+
+    it('-Can convert seconds into hours: ', function() {
+        expect(_utils.fromSecondsToHours(60)).toBe(0.01);
+        expect(_utils.fromSecondsToHours(3600)).toBe(1);
+        expect(_utils.fromSecondsToHours(57060)).toBe(15.85);
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+/* Date Handling */
+describe('Date Handling:', function() {
+    beforeAll(() => { momenttz.tz.setDefault("America/Caracas") });
+    it('-Can retrieve a timestamp from a string date.', function() {
+        expect(_utils.getTimestamp('17-12-2021')).toEqual(1639713600000);
+        expect(_utils.getTimestamp('17-08-2017')).toEqual(1502942400000);
+        expect(_utils.getTimestamp('11-08-2020')).toEqual(1597118400000);
+    });
+});
+
+
+
+
+
+
+
+
+
+/* Password Generation */
+describe('Password Generation:', function() {
+    it('-Can generate a series of valid random passwords', function() {
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+        expect(_validations.passwordValid(_utils.generatePassword())).toBeTruthy();
+    });
+});
+
+
+
+

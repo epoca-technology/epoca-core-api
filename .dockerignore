@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+code_backups
+db_backups
+db_restore
+.git
+.gitignore
+Dockerfile
+README.md

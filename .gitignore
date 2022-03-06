@@ -48,4 +48,15 @@ Thumbs.db
 *.mov
 *.wmv
 
-tests/data/candlesticks
+# package-lock
+package-lock.json
+
+# DB Backup/Restore Directories
+db_backups
+db_restore
+
+# Environment variables
+*.env
+
+# Postgres Data
+postgresdata

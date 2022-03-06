@@ -1,20 +1,32 @@
 // Core Dependencies
 import "reflect-metadata";
 import express = require("express");
-import bodyParser = require('body-parser');
-import cors = require('cors');
-import {BigNumber} from 'bignumber.js';
+import bodyParser = require("body-parser");
+import cors = require("cors");
+import morgan = require("morgan");
+import requestIp = require('request-ip');
+
 
 // Environment
-import { environment } from "./environment";
+import { environment } from "./ioc";
 
-
-// BigNumber Config
-BigNumber.config({ ROUNDING_MODE: BigNumber.ROUND_DOWN, EXPONENTIAL_AT: 32 });
 
 
 // Init Express App
 const app = express();
+
+
+
+
+// Initialize the HTTP Logger
+app.use(morgan('combined'));
+
+// Morgan Issue: https://github.com/expressjs/morgan/issues/214
+app.set("trust proxy", true);
+
+
+// Set the request ip middleware
+app.use(requestIp.mw());
 
 
 // Configure app to use bodyParser(), this will let us get the data from a POST
@@ -23,12 +35,17 @@ app.use(bodyParser.json());
 
 
 
+
+
 // Set CORS
 app.use(cors({}));
 
 
+
+
+
 // Set Port
-const port = process.env.PORT || 8075;
+const port = process.env.PORT || 5075;
 
 
 
@@ -37,10 +54,22 @@ const port = process.env.PORT || 8075;
 
 
 
-// Routes
+// Import Routes
+import {ApiErrorRoute} from './modules/api-error/api-error.route';
+import {AuthRoute} from './modules/auth/auth.route';
+import {CandlestickRoute} from './modules/candlestick/candlestick.route';
+import {DatabaseRoute} from './modules/database/database.route';
+import {GuiVersionRoute} from './modules/gui-version/gui-version.route';
+import {IPBlacklistRoute} from './modules/ip-blacklist/ip-blacklist.route';
 import {ServerRoute} from './modules/server/server.route';
 
-
+// Register Routes
+app.use('/apiError', ApiErrorRoute);
+app.use('/auth', AuthRoute);
+app.use('/candlestick', CandlestickRoute);
+app.use('/database', DatabaseRoute);
+app.use('/guiVersion', GuiVersionRoute);
+app.use('/ipBlacklist', IPBlacklistRoute);
 app.use('/server', ServerRoute);
 
 
@@ -53,10 +82,12 @@ app.listen(port);
 
 
 
+
+
 // Send Welcome Message
-app.get('/', (req: express.Request, res: express.Response) => {
-  res.send("Welcome to Plutus :)");
-})
+app.get('/', (req: express.Request, res: express.Response) => { res.send("Welcome to Plutus :)") })
+
+
 
 
 
@@ -67,12 +98,25 @@ process.on('unhandledRejection', (err) => logError(err, 'unhandledRejection'));
 process.on('warning', (err) => logError(err, 'warning'));
 function logError(err: any, event: string): void {
     // console.log(event);
-    console.log(err);
+    console.error(err);
 }
 
 
 
 
-// Hello World
-console.log('Plutus API Initialized on Port: ' + port);
-console.log('Production: ' + environment.production);
+
+
+// Initialize API
+import {init} from './initializer';
+init()
+.then(() => {
+    console.log('Plutus API Initialized');
+    console.log('Port: ' + port);
+    console.log('Production: ' + environment.production);
+    if (environment.testMode) console.log('Test Mode: true');
+    if (environment.debugMode) console.log('Debug Mode: true');
+})
+.catch(e => {
+	console.error(e);
+	throw new Error('The API could not be initialized.');
+});
