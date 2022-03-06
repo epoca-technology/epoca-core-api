@@ -44,7 +44,7 @@ export async function init(): Promise<void> {
     await _db.initialize();
 
     // Initialize the rest of the modules if it is not test mode
-    if (!environment.testMode) {
+    if (!environment.testMode && !environment.restoreMode) {
         // Initiaze the Auth Module
         await _auth.initialize();
         

@@ -1,7 +1,7 @@
 {
   "name": "api-development",
   "version": "1.0.0",
-  "description": "Plutus is an automated trading system based on machine learning, designed to operate on perpetual futures contracts.",
+  "description": "Plutus is an automated trading system based on machine learning, designed to operate on Bitcoin perpetual future contracts.",
   "main": "index.js",
   "scripts": {
     "start": "node dist/index.js",

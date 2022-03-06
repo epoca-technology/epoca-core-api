@@ -1,4 +1,6 @@
-# PLUTUS API
+# PLUTUS CORE API
+
+Plutus Core is an API designed to manage the Plutus system as well as communicating with the GUI and the Forecast API.
 
 
 ## Requirements
@@ -20,18 +22,6 @@
 - Python: v3.7
 
 
-
-
-#
-## Getting Started
-
-Navigate to the compose project and start the containers with:
-
-`docker-compose up --build -d`
-
-In order to enable the test mode, run the following:
-
-`testMode=true docker-compose up --build -d`
 
 
 
