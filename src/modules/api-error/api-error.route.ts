@@ -65,7 +65,7 @@ ApiErrorRoute.route(`/getAll`).get(ultraLowRiskLimit, async (req: express.Reques
 * @requires otp
 * @requires authority: 4
 * @param version
-* @returns IAPIResponse<void>
+* @returns IAPIResponse<IApiError[]>
 */
 ApiErrorRoute.route(`/deleteAll`).post(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
@@ -82,8 +82,11 @@ ApiErrorRoute.route(`/deleteAll`).post(mediumRiskLimit, async (req: express.Requ
         // Perform Action
         await _apiError.deleteAll();
 
+        // Retrieve the erros again
+        const errors: IApiError[] = await _apiError.getAll();
+
         // Return the response
-        res.send(_utils.apiResponse());
+        res.send(_utils.apiResponse(errors));
     } catch (e) {
 		console.log(e);
         _apiError.log('ApiErrorRoute.deleteAll', e, reqUid, ip);

@@ -41,7 +41,7 @@ export interface IDatabaseService {
 
 // Backup Service
 export interface IDatabaseBackupService {
-
+    backupDatabase(): any
 }
 
 

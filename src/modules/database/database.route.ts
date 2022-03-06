@@ -4,7 +4,7 @@ import {appContainer, SYMBOLS} from '../../ioc';
 
 
 // Request Guard
-import {highRiskLimit, IRequestGuardService} from '../request-guard';
+import {highRiskLimit, IRequestGuardService, ultraHighRiskLimit} from '../request-guard';
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
 // API Error
@@ -17,8 +17,9 @@ const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.Ut
 
 
 // Database Service
-import {IDatabaseService, IDatabaseSummary} from './interfaces';
+import {IDatabaseService, IDatabaseSummary, IDatabaseBackupService} from './interfaces';
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
+const _dbBackup: IDatabaseBackupService = appContainer.get<IDatabaseBackupService>(SYMBOLS.DatabaseBackupService);
 
 
 // Init Route
@@ -58,6 +59,44 @@ DatabaseRoute.route(`/getDatabaseSummary`).get(highRiskLimit, async (req: expres
 });
 
 
+
+
+
+
+
+
+
+/**
+ * Retrieves the Database Summary.
+ * @requires id-token
+ * @requires api-secret
+ * @requires otp
+ * @requires authority: 5
+ * @returns IAPIResponse<IDatabaseSummary>
+*/
+DatabaseRoute.route(`/backupDatabase`).post(highRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5, undefined, undefined, otp || '');
+
+        // Perform Action
+        const something: any = await _dbBackup.backupDatabase();
+
+        // Return the response
+        res.send(_utils.apiResponse({something: something}));
+    } catch (e) {
+		console.log(e);
+        _apiError.log('DatabaseRoute.getDatabaseSummary', e, reqUid, ip);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
 
 
 
