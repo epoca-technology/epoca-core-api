@@ -32,6 +32,7 @@ export interface IDatabaseService {
 
     // Initialization
     initialize(): Promise<void>,
+    deleteDatabase(): Promise<void>,
 
     // Summary
     getDatabaseSummary(): Promise<IDatabaseSummary>,
@@ -39,27 +40,8 @@ export interface IDatabaseService {
 
 
 
-// Backup Service
-export interface IDatabaseBackupService {
-    backupDatabase(): any
-}
 
 
-
-
-
-// Restore Service
-export interface IDatabaseRestoreService {
-    
-}
-
-
-
-
-// Validations
-export interface IDatabaseValidations {
-    
-}
 
 
 

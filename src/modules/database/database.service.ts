@@ -167,6 +167,38 @@ export class DatabaseService implements IDatabaseService {
 
 
     /**
+     * Drops the entire Database. This method is meant to by used by the
+     * Restore Database CLI Script.
+     * @returns Promise<void>
+     */
+    public async deleteDatabase(): Promise<void> {
+        // Build the tables list
+        let tables: string = '';
+        for (let i = 0; i < this.tables.length; i++) {
+            if (i == this.tables.length - 1) {
+                tables += `${this.tables[i].name};`;
+            } else {
+                tables += `${this.tables[i].name}, `
+            }
+        }
+
+        // Drop all the tables
+        await this.query({
+            text: `DROP TABLE IF EXISTS ${tables}`,
+            values: []
+        });
+    }   
+
+
+
+
+
+
+
+
+
+
+    /**
      * Iterates over the raw tables and processes them. Also adds the testing
      * tables with the test_ prefix.
      * @returns ITable[]

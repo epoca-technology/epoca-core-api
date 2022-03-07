@@ -22,9 +22,6 @@
 
     // Database
     DatabaseService: Symbol.for("DatabaseService"),
-    DatabaseBackupService: Symbol.for("DatabaseBackupService"),
-    DatabaseRestoreService: Symbol.for("DatabaseRestoreService"),
-    DatabaseValidations: Symbol.for("DatabaseValidations"),
 
     // External Request
     ExternalRequestService: Symbol.for("ExternalRequestService"),
@@ -74,9 +71,6 @@ export interface ISymbols {
     CandlestickValidations: symbol,
 
     DatabaseService: symbol,
-    DatabaseBackupService: symbol,
-    DatabaseRestoreService: symbol,
-    DatabaseValidations: symbol,
 
     ExternalRequestService: symbol,
 

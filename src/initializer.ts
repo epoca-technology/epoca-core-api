@@ -40,30 +40,33 @@ export async function init(): Promise<void> {
         throw new Error('The API couldnt be initialized because test mode is not allowed in production.');
     }
 
-    // Initialize the Database Module
-    await _db.initialize();
+    // Initialize modules if the API is not running on restore mode
+    if (!environment.restoreMode) {
+        // Initialize the Database Module
+        await _db.initialize();
 
-    // Initialize the rest of the modules if it is not test mode
-    if (!environment.testMode && !environment.restoreMode) {
-        // Initiaze the Auth Module
-        await _auth.initialize();
-        
-        // Initialize the Server Module
-        await _server.initialize();
+        // Initialize the rest of the modules if it is not test mode
+        if (!environment.testMode) {
+            // Initiaze the Auth Module
+            await _auth.initialize();
+            
+            // Initialize the Server Module
+            await _server.initialize();
 
-        // Initialize the Candlestick Syncing
-        await _candlestick.startSync();
+            // Initialize the Candlestick Syncing
+            await _candlestick.startSync();
 
-        // Initialize the IP Blacklist Module
-        await _ipBlacklist.initialize();
+            // Initialize the IP Blacklist Module
+            await _ipBlacklist.initialize();
 
-        // Initialize the Trading Simulation Module
-        // @TODO
+            // Initialize the Trading Simulation Module
+            // @TODO
 
-        // Initialize the Trading Sessions Module
-        // @TODO
+            // Initialize the Trading Sessions Module
+            // @TODO
+        }
+
+        // API is ready to accept requests
+        _guard.apiInitialized = true;
     }
-
-    // API is ready to accept requests
-    _guard.apiInitialized = true;
 }

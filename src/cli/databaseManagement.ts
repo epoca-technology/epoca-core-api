@@ -34,20 +34,18 @@ async function main(argv: string[]) {
 
             // Make sure the API was started on restore mode
             if (!environment.restoreMode) {
-                throw new Error('The backup name is required in order to download a Database Backup.');
+                throw new Error('The restore action can only be invoked when the API is started in Restore Mode.');
             }
 
             // Restore Database
-            // @TODO
+            await _file.restoreDatabaseBackup(backupName);
             break;
         // Management Files Cleanup
         case 'clean':
             await _file.cleanDatabaseManagementFiles();
             break;
         default:
-            const files = await _file.getUploadedBackupFiles();
-            console.log(files);
-            //throw new Error('The provided action is invalid.');
+            throw new Error('The provided databaseManagement action is invalid.');
     }
 }
 

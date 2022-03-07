@@ -1,16 +1,15 @@
 
-import {GetFilesResponse} from "@google-cloud/storage";
-
 
 
 
 export interface IFileService {
     // Database Management
     uploadDatabaseBackup(fileName: string): Promise<void>,
-
+    restoreDatabaseBackup(fileName: string): Promise<void>,
     cleanDatabaseManagementFiles(): Promise<void>,
 
-    getUploadedBackupFiles(): Promise<GetFilesResponse>
+    // Forecast Models Management
+    
 }
 
 
@@ -30,6 +29,6 @@ export interface IManagementPath extends IPath {
 
 
 
-export interface IDestinationPath extends IPath { 
+export interface ICloudPath extends IPath { 
 
 }
