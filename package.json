@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "build": "gulp",
+    "database-management": "node dist/cli/databaseManagement.js",
     "test": "clear && jasmine-ts --config=./jasmine/e2e.json",
     "test-api-error": "clear && jasmine-ts --config=./jasmine/api-error.json",
     "test-auth": "clear && jasmine-ts --config=./jasmine/auth.json",

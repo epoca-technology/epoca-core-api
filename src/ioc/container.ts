@@ -11,6 +11,7 @@ import { binanceModule } from "../modules/binance";
 import { candlestickModule } from "../modules/candlestick";
 import { databaseModule } from "../modules/database";
 import { externalRequestModule } from "../modules/external-request";
+import { fileModule } from "../modules/file";
 import { forecastModule } from "../modules/forecast";
 import { guiVersionModule } from "../modules/gui-version";
 import { ipBlacklistModule } from "../modules/ip-blacklist";
@@ -28,7 +29,8 @@ const appContainer: Container = new Container({skipBaseClassChecks: true, defaul
 import {initializeApp, ServiceAccount, cert, App} from "firebase-admin/app";
 const firebaseApp: App = initializeApp({
     credential: cert(<ServiceAccount>environment.firebase.serviceAccount),
-    databaseURL: environment.firebase.databaseURL
+    databaseURL: environment.firebase.databaseURL,
+    storageBucket: environment.firebase.storageBucket,
 });
 
 
@@ -52,6 +54,9 @@ appContainer.load(
 
     // External Request
     externalRequestModule,
+
+    // File
+    fileModule,
 
     // Forecast
     forecastModule,

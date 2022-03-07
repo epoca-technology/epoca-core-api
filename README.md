@@ -25,9 +25,6 @@ Plutus Core is an API designed to manage the Plutus system as well as communicat
 
 
 
-
-
-
 #
 ## Tests
 
@@ -76,6 +73,8 @@ Trading Simulation:
 Utilities: 
 
 `docker exec api docker-entrypoint.sh npm run test-utils`
+
+
 
 
 

@@ -29,6 +29,9 @@
     // External Request
     ExternalRequestService: Symbol.for("ExternalRequestService"),
 
+    // File
+    FileService: Symbol.for("FileService"),
+
     // Forecast
     ForecastService: Symbol.for("ForecastService"),
 
@@ -76,6 +79,8 @@ export interface ISymbols {
     DatabaseValidations: symbol,
 
     ExternalRequestService: symbol,
+
+    FileService: symbol,
 
     ForecastService: symbol,
 

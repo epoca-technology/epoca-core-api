@@ -46,6 +46,7 @@ export interface IFirebaseConfig {
         client_x509_cert_url: string
     },
     databaseURL: string,
+    storageBucket: string,
     apiKey: string
 }
 
