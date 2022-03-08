@@ -4,7 +4,7 @@ import {appContainer, SYMBOLS} from '../../ioc';
 
 
 // Request Guard
-import {lowRiskLimit, IRequestGuardService} from '../request-guard';
+import {ultraLowRiskLimit, IRequestGuardService} from '../request-guard';
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
 // API Error
@@ -37,7 +37,7 @@ const CandlestickRoute = express.Router();
  * @param intervalMinutes 
  * @returns IAPIResponse<ICandlestick[]>
 */
-CandlestickRoute.route(`/getForPeriod`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
+CandlestickRoute.route(`/getForPeriod`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
