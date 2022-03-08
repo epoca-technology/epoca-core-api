@@ -4,7 +4,6 @@ import * as si from "systeminformation";
 import * as fs from "fs";
 import { defaults } from "./defaults";
 import { queries } from "./queries";
-import { notifications } from "./notifications";
 import { IUtilitiesService } from "../utilities";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
 import { IApiErrorService } from "../api-error";
@@ -570,25 +569,25 @@ export class ServerService implements IServerService {
     private async monitorResources(): Promise<void> {
         if (!this.testMode) {
             // Monitor the File Systems Usage
-            if (!this.isFileSystemUsageAcceptable()) await this._notification.broadcast(notifications.fileSystemUsage);
+            if (!this.isFileSystemUsageAcceptable()) await this._notification.highFileSystemUsage();
 
             // Monitor the Memory Usage
-            if (!this.isMemoryUsageAcceptable()) await this._notification.broadcast(notifications.memoryUsage);
+            if (!this.isMemoryUsageAcceptable()) await this._notification.highMemoryUsage();
 
             // Monitor the CPU Load
-            if (!this.isCPULoadAcceptable()) await this._notification.broadcast(notifications.cpuLoad);
+            if (!this.isCPULoadAcceptable()) await this._notification.highCPULoad();
 
             // Monitor the CPU Temperature
-            if (!this.isCPUTemperatureAcceptable()) await this._notification.broadcast(notifications.cpuTemperature);
+            if (!this.isCPUTemperatureAcceptable()) await this._notification.highCPUTemperature();
 
             // Monitor the GPU Load
-            if (!this.isGPULoadAcceptable()) await this._notification.broadcast(notifications.gpuLoad);
+            if (!this.isGPULoadAcceptable()) await this._notification.highGPULoad();
 
             // Monitor the GPU Temperature
-            if (!this.isGPUTemperatureAcceptable())  await this._notification.broadcast(notifications.gpuTemperature);
+            if (!this.isGPUTemperatureAcceptable())  await this._notification.highGPUTemperature();
 
             // Monitor the GPU Memory Temperature
-            if (!this.isGPUMemoryTemperatureAcceptable()) await this._notification.broadcast(notifications.gpuMemoryTemperature);
+            if (!this.isGPUMemoryTemperatureAcceptable()) await this._notification.highGPUMemoryTemperature();
         }
     }
 

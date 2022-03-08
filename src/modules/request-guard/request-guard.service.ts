@@ -19,8 +19,9 @@ export class RequestGuardService implements IRequestGuardService {
     // App Initialization - API can only accept requests when init is complete
     public apiInitialized: boolean = false;
 
-    // Test Mode
+    // Modes
     private readonly testMode: boolean = environment.testMode;
+    private readonly restoreMode: boolean = environment.restoreMode;
 
 
     constructor() {}
@@ -93,6 +94,11 @@ export class RequestGuardService implements IRequestGuardService {
         // Make sure the API is not running on test mode
         if (this.testMode) {
             throw new Error(this._utils.buildApiError('The API cannot accept requests because it is running on test mode.', 12000));
+        }
+
+        // Make sure the API is not running on restore mode
+        if (this.restoreMode) {
+            throw new Error(this._utils.buildApiError('The API cannot accept requests because it is running on restore mode.', 12002));
         }
 
         // Make sure the API has been initialized

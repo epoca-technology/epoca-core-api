@@ -1,11 +1,12 @@
 import {inject, injectable} from "inversify";
-import { ICandlestickService, ICandlestick, ICandlestickValidations, ICandlestickStream, ICandlestickModel } from "./interfaces";
+import * as moment from 'moment';
+import { BehaviorSubject } from "rxjs";
 import { environment, SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { IBinanceService, IBinanceCandlestick } from "../binance";
 import { IApiErrorService } from "../api-error";
-import * as moment from 'moment';
-import { BehaviorSubject } from "rxjs";
+import { INotificationService } from "../notification";
+import { ICandlestickService, ICandlestick, ICandlestickValidations, ICandlestickStream, ICandlestickModel } from "./interfaces";
 
 
 @injectable()
@@ -16,6 +17,7 @@ export class CandlestickService implements ICandlestickService {
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
+    @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
 
 
     // Candlestick Syncing Interval
@@ -138,6 +140,7 @@ export class CandlestickService implements ICandlestickService {
                 catch (e) {
                     console.log(`Failed to sync the candlesticks again, will attempt again when the interval triggers:`, e);
                     this._apiError.log('CandlestickService.startSync', e);
+                    this._notification.candlestickSyncIssue(e);
                     this.broadcastStream([], e);
                 }
             }

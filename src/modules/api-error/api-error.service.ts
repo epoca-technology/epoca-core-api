@@ -19,6 +19,8 @@ export class ApiErrorService implements IApiErrorService {
     // Ommit Errors
     private readonly ommitErrors: number[] = [
         11000, // IPBlacklistService: The IP ${ip} is currently blacklisted and therefore cannot interact with the API.
+        8304, //  AuthModel: The ID Token has expired. Please generate a new one and try again.
+        8302, //  The provided OTP token (${otpToken}) is invalid or no longer active for uid: ${uid}.
     ]
 
     constructor() {}

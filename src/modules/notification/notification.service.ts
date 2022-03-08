@@ -151,4 +151,154 @@ export class NotificationService implements INotificationService {
             }
         }
     }
+
+
+
+
+
+
+
+
+    /**
+     * NOTIFICATION FACTORY
+     * Other modules can call these functions directly in order to simplify the 
+     * communication process.
+     */
+
+
+
+
+
+    
+
+    /* Candlestick Notifications */
+
+
+
+
+
+
+    /**
+     * Candlestick Sync Issue
+     * @param error 
+     * @returns Promise<void>
+     */
+    public candlestickSyncIssue(error: any): Promise<void> {
+        return this.broadcast({
+            sender: 'CANDLESTICK',
+            title: 'Error during candlesticks sync:',
+            description: this._utils.getErrorMessage(error)
+        });
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /* Server Notifications */
+
+
+
+    /**
+     * High File System Usage
+     * @returns Promise<void>
+     */
+    public highFileSystemUsage(): Promise<void> {
+        return this.broadcast({
+            sender: 'SERVER',
+            title: 'High File System Usage!',
+            description: 'The server has detected that the File System Usage exceeded the values established in the alarms configuration.'
+        });
+    }
+
+
+    /**
+     * High Memory Usage
+     * @returns Promise<void>
+     */
+    public highMemoryUsage(): Promise<void> {
+        return this.broadcast({
+            sender: 'SERVER',
+            title: 'High Memory Usage!',
+            description: 'The server has detected that the Memory Usage exceeded the values established in the alarms configuration.'
+        });
+    }
+
+
+
+    /**
+     * High CPU Load
+     * @returns Promise<void>
+     */
+     public highCPULoad(): Promise<void> {
+        return this.broadcast({
+            sender: 'SERVER',
+            title: 'High CPU Load!',
+            description: 'The server has detected that the CPU Load exceeded the values established in the alarms configuration.'
+        });
+    }
+
+
+
+
+    /**
+     * High CPU Temperature
+     * @returns Promise<void>
+     */
+     public highCPUTemperature(): Promise<void> {
+        return this.broadcast({
+            sender: 'SERVER',
+            title: 'High CPU Temperature!',
+            description: 'The server has detected that the CPU Temperature exceeded the values established in the alarms configuration.'
+        });
+    }
+
+
+
+
+    /**
+     * High GPU Load
+     * @returns Promise<void>
+     */
+     public highGPULoad(): Promise<void> {
+        return this.broadcast({
+            sender: 'SERVER',
+            title: 'High GPU Load!',
+            description: 'The server has detected that the GPU Load exceeded the values established in the alarms configuration.'
+        });
+    }
+
+
+
+    /**
+     * High GPU Temperature
+     * @returns Promise<void>
+     */
+     public highGPUTemperature(): Promise<void> {
+        return this.broadcast({
+            sender: 'SERVER',
+            title: 'High GPU Temperature!',
+            description: 'The server has detected that the GPU Temperature exceeded the values established in the alarms configuration.'
+        });
+    }
+
+
+
+    /**
+     * High GPU Memory Temperature
+     * @returns Promise<void>
+     */
+     public highGPUMemoryTemperature(): Promise<void> {
+        return this.broadcast({
+            sender: 'SERVER',
+            title: 'High GPU Memory Temperature!',
+            description: 'The server has detected that the GPU Memory Temperature exceeded the values established in the alarms configuration.'
+        });
+    }
 }
