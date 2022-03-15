@@ -1,7 +1,7 @@
 import {inject, injectable} from "inversify";
+import { environment, SYMBOLS } from "../../ioc";
 import * as moment from 'moment';
 import { BehaviorSubject } from "rxjs";
-import { environment, SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { IBinanceService, IBinanceCandlestick } from "../binance";
 import { IApiErrorService } from "../api-error";

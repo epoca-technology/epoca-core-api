@@ -51,10 +51,6 @@ Thumbs.db
 # package-lock
 package-lock.json
 
-# DB Backup/Restore Directories
-db_backups
-db_restore
-
 # Environment variables
 *.env
 
