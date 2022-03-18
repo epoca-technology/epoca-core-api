@@ -38,6 +38,7 @@ export const defaults: IDefaultData = {
         ip6subnet: "Unknown"
     }],
     uptime: 0,
+    serverTime: Date.now(),
     lastResourceScan: 0,
     alarms: {
         max_file_system_usage: 80,

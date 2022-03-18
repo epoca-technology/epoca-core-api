@@ -19,7 +19,7 @@ export interface IUtilitiesService {
     generateID(): string,
 
     // API Response
-    apiResponse(data?: any, error?: string): IAPIResponse,
+    apiResponse(data?: any, error?: any): IAPIResponse,
     buildApiError(e: any, code?: number): string,
     getCodeFromApiError(apiError: any): number,
 

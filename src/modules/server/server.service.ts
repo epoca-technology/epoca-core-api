@@ -133,6 +133,7 @@ export class ServerService implements IServerService {
     public getServerResources(): IServerResources {
         return {
             uptime: this.uptime,
+            serverTime: Date.now(),
             lastResourceScan: this.lastResourceScan,
             alarms: this.alarms,
             fileSystems: this.fileSystems,

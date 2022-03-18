@@ -176,17 +176,6 @@ ServerRoute.route(`/setAlarmsConfiguration`).post(highRiskLimit, async (req: exp
 
 
 
-/**
- * Allows the GUI to verify that the server is running and can take requests.
- * @returns IAPIResponse<void>
- */
-ServerRoute.route(`/status`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
-    res.send(_utils.apiResponse());
-});
-
-
-
-
 
 
 /**
@@ -196,6 +185,7 @@ ServerRoute.route(`/status`).get(lowRiskLimit, async (req: express.Request, res:
  ServerRoute.route(`/time`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
     res.send(_utils.apiResponse(Date.now()));
 });
+
 
 
 

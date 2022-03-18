@@ -54,6 +54,7 @@ describe('Server Data Init & Retrieving: ', function() {
         const data: IServerResources = _server.getServerResources();
         expect(typeof data).toBe("object");
         expect(typeof data.uptime).toBe("number");
+        expect(typeof data.serverTime).toBe("number");
         expect(typeof data.lastResourceScan).toBe("number");
         expect(typeof data.alarms).toBe("object");
         expect(typeof data.fileSystems).toBe("object");

@@ -343,7 +343,7 @@ export class UtilitiesService implements IUtilitiesService {
      * @param error 
      * @returns IAPIResponse
      */
-    public apiResponse(data?: any, error?: string): IAPIResponse {
+    public apiResponse(data?: any, error?: any): IAPIResponse {
         return {
             success: error == undefined,
             data: data,

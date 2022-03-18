@@ -202,6 +202,7 @@ export interface IServerInfo {
 // Resources
 export interface IServerResources {
     uptime: number,
+    serverTime: number,
     lastResourceScan: number,
     alarms: IAlarmsConfig,
     fileSystems: IServerFileSystem[],

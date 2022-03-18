@@ -4,7 +4,7 @@ import {appContainer, SYMBOLS, environment} from '../../src/ioc';
 
 
 // Init the Database Service
-import { IDatabaseService, IDatabaseSummary, IPoolClient, IQueryResult, ITableNames } from "../../src/modules/database";
+import { IDatabaseService, IDatabaseSummary, ITableNames } from "../../src/modules/database";
 const _db: IDatabaseService = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 
@@ -57,7 +57,7 @@ describe('Database Summary: ',  async function() {
         // Validate each property
         expect(typeof summary.name).toBe("string");
         expect(typeof summary.version).toBe("string");
-        expect(typeof summary.size).toBe("string");
+        expect(typeof summary.size).toBe("number");
         expect(typeof summary.port).toBe("number");
         expect(typeof summary.tables).toBe("object");
 

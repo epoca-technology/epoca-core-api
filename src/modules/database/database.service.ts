@@ -272,15 +272,15 @@ export class DatabaseService implements IDatabaseService {
             const version: IQueryResult = await client.query(`SELECT version();`);
 
             // Retrieve the size of the entire database
-            const dbSize: IQueryResult = await client.query(`SELECT pg_size_pretty( pg_database_size('${this.config.database}') );`);
+            const dbSize: IQueryResult = await client.query(`SELECT pg_database_size('${this.config.database}');`);
 
             // Retrieve the size for each table
             let tables: IDatabaseSummaryTable[] = []
             for (let table of this.tables) {
-                const tableSize: IQueryResult = await client.query(`SELECT pg_size_pretty( pg_total_relation_size('${table.name}') );`);
+                const tableSize: IQueryResult = await client.query(`SELECT pg_total_relation_size('${table.name}');`);
                 tables.push({
                     name: table.name,
-                    size: tableSize.rows[0].pg_size_pretty
+                    size: tableSize.rows[0].pg_total_relation_size
                 });
             }
 
@@ -288,7 +288,7 @@ export class DatabaseService implements IDatabaseService {
             return {
                 name: this.config.database,
                 version: version.rows[0].version,
-                size: dbSize.rows[0].pg_size_pretty,
+                size: dbSize.rows[0].pg_database_size,
                 port: this.config.port,
                 tables: tables
             }
