@@ -460,9 +460,9 @@ export class ServerService implements IServerService {
                 this.fileSystems.push({
                     fs: fs.fs || "Unknown",
                     type: fs.type || "Unknown",
-                    size: this._utils.fromBytesToGigabytes(fs.size),
-                    used: this._utils.fromBytesToGigabytes(fs.used),
-                    available: this._utils.fromBytesToGigabytes(fs.available),
+                    size: fs.size,
+                    used: fs.used,
+                    available: fs.available,
                     mount: fs.mount || "Unknown",
                     usedPercent: fs.type && fs.used ? <number>this._utils.calculatePercentageOutOfTotal(fs.used, fs.size): 0
                 });
@@ -475,9 +475,9 @@ export class ServerService implements IServerService {
     // Memory
     private setMemory(memory: IServerMemory): void {
         if (memory) {
-            if (memory.total) this.memory.total = this._utils.fromBytesToGigabytes(memory.total);
-            if (memory.free) this.memory.free = this._utils.fromBytesToGigabytes(memory.free);
-            if (memory.active) this.memory.active = this._utils.fromBytesToGigabytes(memory.active);
+            if (memory.total) this.memory.total = memory.total;
+            if (memory.free) this.memory.free = memory.free;
+            if (memory.active) this.memory.active = memory.active;
             if (memory.active && memory.total) this.memory.usedPercent = <number>this._utils.calculatePercentageOutOfTotal(memory.active, memory.total);
         }
     }

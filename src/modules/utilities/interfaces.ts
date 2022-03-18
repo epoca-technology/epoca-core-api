@@ -27,7 +27,6 @@ export interface IUtilitiesService {
     getErrorMessage(e: any): string,
 
     // Conversions
-    fromBytesToGigabytes(bytes: number): number,
     fromSecondsToHours(seconds: number): number,
 
     // Dates
