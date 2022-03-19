@@ -4,7 +4,8 @@ import {Bucket, GetFilesResponse, File, DownloadResponse} from "@google-cloud/st
 import * as fs from "fs";
 import { SYMBOLS } from "../../ioc";
 import { IDatabaseService } from "../database";
-import { IFileService, IManagementPath, ICloudPath } from "./interfaces";
+import { ICandlestick, ICandlestickModel } from "../candlestick";
+import { IFileService, IFileConfig, IFileExtension } from "./interfaces";
 
 
 
@@ -13,29 +14,41 @@ import { IFileService, IManagementPath, ICloudPath } from "./interfaces";
 export class FileService implements IFileService {
     // Inject dependencies
     @inject(SYMBOLS.DatabaseService)           private _db: IDatabaseService;
+    @inject(SYMBOLS.CandlestickModel)          private candlestickModel: ICandlestickModel;
 
-    // Management Volume Paths
-    private readonly managementPath: IManagementPath = {
-        database: '/var/lib/pgdata-management',
-        forecastModel: ''
-    };
-
-    // Google Cloud Paths
-    private readonly cloudPath: ICloudPath = {
-        database: 'db_backups',
-        forecastModel: ''
-    }
 
     // Storage Bucket Instance
     private readonly storage: Storage = getStorage();
     private readonly bucket: Bucket = this.storage.bucket();
 
-    // Maximum amount of backups that can be stored. This value is used for file rotation.
-    private readonly maxCloudDatabaseBackups: number = 5;
 
 
+    /* Files Configuration */
 
 
+    // Database Backups
+    private readonly databaseBackups: IFileConfig = {
+        localPath: '/var/lib/pgdata-management',
+        cloudPath: 'db_backups',
+        extension: 'dump',
+        maxCloudFiles: 5
+    }
+
+    // Forecast Models
+    private readonly forecastModels: IFileConfig = {
+        localPath: '/var/lib/forecast-models-management',
+        cloudPath: 'forecast_models', // The name of the model must be appended to this path
+        extension: 'h5',
+        maxCloudFiles: 5
+    }
+
+    // Candlestick Spreadsheets
+    private readonly candlestickSpreadsheets: IFileConfig = {
+        localPath: '/var/lib/candlestick-spreadsheets',
+        cloudPath: 'candlestick_spreadsheets',
+        extension: 'csv',
+        maxCloudFiles: 5
+    }
 
     
     constructor() {}
@@ -46,7 +59,9 @@ export class FileService implements IFileService {
 
 
 
-    /* Database */
+    
+
+    /* Database Backups */
 
 
 
@@ -60,20 +75,8 @@ export class FileService implements IFileService {
      * @returns Promise<void>
      */
     public async uploadDatabaseBackup(fileName: string): Promise<void> {
-        // Upload the File to Firebase Storage
-        await this.bucket.upload(`${this.managementPath.database}/${fileName}`, {
-            destination: `${this.cloudPath.database}/${fileName}`,
-        });
-
-        // Rotate the backup files if applies
-        const cloudFiles: string[] = await this.getUploadedDatabaseBackups();
-        const deletableFiles: string[] = cloudFiles.slice(this.maxCloudDatabaseBackups);
-        for (let f of deletableFiles) { await this.bucket.file(`${this.cloudPath.database}/${f}`).delete() }
-
-        // Clean the Management Files
-        await this.cleanDatabaseManagementFiles();
+        return this.uploadFile(this.databaseBackups, fileName);
     }
-
 
 
 
@@ -90,21 +93,8 @@ export class FileService implements IFileService {
      * @returns Promise<void>
      */
     public async restoreDatabaseBackup(fileName: string): Promise<void> {
-        // Download the file and place it in the management volume
-        const downloadResponse: DownloadResponse = await this.bucket.file(`${this.cloudPath.database}/${fileName}`).download({
-            destination: `${this.managementPath.database}/${fileName}`
-        });
-
-        // Make sure there is a response
-        if (!downloadResponse) {
-            throw new Error('Google Cloud returned an invalid download response when trying to restore a database backup.');
-        }
-
-        // Make sure the file has been placed in the management volume
-        const managementFiles: string[] = await this.getDatabaseManagementFiles();
-        if (!managementFiles.includes(fileName)) {
-            throw new Error('The downloaded restore file was not found in the management volume.');
-        }
+        // Download the file and place it in the local volume
+        await this.downloadFile(this.databaseBackups.cloudPath, this.databaseBackups.localPath, fileName);
 
         // Delete the DB
         await this._db.deleteDatabase();
@@ -118,44 +108,232 @@ export class FileService implements IFileService {
 
 
 
+
+    /**
+     * Retrieves all existing files in the database management volume
+     * and deletes them one by one.
+     * @returns Promise<void>
+     */
+    public async cleanDatabaseManagementFiles(): Promise<void> {
+        return this.deleteAllLocalFiles(this.databaseBackups.localPath);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* Candlestick Spreadsheets */
+
+
+
+
+
+
+    /**
+     * Generates a Candlesticks Spreadsheet based on the provided filename
+     * and uploads it to Firebase Storage. 
+     * Cleanup operations are performed once the file is uploaded.
+     * @param fileName 
+     * @returns Promise<void>
+     */
+    public async generateCandlesticksSpreadsheet(fileName: string): Promise<void> {
+        // Create the spreadsheet
+        await this.createCandlesticksSpreadsheet(fileName);
+
+        // Upload it and clean up
+        await this.uploadFile(this.candlestickSpreadsheets, fileName);
+    }
+
+
+
+
+
+
+    /**
+     * Creates the candlestick spreadsheet inside of the local directory, making use 
+     * of the latest data available.
+     * @param fileName 
+     * @returns Promise<void>
+     */
+    private async createCandlesticksSpreadsheet(fileName: string): Promise<void> {
+        // Retrieve all the forecast candlesticks
+        const candlesticks: ICandlestick[] = await this.candlestickModel.get(undefined, undefined, undefined, true);
+
+        // Make sure candlesticks were downloaded
+        if (!candlesticks.length) {
+            throw new Error(`Couldnt create a candlesticks spreadsheet because the retrieved list is empty.`);
+        }
+
+        // Build the file data
+        let fileData: string = `${Object.keys(candlesticks[0]).join(',')}\n`;
+        for (let i = 0; i < candlesticks.length; i++) {
+            // Append the candlestick
+            fileData += Object.values(candlesticks[i]).join(',');
+
+            // Add a new line unless it is the last record
+            if (i != candlesticks.length - 1) {
+                fileData += '\n';
+            }
+        }
+
+        // Create the file
+        return new Promise((resolve, reject) => {
+            fs.writeFile(`${this.candlestickSpreadsheets.localPath}/${fileName}`, fileData, "utf-8", (err) => {
+                // Handle errors
+                if (err) reject(err);
+
+                // Resolve the promise
+                resolve();
+            });
+        });
+    }
+
+
+
+
+
     
 
 
 
 
 
-    /* Database Backup Cloud Files */
+
+
+
+
+
+
+    /* Cloud Files Management */
+
+
+
+
 
 
     /**
-     * Returns a list of Database Backup Files in descending order. If no files
-     * are found, it throws an error.
+     * Uploads a file to the cloud as well as cleaning the cloud and the 
+     * local directory.
+     * @param config 
+     * @param fileName 
+     * @returns Promise<void>
+     */
+    private async uploadFile(config: IFileConfig, fileName: string): Promise<void> {
+        // Upload the File to Firebase Storage
+        await this.bucket.upload(`${config.localPath}/${fileName}`, {
+            destination: `${config.cloudPath}/${fileName}`,
+        });
+
+        // Clean the cloud files
+        await this.cleanCloudFiles(config.cloudPath, config.extension, config.maxCloudFiles);
+
+        // Clean the local files
+        await this.deleteAllLocalFiles(config.localPath);
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Uploads a Database Backup to the Google Cloud.
+     * @param cloudPath 
+     * @param extension 
+     * @param maxFiles 
+     * @returns Promise<void>
+     */
+     private async cleanCloudFiles(cloudPath: string, extension: IFileExtension, maxFiles: number): Promise<void> {
+        // Retrieve all the cloud file names
+        const cloudFiles: string[] = await this.getCloudFileNames(cloudPath, extension);
+
+        // Build a new list with the files that can be safely deleted and do so
+        const deletableFiles: string[] = cloudFiles.slice(maxFiles);
+        for (let f of deletableFiles) { await this.bucket.file(`${cloudPath}/${f}`).delete() }
+    }
+
+
+
+
+
+
+
+
+    
+
+    /**
+     * Downloads a file from the cloud and places into the local directory's path.
+     * @param origin
+     * @param destination
+     * @param fileName
+     * @returns Promise<void>
+     */
+     private async downloadFile(origin: string, destination: string, fileName: string): Promise<void> {
+        // Download the file and place it in the management volume
+        const downloadResponse: DownloadResponse = await this.bucket.file(`${origin}/${fileName}`).download({
+            destination: `${destination}/${fileName}`
+        });
+
+        // Make sure there is a response
+        if (!downloadResponse) {
+            throw new Error(`Google Cloud returned an invalid response when downloading ${origin}/${fileName}.`);
+        }
+
+        // Make sure the file has been placed in the local path
+        const localFiles: string[] = await this.getLocalFileNames(destination);
+        if (!localFiles.includes(fileName)) {
+            throw new Error(`The downloaded file was not found in the local directory ${destination}/${fileName}.`);
+        }
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Returns a list of Files in descending order. If no files are found, it throws an error.
+     * @param cloudPath
+     * @param extension
      * @returns Promise<string[]>
      */
-    public async getUploadedDatabaseBackups(): Promise<string[]> {
+     private async getCloudFileNames(cloudPath: string, extension: IFileExtension): Promise<string[]> {
         // Init the list
         let fileNames: string[] = [];
 
         // Download the db files
         const filesResponse: GetFilesResponse = await this.bucket.getFiles({
             maxResults: 1000,
-            prefix: this.cloudPath.database
+            prefix: cloudPath
         });
         
         // Make sure at least 1 file was found
         if (!filesResponse || !filesResponse[0] || !filesResponse[0].length) {
-            throw new Error('Couldnt download database backup files from Google Cloud.');
+            throw new Error(`The Google Cloud Download did not return valid files for ${cloudPath}.`);
         }
 
-        // Iterate over the Google Cloud Objects and pick the backup files
+        // Iterate over the Google Cloud Objects and populate the file names
         for (let f of filesResponse[0]) {
             // Check if the file name can be extracted
-            const name: string|undefined = this.getDatabaseBackupNameFromFileObject(f);
+            const name: string|undefined = this.getFileNameFromCloudObject(f, cloudPath, extension);
             if (name) fileNames.push(name);
         }
 
         // Sort the list
-        fileNames.sort(this.sortDatabaseBackupFiles);
+        fileNames.sort(this.sortDesc);
 
         // Return it
         return fileNames;
@@ -166,33 +344,38 @@ export class FileService implements IFileService {
 
 
 
+
+
+
     /**
-     * Given a Google Cloud File, it will check if it is a database backup. Otherwise, it returns 
-     * undefined.
+     * Given a Google Cloud File, it will attempt to extract it's name. Otherwise,
+     * it returns undefined.
      * @param file 
+     * @param cloudPath 
+     * @param extension 
      * @returns string|undefined
      */
-    private getDatabaseBackupNameFromFileObject(file: File): string|undefined {
+     private getFileNameFromCloudObject(file: File, cloudPath: string, extension: IFileExtension): string|undefined {
         // Make sure the object and the name exist
         if (file && file.metadata && typeof file.metadata.name == "string" && file.metadata.name.length) {
             // Init the Full Path
             const fullPath: string[] = file.metadata.name.split('/');
 
-            // Make sure the name includes the database path and the dump name
+            // Make sure the name includes the cloud path and the file name
             if (
                 fullPath.length == 2 &&
-                fullPath[0] == this.cloudPath.database && 
+                fullPath[0] == cloudPath && 
                 typeof fullPath[1] == "string" && 
                 fullPath[1].length
             ) {
                 // Init the File Name
                 const fileName: string[] = fullPath[1].split('.');
 
-                // Make sure the name is a valid integer and the extension is dump
+                // Make sure the name is a valid integer and the extension is correct
                 if (
                     fileName.length == 2 &&
                     Number(fileName[0]) !== NaN &&
-                    fileName[1] == "dump"
+                    fileName[1] == extension
                 ) {
                     return fullPath[1];
                 } else { return undefined }
@@ -210,124 +393,12 @@ export class FileService implements IFileService {
 
 
 
-    /* Database Local Management Files (Volume) */
 
 
 
 
 
-
-    /**
-     * Retrieves all existing files in the database management volume
-     * and deletes them one by one.
-     * @returns Promise<void>
-     */
-    public async cleanDatabaseManagementFiles(): Promise<void> {
-        // Retrieve the list of files
-        const files: string[] = await this.getDatabaseManagementFiles();
-
-        // There should be files in the volume
-        if (!files.length) {
-            throw new Error('Could not clean the database management files because the volume is empty.');
-        }
-
-        // Iterate and delete each file
-        for (let f of files) { await this.deleteFile(`${this.managementPath.database}/${f}`) }
-    }
-
-
-
-
-
-
-
-    /**
-     * Retrieves a list of files within the database management volume 
-     * and sorts it by name in descending order.
-     * @returns Promise<string[]>
-     */
-    private async getDatabaseManagementFiles(): Promise<string[]> {
-        // Retrieve all the files
-        let names: string[] = await this.getDirectoryFileNames(this.managementPath.database);
-
-        // Sort the files in descending order so the first index is always the latest
-        names.sort(this.sortDatabaseBackupFiles);
-
-        // Return the final list
-        return names;
-    }
-
-
-
-
-
-
-
-
-
-
-
-    /* Database Misc Helpers */
-
-
-
-
-    /**
-     * Orders the Database backup names in descending order.
-     * @param a 
-     * @param b 
-     * @returns number
-     */
-    private sortDatabaseBackupFiles(a: string, b: string): number {
-        const aTS: number = Number(a.split('.')[0]);
-        const bTS: number = Number(b.split('.')[0]);
-        if (aTS > bTS) { return -1 }
-        else if (bTS > aTS) { return 1 }
-        else { return 0 }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /* Forecast Models */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /* Volume Files Management */
+    /* Local Files Management */
 
 
     
@@ -340,7 +411,7 @@ export class FileService implements IFileService {
      * @param path 
      * @returns Promise<string[]>
      */
-    private getDirectoryFileNames(path: string): Promise<string[]> {
+    private getLocalFileNames(path: string): Promise<string[]> {
         return new Promise((resolve, reject) => {
             fs.readdir(path, (error: any, files: string[]) => {
                 // Handle the error
@@ -348,6 +419,8 @@ export class FileService implements IFileService {
     
                 // Make sure a list of files has been found
                 if (files && files.length) {
+                    // Sort them by name in descending order and resolve them
+                    files.sort(this.sortDesc);
                     resolve(files);
                 } else {
                     resolve([]);
@@ -362,11 +435,31 @@ export class FileService implements IFileService {
 
 
     /**
+     * Deletes all the files located in provided path.
+     * @param path 
+     * @returns Promise<void>
+     */
+    private async deleteAllLocalFiles(path: string): Promise<void> {
+        // Retrieve all the file names
+        const names: string[] = await this.getLocalFileNames(path);
+
+        // Iterate over each file deleting them
+        for (let n of names) { await this.deleteLocalFile(`${path}/${n}`) }
+    }
+
+
+
+
+
+
+
+
+    /**
      * Deletes a file located in the provided path.
      * @param path 
      * @returns Promise<void>
      */
-    private deleteFile(path: string): Promise<void> {
+    private deleteLocalFile(path: string): Promise<void> {
         return new Promise((resolve, reject) => {
             fs.unlink(path, (error: any) => {
                 // Handle the error
@@ -376,5 +469,38 @@ export class FileService implements IFileService {
                 resolve();
             })
         });
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /* Misc Helpers */
+
+
+
+
+
+
+
+
+    /**
+     * Function used to order files by name in descending order.
+     * @param a 
+     * @param b 
+     * @returns number
+     */
+     private sortDesc(a: string, b: string): number {
+        const aTS: number = Number(a.split('.')[0]);
+        const bTS: number = Number(b.split('.')[0]);
+        if (aTS > bTS) { return -1 }
+        else if (bTS > aTS) { return 1 }
+        else { return 0 }
     }
 }
