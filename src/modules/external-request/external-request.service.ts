@@ -9,7 +9,17 @@ import * as https from 'https';
 export class ExternalRequestService implements IExternalRequestService {
 
 
+    /**
+     * The maximum amount of time a request can go for. An error is thrown
+     * if the request takes longer than this value. A custom timeout can be 
+     * specified in the options object.
+     */
+    private readonly timeout: number = 180 * 1000; // 3 minutes
 
+
+
+
+    
     constructor() {}
 
 
@@ -28,6 +38,9 @@ export class ExternalRequestService implements IExternalRequestService {
         return new Promise((resolve, reject) => {
             // Init the protocol to be used
             const protocol: any = protocolName == 'http' ? http: https;
+
+            // Check if a request timeout has been set
+            if (typeof options.timeout != "number") options.timeout = this.timeout;
 
             // Perform the request
             let request: http.ClientRequest = protocol.request(options, (response: http.IncomingMessage) => {
