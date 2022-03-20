@@ -12,8 +12,8 @@ export interface ICandlestickService {
     getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]>,
 
     // Candlestick Syncing
-    startSync(): Promise<void>,
-    stopSync(): void,
+    initialize(): Promise<void>,
+    stop(): void,
 
     // Stream
     isStreamInSync(stream: ICandlestickStream): boolean,

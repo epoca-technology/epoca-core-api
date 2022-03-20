@@ -120,25 +120,35 @@ export class CandlestickService implements ICandlestickService {
      * Starts an interval that will update the candlesticks once per minute.
      * @returns Promise<void>
      */
-     public async startSync(): Promise<void> {
+     public async initialize(): Promise<void> {
+        // Init the candlesticks
+        let candlesticks: ICandlestick[] = [];
+
         // Perform the first sync persistently to prevent a server crash
-        try { this.broadcastStream(await this.syncCandlesticks()) } 
-        catch (e) {
-            console.log('Initial Candlestick Sync Failed', e);
+        try {
+            candlesticks = await this.syncCandlesticks();
+            this.broadcastStream(candlesticks) 
+        } catch (e) {
+            console.log('Initial Candlestick Sync Failed. Attempting again in a few seconds: ', e);
             await this._utils.asyncDelay(5);
-            this.broadcastStream(await this.syncCandlesticks());
+            candlesticks = await this.syncCandlesticks();
+            this.broadcastStream(candlesticks) 
         }
         
 
         // Initialize the interval
         this.streamInterval = setInterval(async () => { 
-            try { this.broadcastStream(await this.syncCandlesticks()) } 
-            catch(e) { 
-                console.log(`Failed to sync the Candlesticks, attempting again in a few seconds:`, e);
+            try { 
+                candlesticks = await this.syncCandlesticks();
+                this.broadcastStream(candlesticks) 
+            } catch(e) { 
+                console.log(`Failed to sync the Candlesticks, attempting again in a few seconds: `, e);
                 await this._utils.asyncDelay(5);
-                try { this.broadcastStream(await this.syncCandlesticks()) } 
-                catch (e) {
-                    console.log(`Failed to sync the candlesticks again, will attempt again when the interval triggers:`, e);
+                try { 
+                    candlesticks = await this.syncCandlesticks();
+                    this.broadcastStream(candlesticks) 
+                } catch (e) {
+                    console.log(`Failed to sync the candlesticks again, will attempt again when the interval triggers: `, e);
                     this._apiError.log('CandlestickService.startSync', e);
                     this._notification.candlestickSyncIssue(e);
                     this.broadcastStream([], e);
@@ -161,7 +171,7 @@ export class CandlestickService implements ICandlestickService {
      * stop syncing candlesticks.
      * @returns void
      */
-    public stopSync(): void { if (this.streamInterval) clearInterval(this.streamInterval) }
+    public stop(): void { if (this.streamInterval) clearInterval(this.streamInterval) }
 
 
 

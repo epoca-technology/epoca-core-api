@@ -2,6 +2,8 @@
 
 // Forecast Service
 export interface IForecastService {
+    initialize(): Promise<void>,
+    stop(): void,
     forecast(end?: number): Promise<IForecast>
 }
 

@@ -107,7 +107,7 @@ export class BinanceService implements IBinanceService {
         // @TODO
 
         // Validate the data
-        if (response.data && typeof response.data != "object") {
+        if (!response.data || typeof response.data != "object") {
             console.log(response);
             throw new Error(this._utils.buildApiError(`Binance returned an invalid candlesticks series.`, 1));
         }

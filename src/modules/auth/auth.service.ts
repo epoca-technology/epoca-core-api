@@ -42,11 +42,34 @@ export class AuthService implements IAuthService {
 
 
     /**
+     * Runs the initialization in a persistant way. If there is an error, it will attempt
+     * again in a few seconds.
+     * @returns initialize(): Promise<void>
+     */
+    public async initialize(): Promise<void> {
+        try { await this._initialize() } 
+        catch (e) {
+            console.error('There was an error when initializing the Auth Module. Attempting again in a few seconds (1): ', e);
+            await this._utils.asyncDelay(10);
+            try { await this._initialize() } 
+            catch (e) {
+                console.error('There was an error when initializing the Auth Module. Attempting again in a few seconds (2): ', e);
+                await this._utils.asyncDelay(10);
+                await this._initialize();
+            }
+        }
+    }
+
+
+    
+
+    
+    /**
      * Makes sure the god user is properly created as well as initializing the API secrets 
      * and the authorities.
      * @returns initialize(): Promise<void>
      */
-    public async initialize(): Promise<void> {
+    private async _initialize(): Promise<void> {
         // Firstly, check the god account
         await this.checkGodAccount();
 

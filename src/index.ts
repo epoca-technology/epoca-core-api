@@ -22,7 +22,7 @@ const app = express();
 app.use(morgan('combined'));
 
 // Morgan Issue: https://github.com/expressjs/morgan/issues/214
-app.set("trust proxy", true);
+//app.set("trust proxy", true);
 
 
 // Set the request ip middleware
@@ -45,7 +45,7 @@ app.use(cors({}));
 
 
 // Set Port
-const port = process.env.PORT || 5075;
+const port: number = Number(process.env.PORT) || 5075;
 
 
 
@@ -117,7 +117,4 @@ init()
     if (environment.debugMode) console.log('Debug Mode: true');
     if (environment.restoreMode) console.log('Restore Mode: true');
 })
-.catch(e => {
-	console.error(e);
-	throw new Error('The API could not be initialized.');
-});
+.catch(e => { throw new Error('The API could not be initialized. Please restart it.') });

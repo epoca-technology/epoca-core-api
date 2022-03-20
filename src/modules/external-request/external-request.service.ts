@@ -26,57 +26,49 @@ export class ExternalRequestService implements IExternalRequestService {
      */
     public request(options: IExternalRequestOptions, params?: any, protocolName?: IExternalRequestProtocolName): Promise<IExternalRequestResponse> {
         return new Promise((resolve, reject) => {
-            try {
-                // Init the protocol to be used
-                const protocol: any = protocolName == 'http' ? http: https;
+            // Init the protocol to be used
+            const protocol: any = protocolName == 'http' ? http: https;
 
-                // Perform the request
-                let request: http.ClientRequest = protocol.request(options, (response: http.IncomingMessage) => {
-                    // Init response data
-                    let data: string = '';
-                    let finalResponse: IExternalRequestResponse = {
-                        statusCode: response.statusCode,
-                        headers: response.headers
-                    };
+            // Perform the request
+            let request: http.ClientRequest = protocol.request(options, (response: http.IncomingMessage) => {
+                // Init response data
+                let data: string = '';
+                let finalResponse: IExternalRequestResponse = {
+                    statusCode: response.statusCode,
+                    headers: response.headers
+                };
 
-                    // On data changes
-                    response.on('data',  (chunk)=> {
-                        data += chunk;
-                    });
-
-                    // Once it ends
-                    response.on('end',  () => {
-                        // Verify if data was included
-                        if (!data) {
-                            resolve(finalResponse);
-                        } else {
-                            try {
-                                finalResponse.data = JSON.parse(data);
-                                resolve(finalResponse);
-                            }catch(err) {
-                                finalResponse.data = data;
-                                resolve(finalResponse);
-                            }
-                        }
-                    });
-
-                    // If there is an error
-                    response.on('error',(err) => {
-                        console.log(err);
-                        reject(err);
-                    })
+                // On data changes
+                response.on('data',  (chunk)=> {
+                    data += chunk;
                 });
 
-                // Append params if applicable
-                const finalParams: string|undefined = this.getFinalParams(params);
-                if (finalParams != undefined) request.write(finalParams);
+                // Once it ends
+                response.on('end',  () => {
+                    // Verify if data was included
+                    if (!data) {
+                        resolve(finalResponse);
+                    } else {
+                        try {
+                            finalResponse.data = JSON.parse(data);
+                            resolve(finalResponse);
+                        }catch(err) {
+                            finalResponse.data = data;
+                            resolve(finalResponse);
+                        }
+                    }
+                });
 
-                // End request
-                request.end();
-            } catch (e) {
-                console.log(e);
-                reject(e);
-            }
+                // If there is an error
+                response.on('error',(err) => { reject(err) })
+            });
+
+            // Append params if applicable
+            const finalParams: string|undefined = this.getFinalParams(params);
+            if (finalParams != undefined) request.write(finalParams);
+
+            // End request
+            request.end();
         });
     }
 
