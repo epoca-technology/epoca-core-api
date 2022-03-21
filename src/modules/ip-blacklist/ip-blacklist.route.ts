@@ -85,7 +85,7 @@ IPBlacklistRoute.route(`/registerIP`).post(ultraLowRiskLimit, async (req: expres
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5, ['ip', 'notes'], req.body, otp || '');
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5, ['ip'], req.body, otp || '');
 
         // Perform Action
         await _blacklist.registerIP(req.body.ip, req.body.notes);
