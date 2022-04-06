@@ -4,6 +4,7 @@ import * as si from "systeminformation";
 import * as fs from "fs";
 import { defaults } from "./defaults";
 import { queries } from "./queries";
+import { ICandlestickService } from "../candlestick";
 import { IUtilitiesService } from "../utilities";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
 import { IApiErrorService } from "../api-error";
@@ -33,6 +34,7 @@ import {
 @injectable()
 export class ServerService implements IServerService {
     // Inject dependencies
+    @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
     @inject(SYMBOLS.ServerValidations)                  private _validations: IServerValidations;
     @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
@@ -133,6 +135,7 @@ export class ServerService implements IServerService {
     public getServerResources(): IServerResources {
         return {
             uptime: this.uptime,
+            candlesticksSynced: this._candlestick.isStreamInSync(this._candlestick.stream.value),
             serverTime: Date.now(),
             lastResourceScan: this.lastResourceScan,
             alarms: this.alarms,

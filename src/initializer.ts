@@ -42,8 +42,8 @@ const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
  * Initializes the modules in the following order:
  * 1) Database Module
  * 2) Auth Module
- * 3) Server Module
- * 4) Candlestick Module
+ * 3) Candlestick Module
+ * 4) Server Module
  * 5) IP Blacklist Module
  * 6) Forecast Module
  * 7) Trading Simulation Module
@@ -52,9 +52,10 @@ const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
  * If any of the initialization actions triggers an error, it crash the execution and
  * stop the following modules:
  * 1) Candlestick Module
- * 2) Forecast Module
- * 3) Trading Simulation Module
- * 4) Trading Session Module
+ * 2) Server Module
+ * 3) Forecast Module
+ * 4) Trading Simulation Module
+ * 5) Trading Session Module
  */
 export async function init(): Promise<void> {
     try {
@@ -87,20 +88,20 @@ export async function init(): Promise<void> {
                 console.error('Error when initializing the Auth Module: ', e)
                 throw e;
             }
-            
-            // Initialize the Server Module
-            try {
-                await _server.initialize();
-            } catch (e) {
-                console.error('Error when initializing the Server Module: ', e)
-                throw e;
-            }
 
             // Initialize the Candlestick Syncing
             try {
                 await _candlestick.initialize();
             } catch (e) {
                 console.error('Error when initializing the Candlestick Module: ', e)
+                throw e;
+            }
+            
+            // Initialize the Server Module
+            try {
+                await _server.initialize();
+            } catch (e) {
+                console.error('Error when initializing the Server Module: ', e)
                 throw e;
             }
 
@@ -142,6 +143,9 @@ export async function init(): Promise<void> {
     } catch (e) {
         // Stop the Candlestick Module
         _candlestick.stop();
+
+        // Stop the Server Module
+        _server.stop();
 
         // Stop the Forecast Module
         _forecast.stop();

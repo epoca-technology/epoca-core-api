@@ -27,7 +27,7 @@ export class ForecastService implements IForecastService {
 
     // Forecast Retriever
     private forecastInterval: any;
-    private readonly intervalSeconds: number = 15 * 1000;
+    private readonly intervalSeconds: number = 45 * 1000;
     private readonly secondsTolerance: number = 60;
 
 
