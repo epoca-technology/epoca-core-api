@@ -8,11 +8,9 @@ export interface IFileService {
     restoreDatabaseBackup(fileName: string): Promise<void>,
     cleanDatabaseManagementFiles(): Promise<void>,
 
-    // Forecast Models Management
-    // @TODO
-
     // Candlestick Spreadsheets
     generateCandlesticksSpreadsheet(fileName: string): Promise<void>,
+    generateCandlesticksSpreadsheetPair(): Promise<void>,
 }
 
 
@@ -21,7 +19,7 @@ export interface IFileService {
 
 
 // Files Configuration
-export type IFileExtension = "dump"|"h5"|"csv";
+export type IFileExtension = "dump"|"csv";
 
 export interface IFileConfig {
     localPath: string,

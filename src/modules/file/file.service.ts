@@ -34,13 +34,7 @@ export class FileService implements IFileService {
         maxCloudFiles: 5
     }
 
-    // Forecast Models
-    private readonly forecastModels: IFileConfig = {
-        localPath: '/var/lib/forecast-models-management',
-        cloudPath: 'forecast_models', // The name of the model must be appended to this path
-        extension: 'h5',
-        maxCloudFiles: 5
-    }
+    
 
     // Candlestick Spreadsheets
     private readonly candlestickSpreadsheets: IFileConfig = {
@@ -51,6 +45,9 @@ export class FileService implements IFileService {
     }
 
     
+
+
+
     constructor() {}
 
 
@@ -130,6 +127,9 @@ export class FileService implements IFileService {
 
 
 
+
+
+
     /* Candlestick Spreadsheets */
 
 
@@ -146,7 +146,7 @@ export class FileService implements IFileService {
      */
     public async generateCandlesticksSpreadsheet(fileName: string): Promise<void> {
         // Create the spreadsheet
-        await this.createCandlesticksSpreadsheet(fileName);
+        await this.createCandlesticksSpreadsheet(fileName, true);
 
         // Upload it and clean up
         await this.uploadFile(this.candlestickSpreadsheets, fileName);
@@ -158,14 +158,37 @@ export class FileService implements IFileService {
 
 
     /**
+     * Creates the Candlesticks Spreadsheet Pair for the Models program.
+     * Notice that files in the volume will be cleaned before generating the
+     * new pair.
+     * @returns Promise<void> 
+     */
+    public async generateCandlesticksSpreadsheetPair(): Promise<void> {
+        // Clean whatever is in the volume
+        await this.deleteAllLocalFiles(this.candlestickSpreadsheets.localPath)
+
+        // Create both files simultaneously
+        await Promise.all([
+            this.createCandlesticksSpreadsheet('candlesticks.csv', false),
+            this.createCandlesticksSpreadsheet('forecast_candlesticks.csv', true)
+        ]);
+    }
+
+
+
+
+
+
+    /**
      * Creates the candlestick spreadsheet inside of the local directory, making use 
      * of the latest data available.
      * @param fileName 
+     * @param forecast
      * @returns Promise<void>
      */
-    private async createCandlesticksSpreadsheet(fileName: string): Promise<void> {
+    private async createCandlesticksSpreadsheet(fileName: string, forecast: boolean): Promise<void> {
         // Retrieve all the forecast candlesticks
-        const candlesticks: ICandlestick[] = await this.candlestickModel.get(undefined, undefined, undefined, true);
+        const candlesticks: ICandlestick[] = await this.candlestickModel.get(undefined, undefined, undefined, forecast);
 
         // Make sure candlesticks were downloaded
         if (!candlesticks.length) {
@@ -185,15 +208,7 @@ export class FileService implements IFileService {
         }
 
         // Create the file
-        return new Promise((resolve, reject) => {
-            fs.writeFile(`${this.candlestickSpreadsheets.localPath}/${fileName}`, fileData, "utf-8", (err) => {
-                // Handle errors
-                if (err) reject(err);
-
-                // Resolve the promise
-                resolve();
-            });
-        });
+        await this.writeLocalFile(this.candlestickSpreadsheets.localPath, fileName, fileData);
     }
 
 
@@ -428,6 +443,33 @@ export class FileService implements IFileService {
             })
         });
     }
+
+
+
+
+
+
+
+    /**
+     * Writes to a local path based on provided path and name.
+     * @param path 
+     * @param fileName 
+     * @param data 
+     * @returns Promise<void>
+     */
+    private writeLocalFile(path: string, fileName: string, data: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fs.writeFile(`${path}/${fileName}`, data, "utf-8", (err) => {
+                // Handle errors
+                if (err) reject(err);
+
+                // Resolve the promise
+                resolve();
+            });
+        });
+    }
+
+
 
 
 
