@@ -23,8 +23,8 @@ export class CandlestickModel implements ICandlestickModel {
         alias: '1m'
     };
 
-    // Forecast Candlestick Configuration
-    public readonly forecastConfig: ICandlestickConfig = {
+    // Prediction Candlestick Configuration
+    public readonly predictionConfig: ICandlestickConfig = {
         intervalMinutes: 30,
         alias: '30m'
     };
@@ -69,14 +69,14 @@ export class CandlestickModel implements ICandlestickModel {
      * @param start? 
      * @param end? 
      * @param limit? 
-     * @param forecast? 
+     * @param prediction? 
      * @returns Promise<ICandlestick[]>
      */
-    public async get(start?: number, end?: number, limit?: number, forecast?: boolean): Promise<ICandlestick[]> {
+    public async get(start?: number, end?: number, limit?: number, prediction?: boolean): Promise<ICandlestick[]> {
         // Init the sql values
         let sql: string = `
-            SELECT ot, ct, o, h, l, c, v, tbv, nt
-            FROM ${this.getTable(forecast)}
+            SELECT ot, ct, o, h, l, c, v
+            FROM ${this.getTable(prediction)}
         `;
         let values: number[];
 
@@ -129,13 +129,13 @@ export class CandlestickModel implements ICandlestickModel {
     /**
      * Retrieves the open time of the last candlestick stored.
      * If none is found, it will return the genesis candlestick timestamp.
-     * @param forecast?
+     * @param prediction?
      * @returns Promise<number>
      */
-    public async getLastOpenTimestamp(forecast?: boolean): Promise<number> {
+    public async getLastOpenTimestamp(prediction?: boolean): Promise<number> {
         // Retrieve the last candlestick open item
         const {rows}: IQueryResult = await this._db.query({
-            text: `SELECT ot FROM ${this.getTable(forecast)} ORDER BY ot DESC LIMIT 1`,
+            text: `SELECT ot FROM ${this.getTable(prediction)} ORDER BY ot DESC LIMIT 1`,
             values: []
         });
 
@@ -157,14 +157,14 @@ export class CandlestickModel implements ICandlestickModel {
     /**
      * Retrieves the last candlesticks ordered by ot. If there are no candlesticks it
      * will return an empty list.
-     * @param forecast?
+     * @param prediction?
      * @param limit?
      * @returns Promise<ICandlestick[]>
      */
-     public async getLast(forecast?: boolean, limit?: number): Promise<ICandlestick[]> {
+     public async getLast(prediction?: boolean, limit?: number): Promise<ICandlestick[]> {
         // Retrieve the last candlestick
         const {rows}: IQueryResult = await this._db.query({
-            text: `SELECT ot, ct, o, h, l, c, v, tbv, nt FROM ${this.getTable(forecast)} ORDER BY ot DESC LIMIT $1`,
+            text: `SELECT ot, ct, o, h, l, c, v FROM ${this.getTable(prediction)} ORDER BY ot DESC LIMIT $1`,
             values: [limit || 1]
         });
 
@@ -203,10 +203,10 @@ export class CandlestickModel implements ICandlestickModel {
     /**
      * Given a list of candlesticks, it will create or update them on the database.
      * @param candlesticks 
-     * @param forecast? 
+     * @param prediction? 
      * @returns Promise<void>
      */
-    public async saveCandlesticks(candlesticks: ICandlestick[], forecast?: boolean): Promise<void> {
+    public async saveCandlesticks(candlesticks: ICandlestick[], prediction?: boolean): Promise<void> {
         // Save the candlesticks if any
         if (candlesticks && candlesticks.length) {
             // Initialize the client
@@ -219,7 +219,7 @@ export class CandlestickModel implements ICandlestickModel {
                 for (let c of candlesticks) {
                     // Check if the candlestick exists
                     const {rows}: IQueryResult = await client.query({
-                        text: `SELECT ct FROM ${this.getTable(forecast)} WHERE ot=$1`,
+                        text: `SELECT ct FROM ${this.getTable(prediction)} WHERE ot=$1`,
                         values: [c.ot]
                     });
 
@@ -227,10 +227,10 @@ export class CandlestickModel implements ICandlestickModel {
                     if (rows && rows.length) {
                         await client.query({
                             text: `
-                                UPDATE ${this.getTable(forecast)} SET ct=$1, h=$2, l=$3, c=$4, v=$5, tbv=$6, nt=$7
-                                WHERE ot=$8
+                                UPDATE ${this.getTable(prediction)} SET ct=$1, h=$2, l=$3, c=$4, v=$5
+                                WHERE ot=$6
                             `,
-                            values: [c.ct, c.h, c.l, c.c, c.v, c.tbv, c.nt, c.ot]
+                            values: [c.ct, c.h, c.l, c.c, c.v, c.ot]
                         });
                     } 
                     
@@ -238,10 +238,10 @@ export class CandlestickModel implements ICandlestickModel {
                     else {
                         await client.query({
                             text: `
-                                INSERT INTO ${this.getTable(forecast)}(ot, ct, o, h, l, c, v, tbv, nt) 
-                                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                                INSERT INTO ${this.getTable(prediction)}(ot, ct, o, h, l, c, v) 
+                                VALUES ($1, $2, $3, $4, $5, $6, $7)
                             `,
-                            values: [c.ot, c.ct, c.o, c.h, c.l, c.c, c.v, c.tbv, c.nt]
+                            values: [c.ot, c.ct, c.o, c.h, c.l, c.c, c.v]
                         });
                     }
                 }
@@ -256,7 +256,7 @@ export class CandlestickModel implements ICandlestickModel {
                 client.release();
             }
         } else {
-            console.log(`${forecast ? 'Forecast': 'Standard'} Candlesticks: `, candlesticks);
+            console.log(`${prediction ? 'Prediction': 'Standard'} Candlesticks: `, candlesticks);
             throw new Error(this._utils.buildApiError('A valid list of candlesticks is required in order to invoke saveCandlesticks.', 1200));
         }
     }
@@ -337,9 +337,7 @@ export class CandlestickModel implements ICandlestickModel {
             h: 0,   // Placeholder
             l: 0,   // Placeholder
             c: candlesticks.at(-1).c,
-            v: 0,   // Placeholder
-            tbv: 0, // Placeholder
-            nt: 0,  // Placeholder
+            v: 0    // Placeholder
         };
 
         // Init the high & low lists
@@ -348,8 +346,6 @@ export class CandlestickModel implements ICandlestickModel {
 
         // Init the accumulators
         let v: BigNumber = new BigNumber(0);
-        let tbv: BigNumber = new BigNumber(0);
-        let nt: BigNumber = new BigNumber(0);
 
         // Iterate over each candlestick
         candlesticks.forEach((c) => {
@@ -359,8 +355,6 @@ export class CandlestickModel implements ICandlestickModel {
 
             // Update accumulators
             v = v.plus(c.v);
-            tbv = tbv.plus(c.tbv);
-            nt = nt.plus(c.nt);
         });
 
         // Set the highest high and the lowest low
@@ -369,8 +363,6 @@ export class CandlestickModel implements ICandlestickModel {
 
         // Set the accumulator results
         final.v = v.toNumber();
-        final.tbv = tbv.toNumber();
-        final.nt = nt.toNumber();
 
         // Return the final candlestick
         return final;
@@ -405,11 +397,11 @@ export class CandlestickModel implements ICandlestickModel {
     /**
      * Retrieves a table name based on the candlestick type and 
      * the test mode.
-     * @param forecast 
+     * @param prediction 
      * @returns string
      */
-     private getTable(forecast?: boolean): string {
-        return forecast ? this._db.tn.forecast_candlesticks: this._db.tn.candlesticks;
+     private getTable(prediction?: boolean): string {
+        return prediction ? this._db.tn.prediction_candlesticks: this._db.tn.candlesticks;
     }
 
 
@@ -423,11 +415,11 @@ export class CandlestickModel implements ICandlestickModel {
 
     /**
      * Given the open time of a candlestick, it will calculate it's close 
-     * time based on the forecast config.
+     * time based on the prediction config.
      * @param ot 
      * @returns number
      */
-    public getForecastCandlestickCloseTime(ot: number): number {
-        return moment(ot).add(this.forecastConfig.intervalMinutes, "minutes").subtract(1, "millisecond").valueOf();
+    public getPredictionCandlestickCloseTime(ot: number): number {
+        return moment(ot).add(this.predictionConfig.intervalMinutes, "minutes").subtract(1, "millisecond").valueOf();
     }
 }

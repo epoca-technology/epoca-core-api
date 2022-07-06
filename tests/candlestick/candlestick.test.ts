@@ -59,14 +59,14 @@ describe('Candlesticks DB Actions: ',  function() {
     beforeEach(async () => { 
         await Promise.all([
             _db.query({text: `DELETE FROM ${_db.tn.candlesticks};`}),
-            _db.query({text: `DELETE FROM ${_db.tn.forecast_candlesticks};`}),
+            _db.query({text: `DELETE FROM ${_db.tn.prediction_candlesticks};`}),
         ]);
     });
     afterAll(async () => { 
         // Clean the DB
         await Promise.all([
             _db.query({text: `DELETE FROM ${_db.tn.candlesticks};`}),
-            _db.query({text: `DELETE FROM ${_db.tn.forecast_candlesticks};`}),
+            _db.query({text: `DELETE FROM ${_db.tn.prediction_candlesticks};`}),
         ]);
     });
 
@@ -128,8 +128,6 @@ describe('Candlesticks DB Actions: ',  function() {
             expect(processed[i].l).toBe(c[i].l);
             expect(processed[i].c).toBe(c[i].c);
             expect(processed[i].v).toBe(c[i].v);
-            expect(processed[i].tbv).toBe(c[i].tbv);
-            expect(processed[i].nt).toBe(c[i].nt);
         }
     });
 
@@ -250,7 +248,7 @@ describe('Candlesticks DB Actions: ',  function() {
         startTS = await _model.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the first lot
-        expect(firstLot.at(-1).ot).toBe(startTS);
+        expect(firstLot.at(-1)!.ot).toBe(startTS);
 
         // Allow a small delay before saving the next candlesticks
         await _utils.asyncDelay(5);
@@ -264,7 +262,7 @@ describe('Candlesticks DB Actions: ',  function() {
         startTS = await _model.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the second lot
-        expect(secondLot.at(-1).ot).toBe(startTS);
+        expect(secondLot.at(-1)!.ot).toBe(startTS);
 
         // Allow a small delay before saving the last candlesticks
         await _utils.asyncDelay(5);
@@ -278,7 +276,7 @@ describe('Candlesticks DB Actions: ',  function() {
         startTS = await _model.getLastOpenTimestamp();
 
         // The new start ts should match the last record from the first lot
-        expect(thirdLot.at(-1).ot).toBe(startTS);
+        expect(thirdLot.at(-1)!.ot).toBe(startTS);
 
         // Download all the candlesticks stored in the db
         const candlesticks: ICandlestick[] = await _model.get();
@@ -307,27 +305,27 @@ describe('Candlesticks DB Actions: ',  function() {
         }
 
 
-        /* Forecast Candlesticks */
+        /* Prediction Candlesticks */
 
-        // Download the existing forecast candlesticks
-        const forecast: ICandlestick[] = await _model.get(undefined, undefined, undefined, true);
+        // Download the existing prediction candlesticks
+        const prediction: ICandlestick[] = await _model.get(undefined, undefined, undefined, true);
 
         // Check if the number of candlesticks is valid
         const qty: number = <number>_utils.outputNumber(
-            new BigNumber(2998).dividedBy(_model.forecastConfig.intervalMinutes),
+            new BigNumber(2998).dividedBy(_model.predictionConfig.intervalMinutes),
             {dp: 0, ru: true}
         );
         const safeQty: number = qty - 1; // Ignores the last candlestick in case it is incomplete
-        expect(forecast.length).toBe(qty);
+        expect(prediction.length).toBe(qty);
         
         // Make sure the last candlesticks match
-        expect(candlesticks.at(-1).ct).toBe(forecast.at(-1).ct);
-        expect(candlesticks.at(-1).c).toBe(forecast.at(-1).c);
+        expect(candlesticks.at(-1)!.ct).toBe(prediction.at(-1)!.ct);
+        expect(candlesticks.at(-1)!.c).toBe(prediction.at(-1)!.c);
 
-        // Download the forecast candlesticks directly from Binance and compare them with the ones in the db
+        // Download the prediction candlesticks directly from Binance and compare them with the ones in the db
         await _utils.asyncDelay(5);
         const bCandlesticks: IBinanceCandlestick[] = await _binance.getCandlesticks(
-            _model.forecastConfig.alias, 
+            _model.predictionConfig.alias, 
             _binance.candlestickGenesisTimestamp, 
             undefined, 
             safeQty
@@ -338,10 +336,10 @@ describe('Candlesticks DB Actions: ',  function() {
         // Iterate over each candlestick and make sure they match
         for (let i = 0; i < safeQty; i++) {
             // Check the open time
-            if (bProcessed[i].ot != forecast[i].ot) fail(`Open Time Missmatch: ${bProcessed[i].ot} != ${forecast[i].ot}`);
+            if (bProcessed[i].ot != prediction[i].ot) fail(`Open Time Missmatch: ${bProcessed[i].ot} != ${prediction[i].ot}`);
 
             // Check the close time
-            if (bProcessed[i].ct != forecast[i].ct) fail(`Close Time Missmatch: ${bProcessed[i].ct} != ${forecast[i].ct}`);
+            if (bProcessed[i].ct != prediction[i].ct) fail(`Close Time Missmatch: ${bProcessed[i].ct} != ${prediction[i].ct}`);
         }
     });
 });
@@ -520,11 +518,11 @@ describe('Candlestick Essentials: ',  function() {
     it('-Can merge a list of candlesticks into one: ', function() {
         // Original
         const original: ICandlestick[] = [
-            {ot: 1639676280000, ct: 1639676339999, o: 48106.3, h: 48143.06, l: 48091, c: 48091, v: 1183886.21, tbv: 769983.71, nt: 963},
-            {ot: 1639676340000, ct: 1639676399999, o: 48091.01, h: 48104.29, l: 48075.41, c: 48092.18, v: 1948820.69, tbv: 1260723.02, nt: 1549},
-            {ot: 1639676400000, ct: 1639676459999, o: 48092.18, h: 48097.24, l: 48060, c: 48082.95, v: 1387157.33, tbv: 579152.41, nt: 1215},
-            {ot: 1639676460000, ct: 1639676519999, o: 48082.95, h: 48124.65, l: 48078.15, c: 48095.28, v: 1042498.05, tbv: 687768.58, nt: 986},
-            {ot: 1639676520000, ct: 1639676579999, o: 48095.29, h: 48131.57, l: 48078.78, c: 48083.35, v: 1302402.89, tbv: 595089.59, nt: 929},
+            {ot: 1639676280000, ct: 1639676339999, o: 48106.3, h: 48143.06, l: 48091, c: 48091, v: 1183886.21},
+            {ot: 1639676340000, ct: 1639676399999, o: 48091.01, h: 48104.29, l: 48075.41, c: 48092.18, v: 1948820.69},
+            {ot: 1639676400000, ct: 1639676459999, o: 48092.18, h: 48097.24, l: 48060, c: 48082.95, v: 1387157.33},
+            {ot: 1639676460000, ct: 1639676519999, o: 48082.95, h: 48124.65, l: 48078.15, c: 48095.28, v: 1042498.05},
+            {ot: 1639676520000, ct: 1639676579999, o: 48095.29, h: 48131.57, l: 48078.78, c: 48083.35, v: 1302402.89},
         ];
 
         // Merge them into one
@@ -538,8 +536,6 @@ describe('Candlestick Essentials: ',  function() {
         expect(merged.l).toBe(48060);
         expect(merged.c).toBe(48083.35);
         expect(merged.v).toBe(6864765.17);
-        expect(merged.tbv).toBe(3892717.31);
-        expect(merged.nt).toBe(5642);
     });
 
 
@@ -562,11 +558,11 @@ describe('Candlestick Essentials: ',  function() {
 
         // Expected
         const expected: ICandlestick[] = [
-            {ot: 1639676280000, ct: 1639676339999, o: 48106.3, h: 48143.06, l: 48091, c: 48091, v: 1183886.21, tbv: 769983.71, nt: 963},
-            {ot: 1639676340000, ct: 1639676399999, o: 48091.01, h: 48104.29, l: 48075.41, c: 48092.18, v: 1948820.69, tbv: 1260723.02, nt: 1549},
-            {ot: 1639676400000, ct: 1639676459999, o: 48092.18, h: 48097.24, l: 48060, c: 48082.95, v: 1387157.33, tbv: 579152.41, nt: 1215},
-            {ot: 1639676460000, ct: 1639676519999, o: 48082.95, h: 48124.65, l: 48078.15, c: 48095.28, v: 1042498.05, tbv: 687768.58, nt: 986},
-            {ot: 1639676520000, ct: 1639676579999, o: 48095.29, h: 48131.57, l: 48078.78, c: 48083.35, v: 1302402.89, tbv: 595089.59, nt: 929},
+            {ot: 1639676280000, ct: 1639676339999, o: 48106.3, h: 48143.06, l: 48091, c: 48091, v: 1183886.21},
+            {ot: 1639676340000, ct: 1639676399999, o: 48091.01, h: 48104.29, l: 48075.41, c: 48092.18, v: 1948820.69},
+            {ot: 1639676400000, ct: 1639676459999, o: 48092.18, h: 48097.24, l: 48060, c: 48082.95, v: 1387157.33},
+            {ot: 1639676460000, ct: 1639676519999, o: 48082.95, h: 48124.65, l: 48078.15, c: 48095.28, v: 1042498.05},
+            {ot: 1639676520000, ct: 1639676579999, o: 48095.29, h: 48131.57, l: 48078.78, c: 48083.35, v: 1302402.89},
         ];
 
         // Process the raw candlesticks
@@ -582,8 +578,6 @@ describe('Candlestick Essentials: ',  function() {
             if (processed[i].l != expected[i].l) { fail(`Low Price: ${processed[i].l} != ${expected[i].l}`) }
             if (processed[i].c != expected[i].c) { fail(`Close Price: ${processed[i].c} != ${expected[i].c}`) }
             if (processed[i].v != expected[i].v) { fail(`Volume: ${processed[i].v} != ${expected[i].v}`) }
-            if (processed[i].tbv != expected[i].tbv) { fail(`Volume: ${processed[i].tbv} != ${expected[i].tbv}`) }
-            if (processed[i].nt != expected[i].nt) { fail(`Volume: ${processed[i].nt} != ${expected[i].nt}`) }
         }
     });
 
@@ -594,13 +588,13 @@ describe('Candlestick Essentials: ',  function() {
 
     /**
      * @IMPORTANT
-     * This test needs to be adjusted manually whenever the forecast interval is changed.
+     * This test needs to be adjusted manually whenever the prediction interval is changed.
      */
-    it('-Can calculate the close time of a forecast candlestick: ', function() {
-        expect(_model.getForecastCandlestickCloseTime(1502942400000)).toBe(1502944199999);
-        expect(_model.getForecastCandlestickCloseTime(1502944200000)).toBe(1502945999999);
-        expect(_model.getForecastCandlestickCloseTime(1502946000000)).toBe(1502947799999);
-        expect(_model.getForecastCandlestickCloseTime(1502947800000)).toBe(1502949599999);
-        expect(_model.getForecastCandlestickCloseTime(1502949600000)).toBe(1502951399999);
+    it('-Can calculate the close time of a prediction candlestick: ', function() {
+        expect(_model.getPredictionCandlestickCloseTime(1502942400000)).toBe(1502944199999);
+        expect(_model.getPredictionCandlestickCloseTime(1502944200000)).toBe(1502945999999);
+        expect(_model.getPredictionCandlestickCloseTime(1502946000000)).toBe(1502947799999);
+        expect(_model.getPredictionCandlestickCloseTime(1502947800000)).toBe(1502949599999);
+        expect(_model.getPredictionCandlestickCloseTime(1502949600000)).toBe(1502951399999);
     });
 });

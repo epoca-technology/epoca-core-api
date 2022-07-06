@@ -41,16 +41,14 @@ export const TABLES: IRawTable[] = [
                 h   NUMERIC(20,2) NOT NULL,
                 l   NUMERIC(20,2) NOT NULL,
                 c   NUMERIC(20,2) NOT NULL,
-                v   NUMERIC(20,2) NOT NULL,
-                tbv NUMERIC(20,2) NOT NULL,
-                nt  BIGINT NOT NULL
+                v   NUMERIC(20,2) NOT NULL
             );`
         }
     },
 
-    // Forecast Candlesticks
+    // Prediction Candlesticks
     {
-        name: 'forecast_candlesticks',
+        name: 'prediction_candlesticks',
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 ot  BIGINT NOT NULL PRIMARY KEY,
@@ -59,9 +57,7 @@ export const TABLES: IRawTable[] = [
                 h   NUMERIC(20,2) NOT NULL,
                 l   NUMERIC(20,2) NOT NULL,
                 c   NUMERIC(20,2) NOT NULL,
-                v   NUMERIC(20,2) NOT NULL,
-                tbv NUMERIC(20,2) NOT NULL,
-                nt  BIGINT NOT NULL
+                v   NUMERIC(20,2) NOT NULL
             );`
         }
     },

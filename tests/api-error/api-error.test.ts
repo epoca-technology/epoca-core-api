@@ -70,8 +70,8 @@ describe('API Errors:', function() {
         // Validate the second error's integrity
         expect(errors[0].o).toBe(origin);
         expect(errors[0].e).toBe(errorString);
-        expect(errors[0].uid).toBe(null);
-        expect(errors[0].ip).toBe(null);
+        expect(errors[0].uid).toBe(null!);
+        expect(errors[0].ip).toBe(null!);
         expect(errors[0].p).toBe(null);
 
         // Delete all the errors

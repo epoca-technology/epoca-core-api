@@ -59,9 +59,9 @@ describe('IP Blacklist:', function() {
         // Retrieve the IP and make sure the data is correct
         let ip1: IIPBlacklistRecord|undefined = await _model.get(ips[0]);
         expect(typeof ip1).toBe("object");
-        expect(ip1.ip).toBe(ips[0]);
-        expect(ip1.n).toBe(null);
-        expect(typeof ip1.c).toBe("number");
+        expect(ip1!.ip).toBe(ips[0]);
+        expect(ip1!.n).toBe(null!);
+        expect(typeof ip1!.c).toBe("number");
 
         // Make sure the IP was added to the local object
         //@ts-ignore
@@ -73,9 +73,9 @@ describe('IP Blacklist:', function() {
         // Retrieve the IP and make sure the data is correct
         let ip2: IIPBlacklistRecord|undefined = await _model.get(ips[1]);
         expect(typeof ip2).toBe("object");
-        expect(ip2.ip).toBe(ips[1]);
-        expect(ip2.n).toBe("This is a very dangerous IP!!!!");
-        expect(typeof ip2.c).toBe("number");
+        expect(ip2!.ip).toBe(ips[1]);
+        expect(ip2!.n).toBe("This is a very dangerous IP!!!!");
+        expect(typeof ip2!.c).toBe("number");
 
         // Make sure that both IPs are now in the local object
         //@ts-ignore
@@ -89,17 +89,17 @@ describe('IP Blacklist:', function() {
         // Retrieve the IP again and make sure the data integrity has maintained
         ip1 = await _model.get(ips[0]);
         expect(typeof ip1).toBe("object");
-        expect(ip1.ip).toBe(ips[0]);
-        expect(ip1.n).toBe("This notes were added after the IP was Blacklisted!!");
-        expect(typeof ip1.c).toBe("number");
+        expect(ip1!.ip).toBe(ips[0]);
+        expect(ip1!.n).toBe("This notes were added after the IP was Blacklisted!!");
+        expect(typeof ip1!.c).toBe("number");
 
         // Can update the notes of the second IP
         await _service.updateNotes(ips[1], "This notes were updated after the IP was Blacklisted!!");
         ip2 = await _model.get(ips[1]);
         expect(typeof ip2).toBe("object");
-        expect(ip2.ip).toBe(ips[1]);
-        expect(ip2.n).toBe("This notes were updated after the IP was Blacklisted!!");
-        expect(typeof ip2.c).toBe("number");
+        expect(ip2!.ip).toBe(ips[1]);
+        expect(ip2!.n).toBe("This notes were updated after the IP was Blacklisted!!");
+        expect(typeof ip2!.c).toBe("number");
 
         // Make sure that both IPs are still in the local object
         //@ts-ignore

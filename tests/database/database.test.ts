@@ -31,7 +31,7 @@ describe('Database Init: ',  function() {
         expect(tn.server_alarms).toBe('server_alarms');
         expect(tn.gui_version).toBe('gui_version');
         expect(tn.candlesticks).toBe('candlesticks');
-        expect(tn.forecast_candlesticks).toBe('forecast_candlesticks');
+        expect(tn.prediction_candlesticks).toBe('prediction_candlesticks');
     }); 
     
     it('-Can build the correct table names with the testMode enabled: ', function() {
@@ -40,7 +40,7 @@ describe('Database Init: ',  function() {
         expect(tn.server_alarms).toBe('test_server_alarms');
         expect(tn.gui_version).toBe('test_gui_version');
         expect(tn.candlesticks).toBe('test_candlesticks');
-        expect(tn.forecast_candlesticks).toBe('test_forecast_candlesticks');
+        expect(tn.prediction_candlesticks).toBe('test_prediction_candlesticks');
     }); 
 });
 

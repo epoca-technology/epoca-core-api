@@ -76,8 +76,8 @@ export class CandlestickService implements ICandlestickService {
         // Validate Request
         this._validations.canGetForPeriod(start, end, intervalMinutes);
 
-        // If the interval minutes match the forecast candlesticks, return those instead
-        if (intervalMinutes == this._model.forecastConfig.intervalMinutes) {
+        // If the interval minutes match the prediction candlesticks, return those instead
+        if (intervalMinutes == this._model.predictionConfig.intervalMinutes) {
             return await this._model.get(start, end, undefined, true);
         } 
         
@@ -187,7 +187,7 @@ export class CandlestickService implements ICandlestickService {
 
 
     /**
-     * Syncs the last standard and forecast candlesticks.
+     * Syncs the last standard and prediction candlesticks.
      * @returns Promise<ICandlestick[]>
      */
     public async syncCandlesticks(): Promise<ICandlestick[]> {
@@ -210,8 +210,8 @@ export class CandlestickService implements ICandlestickService {
             // Store them in the DB
             await this._model.saveCandlesticks(candlesticks);
 
-            // Sync the forecast candlesticks as well
-            await this.syncForecastCandlesticks();
+            // Sync the prediction candlesticks as well
+            await this.syncPredictionCandlesticks();
 
             // Return the 1m payload
             return candlesticks;
@@ -231,11 +231,11 @@ export class CandlestickService implements ICandlestickService {
 
 
     /**
-     * Whenever 1m candlesticks are saved, the forecast candlesticks
+     * Whenever 1m candlesticks are saved, the prediction candlesticks
      * are also updated respecting the interval configuration.
      * @returns Promise<void>
      */
-     private async syncForecastCandlesticks(): Promise<void> {
+     private async syncPredictionCandlesticks(): Promise<void> {
         // Init vars
         let candlestick: ICandlestick|undefined;
         let last: ICandlestick[];
@@ -247,7 +247,7 @@ export class CandlestickService implements ICandlestickService {
             last = await this._model.getLast(true, 1);
 
             // Retrieve a syncable candlestick if any
-            candlestick = await this.getSyncableForecastCandlestick(last[0]);
+            candlestick = await this.getSyncablePredictionCandlestick(last[0]);
 
             // Check if a candlestick was found. If so, insert/update it
             if (candlestick) await this._model.saveCandlesticks([candlestick], true);
@@ -263,15 +263,15 @@ export class CandlestickService implements ICandlestickService {
 
 
      /**
-      * Retrieves the forecast candlestick that has to be inserted or updated.
+      * Retrieves the prediction candlestick that has to be inserted or updated.
       * If it returns undefined, it means the forecase candlesticks are in sync.
       * @param last
       * @returns Promise<ICandlestick|undefined>
       */
-    private async getSyncableForecastCandlestick(last: ICandlestick|undefined): Promise<ICandlestick|undefined> {
+    private async getSyncablePredictionCandlestick(last: ICandlestick|undefined): Promise<ICandlestick|undefined> {
         // Calculate the initial times
         let openTime: number = last ? last.ot: this._binance.candlestickGenesisTimestamp;
-        let closeTime: number = this._model.getForecastCandlestickCloseTime(openTime);
+        let closeTime: number = this._model.getPredictionCandlestickCloseTime(openTime);
 
         // Retrieve the initial 1m candlesticks for the given interval and merge them if any
         let candlesticks1m: ICandlestick[] = await this._model.get(openTime, closeTime);
@@ -292,7 +292,7 @@ export class CandlestickService implements ICandlestickService {
                  * Update the last candlestick to make sure it has the last close price snapshot before moving to 
                  * the next candlestick. Also ensure the merged candlestick has correct open & close timestamps.
                  */
-                await this.updateForecastCandlestick(last, candlestick);
+                await this.updatePredictionCandlestick(last, candlestick);
 
                 // If there are candlesticks ahead, iterate until the next one is found
                 if (hasCandlesticksAhead) {
@@ -300,7 +300,7 @@ export class CandlestickService implements ICandlestickService {
                     while (!candlestickFound) {
                         // Initialize the new candlestick's times
                         openTime = closeTime + 1;
-                        closeTime = this._model.getForecastCandlestickCloseTime(openTime);
+                        closeTime = this._model.getPredictionCandlestickCloseTime(openTime);
     
                         // Download the candlesticks for the next interval
                         candlesticks1m = await this._model.get(openTime, closeTime);
@@ -328,7 +328,7 @@ export class CandlestickService implements ICandlestickService {
              */
             else if (!hasCandlesticksAhead && last.ct == candlestick.ct) { 
                 // Make sure the candlestick has the latest snapshot before ending the iteration.
-                await this.updateForecastCandlestick(last, candlestick);
+                await this.updatePredictionCandlestick(last, candlestick);
                 candlestick = undefined;
             }
 
@@ -398,7 +398,7 @@ export class CandlestickService implements ICandlestickService {
      * @param lastMerge 
      * @returns Promise<void>
      */
-    private async updateForecastCandlestick(last: ICandlestick, lastMerge: ICandlestick): Promise<void> {
+    private async updatePredictionCandlestick(last: ICandlestick, lastMerge: ICandlestick): Promise<void> {
         lastMerge.ot = last.ot;
         lastMerge.ct = last.ct;
         await this._model.saveCandlesticks([lastMerge], true);
@@ -518,9 +518,7 @@ export class CandlestickService implements ICandlestickService {
                 h: <number>this._utils.outputNumber(c[2], {dp: 2}),
                 l: <number>this._utils.outputNumber(c[3], {dp: 2}),
                 c: <number>this._utils.outputNumber(c[4], {dp: 2}),
-                v: <number>this._utils.outputNumber(c[7], {dp: 2}),
-                tbv: <number>this._utils.outputNumber(c[10], {dp: 2}),
-                nt: c[8],
+                v: <number>this._utils.outputNumber(c[7], {dp: 2})
             });
         }
 

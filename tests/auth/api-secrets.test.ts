@@ -65,8 +65,8 @@ describe('API Secrets Management:', async function() {
 
         // Retrieve the snapshot and validate its properties
         let secret1: IApiSecretRecord|null = await getSnapVal(uids[0]);
-        expect(_validations.apiSecretValid(secret1.s)).toBeTruthy();
-        expect(typeof secret1.t).toBe("number");
+        expect(_validations.apiSecretValid(secret1!.s)).toBeTruthy();
+        expect(typeof secret1!.t).toBe("number");
 
         // Compare it to the secret stored in the local object
         // @ts-ignore
@@ -83,8 +83,8 @@ describe('API Secrets Management:', async function() {
 
         // Retrieve the snapshot and validate its properties
         let secret2: IApiSecretRecord|null = await getSnapVal(uids[1]);
-        expect(_validations.apiSecretValid(secret2.s)).toBeTruthy();
-        expect(typeof secret2.t).toBe("number");
+        expect(_validations.apiSecretValid(secret2!.s)).toBeTruthy();
+        expect(typeof secret2!.t).toBe("number");
 
         // Compare it to the secret stored in the local object
         // @ts-ignore

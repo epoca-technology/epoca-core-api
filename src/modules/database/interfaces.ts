@@ -55,7 +55,7 @@ export interface ITableNames {
     gui_version: string,
     server_alarms: string,
     candlesticks: string,
-    forecast_candlesticks: string,
+    prediction_candlesticks: string,
     users: string,
     ip_blacklist: string,
     api_errors: string

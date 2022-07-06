@@ -97,17 +97,17 @@ describe('User Creation:', async function() {
             expect(firebaseUser === undefined).toBeFalsy();
 
             // Validate the DB Integrity
-            expect(uid == user.uid).toBeTruthy();
+            expect(uid == user!.uid).toBeTruthy();
             expect(typeof uid == "string").toBeTruthy();
-            expect(user.email).toBe(_test.users[i].email);
-            expect(user.authority).toBe(_test.users[i].authority);
-            expect(typeof user.otp_secret == "string").toBeTruthy();
-            expect(user.fcm_token == undefined).toBeTruthy();
-            expect(typeof user.creation == "number").toBeTruthy();
+            expect(user!.email).toBe(_test.users[i].email);
+            expect(user!.authority).toBe(_test.users[i].authority);
+            expect(typeof user!.otp_secret == "string").toBeTruthy();
+            expect(user!.fcm_token == undefined).toBeTruthy();
+            expect(typeof user!.creation == "number").toBeTruthy();
 
             // Validate the Firebase User's Integrity
-            expect(firebaseUser.uid).toBe(uid);
-            expect(firebaseUser.email).toBe(_test.users[i].email);
+            expect(firebaseUser!.uid).toBe(uid);
+            expect(firebaseUser!.email).toBe(_test.users[i].email);
 
             // Make sure the user was added to the local authorities object
             // @ts-ignore
@@ -118,11 +118,11 @@ describe('User Creation:', async function() {
             expect(stringify(user) == stringify(userByEmail)).toBeTruthy();
 
             // Set a new password on the account
-            let otpToken: string = authenticator.generate(user.otp_secret);
+            let otpToken: string = authenticator.generate(user!.otp_secret);
             await _service.updatePassword(_test.users[i].email, _test.users[i].password, otpToken, '');
 
             // Verify the credentials
-            otpToken = authenticator.generate(user.otp_secret);
+            otpToken = authenticator.generate(user!.otp_secret);
             const signInToken: string = await _service.getSignInToken(_test.users[i].email, _test.users[i].password, otpToken, '');
             expect(typeof signInToken).toBe("string");
 
@@ -168,14 +168,14 @@ describe('User Email Update:', async function() {
         expect(firebaseUser === undefined).toBeFalsy();
 
         // Make sure both emails match
-        expect(user.email).toBe(firebaseUser.email);
+        expect(user!.email).toBe(firebaseUser!.email!);
 
         // Set a new password on the account
-        let otpToken: string = authenticator.generate(user.otp_secret);
+        let otpToken: string = authenticator.generate(user!.otp_secret);
         await _service.updatePassword(_test.users[0].email, _test.users[0].password, otpToken, '');
 
         // Verify the credentials
-        otpToken = authenticator.generate(user.otp_secret);
+        otpToken = authenticator.generate(user!.otp_secret);
         let signInToken: string = await _service.getSignInToken(_test.users[0].email, _test.users[0].password, otpToken, '');
         expect(typeof signInToken).toBe("string");
 
@@ -186,12 +186,12 @@ describe('User Email Update:', async function() {
         user = await _model.getUser(uid);
         firebaseUser = await _model.getFirebaseUserRecord(uid);
         expect(user == undefined).toBeFalsy();
-        expect(user.email).toBe(_test.users[1].email);
+        expect(user!.email).toBe(_test.users[1].email);
         expect(firebaseUser === undefined).toBeFalsy();
-        expect(firebaseUser.email).toBe(_test.users[1].email);
+        expect(firebaseUser!.email).toBe(_test.users[1].email);
 
         // Verify the credentials again
-        otpToken = authenticator.generate(user.otp_secret);
+        otpToken = authenticator.generate(user!.otp_secret);
         signInToken = await _service.getSignInToken(_test.users[1].email, _test.users[0].password, otpToken, '');
         expect(typeof signInToken).toBe("string");
     });
@@ -262,20 +262,20 @@ describe('User Password Update:', async function() {
         let user: IUser|undefined = await _model.getUser(uid);
 
         // Set a new password on the account
-        let otpToken: string = authenticator.generate(user.otp_secret);
+        let otpToken: string = authenticator.generate(user!.otp_secret);
         await _service.updatePassword(_test.users[0].email, _test.users[0].password, otpToken, '');
 
         // Verify the credentials
-        otpToken = authenticator.generate(user.otp_secret);
+        otpToken = authenticator.generate(user!.otp_secret);
         let signInToken: string = await _service.getSignInToken(_test.users[0].email, _test.users[0].password, otpToken, '');
         expect(typeof signInToken).toBe("string");
 
         // Set a new password on the account again
-        otpToken = authenticator.generate(user.otp_secret);
+        otpToken = authenticator.generate(user!.otp_secret);
         await _service.updatePassword(_test.users[0].email, _test.users[1].password, otpToken, '');
 
         // Verify the credentials again
-        otpToken = authenticator.generate(user.otp_secret);
+        otpToken = authenticator.generate(user!.otp_secret);
         signInToken = await _service.getSignInToken(_test.users[0].email, _test.users[1].password, otpToken, '');
         expect(typeof signInToken).toBe("string");
     });
@@ -312,8 +312,8 @@ describe('User Password Update:', async function() {
         } catch (e) { expect(_utils.getCodeFromApiError(e)).toBe(8302) }
 
         // Generate a token for the second user
-        const user: IUser = await _model.getUser(uid2);
-        const secondUserOTP: string = authenticator.generate(user.otp_secret);
+        const user: IUser|undefined = await _model.getUser(uid2);
+        const secondUserOTP: string = authenticator.generate(user!.otp_secret);
         try { 
             await _service.updatePassword(_test.users[0].email, 'SomeValidPassword123456', secondUserOTP, '')
             fail('It should have not set a new password with an invalid OTP (1).')
@@ -338,7 +338,7 @@ describe('User OTP SECRET Update:', async function() {
 
         // Retrieve the user record from the db
         let user: IUser|undefined = await _model.getUser(uid);
-        const originalSecret: string = user.otp_secret;
+        const originalSecret: string = user!.otp_secret;
 
         // Validate the token
         let otpToken: string = authenticator.generate(originalSecret);
@@ -351,10 +351,10 @@ describe('User OTP SECRET Update:', async function() {
         user = await _model.getUser(uid);
 
         // Make sure the secret changed
-        expect(originalSecret == user.otp_secret).toBeFalsy();
+        expect(originalSecret == user!.otp_secret).toBeFalsy();
 
         // Validate a new token
-        otpToken = authenticator.generate(user.otp_secret);
+        otpToken = authenticator.generate(user!.otp_secret);
         await _service.validateOTPToken(uid, otpToken);
     });
 
@@ -419,7 +419,7 @@ describe('User Authority Update:', async function() {
         let user: IUser|undefined = await _model.getUser(uid);
 
         // Make sure the authority matches
-        expect(user.authority).toBe(_test.users[0].authority);
+        expect(user!.authority).toBe(_test.users[0].authority);
 
         // Make sure it matches the local object
             // @ts-ignore
@@ -432,7 +432,7 @@ describe('User Authority Update:', async function() {
         user = await _model.getUser(uid);
 
         // Make sure the changes took effect
-        expect(user.authority).toBe(1);
+        expect(user!.authority).toBe(1);
 
         // Make sure it matches the local object
         // @ts-ignore
@@ -524,15 +524,15 @@ describe('User FCM Token Update:', async function() {
         await _service.updateFCMToken(uid, _test.fcmTokens[0]);
 
         // Retrieve the user record from the db
-        let user: IUser = await _model.getUser(uid);
-        const originalToken: string = user.fcm_token;
+        let user: IUser|undefined = await _model.getUser(uid);
+        const originalToken: string|undefined = user!.fcm_token;
 
         // The FCM Token must now match
         expect(originalToken).toBe(_test.fcmTokens[0]);
 
         // Retrieve the list of tokens and make sure it is there
         let tokens: string[] = await _service.getFCMTokens();
-        expect(tokens.includes(originalToken)).toBeTruthy();
+        expect(tokens.includes(originalToken!)).toBeTruthy();
 
         // Update the token again
         await _service.updateFCMToken(uid, _test.fcmTokens[1]);
@@ -541,12 +541,12 @@ describe('User FCM Token Update:', async function() {
         user = await _model.getUser(uid);
 
         // The FCM Token must match the new one
-        expect(user.fcm_token).toBe(_test.fcmTokens[1]);
+        expect(user!.fcm_token).toBe(_test.fcmTokens[1]);
 
         // Retrieve the list of tokens and make sure it is there and the old one isn't
         tokens = await _service.getFCMTokens();
-        expect(tokens.includes(user.fcm_token)).toBeTruthy();
-        expect(tokens.includes(originalToken)).toBeFalsy();
+        expect(tokens.includes(user!.fcm_token!)).toBeTruthy();
+        expect(tokens.includes(originalToken!)).toBeFalsy();
     });
 
 
@@ -611,7 +611,7 @@ describe('User Credentials Verification:', async function() {
         let user: IUser|undefined = await _model.getUser(uid);
 
         // Set a new password on the account
-        let otpToken: string = authenticator.generate(user.otp_secret);
+        let otpToken: string = authenticator.generate(user!.otp_secret);
         await _service.updatePassword(_test.users[0].email, _test.users[0].password, otpToken, '');
 
         // Verify the correct credentials

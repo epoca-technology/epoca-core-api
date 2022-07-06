@@ -26,7 +26,7 @@ export interface ICandlestickService {
 export interface ICandlestickModel {
     // Candlesticks Configuration
     standardConfig: ICandlestickConfig,
-    forecastConfig: ICandlestickConfig,
+    predictionConfig: ICandlestickConfig,
 
     // Candlestick Retrievers
     get(start?: number, end?: number, limit?: number, forecast?: boolean): Promise<ICandlestick[]>,
@@ -41,7 +41,7 @@ export interface ICandlestickModel {
     mergeCandlesticks(candlesticks: ICandlestick[]): ICandlestick,
 
     // Misc Helpers
-    getForecastCandlestickCloseTime(ot: number): number,
+    getPredictionCandlestickCloseTime(ot: number): number,
 }
 
 
@@ -67,9 +67,7 @@ export interface ICandlestick {
     h: number,                  // High Price
     l: number,                  // Low Price
     c: number,                  // Close Price
-    v: number,                  // Volume (USDT)
-    tbv: number,                // Taker Buy Volume (USDT)
-    nt: number,                 // Number of Trades
+    v: number                   // Volume (USDT)
 }
 
 

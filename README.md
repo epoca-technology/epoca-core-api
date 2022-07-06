@@ -1,6 +1,6 @@
-# PLUTUS CORE API
+# EPOCA CORE API
 
-Plutus Core is an API designed to manage the Plutus system as well as communicating with the GUI and the Forecast API.
+Epoca Core is an API designed to manage the system as well as communicating with the GUI and the Prediction API.
 
 
 
