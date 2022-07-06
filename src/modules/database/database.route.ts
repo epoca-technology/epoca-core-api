@@ -4,7 +4,7 @@ import {appContainer, SYMBOLS} from '../../ioc';
 
 
 // Request Guard
-import {highRiskLimit, IRequestGuardService, ultraHighRiskLimit} from '../request-guard';
+import {highRiskLimit, IRequestGuardService} from '../request-guard';
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
 // API Error
