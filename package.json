@@ -1,7 +1,7 @@
 {
   "name": "api-development",
   "version": "1.0.0",
-  "description": "Plutus is an automated trading system based on machine learning, designed to operate on Bitcoin perpetual future contracts.",
+  "description": "Epoca is an automated trading system based on machine learning, designed to operate on Bitcoin perpetual future contracts.",
   "main": "index.js",
   "scripts": {
     "start": "node dist/index.js",
@@ -27,6 +27,7 @@
   "homepage": "https://bitbucket.org/projectplutus/api-development#readme",
   "dependencies": {
     "@getvim/execute": "1.0.0",
+    "adm-zip": "0.5.9",
     "bignumber.js": "9.0.1",
     "body-parser": "1.19.0",
     "cli-progress": "3.10.0",
@@ -50,6 +51,7 @@
     "uuid": "8.3.2"
   },
   "devDependencies": {
+    "@types/adm-zip": "0.5.0",
     "@types/cli-progress": "3.9.2",
     "@types/cors": "2.8.12",
     "@types/express": "4.17.13",

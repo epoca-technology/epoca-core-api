@@ -22,9 +22,9 @@ const _candlestick = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickSe
 import {IDatabaseService} from './modules/database';
 const _db = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
-// Forecast
-import {IForecastService} from './modules/forecast';
-const _forecast = appContainer.get<IForecastService>(SYMBOLS.ForecastService);
+// Prediction
+import {IPredictionService} from './modules/prediction';
+const _prediction = appContainer.get<IPredictionService>(SYMBOLS.PredictionService);
 
 // IP Blacklist
 import {IIPBlacklistService} from './modules/ip-blacklist';
@@ -45,7 +45,7 @@ const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
  * 3) Candlestick Module
  * 4) Server Module
  * 5) IP Blacklist Module
- * 6) Forecast Module
+ * 6) Prediction Module
  * 7) Trading Simulation Module
  * 8) Trading Session Module
  * 
@@ -53,7 +53,7 @@ const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
  * stop the following modules:
  * 1) Candlestick Module
  * 2) Server Module
- * 3) Forecast Module
+ * 3) Prediction Module
  * 4) Trading Simulation Module
  * 5) Trading Session Module
  */
@@ -113,11 +113,11 @@ export async function init(): Promise<void> {
                 throw e;
             }
 
-            // Initialize the Forecast Module
+            // Initialize the Prediction Module
             try {
-                await _forecast.initialize();
+                await _prediction.initialize();
             } catch (e) {
-                console.error('Error when initializing the Forecast Module: ', e)
+                console.error('Error when initializing the Prediction Module: ', e)
                 throw e;
             }
             
@@ -147,8 +147,8 @@ export async function init(): Promise<void> {
         // Stop the Server Module
         _server.stop();
 
-        // Stop the Forecast Module
-        _forecast.stop();
+        // Stop the Prediction Module
+        _prediction.stop();
 
         // Stop the Trading Simulation Module
         // @TODO

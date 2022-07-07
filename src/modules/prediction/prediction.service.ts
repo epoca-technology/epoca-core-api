@@ -2,20 +2,20 @@ import {inject, injectable} from "inversify";
 import { environment, SYMBOLS } from "../../ioc";
 import { IExternalRequestOptions, IExternalRequestResponse, IExternalRequestService } from "../external-request";
 import { IAPIResponse, IUtilitiesService } from "../utilities";
-import { IForecastService, IForecast } from "./interfaces";
+import { IPredictionService } from "./interfaces";
 
 
 
 
 @injectable()
-export class ForecastService implements IForecastService {
+export class PredictionService implements IPredictionService {
     // Inject dependencies
     @inject(SYMBOLS.ExternalRequestService)           private _req: IExternalRequestService;
     @inject(SYMBOLS.UtilitiesService)                 private _utils: IUtilitiesService;
 
     // HTTP options
     private options: IExternalRequestOptions = {
-        host: 'forecast-api',
+        host: 'prediction-api',
         path: '/',
         method: 'GET',
         port: 5000,
@@ -25,8 +25,8 @@ export class ForecastService implements IForecastService {
         }
     }
 
-    // Forecast Retriever
-    private forecastInterval: any;
+    // Prediction Retriever
+    private predictionInterval: any;
     private readonly intervalSeconds: number = 45 * 1000;
     private readonly secondsTolerance: number = 60;
 
@@ -38,7 +38,7 @@ export class ForecastService implements IForecastService {
 
 
     public async initialize(): Promise<void> {
-        this.forecastInterval = setInterval(async () => {
+        this.predictionInterval = setInterval(async () => {
             try {
                 // Set the path
                 this.options.path = '/';
@@ -56,7 +56,7 @@ export class ForecastService implements IForecastService {
                 // Validate the response
                 if (!apiResponse.success) throw new Error(apiResponse.error);
 
-                console.log(`Forecast API: ${apiResponse.data}`);
+                console.log(`Prediction API: ${apiResponse.data}`);
             } catch (e) { 
 
             }
@@ -69,7 +69,7 @@ export class ForecastService implements IForecastService {
 
 
     public stop(): void {
-        if (this.forecastInterval) clearInterval(this.forecastInterval);
+        if (this.predictionInterval) clearInterval(this.predictionInterval);
     }
 
 
@@ -79,24 +79,10 @@ export class ForecastService implements IForecastService {
 
 
     /**
-     * Communicates with the RNN in order to retrieve a forecast. 
-     * The end parameter can be used with past trading simulations. If none
-     * is provided, it will use Date.now() as end.
-     * @param end?
-     * @returns Promise<IForecast>
+     * ...
      */
-    public async forecast(end?: number): Promise<IForecast> {
-        // Init the end
-        end = typeof end == "number" ? end: Date.now();
-
-        // Perform the request
-        // @TODO
-
-        // Return the results
-        return { 
-            position: Math.random() >= 0.5 ? 1: -1, 
-            data: undefined 
-        };
+    public async predict(): Promise<any> {
+        return {}
     }
 
 

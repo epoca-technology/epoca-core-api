@@ -26,11 +26,12 @@
     // External Request
     ExternalRequestService: Symbol.for("ExternalRequestService"),
 
-    // File
+    // File Manager
     FileService: Symbol.for("FileService"),
+    FileManagerService: Symbol.for("FileManagerService"),
 
-    // Forecast
-    ForecastService: Symbol.for("ForecastService"),
+    // Prediction
+    PredictionService: Symbol.for("PredictionService"),
 
     // GUI Version
     GuiVersionService: Symbol.for("GuiVersionService"),
@@ -75,8 +76,9 @@ export interface ISymbols {
     ExternalRequestService: symbol,
 
     FileService: symbol,
+    FileManagerService: symbol,
 
-    ForecastService: symbol,
+    PredictionService: symbol,
 
     GuiVersionService: symbol,
 

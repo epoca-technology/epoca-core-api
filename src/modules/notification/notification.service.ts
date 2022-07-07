@@ -135,7 +135,7 @@ export class NotificationService implements INotificationService {
             // Init the Message
             const message: MulticastMessage = {
                 notification: {
-                    title: `PLUTUS_${notification.sender}: ${notification.title}`,
+                    title: `EPOCA_${notification.sender}: ${notification.title}`,
                     body: notification.description,
                     imageUrl: this.iconURL
                 },

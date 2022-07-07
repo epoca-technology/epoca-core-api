@@ -11,8 +11,9 @@ import { binanceModule } from "../modules/binance";
 import { candlestickModule } from "../modules/candlestick";
 import { databaseModule } from "../modules/database";
 import { externalRequestModule } from "../modules/external-request";
+import { fileManagerModule } from "../modules/file-manager";
 import { fileModule } from "../modules/file";
-import { forecastModule } from "../modules/forecast";
+import { predictionModule } from "../modules/prediction";
 import { guiVersionModule } from "../modules/gui-version";
 import { ipBlacklistModule } from "../modules/ip-blacklist";
 import { notificationModule } from "../modules/notification";
@@ -55,11 +56,12 @@ appContainer.load(
     // External Request
     externalRequestModule,
 
-    // File
+    // File Manager
+    fileManagerModule,
     fileModule,
 
-    // Forecast
-    forecastModule,
+    // Prediction
+    predictionModule,
 
     // GUI Version
     guiVersionModule,
