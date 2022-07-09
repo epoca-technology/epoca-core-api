@@ -88,7 +88,7 @@ export class CandlestickFileService implements ICandlestickFileService {
             const cloudPath: string = `${this.predictionCloudPath}/${fileName}`;
 
             // Build the file and save it in the local volume
-            this.preditionFileTask.logProgress(5, "Build and saving the candlesticks file in the local volume.");
+            this.preditionFileTask.logProgress(5, "Building and saving the candlesticks file in the local volume.");
             await this.buildAndSaveCandlesticksFile(localPath, true);
 
             // Upload the file to the cloud
