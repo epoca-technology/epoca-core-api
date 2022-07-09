@@ -1,10 +1,10 @@
-import {appContainer, SYMBOLS} from '../../ioc';
+import {inject} from "inversify";
+import {SYMBOLS} from '../../ioc';
 import * as moment from 'moment';
 import { IUtilitiesService } from '../utilities';
 import { IBackgroundTask, IBackgroundTaskInfo } from "./interfaces";
 
-// Initialize the Utilities Instance
-const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
+
 
 
 
@@ -12,6 +12,10 @@ const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Class
 export class BackgroundTask implements IBackgroundTask {
+    // Inject Container Dependencies
+    @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
+
+
     // Task Information
     private task: IBackgroundTaskInfo;
 
@@ -29,7 +33,7 @@ export class BackgroundTask implements IBackgroundTask {
      * for over 2 minutes, it will set it on idle state.
      * @returns IBackgroundTaskInfo
      */
-    public get(): IBackgroundTaskInfo {
+    public getTask(): IBackgroundTaskInfo {
         // check if the task has been completed
         if (this.task.state == "completed") {
             // Calculate the time in which it should be set back to idle
@@ -65,7 +69,7 @@ export class BackgroundTask implements IBackgroundTask {
     public start(): void {
         // Make sure there isn't another task running
         if (this.task.state == "running") {
-            throw new Error(_utils.buildApiError(`The task ${this.task.name} cannot be started because it is already running.`, 14000))
+            throw new Error(this._utils.buildApiError(`The task ${this.task.name} cannot be started because it is already running.`, 14000))
         }
 
         // Start the new task
@@ -93,18 +97,18 @@ export class BackgroundTask implements IBackgroundTask {
     public logProgress(currentProgress: number, description?: string): void {
         // Make sure there is a task running
         if (this.task.state != "running") {
-            throw new Error(_utils.buildApiError(`The task ${this.task.name} progress cannot be updated because there isnt a task running.`, 14001))
+            throw new Error(this._utils.buildApiError(`The task ${this.task.name} progress cannot be updated because there isnt a task running.`, 14001))
         }
 
         // The progress must be a number ranging 0 - 100
         if (currentProgress < 0 || currentProgress > 100) {
-            throw new Error(_utils.buildApiError(`The task ${this.task.name} progress cannot be updated because an invalid value was provided (${currentProgress}).`, 14002))
+            throw new Error(this._utils.buildApiError(`The task ${this.task.name} progress cannot be updated because an invalid value was provided (${currentProgress}).`, 14002))
         }
 
         // If the task has not been completed, just update the progress
         if (currentProgress < 100) {
             this.task.progress = currentProgress;
-            this.task.stateDescription = description || "N/A"
+            this.task.stateDescription = description || "N/A";
         } 
         
         // Otherwise, complete the task
@@ -129,12 +133,12 @@ export class BackgroundTask implements IBackgroundTask {
     public errored(error: any): void {
         // Make sure there is a task running
         if (this.task.state != "running") {
-            throw new Error(_utils.buildApiError(`The task ${this.task.name} cannot be marked as errored because there isnt a task running.`, 14002))
+            throw new Error(this._utils.buildApiError(`The task ${this.task.name} cannot be marked as errored because there isnt a task running.`, 14002))
         }
 
         // Update the task details
         this.task.state = "errored";
-        this.task.stateDescription = _utils.getErrorMessage(error);
+        this.task.stateDescription = this._utils.getErrorMessage(error);
         this.task.progress = 0;
         this.task.errored_ts = Date.now();
     }

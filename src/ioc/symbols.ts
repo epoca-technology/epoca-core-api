@@ -19,15 +19,16 @@
     CandlestickService: Symbol.for("CandlestickService"),
     CandlestickModel: Symbol.for("CandlestickModel"),
     CandlestickValidations: Symbol.for("CandlestickValidations"),
+    CandlestickFileService: Symbol.for("CandlestickFileService"),
 
     // Database
     DatabaseService: Symbol.for("DatabaseService"),
+    DatabaseFileService: Symbol.for("DatabaseFileService"),
 
     // External Request
     ExternalRequestService: Symbol.for("ExternalRequestService"),
 
     // File Manager
-    FileService: Symbol.for("FileService"),
     FileManagerService: Symbol.for("FileManagerService"),
 
     // Prediction
@@ -70,12 +71,13 @@ export interface ISymbols {
     CandlestickService: symbol,
     CandlestickModel: symbol,
     CandlestickValidations: symbol,
+    CandlestickFileService: symbol,
 
     DatabaseService: symbol,
+    DatabaseFileService: symbol,
 
     ExternalRequestService: symbol,
 
-    FileService: symbol,
     FileManagerService: symbol,
 
     PredictionService: symbol,

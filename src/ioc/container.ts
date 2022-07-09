@@ -12,7 +12,6 @@ import { candlestickModule } from "../modules/candlestick";
 import { databaseModule } from "../modules/database";
 import { externalRequestModule } from "../modules/external-request";
 import { fileManagerModule } from "../modules/file-manager";
-import { fileModule } from "../modules/file";
 import { predictionModule } from "../modules/prediction";
 import { guiVersionModule } from "../modules/gui-version";
 import { ipBlacklistModule } from "../modules/ip-blacklist";
@@ -58,7 +57,6 @@ appContainer.load(
 
     // File Manager
     fileManagerModule,
-    fileModule,
 
     // Prediction
     predictionModule,

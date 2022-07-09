@@ -42,6 +42,18 @@ export interface IDatabaseService {
 
 
 
+// File Service
+export interface IDatabaseFileService {
+    // Backup
+    uploadDatabaseBackup(fileName: string): Promise<void>,
+
+    // Restore
+    restoreDatabaseBackup(fileName: string): Promise<void>,
+    cleanDatabaseManagementFiles(): Promise<void>
+}
+
+
+
 
 
 

@@ -7,13 +7,7 @@ import * as pathHelper from "path";
 import * as Zip from "adm-zip";
 import {BigNumber} from "bignumber.js";
 import { IUtilitiesService } from "../utilities";
-import { 
-    IFileExtension, 
-    IFileManagerService, 
-    IDirectoryContent, 
-    ILocalPathItem, 
-    ICloudFile 
-} from "./interfaces";
+import { IFileExtension, IFileManagerService, IDirectoryContent, ILocalPathItem, ICloudFile } from "./interfaces";
 
 
 
@@ -57,7 +51,8 @@ export class FileManagerService implements IFileManagerService {
 
         // Make sure there is a response
         if (!response || !Array.isArray(response) || !response.length) {
-            throw new Error(`Google Cloud returned an invalid response when uploading ${originPath}.`);
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Google Cloud returned an invalid response when uploading ${originPath}.`, 15000));
         }
 
         // List the cloud files
@@ -69,7 +64,7 @@ export class FileManagerService implements IFileManagerService {
         const selectedFile: ICloudFile[] = cloudFiles.filter((f) => { return f.name == baseName });
         if (selectedFile.length != 1) {
             console.log(selectedFile);
-            throw new Error(`The upload process went through normally. However, the cloud file could not be listed in: ${destinationCloudPath}.`);
+            throw new Error(this._utils.buildApiError(`The upload process went through normally. However, the cloud file could not be listed in: ${destinationCloudPath}.`, 15001));
         }
 
         // Finally, return the file
@@ -98,7 +93,8 @@ export class FileManagerService implements IFileManagerService {
 
         // Make sure there is a response
         if (!downloadResponse) {
-            throw new Error(`Google Cloud returned an invalid response when downloading ${originCloudPath}.`);
+            console.log(downloadResponse);
+            throw new Error(this._utils.buildApiError(`Google Cloud returned an invalid response when downloading ${originCloudPath}.`, 15002));
         }
 
         // Make sure the file has been placed in the local path
@@ -110,7 +106,7 @@ export class FileManagerService implements IFileManagerService {
         const selectedFile: ILocalPathItem[] = files.filter((f) => { return f.baseName == baseName });
         if (selectedFile.length != 1) {
             console.log(selectedFile);
-            throw new Error(`The downloaded file was not found in the local directory ${destinationPath}.`);
+            throw new Error(this._utils.buildApiError(`The downloaded file was not found in the local directory ${destinationPath}.`, 15003));
         }
 
         // Finally, return the local item
@@ -167,7 +163,7 @@ export class FileManagerService implements IFileManagerService {
         
         // Make sure at least 1 file was found
         if (!filesResponse || !filesResponse[0] || !filesResponse[0].length) {
-            throw new Error(`The Google Cloud Download did not return valid files for ${cloudPath}.`);
+            throw new Error(this._utils.buildApiError(`The Google Cloud Download did not return valid files for ${cloudPath}.`, 15004));
         }
 
         // Iterate over the Google Cloud Objects and populate the file names
@@ -194,7 +190,7 @@ export class FileManagerService implements IFileManagerService {
 
         // Make sure at least 1 cloud file was extracted
         if (!files.length) {
-            throw new Error(`Google Cloud returned a valid response. However, no files could be extracted in: ${cloudPath}.`);
+            throw new Error(this._utils.buildApiError(`Google Cloud returned a valid response. However, no files could be extracted in: ${cloudPath}.`, 15005));
         }
 
         // Sort the list

@@ -5,7 +5,7 @@ export interface IBackgroundTask {
     // ...
 
     // Task Management
-    get(): IBackgroundTaskInfo,
+    getTask(): IBackgroundTaskInfo,
     start(): void,
     logProgress(currentProgress: number, description?: string): void,
     errored(error: any): void

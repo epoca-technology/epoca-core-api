@@ -1,4 +1,5 @@
 import { BehaviorSubject } from "rxjs";
+import { IBackgroundTask, IBackgroundTaskInfo } from "../background-task";
 import { IBinanceCandlestickInterval } from "../binance";
 
 
@@ -29,12 +30,12 @@ export interface ICandlestickModel {
     predictionConfig: ICandlestickConfig,
 
     // Candlestick Retrievers
-    get(start?: number, end?: number, limit?: number, forecast?: boolean): Promise<ICandlestick[]>,
-    getLastOpenTimestamp(forecast?: boolean): Promise<number>,
-    getLast(forecast?: boolean, limit?: number): Promise<ICandlestick[]>,
+    get(start?: number, end?: number, limit?: number, prediction?: boolean): Promise<ICandlestick[]>,
+    getLastOpenTimestamp(prediction?: boolean): Promise<number>,
+    getLast(prediction?: boolean, limit?: number): Promise<ICandlestick[]>,
 
     // Candlestick Saving
-    saveCandlesticks(candlesticks: ICandlestick[], forecast?: boolean): Promise<void>,
+    saveCandlesticks(candlesticks: ICandlestick[], prediction?: boolean): Promise<void>,
 
     // Candlestick Merging
     alterInterval(candlesticks1m: ICandlestick[], intervalMinutes: number): ICandlestick[],
@@ -50,6 +51,24 @@ export interface ICandlestickModel {
 // Validations
 export interface ICandlestickValidations {
     canGetForPeriod(start: number, end: number, intervalMinutes: number): void
+}
+
+
+
+
+
+
+// Candlestick File Service
+export interface ICandlestickFileService {
+    // Tasks
+    preditionFileTask: IBackgroundTask,
+    bundleFileTask: IBackgroundTask,
+    
+    // Prediction Candlesticks File
+    generatePredictionCandlesticksFile(): IBackgroundTaskInfo,
+
+    // Candlesticks Bundle File
+    generateCandlesticksBundleFile(): IBackgroundTaskInfo
 }
 
 

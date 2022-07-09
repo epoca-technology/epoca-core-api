@@ -1,2 +1,2 @@
 export * from "./interfaces";
-export * from "./background-task"
+export * from "./background-task";

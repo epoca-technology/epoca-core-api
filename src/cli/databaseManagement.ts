@@ -3,8 +3,8 @@ import "reflect-metadata";
 import { appContainer, environment, SYMBOLS } from "../ioc";
 
 // Init the File Service
-import { IFileService } from "../modules/file";
-const _file: IFileService = appContainer.get<IFileService>(SYMBOLS.FileService);
+import { IDatabaseFileService } from "../modules/database";
+const _file: IDatabaseFileService = appContainer.get<IDatabaseFileService>(SYMBOLS.DatabaseFileService);
 
 
 
