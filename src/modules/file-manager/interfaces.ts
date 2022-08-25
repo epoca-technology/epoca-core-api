@@ -16,6 +16,7 @@ export interface IFileManagerService {
     listCloudFiles(cloudPath: string, extension: IFileExtension): Promise<ICloudFile[]>,
 
     // Local Files Management
+    pathExists(path: string): Promise<boolean>,
     getLocalPathContent(path: string): Promise<IDirectoryContent>,
     writeLocalFile(filePath: string, data: string): Promise<void>,
     makeDirectory(path: string): Promise<void>,

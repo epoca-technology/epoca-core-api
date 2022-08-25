@@ -219,6 +219,25 @@ export class FileManagerService implements IFileManagerService {
 
 
 
+    /**
+     * Verifies if a given path exists.
+     * @param path 
+     * @returns Promise<boolean>
+     */
+    public pathExists(path: string): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            fs.access(path, (error) => {
+                // If there is an error, means the path doesnt exist.
+                if (error) { resolve(false) } 
+                
+                // Otherwise, notify that the path exists.
+                else { resolve(true) }
+            });
+        });
+    }
+
+
+
 
 
 
@@ -331,7 +350,8 @@ export class FileManagerService implements IFileManagerService {
      */
     public async makeDirectory(path: string): Promise<void> {
         // If the directory exists, delete it first
-        if (fs.existsSync(path)) await this.deleteLocalDirectory(path);
+        const pathExists: boolean = await this.pathExists(path);
+        if (pathExists) await this.deleteLocalDirectory(path);
 
         // Finally, create the directory
         return new Promise((resolve, reject) => {
@@ -344,6 +364,7 @@ export class FileManagerService implements IFileManagerService {
             });
         });
     }
+
 
 
 
