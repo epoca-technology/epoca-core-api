@@ -50,7 +50,7 @@ export class PredictionService implements IPredictionService {
                 // Validate the request data
                 if (!apiResponse || typeof apiResponse != "object") {
                     console.log(response);
-                    throw new Error(this._utils.buildApiError(`The Forecast API returned an invalid response.`, 0));
+                    throw new Error(this._utils.buildApiError(`The Prediction API returned an invalid response.`, 0));
                 }
 
                 // Validate the response

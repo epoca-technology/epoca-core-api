@@ -22,9 +22,9 @@ const _candlestick = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickSe
 import {IDatabaseService} from './modules/database';
 const _db = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
-// Prediction
-import {IPredictionService} from './modules/prediction';
-const _prediction = appContainer.get<IPredictionService>(SYMBOLS.PredictionService);
+// Epoch
+//import {IPredictionService} from './modules/prediction';
+//const _prediction = appContainer.get<IPredictionService>(SYMBOLS.PredictionService);
 
 // IP Blacklist
 import {IIPBlacklistService} from './modules/ip-blacklist';
@@ -45,15 +45,15 @@ const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
  * 3) Candlestick Module
  * 4) Server Module
  * 5) IP Blacklist Module
- * 6) Prediction Module
+ * 6) Epoch Module
  * 7) Trading Simulation Module
  * 8) Trading Session Module
  * 
- * If any of the initialization actions triggers an error, it crash the execution and
+ * If any of the initialization actions triggers an error, it crashes the execution and
  * stop the following modules:
  * 1) Candlestick Module
  * 2) Server Module
- * 3) Prediction Module
+ * 3) Epoch Module
  * 4) Trading Simulation Module
  * 5) Trading Session Module
  */
@@ -113,11 +113,11 @@ export async function init(): Promise<void> {
                 throw e;
             }
 
-            // Initialize the Prediction Module
+            // Initialize the Epoch Module
             try {
-                await _prediction.initialize();
+                // await _prediction.initialize(); @TODO
             } catch (e) {
-                console.error('Error when initializing the Prediction Module: ', e)
+                console.error('Error when initializing the Epoch Module: ', e)
                 throw e;
             }
             
@@ -147,8 +147,8 @@ export async function init(): Promise<void> {
         // Stop the Server Module
         _server.stop();
 
-        // Stop the Prediction Module
-        _prediction.stop();
+        // Stop the Epoch Module
+        // _prediction.stop(); @TODO
 
         // Stop the Trading Simulation Module
         // @TODO
