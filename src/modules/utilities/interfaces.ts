@@ -75,6 +75,10 @@ export interface IValidationsService {
     // IP
     ipValid(ip: string): boolean,
     ipNotesValid(notes: string): boolean,
+
+    // Epoch
+    epochIDValid(id: string): boolean,
+    modelIDValid(id: string): boolean,
 }
 
 

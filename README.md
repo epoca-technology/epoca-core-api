@@ -3,6 +3,8 @@
 Epoca Core is an API designed to manage the system as well as communicating with the GUI and the Prediction API.
 
 
+[API Errors](./API_ERRORS.md)
+
 
 ## Requirements
 

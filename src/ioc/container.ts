@@ -10,6 +10,7 @@ import { authModule } from "../modules/auth";
 import { binanceModule } from "../modules/binance";
 import { candlestickModule } from "../modules/candlestick";
 import { databaseModule } from "../modules/database";
+import { epochModule } from "../modules/epoch";
 import { externalRequestModule } from "../modules/external-request";
 import { fileManagerModule } from "../modules/file-manager";
 import { predictionModule } from "../modules/prediction";
@@ -51,6 +52,9 @@ appContainer.load(
 
     // Database
     databaseModule,
+
+    // Epoch
+    epochModule,
 
     // External Request
     externalRequestModule,

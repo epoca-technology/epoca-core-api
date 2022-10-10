@@ -326,4 +326,40 @@ export class ValidationsService implements IValidationsService {
      * @returns boolean
      */
     public ipNotesValid(notes: string): boolean { return typeof notes == "string" && notes.length >= 5 && notes.length <= 3000 }
+
+
+
+
+
+
+
+
+
+
+    /* Epoch */
+
+
+
+    /**
+     * Verifies if a provided Epoch ID is valid.
+     * @param id 
+     * @returns boolean
+     */
+    public epochIDValid(id: string): boolean {
+        return typeof id == "string" && id.length >= 4 && id.length <= 100 && id[0] == "_";
+    }
+
+
+
+
+
+
+    /**
+     * Verifies if a provided Regression or Prediction Model ID is valid.
+     * @param id 
+     * @returns boolean
+     */
+     public modelIDValid(id: string): boolean {
+        return typeof id == "string" && id.length >= 30 && id.length <= 200;
+    }
 }

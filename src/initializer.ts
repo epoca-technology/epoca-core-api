@@ -23,8 +23,8 @@ import {IDatabaseService} from './modules/database';
 const _db = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 // Epoch
-//import {IPredictionService} from './modules/prediction';
-//const _prediction = appContainer.get<IPredictionService>(SYMBOLS.PredictionService);
+import {IEpochService} from './modules/epoch';
+const _epoch = appContainer.get<IEpochService>(SYMBOLS.EpochService);
 
 // IP Blacklist
 import {IIPBlacklistService} from './modules/ip-blacklist';
@@ -115,7 +115,7 @@ export async function init(): Promise<void> {
 
             // Initialize the Epoch Module
             try {
-                // await _prediction.initialize(); @TODO
+                await _epoch.initialize();
             } catch (e) {
                 console.error('Error when initializing the Epoch Module: ', e)
                 throw e;
@@ -148,7 +148,7 @@ export async function init(): Promise<void> {
         _server.stop();
 
         // Stop the Epoch Module
-        // _prediction.stop(); @TODO
+        _epoch.stop();
 
         // Stop the Trading Simulation Module
         // @TODO

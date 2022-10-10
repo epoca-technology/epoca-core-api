@@ -104,4 +104,96 @@ export const TABLES: IRawTable[] = [
             );`
         }
     },
+
+    // Epochs
+    {
+        name: 'epochs',
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id              VARCHAR(100) NOT NULL PRIMARY KEY,
+                installed       BIGINT NOT NULL,
+                uninstalled     BIGINT NULL,
+                config          JSONB NOT NULL,
+                model           JSONB NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_installed ON ${tableName}(installed);
+            CREATE INDEX IF NOT EXISTS ${tableName}_uninstalled ON ${tableName}(uninstalled);`
+        }
+    },
+
+
+    // Prediction Model Certificates
+    {
+        name: 'prediction_model_certificates',
+        sql: (tableName: string): string => {
+            /**
+             * In order to create the foreign key, the epoch's table name must be derived
+             * based on the mode the API is running in.
+             */
+            const epochsTableName: string = tableName.includes("test_") ? "test_epochs": "epochs";
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id              VARCHAR(200) NOT NULL PRIMARY KEY,
+                epoch_id        VARCHAR(100) NOT NULL REFERENCES ${epochsTableName}(id),
+                certificate     JSONB NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_epoch_id ON ${tableName}(epoch_id);`
+        }
+    },
+
+
+    // Regression Certificates
+    {
+        name: 'regression_certificates',
+        sql: (tableName: string): string => {
+            /**
+             * In order to create the foreign key, the epoch's table name must be derived
+             * based on the mode the API is running in.
+             */
+            const epochsTableName: string = tableName.includes("test_") ? "test_epochs": "epochs";
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id              VARCHAR(200) NOT NULL PRIMARY KEY,
+                epoch_id        VARCHAR(100) NOT NULL REFERENCES ${epochsTableName}(id),
+                certificate     JSONB NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_epoch_id ON ${tableName}(epoch_id);`
+        }
+    },
+
+
+    // Trading Simulations
+    // @TODO
+
+    
+    // Trading Sessions
+    // @TODO
+
+
+    // Epoch Metrics
+    {
+        name: 'epoch_metrics',
+        sql: (tableName: string): string => {
+            /**
+             * In order to create the foreign key, the epoch's table name must be derived
+             * based on the mode the API is running in.
+             */
+            const epochsTableName: string = tableName.includes("test_") ? "test_epochs": "epochs";
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id                  VARCHAR(100) NOT NULL REFERENCES ${epochsTableName}(id),
+                profit              NUMERIC(20,2) NOT NULL,
+                fees                NUMERIC(20,2) NOT NULL,
+                longs               INTEGER NOT NULL,
+                successful_longs    INTEGER NOT NULL,
+                shorts              INTEGER NOT NULL,
+                successful_shorts   INTEGER NOT NULL,
+                long_accuracy       NUMERIC(5,2) NOT NULL,
+                short_accuracy      NUMERIC(5,2) NOT NULL,
+                accuracy            NUMERIC(5,2) NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_id ON ${tableName}(id);`
+        }
+    },
+
+
+    // Epoch Positions
+    // @TODO
 ];

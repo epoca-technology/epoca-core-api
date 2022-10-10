@@ -25,6 +25,12 @@
     DatabaseService: Symbol.for("DatabaseService"),
     DatabaseFileService: Symbol.for("DatabaseFileService"),
 
+    // Epoch
+    EpochService: Symbol.for("EpochService"),
+    EpochValidations: Symbol.for("EpochValidations"),
+    EpochModel: Symbol.for("EpochModel"),
+    EpochFile: Symbol.for("EpochFile"),
+
     // External Request
     ExternalRequestService: Symbol.for("ExternalRequestService"),
 
@@ -61,40 +67,59 @@
 export interface ISymbols {
     ApiErrorService: symbol,
 
+
     AuthService: symbol,
     AuthModel: symbol,
     AuthValidations: symbol,
     ApiSecretService: symbol,
 
+
     BinanceService: symbol,
+
 
     CandlestickService: symbol,
     CandlestickModel: symbol,
     CandlestickValidations: symbol,
     CandlestickFileService: symbol,
 
+
     DatabaseService: symbol,
     DatabaseFileService: symbol,
 
+
+    EpochService: symbol,
+    EpochValidations: symbol,
+    EpochModel: symbol,
+    EpochFile: symbol,
+    
+
     ExternalRequestService: symbol,
+
 
     FileManagerService: symbol,
 
+
     PredictionService: symbol,
 
+
     GuiVersionService: symbol,
+
 
     IPBlacklistService: symbol,
     IPBlacklistModel: symbol,
     IPBlacklistValidations: symbol,
 
+
     NotificationService: symbol,
 
+
     RequestGuardService: symbol,
+
 
     ServerService: symbol,
     ServerValidations: symbol,
     
+
     UtilitiesService: symbol,
     ValidationsService: symbol,
 }

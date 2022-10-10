@@ -70,7 +70,11 @@ export interface ITableNames {
     prediction_candlesticks: string,
     users: string,
     ip_blacklist: string,
-    api_errors: string
+    api_errors: string,
+    epochs: string,
+    prediction_model_certificates: string,
+    regression_certificates: string,
+    epoch_metrics: string,
 }
 
 
