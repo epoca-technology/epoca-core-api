@@ -40,7 +40,8 @@ const CandlestickRoute = express.Router();
 
 
 /**
- * Allows the GUI to verify that the server is running and can take requests.
+ * Retrieves the list of candlesticks within the provided period, grouped in the 
+ * provided interval.
  * @requires id-token
  * @requires api-secret
  * @requires authority: 3
@@ -93,39 +94,6 @@ CandlestickRoute.route(`/getForPeriod`).get(ultraLowRiskLimit, async (req: expre
 
 
 
-
-
-/**
- * Retrieves the prediction candlesticks' file's task.
- * @requires id-token
- * @requires api-secret
- * @requires authority: 3
- * @returns IAPIResponse<IBackgroundTaskInfo>
-*/
-CandlestickRoute.route(`/getPredictionFileTask`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Init values
-    const idToken: string = req.get("id-token");
-    const apiSecret: string = req.get("api-secret");
-    const ip: string = req.clientIp;
-    let reqUid: string;
-
-    try {
-        // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 3);
-
-        // Return the response
-        res.send(_utils.apiResponse(_candlestickFile.preditionFileTask.getTask()));
-    } catch (e) {
-		console.log(e);
-        _apiError.log('CandlestickRoute.getPredictionFileTask', e, reqUid, ip, req.query);
-        res.send(_utils.apiResponse(undefined, e));
-    }
-});
-
-
-
-
-
 /**
  * Creates the background task that will manage the building and uploading
  * of the prediction candlesticks file.
@@ -164,30 +132,14 @@ CandlestickRoute.route(`/getPredictionFileTask`).get(ultraLowRiskLimit, async (r
 
 
 
-
-
-
-
-
-
-/* Candlesticks Bundle File Endpoints */
-
-
-
-
-
-
-
-
-
 /**
- * Retrieves the candlesticks bundle file's task.
+ * Retrieves the prediction candlesticks' file's task.
  * @requires id-token
  * @requires api-secret
  * @requires authority: 3
  * @returns IAPIResponse<IBackgroundTaskInfo>
 */
-CandlestickRoute.route(`/getBundleFileTask`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+CandlestickRoute.route(`/getPredictionFileTask`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -199,13 +151,30 @@ CandlestickRoute.route(`/getBundleFileTask`).get(ultraLowRiskLimit, async (req: 
         reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 3);
 
         // Return the response
-        res.send(_utils.apiResponse(_candlestickFile.bundleFileTask.getTask()));
+        res.send(_utils.apiResponse(_candlestickFile.preditionFileTask.getTask()));
     } catch (e) {
 		console.log(e);
-        _apiError.log('CandlestickRoute.getBundleFileTask', e, reqUid, ip, req.query);
+        _apiError.log('CandlestickRoute.getPredictionFileTask', e, reqUid, ip, req.query);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Candlesticks Bundle File Endpoints */
 
 
 
@@ -245,6 +214,44 @@ CandlestickRoute.route(`/getBundleFileTask`).get(ultraLowRiskLimit, async (req: 
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
+
+
+
+
+
+/**
+ * Retrieves the candlesticks bundle file's task.
+ * @requires id-token
+ * @requires api-secret
+ * @requires authority: 3
+ * @returns IAPIResponse<IBackgroundTaskInfo>
+*/
+CandlestickRoute.route(`/getBundleFileTask`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 3);
+
+        // Return the response
+        res.send(_utils.apiResponse(_candlestickFile.bundleFileTask.getTask()));
+    } catch (e) {
+		console.log(e);
+        _apiError.log('CandlestickRoute.getBundleFileTask', e, reqUid, ip, req.query);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
 
 
 

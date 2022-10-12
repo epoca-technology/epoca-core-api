@@ -22,20 +22,56 @@ export class EpochValidations implements IEpochValidations {
 
 
 
+    /* Retrievers */
+
+
+
+
+
+
+    /**
+     * Verifies if the epochs can be listed based on the provided args.
+     * @param startAt 
+     * @param limit 
+     */
+    public canListEpochs(startAt: number|undefined, limit: number): void {
+        // Make sure the starting point is valid
+        if (typeof startAt == "number" && startAt > Date.now()) {
+            throw new Error(this._utils.buildApiError(`The starting point cannot be in the future (${startAt}).`, 17012));
+        }
+
+        // Make sure the limit is valid
+        if (typeof limit != "number" || limit < 1 || limit > 30) {
+            throw new Error(this._utils.buildApiError(`The limit must be an integer ranging 1 and 30 (${limit}).`, 17013));
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /* Installer */
+
+
+
 
     /**
      * Checks if an Epoch File can be downloaded into the shared volume.
      * @param epochID 
+     * @param activeEpoch 
      * @returns Promise<void>
      */
-    public async canEpochFileBeDownloaded(epochID: string): Promise<void> {
+    public async canEpochFileBeDownloaded(epochID: string, activeEpoch: IEpochRecord|null): Promise<void> {
         // Make sure the provided epoch id is valid
-        if (!this._validations.epochIDValid(epochID)) {
-            throw new Error(this._utils.buildApiError(`The provided Epoch ID (${epochID}) is invalid.`, 17000));
-        }
+        this.validateEpochID(epochID);
 
         // Make sure there isn't an active epoch
-        const activeEpoch: IEpochRecord|undefined = await this.model.getActiveEpochRecord();
         if (activeEpoch) {
             throw new Error(this._utils.buildApiError(`The Epoch ${epochID} cannot be installed because ${activeEpoch.id} is currently running.`, 17009));
         }
@@ -107,6 +143,28 @@ export class EpochValidations implements IEpochValidations {
 
 
 
+
+
+    /**
+     * Verifies if an epoch can be uninstalled.
+     * @param activeEpoch 
+     * @returns Promise<void>
+     */
+    public async canEpochBeUninstalled(activeEpoch: IEpochRecord|null): Promise<void> {
+        // Firstly, make sure there is an active epoch
+        if (!activeEpoch) {
+            throw new Error(this._utils.buildApiError(`The Epoch cannot be uninstalled because none is running.`, 17011));
+        }
+
+        // Make sure there are no trading simulations running
+        // @TODO
+
+        // Make sure there are no trading sessions running
+        // @TODO
+    }
+
+
+
     
 
 
@@ -115,4 +173,39 @@ export class EpochValidations implements IEpochValidations {
 
 
 
+
+
+
+    /* Shared Validations */
+
+
+
+
+
+
+    /**
+     * Verifies if the provided Epoch ID is valid. Throws an error otherwise.
+     * @param epochID 
+     */
+    public validateEpochID(epochID: string): void {
+        if (!this._validations.epochIDValid(epochID)) {
+            throw new Error(this._utils.buildApiError(`The provided Epoch ID (${epochID}) is invalid.`, 17000));
+        }
+    }
+
+
+
+
+
+
+
+    /**
+     * Verifies if the provided Model ID is valid. Throws an error otherwise.
+     * @param modelID 
+     */
+     public validateModelID(modelID: string): void {
+        if (!this._validations.modelIDValid(modelID)) {
+            throw new Error(this._utils.buildApiError(`The provided Model ID (${modelID}) is invalid.`, 17014));
+        }
+    }
 }

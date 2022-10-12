@@ -1,9 +1,15 @@
 import {inject, injectable} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
-import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
+import { IDatabaseService, IPoolClient } from "../database";
 import { IEpochConfig, IPredictionModelCertificate, IRegressionTrainingCertificate } from "../epoch-builder";
-import { IEpochMetricsRecord, IEpochModel, IEpochRecord } from "./interfaces";
+import { 
+    IEpochMetricsRecord, 
+    IEpochModel, 
+    IEpochPositionRecord, 
+    IEpochRecord,
+    IEpochListItem
+} from "./interfaces";
 
 
 
@@ -22,6 +28,7 @@ export class EpochModel implements IEpochModel {
 
 
     /* Epoch Retrievers */
+
 
 
 
@@ -70,6 +77,55 @@ export class EpochModel implements IEpochModel {
 
 
 
+    /**
+     * Retrieves a list of Epoch Items based on the provided start and 
+     * limit of records. If no start is provided, it will retrieve the 
+     * latest records.
+     * @param startAt 
+     * @param limit 
+     * @returns Promise<IEpochListItem[]>
+     */
+    public async listEpochs(startAt: number|undefined, limit: number): Promise<IEpochListItem[]> {
+        // Init the query
+        let text: string = "";
+        let values: number[] = [];
+
+        // Build the query
+        text += `SELECT ${this._db.tn.epochs}.id, ${this._db.tn.epochs}.installed, ${this._db.tn.epoch_metrics}.profit `;
+        text += `FROM ${this._db.tn.epochs} `;
+        text += `INNER JOIN ${this._db.tn.epoch_metrics} ON ${this._db.tn.epochs}.id = ${this._db.tn.epoch_metrics}.id  `;
+
+        // Check if the starting point was provided
+        if (typeof startAt == "number") {
+            text += "WHERE installed < $1 "
+            text += "ORDER BY installed DESC LIMIT $2;"
+            values.push(startAt);
+            values.push(limit);
+        }
+
+        // Otherwise, retrieve the latest epochs
+        else {
+            text += "ORDER BY installed DESC LIMIT $1;"
+            values.push(limit);
+        }
+
+        // Execute the query
+        const { rows } = await this._db.query({ text: text, values: values });
+
+        // Return the result
+        return rows;
+    }
+
+
+
+
+
+
+
+
+
+
+
 
     /* Epoch Metrics */
 
@@ -106,6 +162,18 @@ export class EpochModel implements IEpochModel {
 
 
 
+    /**
+     * Retrieves the list of positions that have been executed during the epoch.
+     * @param epochID 
+     * @returns IEpochPositionRecord[]
+     */
+     public async getEpochPositions(epochID: string): Promise<IEpochPositionRecord[]> {
+        return []; // @TODO
+    }
+
+
+
+
 
     /**
      * Updates the metrics and creates an epoch position record in an ACID manner.
@@ -114,9 +182,15 @@ export class EpochModel implements IEpochModel {
      * @param position 
      * @returns Promise<void>
      */
-    public async updateEpochMetrics(epochID: string, newMetrics: IEpochMetricsRecord, position: object): Promise<void> {
-
+    public async updateEpochMetrics(epochID: string, newMetrics: IEpochMetricsRecord, position: IEpochPositionRecord): Promise<void> {
+        // @TODO
     }
+
+
+
+
+
+
 
 
 
@@ -230,7 +304,7 @@ export class EpochModel implements IEpochModel {
      */
     public async uninstall(epochID: string): Promise<void> {
         await this._db.query({
-            text: `UPDATE ${this._db.tn.epochs} SET uninstall=$1 WHERE id=$2`,
+            text: `UPDATE ${this._db.tn.epochs} SET uninstalled=$1 WHERE id=$2`,
             values: [Date.now(), epochID]
         });
     }
@@ -239,7 +313,70 @@ export class EpochModel implements IEpochModel {
 
 
 
+
+
+
+
+
+
+
+
+
+    /* Certificate Retrievers */
+
+    
+
+
+
+
+    /**
+     * Retrieves a Prediction Model Certificate by ID (Not the Epoch ID). 
+     * Throws an error if the certificate is not found.
+     * @param id 
+     * @returns Promise<IPredictionModelCertificate>
+     */
+    public async getPredictionModelCertificate(id: string): Promise<IPredictionModelCertificate> {
+        // Retrieve the record if any
+        const { rows } = await this._db.query({
+            text: `SELECT certificate FROM  ${this._db.tn.prediction_model_certificates} WHERE id = $1`,
+            values: [ id ]
+        });
+
+        // Make sure the certificate was found
+        if (!rows.length || !rows[0].certificate) {
+            throw new Error(this._utils.buildApiError(`The prediction model certificate ${id} could not be found in the database.`, 18001))
+        }
+
+        // Return the result
+        return rows[0].certificate;
+    }
+
+
     
 
     
+
+
+
+    /**
+     * Retrieves a Regression Certificate by ID (Not the Epoch ID). 
+     * Throws an error if the certificate is not found.
+     * @param id 
+     * @returns Promise<IPredictionModelCertificate>
+     */
+     public async getRegressionCertificate(id: string): Promise<IRegressionTrainingCertificate> {
+        // Retrieve the record if any
+        const { rows } = await this._db.query({
+            text: `SELECT certificate FROM  ${this._db.tn.regression_certificates} WHERE id = $1`,
+            values: [ id ]
+        });
+
+        // Make sure the certificate was found
+        if (!rows.length || !rows[0].certificate) {
+            throw new Error(this._utils.buildApiError(`The regression certificate ${id} could not be found in the database.`, 18002))
+        }
+
+        // Return the result
+        return rows[0].certificate;
+    }
 }

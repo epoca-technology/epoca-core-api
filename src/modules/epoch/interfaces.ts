@@ -1,6 +1,8 @@
 import { BehaviorSubject } from "rxjs/internal/BehaviorSubject";
+import { IBackgroundTask, IBackgroundTaskInfo } from "../background-task";
 import { 
     IEpochConfig, 
+    IPositionType, 
     IPredictionModelCertificate, 
     IPredictionModelConfig, 
     IRegressionTrainingCertificate 
@@ -12,31 +14,44 @@ import {
 // Service
 export interface IEpochService {
     // Properties
+    installTask: IBackgroundTask,
+    uninstallTask: IBackgroundTask,
     active: BehaviorSubject<IEpochRecord|undefined>,
-    metrics: IEpochMetricsRecord|undefined,
 
     // Retrievers
-    // ...
+    getEpochRecord(epochID: string): Promise<IEpochRecord|undefined>,
+    getActiveEpochSummary(): IEpochSummary|undefined,
+    getEpochSummary(epochID: string): Promise<IEpochSummary>,
+    listEpochs(startAt: number, limit: number): Promise<IEpochListItem[]>,
 
     // Initializer
-    initialize(): Promise<void>,
+    initialize(activeRecord?: IEpochRecord|undefined): Promise<void>,
     stop(): void,
 
     // Installer
-    install(epochID: string): Promise<void>,
-    uninstall(): Promise<void>,
+    install(epochID: string): Promise<IBackgroundTaskInfo>,
+    uninstall(): Promise<IBackgroundTaskInfo>,
+
+    // Certificate Retrievers
+    getPredictionModelCertificate(id: string): Promise<IPredictionModelCertificate>,
+    getRegressionCertificate(id: string): Promise<IRegressionTrainingCertificate>
 }
 
 
 
 // Validations
 export interface IEpochValidations {
-
-
+    // Retrievers
+    canListEpochs(startAt: number|undefined, limit: number): void,
 
     // Installer
-    canEpochFileBeDownloaded(epochID: string): Promise<void>,
+    canEpochFileBeDownloaded(epochID: string, activeEpoch: IEpochRecord|null): Promise<void>,
     canEpochBeInstalled(epochID: string, epochFile: IUnpackedEpochFile): void,
+    canEpochBeUninstalled(activeEpoch: IEpochRecord|null): Promise<void>,
+
+    // Shared
+    validateEpochID(epochID: string): void,
+    validateModelID(modelID: string): void
 }
 
 
@@ -44,14 +59,15 @@ export interface IEpochValidations {
 
 // Model
 export interface IEpochModel {
-
     // Retrievers
     getActiveEpochRecord(): Promise<IEpochRecord|null|undefined>,
     getEpochRecordByID(epochID: string): Promise<IEpochRecord|undefined>,
+    listEpochs(startAt: number|undefined, limit: number): Promise<IEpochListItem[]>,
 
     // Epoch Metrics
     getEpochMetrics(epochID: string): Promise<IEpochMetricsRecord>,
-    
+    getEpochPositions(epochID: string): Promise<IEpochPositionRecord[]>,
+    updateEpochMetrics(epochID: string, newMetrics: IEpochMetricsRecord, position: IEpochPositionRecord): Promise<void>,
 
     // Installer
     install(
@@ -60,6 +76,10 @@ export interface IEpochModel {
         regressionCertificates: IRegressionTrainingCertificate[]
     ): Promise<IEpochRecord>,
     uninstall(epochID: string): Promise<void>,
+
+    // Certificate Retrievers
+    getPredictionModelCertificate(id: string): Promise<IPredictionModelCertificate>,
+    getRegressionCertificate(id: string): Promise<IRegressionTrainingCertificate>
 }
 
 
@@ -69,8 +89,12 @@ export interface IEpochModel {
 // Epoch File
 export interface IEpochFile {
     downloadAndUnpackEpochFile(epochID: string): Promise<IUnpackedEpochFile>,
-
+    cleanLocalFiles(): Promise<void>,
+    cleanCloudFiles(): Promise<void>
 }
+
+
+
 
 
 
@@ -81,9 +105,16 @@ export interface IEpochFile {
  * unpacked in a volume that is shared by the Core and Prediction APIs.
  */
 export interface IUnpackedEpochFile {
+    // The configuration of the Epoch
     epochConfig: IEpochConfig, 
+
+    // The Prediction Model's Certificate
     predictionModelCertificate: IPredictionModelCertificate,
+
+    // The list of Regression Certificates
     regressionCertificates: IRegressionTrainingCertificate[],
+
+    // The list of model files that were unpacked
     modelFileNames: string[]
 }
 
@@ -129,7 +160,7 @@ export interface IEpochRecord {
  * Epoch Metrics
  * Summary of the prediction model's performance by Epoch.
  */
- export interface IEpochMetricsRecord {
+export interface IEpochMetricsRecord {
     // The identifier of the epoch
     id: string,
 
@@ -162,9 +193,70 @@ export interface IEpochRecord {
  * The list of positions executed in the epoch. These positions serve
  * as the metrics' payload.
  */
- export interface IEpochPositionRecord {
+export interface IEpochPositionRecord {
     // The identifier of the epoch
+    eid: string, // Epoch ID
+
+    // The identifier of the trading session position
+    pid: string, // Trading Session Position ID
+
+    // The date range of the position
+    ot: number, // Open Time
+    ct: number, // Close Time
+
+    // The type of position. 1 = long, -1 = short
+    t: IPositionType,
+
+    // The outcome of the position. True = Successful, False = Unsuccessful
+    o: boolean,
+
+    // The mean of the prices received when opening and closing the position
+    opm: number, // Open Price Mean
+    cpm: number, // Close Price Mean
+
+    // The position's total fees
+    f: number,
+
+    // The position's net profit. In case it was unsuccessful, this value will be negative.
+    p: number
+}
+
+
+
+
+
+
+/**
+ * Epoch Summary
+ * An object containing the configuration and the general performance of the Epoch.
+ */
+export interface IEpochSummary {
+    // The Epoch Record
+    record: IEpochRecord,
+
+    // The Epoch Metrics Record
+    metrics: IEpochMetricsRecord,
+
+    // The list of Epoch Positions
+    positions: IEpochPositionRecord[]
+}
+
+
+
+
+
+/**
+ * Epoch List Item
+ * All the epochs can be visualized simultaneously in a list containing a very
+ * brief summary.
+ */
+export interface IEpochListItem {
+    // The identifier of the Epoch
     id: string,
 
-    
+    // The date in which was installed
+    installed: number,
+
+    // The net profit (so far, if the epoch is active)
+    profit: number
 }

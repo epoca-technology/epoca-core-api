@@ -278,6 +278,11 @@
 
 15005: `Google Cloud returned a valid response. However, no files could be extracted in: ${cloudPath}.`
 
+15006: `The JSON File ${filePath} could not be read because it doesn't exist.`
+
+15007: `The JSON File ${filePath} is empty.`
+
+15008: `Error when parsing ${filePath}: ${this._utils.getErrorMessage(e)}`
 
 
 
@@ -320,16 +325,30 @@
 
 17010: `The Epoch ID ${epochID} has already been used.`
 
-17011: ``
+17011: `The Epoch cannot be uninstalled because none is running.`
+
+17012: `The starting point cannot be in the future (${startAt}).`
+
+17013: `The limit must be an integer ranging 1 and 30 (${limit}).`
+
+17014: `The provided Model ID (${modelID}) is invalid.`
+
+17015: ``
 
 
 
 #
 ## Epoch Model (18.000 - 18.999)
 
-18000: ``
+18000: `The metrics for epoch ${epochID} could not be found in the database.`
 
-18001: ``
+18001: `The prediction model certificate ${id} could not be found in the database.`
+
+18002: `The regression certificate ${id} could not be found in the database.`
+
+18003: ``
+
+18004: ``
 
 
 

@@ -122,7 +122,8 @@ export class FileManagerService implements IFileManagerService {
      * Deletes cloud files that don't fit in the maxFiles window based on their
      * creation time.
      * This functionality is to be used when several copies of the same file are 
-     * generated progressively. It should not be used by the Epoch Manager.
+     * generated progressively.
+     * If no files are meant to be kept, pass 0 in maxFiles.
      * @param cloudPath 
      * @param extension 
      * @param maxFiles 
@@ -132,9 +133,15 @@ export class FileManagerService implements IFileManagerService {
         // Retrieve all the cloud file names
         const cloudFiles: ICloudFile[] = await this.listCloudFiles(cloudPath, extension);
 
-        // Build a new list with the files that can be safely deleted and do so
-        const deletableFiles: ICloudFile[] = cloudFiles.slice(maxFiles);
-        for (let f of deletableFiles) { await this.bucket.file(f.path).delete() }
+        // Check if some cloud files should be kept
+        if (maxFiles > 0) {
+            // Build a new list with the files that can be safely deleted and do so
+            const deletableFiles: ICloudFile[] = cloudFiles.slice(maxFiles);
+            for (let f of deletableFiles) { await this.bucket.file(f.path).delete() }
+        }
+        
+        // Otherwise, delete all the files
+        else { for (let f of cloudFiles) { await this.bucket.file(f.path).delete() } }
     }
 
 
@@ -311,6 +318,61 @@ export class FileManagerService implements IFileManagerService {
     }
 
 
+
+
+
+
+
+
+    /**
+     * Reads a local file and returns the Buffer.
+     * @param filePath 
+     * @returns Promise<string>
+     */
+    public readLocalFile(filePath: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            fs.readFile(filePath, (err, data) => {
+                // Handle errors
+                if (err) reject(err);
+
+                // Resolve the promise
+                resolve(data.toString());
+            });
+        });
+    }
+
+
+
+
+
+
+
+    /**
+     * Reads a JSON file at a given path. Throws an error if the file does not
+     * exist or if it cannot be parsed for any reason.
+     * @param filePath 
+     * @returns Promise<object|Array<any>|any>
+     */
+     public async readJSON(filePath: string): Promise<object|Array<any>|any> {
+        // Make sure the file exists
+        const exists: boolean = await this.pathExists(filePath);
+        if (!exists) {
+            throw new Error(this._utils.buildApiError(`The JSON File ${filePath} could not be read because it doesn't exist.`, 15006));
+        }
+
+        // Read the contents
+        const data: string = await this.readLocalFile(filePath);
+        if (typeof data != "string" || !data.length) {
+            throw new Error(this._utils.buildApiError(`The JSON File ${filePath} is empty.`, 15007));
+        }
+
+        // Finally, return parsed the contents
+        try {
+            return JSON.parse(data.replace(/\bNaN\b/g, "0"));
+        } catch (e) {
+            throw new Error(this._utils.buildApiError(`Error when parsing ${filePath}: ${this._utils.getErrorMessage(e)}`, 15008));
+        }
+    }
 
 
 

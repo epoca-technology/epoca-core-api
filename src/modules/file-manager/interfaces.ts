@@ -19,6 +19,8 @@ export interface IFileManagerService {
     pathExists(path: string): Promise<boolean>,
     getLocalPathContent(path: string): Promise<IDirectoryContent>,
     writeLocalFile(filePath: string, data: string): Promise<void>,
+    readLocalFile(filePath: string): Promise<string>,
+    readJSON(filePath: string): Promise<object|Array<any>|any>,
     makeDirectory(path: string): Promise<void>,
     cleanPath(path: string): Promise<void>,
     deleteLocalDirectory(path: string): Promise<void>,

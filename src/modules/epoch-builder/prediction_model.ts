@@ -56,6 +56,25 @@ export interface IPredictionModelMinifiedConfig {
 
 
 
+/* Position Type */
+
+
+
+/**
+ * In futures markets, there can only be 2 types of positions:
+ *  1: Long Position
+ * -1: Short Position
+ */
+export type IPositionType = 1|-1;
+
+
+
+
+
+
+
+
+
 /* Prediction Object */
 
 
@@ -101,13 +120,6 @@ export interface IPredictionModelMinifiedConfig {
 
 
 
-// Types of positions
-export type IBacktestPositionType = 1|-1;
-
-
-
-
-
 /**
  * Backtest Position
  * When a position is closed, it is saved in a list that can be reviewed in the GUI when
@@ -115,7 +127,7 @@ export type IBacktestPositionType = 1|-1;
  */
 export interface IBacktestPosition {
     // Type of position: 1 = long, -1 = short
-    t: IBacktestPositionType,
+    t: IPositionType,
 
     // Prediction Dict
     p: IPrediction,

@@ -28,7 +28,7 @@ const ApiErrorRoute = express.Router();
 * Retrieves the full list of Api Errors.
 * @requires id-token
 * @requires api-secret
-* @requires authority: 4
+* @requires authority: 3
 * @returns IAPIResponse<IApiError[]>
 */
 ApiErrorRoute.route(`/getAll`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
@@ -40,7 +40,7 @@ ApiErrorRoute.route(`/getAll`).get(ultraLowRiskLimit, async (req: express.Reques
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4);
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 3);
 
         // Perform Action
         const errors: IApiError[] = await _apiError.getAll();
