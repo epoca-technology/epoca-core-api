@@ -2,8 +2,8 @@ import {inject, injectable} from "inversify";
 import { environment, SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { IFileManagerService, ILocalPathItem } from "../file-manager";
-import { IEpochFile, IUnpackedEpochFile } from "./interfaces";
 import { IEpochConfig, IPredictionModelCertificate, IRegressionTrainingCertificate } from "../epoch-builder";
+import { IEpochFile, IUnpackedEpochFile } from "./interfaces";
 
 
 
@@ -44,7 +44,10 @@ export class EpochFile implements IEpochFile {
         const localPath: string = `${this.localPath}/${fileName}`;
         const cloudPath: string = `${this.cloudPath}/${fileName}`;
 
-        // Firstly, download the epoch file
+        // Prior to downloading the file, make sure the directory is clean
+        await this.cleanLocalFiles();
+
+        // Download the epoch file
         const epochFile: ILocalPathItem = await this._file.downloadCloudFile(cloudPath, localPath);
 
         // Unzip the Epoch File in the Epoch volume

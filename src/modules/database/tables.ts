@@ -4,7 +4,7 @@ import { IRawTable } from "./interfaces";
 export const TABLES: IRawTable[] = [
     // GUI Version
     {
-        name: 'gui_version',
+        name: "gui_version",
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 id          SMALLINT NOT NULL PRIMARY KEY,
@@ -15,7 +15,7 @@ export const TABLES: IRawTable[] = [
 
     // Server Alarms
     {
-        name: 'server_alarms',
+        name: "server_alarms",
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 id                              SMALLINT NOT NULL PRIMARY KEY,
@@ -32,7 +32,7 @@ export const TABLES: IRawTable[] = [
 
     // Candlesticks
     {
-        name: 'candlesticks',
+        name: "candlesticks",
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 ot  BIGINT NOT NULL PRIMARY KEY,
@@ -48,7 +48,7 @@ export const TABLES: IRawTable[] = [
 
     // Prediction Candlesticks
     {
-        name: 'prediction_candlesticks',
+        name: "prediction_candlesticks",
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 ot  BIGINT NOT NULL PRIMARY KEY,
@@ -64,7 +64,7 @@ export const TABLES: IRawTable[] = [
 
     // Users
     {
-        name: 'users',
+        name: "users",
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 uid         uuid NOT NULL PRIMARY KEY,
@@ -80,7 +80,7 @@ export const TABLES: IRawTable[] = [
 
     // IP Blacklist
     {
-        name: 'ip_blacklist',
+        name: "ip_blacklist",
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 ip  VARCHAR(300) NOT NULL PRIMARY KEY,
@@ -92,7 +92,7 @@ export const TABLES: IRawTable[] = [
 
     // API Errors
     {
-        name: 'api_errors',
+        name: "api_errors",
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 o       VARCHAR(300) NOT NULL,
@@ -107,7 +107,7 @@ export const TABLES: IRawTable[] = [
 
     // Epochs
     {
-        name: 'epochs',
+        name: "epochs",
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 id              VARCHAR(100) NOT NULL PRIMARY KEY,
@@ -121,13 +121,32 @@ export const TABLES: IRawTable[] = [
         }
     },
 
+    // Predictions
+    {
+        name: "predictions",
+        sql: (tableName: string): string => {
+            /**
+             * In order to create the foreign key, the epoch"s table name must be derived
+             * based on the mode the API is running in.
+             */
+            const epochsTableName: string = tableName.includes("test_") ? "test_epochs": "epochs";
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                t           BIGINT NOT NULL PRIMARY KEY,
+                epoch_id    VARCHAR(100) NOT NULL REFERENCES ${epochsTableName}(id),
+                r           SMALLINT NOT NULL,
+                f           JSONB NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_epoch_id ON ${tableName}(epoch_id);`
+        }
+    },
+
 
     // Prediction Model Certificates
     {
-        name: 'prediction_model_certificates',
+        name: "prediction_model_certificates",
         sql: (tableName: string): string => {
             /**
-             * In order to create the foreign key, the epoch's table name must be derived
+             * In order to create the foreign key, the epoch"s table name must be derived
              * based on the mode the API is running in.
              */
             const epochsTableName: string = tableName.includes("test_") ? "test_epochs": "epochs";
@@ -143,10 +162,10 @@ export const TABLES: IRawTable[] = [
 
     // Regression Certificates
     {
-        name: 'regression_certificates',
+        name: "regression_certificates",
         sql: (tableName: string): string => {
             /**
-             * In order to create the foreign key, the epoch's table name must be derived
+             * In order to create the foreign key, the epoch"s table name must be derived
              * based on the mode the API is running in.
              */
             const epochsTableName: string = tableName.includes("test_") ? "test_epochs": "epochs";
@@ -170,10 +189,10 @@ export const TABLES: IRawTable[] = [
 
     // Epoch Metrics
     {
-        name: 'epoch_metrics',
+        name: "epoch_metrics",
         sql: (tableName: string): string => {
             /**
-             * In order to create the foreign key, the epoch's table name must be derived
+             * In order to create the foreign key, the epoch"s table name must be derived
              * based on the mode the API is running in.
              */
             const epochsTableName: string = tableName.includes("test_") ? "test_epochs": "epochs";

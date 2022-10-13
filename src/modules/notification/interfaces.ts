@@ -18,6 +18,10 @@ export interface INotificationService {
     highGPULoad(): Promise<void>,
     highGPUTemperature(): Promise<void>,
     highGPUMemoryTemperature(): Promise<void>,
+
+    // Prediction Notifications
+    predictionGenerationIssue(error: any): Promise<void>,
+    
 }
 
 
@@ -34,4 +38,4 @@ export interface INotification {
 
 
 // Senders
-export type INotificationSender = "UNIT_TEST"|"SERVER"|"CANDLESTICK";
+export type INotificationSender = "UNIT_TEST"|"SERVER"|"CANDLESTICK"|"PREDICTION";

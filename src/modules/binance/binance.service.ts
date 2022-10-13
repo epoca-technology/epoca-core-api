@@ -100,7 +100,7 @@ export class BinanceService implements IBinanceService {
             }
         };
 
-        // Retrieve the chainlock status
+        // Retrieve the candlesticks status
         const response: IExternalRequestResponse = await this._er.request(options);
 
         // Validate the response

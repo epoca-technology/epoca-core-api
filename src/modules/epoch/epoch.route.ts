@@ -3,6 +3,10 @@ import express = require("express");
 import {appContainer, SYMBOLS} from "../../ioc";
 
 
+// Utilities
+import {IUtilitiesService} from "../utilities";
+const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
+
 // Request Guard
 import {ultraLowRiskLimit, lowRiskLimit, ultraHighRiskLimit, IRequestGuardService, mediumRiskLimit} from "../request-guard";
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
@@ -11,16 +15,14 @@ const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMB
 import {IApiErrorService} from "../api-error";
 const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.ApiErrorService);
 
-// Utilities
-import {IUtilitiesService} from "../utilities";
-const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
-
 // Epoch Service
 import {IEpochListItem, IEpochRecord, IEpochService, IEpochSummary} from "./interfaces";
 const _epoch: IEpochService = appContainer.get<IEpochService>(SYMBOLS.EpochService);
 
 // Background Task
 import { IBackgroundTaskInfo } from "../background-task";
+
+// Epoch Builder Types
 import { IPredictionModelCertificate, IRegressionTrainingCertificate } from "../epoch-builder";
 
 

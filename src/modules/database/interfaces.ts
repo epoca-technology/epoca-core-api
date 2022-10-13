@@ -72,6 +72,7 @@ export interface ITableNames {
     ip_blacklist: string,
     api_errors: string,
     epochs: string,
+    predictions: string,
     prediction_model_certificates: string,
     regression_certificates: string,
     epoch_metrics: string,

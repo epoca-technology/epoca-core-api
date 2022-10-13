@@ -1,7 +1,7 @@
 import {injectable} from "inversify";
 import {IExternalRequestProtocolName, IExternalRequestResponse, IExternalRequestService, IExternalRequestOptions } from "./interfaces";
-import * as http from 'http';
-import * as https from 'https';
+import * as http from "http";
+import * as https from "https";
 
 
 
@@ -37,7 +37,7 @@ export class ExternalRequestService implements IExternalRequestService {
     public request(options: IExternalRequestOptions, params?: any, protocolName?: IExternalRequestProtocolName): Promise<IExternalRequestResponse> {
         return new Promise((resolve, reject) => {
             // Init the protocol to be used
-            const protocol: any = protocolName == 'http' ? http: https;
+            const protocol: any = protocolName == "http" ? http: https;
 
             // Check if a request timeout has been set
             if (typeof options.timeout != "number") options.timeout = this.timeout;
@@ -45,19 +45,19 @@ export class ExternalRequestService implements IExternalRequestService {
             // Perform the request
             let request: http.ClientRequest = protocol.request(options, (response: http.IncomingMessage) => {
                 // Init response data
-                let data: string = '';
+                let data: string = "";
                 let finalResponse: IExternalRequestResponse = {
                     statusCode: response.statusCode,
                     headers: response.headers
                 };
 
                 // On data changes
-                response.on('data',  (chunk)=> {
+                response.on("data",  (chunk)=> {
                     data += chunk;
                 });
 
                 // Once it ends
-                response.on('end',  () => {
+                response.on("end",  () => {
                     // Verify if data was included
                     if (!data) {
                         resolve(finalResponse);
@@ -73,7 +73,7 @@ export class ExternalRequestService implements IExternalRequestService {
                 });
 
                 // If there is an error
-                response.on('error',(err) => { reject(err) })
+                response.on("error",(err) => { reject(err) })
             });
 
             // Append params if applicable

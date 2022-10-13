@@ -1,6 +1,6 @@
 import {inject, injectable} from "inversify";
 import { environment, SYMBOLS } from "../../ioc";
-import * as moment from 'moment';
+import * as moment from "moment";
 import { BehaviorSubject } from "rxjs";
 import { IUtilitiesService } from "../utilities";
 import { IBinanceService, IBinanceCandlestick } from "../binance";
@@ -129,7 +129,7 @@ export class CandlestickService implements ICandlestickService {
             candlesticks = await this.syncCandlesticks();
             this.broadcastStream(candlesticks) 
         } catch (e) {
-            console.log('Initial Candlestick Sync Failed. Attempting again in a few seconds: ', e);
+            console.log("Initial Candlestick Sync Failed. Attempting again in a few seconds: ", e);
             await this._utils.asyncDelay(5);
             candlesticks = await this.syncCandlesticks();
             this.broadcastStream(candlesticks) 
@@ -149,7 +149,7 @@ export class CandlestickService implements ICandlestickService {
                     this.broadcastStream(candlesticks) 
                 } catch (e) {
                     console.log(`Failed to sync the candlesticks again, will attempt again when the interval triggers: `, e);
-                    this._apiError.log('CandlestickService.startSync', e);
+                    this._apiError.log("CandlestickService.startSync", e);
                     this._notification.candlestickSyncIssue(e);
                     this.broadcastStream([], e);
                 }
@@ -220,7 +220,7 @@ export class CandlestickService implements ICandlestickService {
         // Otherwise, throw an error
         else { 
             console.log(`Candlestick Response: `, bCandlesticks);
-            throw new Error(this._utils.buildApiError('The Binance API should have returned at least 1 candlestick.', 1000));
+            throw new Error(this._utils.buildApiError("The Binance API should have returned at least 1 candlestick.", 1000));
         }
     }
 
@@ -298,7 +298,7 @@ export class CandlestickService implements ICandlestickService {
                 if (hasCandlesticksAhead) {
                     let candlestickFound: boolean = false;
                     while (!candlestickFound) {
-                        // Initialize the new candlestick's times
+                        // Initialize the new candlestick"s times
                         openTime = closeTime + 1;
                         closeTime = this._model.getPredictionCandlestickCloseTime(openTime);
     
@@ -333,7 +333,7 @@ export class CandlestickService implements ICandlestickService {
             }
 
             /**
-             * If there are candlesticks ahead and the freshly downloaded candlestick's close time 
+             * If there are candlesticks ahead and the freshly downloaded candlestick"s close time 
              * is less than the real close time means there are candlesticks missings. In order to 
              * move on, set the real close time on the candlestick.
              */
@@ -351,7 +351,7 @@ export class CandlestickService implements ICandlestickService {
 
         /**
          * OPEN AND CLOSE TIMES ADJUSTMENTS
-         * As there are many discrepancies in the Candlestick API from Binance's end, 
+         * As there are many discrepancies in the Candlestick API from Binance"s end, 
          * in order to have perfect intervals, the open and close times need to always
          * add up perfectly.
          */
@@ -456,7 +456,7 @@ export class CandlestickService implements ICandlestickService {
 
     /**
      * Verifies if a stream is currently in sync. It will check the last update 
-     * and the last candlestick's close times to make sure they are within the
+     * and the last candlestick"s close times to make sure they are within the
      * established tolerance.
      * @param stream 
      * @returns boolean

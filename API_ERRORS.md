@@ -361,3 +361,51 @@
 19001: ``
 
 
+
+
+
+
+#
+## Prediction Service (20.000 - 20.999)
+
+20000: ``
+
+20001: ``
+
+20002: ``
+
+20003: ``
+
+
+
+
+
+
+#
+## Prediction Validations (21.000 - 21.999)
+
+21000: `The Prediction API returned an invalid API Response when predicting.`
+
+21001: `The provided Epoch ID (${epochID}) is invalid.`
+
+21002: `The provided prediction limit (${limit}) is invalid. It must be an int ranging 1 and 100.`
+
+21003: `Only one query (startAt|endAt) is allowed when retrieving predictions. Received: ${startAt} - ${endAt}.`
+
+21004: `The active prediction is undefined.`
+
+21005: `The active prediction's duration has run out. Needs: ${min}, Has: ${pred.t}.`
+
+21006: ``
+
+
+
+
+#
+## Prediction Model (22.000 - 22.999)
+
+22000: ``
+
+22001: ``
+
+22002: ``
