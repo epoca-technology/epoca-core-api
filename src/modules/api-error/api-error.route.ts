@@ -31,7 +31,7 @@ const ApiErrorRoute = express.Router();
 * @requires authority: 3
 * @returns IAPIResponse<IApiError[]>
 */
-ApiErrorRoute.route(`/getAll`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+/*ApiErrorRoute.route(`/getAll`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -52,7 +52,7 @@ ApiErrorRoute.route(`/getAll`).get(ultraLowRiskLimit, async (req: express.Reques
         _apiError.log('ApiErrorRoute.getAll', e, reqUid, ip);
         res.send(_utils.apiResponse(undefined, e));
     }
-});
+});*/
 
 
 

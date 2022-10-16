@@ -57,6 +57,7 @@ const port: number = Number(process.env.PORT) || 5075;
 // Import Routes
 import {ApiErrorRoute} from "./modules/api-error/api-error.route";
 import {AuthRoute} from "./modules/auth/auth.route";
+import {BulkDataRoute} from "./modules/bulk-data/bulk-data.route";
 import {CandlestickRoute} from "./modules/candlestick/candlestick.route";
 import {DatabaseRoute} from "./modules/database/database.route";
 import {EpochRoute} from "./modules/epoch/epoch.route";
@@ -68,6 +69,7 @@ import {ServerRoute} from "./modules/server/server.route";
 // Register Routes
 app.use("/apiError", ApiErrorRoute);
 app.use("/auth", AuthRoute);
+app.use("/bulkData", BulkDataRoute);
 app.use("/candlestick", CandlestickRoute);
 app.use("/database", DatabaseRoute);
 app.use("/epoch", EpochRoute);

@@ -79,13 +79,14 @@ EpochRoute.route("/getEpochRecord").get(lowRiskLimit, async (req: express.Reques
 
 
 /**
- * Retrieves an Epoch Summary based on the provided ID.
+ * Retrieves the active epoch's summary. If no epoch is active, 
+ * it returns undefined.
  * @requires id-token
  * @requires api-secret
  * @requires authority: 1
  * @returns IAPIResponse<IEpochSummary|undefined>
 */
-EpochRoute.route("/getActiveEpochSummary").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+/*EpochRoute.route("/getActiveEpochSummary").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -103,7 +104,7 @@ EpochRoute.route("/getActiveEpochSummary").get(ultraLowRiskLimit, async (req: ex
         _apiError.log("EpochRoute.getActiveEpochSummary", e, reqUid, ip, req.query);
         res.send(_utils.apiResponse(undefined, e));
     }
-});
+});*/
 
 
 

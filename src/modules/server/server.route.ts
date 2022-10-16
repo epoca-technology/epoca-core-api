@@ -1,23 +1,23 @@
 // Dependencies
 import express = require("express");
-import {appContainer, SYMBOLS} from '../../ioc';
+import {appContainer, SYMBOLS} from "../../ioc";
 
 
 
 // Request Guard
-import {lowRiskLimit, highRiskLimit, mediumRiskLimit, IRequestGuardService} from '../request-guard';
+import {highRiskLimit, IRequestGuardService} from "../request-guard";
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
 // API Error
-import {IApiErrorService} from '../api-error';
+import {IApiErrorService} from "../api-error";
 const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.ApiErrorService);
 
 // Utilities
-import {IUtilitiesService} from '../utilities';
+import {IUtilitiesService} from "../utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Server Service
-import {IServerService} from '../server';
+import {IServerService} from "../server";
 const _server: IServerService = appContainer.get<IServerService>(SYMBOLS.ServerService);
 
 
@@ -36,12 +36,12 @@ const ServerRoute = express.Router();
 
 
 /**
- * Retrieves the Server's Data. If it hasn't been initialized, the 
+ * Retrieves the Server"s Data. If it hasn"t been initialized, the 
  * values will be the defaults.
  * @requires authority: 3
  * @returns IAPIResponse<IServerData>
 */
-ServerRoute.route(`/getServerData`).get(highRiskLimit, async (req: express.Request, res: express.Response) => {
+/*ServerRoute.route(`/getServerData`).get(highRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -56,10 +56,10 @@ ServerRoute.route(`/getServerData`).get(highRiskLimit, async (req: express.Reque
         res.send(_utils.apiResponse(_server.getServerData()));
     } catch (e) {
 		console.log(e);
-        _apiError.log('ServerRoute.getServerData', e, reqUid, ip);
+        _apiError.log("ServerRoute.getServerData", e, reqUid, ip);
         res.send(_utils.apiResponse(undefined, e));
     }
-});
+});*/
 
 
 
@@ -70,12 +70,12 @@ ServerRoute.route(`/getServerData`).get(highRiskLimit, async (req: express.Reque
 
 
 /**
- * Retrieves the Server's Resources. If it hasn't been initialized, the 
+ * Retrieves the Server"s Resources. If it hasn"t been initialized, the 
  * values will be the defaults.
  * @requires authority: 3
  * @returns IAPIResponse<IServerResources>
 */
-ServerRoute.route(`/getServerResources`).get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
+/*ServerRoute.route(`/getServerResources`).get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -90,10 +90,10 @@ ServerRoute.route(`/getServerResources`).get(mediumRiskLimit, async (req: expres
         res.send(_utils.apiResponse(_server.getServerResources()));
     } catch (e) {
 		console.log(e);
-        _apiError.log('ServerRoute.getServerResources', e, reqUid, ip);
+        _apiError.log("ServerRoute.getServerResources", e, reqUid, ip);
         res.send(_utils.apiResponse(undefined, e));
     }
-});
+});*/
 
 
 
@@ -126,7 +126,7 @@ ServerRoute.route(`/getServerResources`).get(mediumRiskLimit, async (req: expres
  * @param max_gpu_memory_temperature
  * @returns IAPIResponse<void>
 */
-ServerRoute.route(`/setAlarmsConfiguration`).post(highRiskLimit, async (req: express.Request, res: express.Response) => {
+ServerRoute.route("/setAlarmsConfiguration").post(highRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -141,9 +141,9 @@ ServerRoute.route(`/setAlarmsConfiguration`).post(highRiskLimit, async (req: exp
             apiSecret, 
             ip, 
             4, 
-            ['max_file_system_usage', 'max_memory_usage', 'max_cpu_load', 'max_cpu_temperature', 'max_gpu_load', 'max_gpu_temperature', 'max_gpu_memory_temperature'], 
+            ["max_file_system_usage", "max_memory_usage", "max_cpu_load", "max_cpu_temperature", "max_gpu_load", "max_gpu_temperature", "max_gpu_memory_temperature"], 
             req.body, 
-            otp || ''
+            otp || ""
         );
 
         // Perform Action
@@ -153,7 +153,7 @@ ServerRoute.route(`/setAlarmsConfiguration`).post(highRiskLimit, async (req: exp
         res.send(_utils.apiResponse());
     } catch (e) {
 		console.log(e);
-        _apiError.log('ServerRoute.setAlarmsConfiguration', e, reqUid, ip, req.body);
+        _apiError.log("ServerRoute.setAlarmsConfiguration", e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -182,9 +182,9 @@ ServerRoute.route(`/setAlarmsConfiguration`).post(highRiskLimit, async (req: exp
  * Allows the GUI to retrieve the current server time.
  * @returns IAPIResponse<number>
  */
- ServerRoute.route(`/time`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
+/*ServerRoute.route(`/time`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
     res.send(_utils.apiResponse(Date.now()));
-});
+});*/
 
 
 

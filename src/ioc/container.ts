@@ -8,6 +8,7 @@ import { environment } from "./environment";
 import { apiErrorModule } from "../modules/api-error";
 import { authModule } from "../modules/auth";
 import { binanceModule } from "../modules/binance";
+import { bulkDataModule } from "../modules/bulk-data";
 import { candlestickModule } from "../modules/candlestick";
 import { databaseModule } from "../modules/database";
 import { epochModule } from "../modules/epoch";
@@ -46,6 +47,9 @@ appContainer.load(
 
     // Binance
     binanceModule,
+
+    // Bulk Data
+    bulkDataModule,
 
     // Candlestick
     candlestickModule,

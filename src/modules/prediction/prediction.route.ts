@@ -44,7 +44,7 @@ const PredictionRoute = express.Router();
  * @requires authority: 1
  * @returns IAPIResponse<IPrediction|undefined>
 */
-PredictionRoute.route("/getActive").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+/*PredictionRoute.route("/getActive").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -62,7 +62,7 @@ PredictionRoute.route("/getActive").get(ultraLowRiskLimit, async (req: express.R
         _apiError.log("PredictionRoute.getActive", e, reqUid, ip, req.query);
         res.send(_utils.apiResponse(undefined, e));
     }
-});
+});*/
 
 
 

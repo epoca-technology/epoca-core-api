@@ -15,6 +15,9 @@
     // Binance
     BinanceService: Symbol.for("BinanceService"),
 
+    // Bulk Data
+    BulkDataService: Symbol.for("BulkDataService"),
+
     // Candlestick
     CandlestickService: Symbol.for("CandlestickService"),
     CandlestickModel: Symbol.for("CandlestickModel"),
@@ -77,6 +80,9 @@ export interface ISymbols {
 
 
     BinanceService: symbol,
+
+
+    BulkDataService: symbol,
 
 
     CandlestickService: symbol,
