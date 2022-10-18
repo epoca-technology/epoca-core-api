@@ -46,7 +46,7 @@ export class PredictionModel implements IPredictionModel {
         let values: Array<string|number> = [epochID];
 
         // Init the query
-        sql += `SELECT t, r, f FROM ${this._db.tn.predictions} WHERE epoch_id = $1 `;
+        sql += `SELECT t, r, f, s FROM ${this._db.tn.predictions} WHERE epoch_id = $1 `;
 
         // Check if the starting point was provided
         if (typeof startAt == "number") {
@@ -100,14 +100,10 @@ export class PredictionModel implements IPredictionModel {
     public async savePrediction(epochID: string, pred: IPrediction): Promise<void> {
         await this._db.query({
             text: `
-                INSERT INTO ${this._db.tn.predictions}(t, epoch_id, r, f) 
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO ${this._db.tn.predictions}(t, epoch_id, r, f, s) 
+                VALUES ($1, $2, $3, $4, $5)
             `,
-            values: [pred.t, epochID, pred.r, pred.f]
+            values: [pred.t, epochID, pred.r, JSON.stringify(pred.f), pred.s]
         });
     }
-
-
-
-
 }

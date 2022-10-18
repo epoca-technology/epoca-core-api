@@ -14,9 +14,9 @@ import { IDiscovery } from "./discovery";
 
 /**
  * Min Sum Function
- * The prediction model's discovery calculates the means and the medians of the 
+ * The prediction model"s discovery calculates the means and the medians of the 
  * successful predictions which then will be used to trade. For instance, If the 
- * mean function is selected, the model will make use of the discovery's 
+ * mean function is selected, the model will make use of the discovery"s 
  * increase_successful_mean and the decrease_successful_mean as the minimum sums
  * in order to generate non-neutral predictions.
  */
@@ -85,7 +85,7 @@ export type IPositionType = 1|-1;
  * 1 (long) or 0 (neutral) or -1 (short)
  */
  export type IPredictionResult = 1|0|-1;
- export type IPredictionResultName = 'Long'|'Short'|'Neutral';
+ export type IPredictionResultName = "Long"|"Short"|"Neutral";
  
  
 
@@ -105,7 +105,10 @@ export type IPositionType = 1|-1;
      t: number,
  
      // The list of predicted features 
-     f: number[]
+     f: number[],
+
+     // The sum of all the predicted features
+     s: number
  }
 
 

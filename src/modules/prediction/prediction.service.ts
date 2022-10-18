@@ -242,6 +242,7 @@ export class PredictionService implements IPredictionService {
         this.active.next(prediction);
 
         // Finally, store it in the database
+        console.log(prediction);
         await this.model.savePrediction(epoch_id, prediction);
     }
 }

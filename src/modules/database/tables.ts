@@ -134,7 +134,8 @@ export const TABLES: IRawTable[] = [
                 t           BIGINT NOT NULL PRIMARY KEY,
                 epoch_id    VARCHAR(100) NOT NULL REFERENCES ${epochsTableName}(id),
                 r           SMALLINT NOT NULL,
-                f           JSONB NOT NULL
+                f           JSONB NOT NULL,
+                s           NUMERIC(10,6) NOT NULL
             );
             CREATE INDEX IF NOT EXISTS ${tableName}_epoch_id ON ${tableName}(epoch_id);`
         }
