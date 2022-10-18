@@ -127,6 +127,7 @@ export class EpochValidations implements IEpochValidations {
         for (let reg of epochFile.predictionModelCertificate.model.regressions) {
             // Make sure the regression model file exists
             if (!epochFile.modelFileNames.includes(`${reg.id}.h5`)) {
+                console.log(epochFile.modelFileNames);
                 throw new Error(this._utils.buildApiError(`The model file for the regression ${reg.id} was not found.`, 17007));
             }
 

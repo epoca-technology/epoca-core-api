@@ -39,7 +39,7 @@ export class BulkDataService implements IBulkDataService {
             epoch: this._epoch.getActiveEpochSummary(),
             prediction: this._prediction.active.value,
             simulations: [], // @TODO
-            session: undefined // @TODO
+            sessions: [] // @TODO
         }
     }
 

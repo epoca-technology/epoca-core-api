@@ -39,11 +39,11 @@ export interface IAppBulk {
     // The active prediction. If there isn't one, or an epoch isn't active, it will be undefined
     prediction: IPrediction|undefined,
 
-    // The list of trading simulations, If none is active, it will be an empty list
+    // The list of trading simulation metrics, If none is active, it will be an empty list
     simulations: any[],
 
-    // The active session. If none is active, it will be undefined.
-    session: object|undefined
+    // The list of trading session metrics. If none is active, it will be an empty list
+    sessions: any[]
 }
 
 

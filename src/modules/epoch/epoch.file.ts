@@ -63,7 +63,7 @@ export class EpochFile implements IEpochFile {
         // Retrieve the contents of the epoch volume and list the model files
         let modelFileNames: string[] = [];
         const { files, directories } = await this._file.getLocalPathContent(this.localPath);
-        files.forEach((file) => { if (file.ext == "h5") modelFileNames.push(`${file.baseName}.h5`) })
+        files.forEach((file) => { if (file.ext == "h5") modelFileNames.push(file.baseName) })
 
         // Finally, return the unpacked epoch file
         return {

@@ -91,7 +91,7 @@ app.listen(port);
 
 
 // Send Welcome Message
-app.get("/", (req: express.Request, res: express.Response) => { res.send("Welcome to Plutus :)") })
+app.get("/", (req: express.Request, res: express.Response) => { res.send("Welcome to Epoca :)") })
 
 
 

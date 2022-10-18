@@ -1,20 +1,30 @@
-import {inject} from "inversify";
-import {SYMBOLS} from '../../ioc';
-import * as moment from 'moment';
-import { IUtilitiesService } from '../utilities';
+import getDecorators from "inversify-inject-decorators";
+import { Container } from "inversify";
+import {SYMBOLS} from "../../ioc";
+import * as moment from "moment";
+import { IUtilitiesService } from "../utilities";
+import { UtilitiesService } from "../utilities/utilities.service";
 import { IBackgroundTask, IBackgroundTaskInfo } from "./interfaces";
 
 
-
-
+/**
+ * Inversify Container
+ * When a traditional class is first introduced, the container exported from the
+ * ioc is undefined and therefore, crashes the API.
+ * In order to fix this issue, a mini container is created and the dependencies
+ * are injected lazyly.
+ */
+const container: Container = new Container();
+container.bind<IUtilitiesService>(SYMBOLS.UtilitiesService).to(UtilitiesService)
+const { lazyInject } = getDecorators(container);
 
 
 
 // Class
 export class BackgroundTask implements IBackgroundTask {
-    // Inject Container Dependencies
-    @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
-
+    // Inject the utilities service
+    @lazyInject(SYMBOLS.UtilitiesService)
+    private _utils: IUtilitiesService;
 
     // Task Information
     private task: IBackgroundTaskInfo;
@@ -64,10 +74,10 @@ export class BackgroundTask implements IBackgroundTask {
 
 
     /**
-     * Starts a new task as long as there isn't another one running.
+     * Starts a new task as long as there isn"t another one running.
      */
     public start(): void {
-        // Make sure there isn't another task running
+        // Make sure there isn"t another task running
         if (this.task.state == "running") {
             throw new Error(this._utils.buildApiError(`The task ${this.task.name} cannot be started because it is already running.`, 14000))
         }
