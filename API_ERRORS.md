@@ -388,7 +388,7 @@
 
 21001: `The provided Epoch ID (${epochID}) is invalid.`
 
-21002: `The provided prediction limit (${limit}) is invalid. It must be an int ranging 1 and 100.`
+21002: `The provided prediction limit (${limit}) is invalid. It must be an int ranging 1 and 300.`
 
 21003: `Only one query (startAt|endAt) is allowed when retrieving predictions. Received: ${startAt} - ${endAt}.`
 

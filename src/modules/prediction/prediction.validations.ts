@@ -88,9 +88,9 @@ export class PredictionValidations implements IPredictionValidations {
         }
 
         // Validate the limit
-        if (typeof limit != "number" || limit < 1 || limit > 100) {
+        if (typeof limit != "number" || limit < 1 || limit > 300) {
             throw new Error(this._utils.buildApiError(`The provided prediction limit (${limit}) is invalid. \
-            It must be an int ranging 1 and 100.`, 21002));
+            It must be an int ranging 1 and 300.`, 21002));
         }
 
         // Make sure a maximum of 1 query was provided
