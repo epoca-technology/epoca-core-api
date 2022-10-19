@@ -16,9 +16,9 @@ export interface IPredictionService {
     getActive(): IPrediction,
     listPredictions(
         epochID: string, 
-        limit: number, 
-        startAt?: number, 
-        endAt?: number
+        startAt: number, 
+        endAt: number,
+        limit: number
     ): Promise<IPrediction[]>,
     
     // Initializer
@@ -35,9 +35,9 @@ export interface IPredictionValidations {
     validateActivePrediction(pred: IPrediction|undefined): void,
     canListPredictions(
         epochID: string, 
-        limit: number, 
         startAt: number|undefined, 
-        endAt: number|undefined
+        endAt: number|undefined,
+        limit: number|undefined, 
     ): void,
 
     // Prediction Generator
@@ -51,9 +51,9 @@ export interface IPredictionModel {
     // Retrievers
     listPredictions(
         epochID: string, 
-        limit: number, 
         startAt: number|undefined, 
-        endAt: number|undefined
+        endAt: number|undefined,
+        limit: number|undefined
     ): Promise<IPrediction[]>,
 
     // Prediction Saving

@@ -30,41 +30,41 @@ export class PredictionModel implements IPredictionModel {
     /**
      * Queries the predictions based on the provided params.
      * @param epochID 
-     * @param limit 
      * @param startAt 
      * @param endAt 
+     * @param limit 
      * @returns Promise<IPrediction[]>
      */
     public async listPredictions(
         epochID: string, 
-        limit: number, 
         startAt: number|undefined, 
-        endAt: number|undefined
+        endAt: number|undefined,
+        limit: number|undefined
     ): Promise<IPrediction[]> {
         // Init the query values
-        let sql: string = "";
+        let sql: string = `SELECT t, r, f, s FROM ${this._db.tn.predictions} WHERE epoch_id = $1 `;
         let values: Array<string|number> = [epochID];
 
-        // Init the query
-        sql += `SELECT t, r, f, s FROM ${this._db.tn.predictions} WHERE epoch_id = $1 `;
-
         // Check if the starting point was provided
-        if (typeof startAt == "number") {
+        if (typeof startAt == "number" && endAt == undefined) {
             sql += "AND t < $2 ORDER BY t DESC LIMIT $3;";
             values.push(startAt);
+            values.push(limit);
         }
 
         // Check if the ending point was provided
-        else if (typeof endAt == "number") {
+        else if (startAt == undefined && typeof endAt == "number") {
             sql += "AND t > $2 ORDER BY t DESC LIMIT $3;";
             values.push(endAt);
+            values.push(limit);
         }
 
-        // Otherwise, just complete the query with the order and limit
-        else { sql += "ORDER BY t DESC LIMIT $2;" }
-
-        // Add the limit to the values list
-        values.push(limit);
+        // Otherwise, both start and ending point were provided
+        else {
+            sql += "AND t BETWEEN $2 AND $3 ORDER BY t DESC;";
+            values.push(startAt);
+            values.push(endAt);
+        }
 
         // Execute the query
         const { rows } = await this._db.query({ text: sql, values: values});

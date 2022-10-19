@@ -72,31 +72,53 @@ export class PredictionValidations implements IPredictionValidations {
      * Verifies if the provided data to list the predictions is valid
      * and meets the conditions.
      * @param epochID 
-     * @param limit 
      * @param startAt 
      * @param endAt 
+     * @param limit 
      */
     public canListPredictions(
         epochID: string, 
-        limit: number, 
         startAt: number|undefined, 
-        endAt: number|undefined
+        endAt: number|undefined,
+        limit: number|undefined, 
     ): void {
         // Validate the Epoch ID
         if (!this._validations.epochIDValid(epochID)) {
             throw new Error(this._utils.buildApiError(`The provided Epoch ID (${epochID}) is invalid.`, 21001));
         }
 
-        // Validate the limit
-        if (typeof limit != "number" || limit < 1 || limit > 300) {
-            throw new Error(this._utils.buildApiError(`The provided prediction limit (${limit}) is invalid. \
-            It must be an int ranging 1 and 300.`, 21002));
+        // Make sure that the start or the end were provided
+        if (startAt == undefined && endAt == undefined) {
+            throw new Error(this._utils.buildApiError(`The startAt or/and the endAt must be provided in order to list predictions.`, 21010));
         }
 
-        // Make sure a maximum of 1 query was provided
+        // If only the start was provided, there must be a valid limit
+        if (typeof startAt == "number" && endAt == undefined && (typeof limit != "number" || limit < 1 || limit > 300)) {
+            throw new Error(this._utils.buildApiError(`When the startAt alone is provided, it must be followed by a valid limit 
+            ranging 1 and 300. Received: ${limit}`, 21006));
+        }
+
+        // If only the end was provided, there must be a valid limit
+        if (startAt == undefined && typeof endAt == "number" && (typeof limit != "number" || limit < 1 || limit > 300)) {
+            throw new Error(this._utils.buildApiError(`When the endAt alone is provided, it must be followed by a valid limit 
+            ranging 1 and 300. Received: ${limit}`, 21007));
+        }
+
+        // If both, the start and the end were provided, the limit must be undefined
         if (typeof startAt == "number" && typeof endAt == "number") {
-            throw new Error(this._utils.buildApiError(`Only one query (startAt|endAt) is allowed when \
-            retrieving predictions. Received: ${startAt} - ${endAt}.`, 21003));
+            // Make sure the limit wasn't provided
+            if (limit != undefined) {
+                throw new Error(this._utils.buildApiError(`When the startAt and the endAt are provided, the limit must not 
+                be set. Received: ${limit}`, 21008));
+            }
+            
+            // Make sure the query does not exceed 15 days worth of data
+            const daysLimit: number = 15 * 24 * 60 * 60 * 1000;
+            const difference: number = endAt - startAt;
+            if (difference > daysLimit) {
+                throw new Error(this._utils.buildApiError(`The predictions query is larger than 15 days worth of data. 
+                Received: ${difference}`, 21009));
+            }
         }
     }
 

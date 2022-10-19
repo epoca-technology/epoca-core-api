@@ -105,26 +105,27 @@ export class PredictionService implements IPredictionService {
     /**
      * Lists the prediction for a given epoch based on the provided params.
      * @param epochID 
-     * @param limit 
      * @param startAt 
      * @param endAt 
+     * @param limit 
      * @returns Promise<IPrediction[]>
      */
     public async listPredictions(
         epochID: string, 
-        limit: number, 
-        startAt?: number, 
-        endAt?: number
+        startAt: number, 
+        endAt: number,
+        limit: number
     ): Promise<IPrediction[]> {
-        // Init the starting or ending point
+        // Init the starting or ending point as well as the limit
         startAt = isNaN(startAt) || startAt == 0 ? undefined: startAt;
         endAt = isNaN(endAt) || endAt == 0 ? undefined: endAt;
+        limit = isNaN(limit) || limit == 0 ? undefined: limit;
 
         // Validate the request
-        this.validations.canListPredictions(epochID, limit, startAt, endAt);
+        this.validations.canListPredictions(epochID, startAt, endAt, limit);
 
         // Finally, return the list of predictions
-        return await this.model.listPredictions(epochID, limit, startAt, endAt);
+        return await this.model.listPredictions(epochID, startAt, endAt, limit);
     }
 
 

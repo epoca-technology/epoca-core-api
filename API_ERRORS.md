@@ -388,15 +388,23 @@
 
 21001: `The provided Epoch ID (${epochID}) is invalid.`
 
-21002: `The provided prediction limit (${limit}) is invalid. It must be an int ranging 1 and 300.`
+21002: ``
 
-21003: `Only one query (startAt|endAt) is allowed when retrieving predictions. Received: ${startAt} - ${endAt}.`
+21003: ``
 
 21004: `The active prediction is undefined.`
 
 21005: `The active prediction's duration has run out. Needs: ${min}, Has: ${pred.t}.`
 
-21006: ``
+21006: `When the startAt alone is provided, it must be followed by a valid limit ranging 1 and 300. Received: ${limit}`
+
+21007: `When the endAt alone is provided, it must be followed by a valid limit ranging 1 and 300. Received: ${limit}`
+
+21008: `When the startAt and the endAt are provided, the limit must not be set. Received: ${limit}`
+
+21009: `The predictions query is larger than 15 days worth of data. Received: ${difference}`
+
+21010: `The startAt or/and the endAt must be provided in order to list predictions.`
 
 
 
