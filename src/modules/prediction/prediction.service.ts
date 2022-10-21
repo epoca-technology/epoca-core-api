@@ -297,6 +297,12 @@ export class PredictionService implements IPredictionService {
 
 
 
+
+
+    
+
+
+
     /* Prediction Candlesticks */
 
 
