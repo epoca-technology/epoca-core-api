@@ -2,13 +2,22 @@ import {inject, injectable} from "inversify";
 import { BehaviorSubject } from "rxjs";
 import { environment, SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
-import { IExternalRequestOptions, IExternalRequestResponse, IExternalRequestService } from "../external-request";
+import { 
+    IExternalRequestOptions, 
+    IExternalRequestResponse, 
+    IExternalRequestService 
+} from "../external-request";
 import { IApiErrorService } from "../api-error";
-import { IEpochService } from "../epoch";
+import { IEpochRecord, IEpochService } from "../epoch";
 import { ICandlestickService } from "../candlestick";
 import { INotificationService } from "../notification";
 import { IPrediction } from "../epoch-builder";
-import { IPredictionModel, IPredictionService, IPredictionValidations } from "./interfaces";
+import { 
+    IPredictionCandlestick, 
+    IPredictionModel, 
+    IPredictionService, 
+    IPredictionValidations 
+} from "./interfaces";
 
 
 
@@ -63,6 +72,17 @@ export class PredictionService implements IPredictionService {
     public active: BehaviorSubject<IPrediction|undefined> = new BehaviorSubject(undefined)
 
 
+    /**
+     * Prediction Candlesticks
+     * In order to optimize how predictions are queried, they will be stored in 
+     * candlestick format, following the 30 minute interval.
+     * The syncing of the candlesticks only occurs when an epoch is active.
+     */
+    private candlesticksSyncInterval: any;
+    private readonly candlesticksSyncIntervalSeconds: number = 180; // 3 minutes
+
+
+
 
 
 
@@ -106,26 +126,23 @@ export class PredictionService implements IPredictionService {
      * Lists the prediction for a given epoch based on the provided params.
      * @param epochID 
      * @param startAt 
-     * @param endAt 
-     * @param limit 
+     * @param endAt
      * @returns Promise<IPrediction[]>
      */
     public async listPredictions(
         epochID: string, 
         startAt: number, 
-        endAt: number,
-        limit: number
+        endAt: number
     ): Promise<IPrediction[]> {
         // Init the starting or ending point as well as the limit
         startAt = isNaN(startAt) || startAt == 0 ? undefined: startAt;
         endAt = isNaN(endAt) || endAt == 0 ? undefined: endAt;
-        limit = isNaN(limit) || limit == 0 ? undefined: limit;
 
         // Validate the request
-        this.validations.canListPredictions(epochID, startAt, endAt, limit);
+        this.validations.canListPredictions(epochID, startAt, endAt, false);
 
         // Finally, return the list of predictions
-        return await this.model.listPredictions(epochID, startAt, endAt, limit);
+        return await this.model.listPredictions(epochID, startAt, endAt);
     }
 
 
@@ -190,7 +207,32 @@ export class PredictionService implements IPredictionService {
                 }
             }
         }, this.intervalSeconds * 1000);
+
+
+
+        /**
+         * Prediction Candlesticks
+         * If there is an active epoch, initialize the interval that will keep 
+         * them in sync.
+         */
+        if (this._epoch.active.value) {
+            // Perform the initial sync safely
+            try {
+                await this.syncCandlesticks(this._epoch.active.value)
+            } catch (e) { console.error(e) }
+
+            // Initialize the interval
+            this.candlesticksSyncInterval = setInterval(async () => {
+                // Make sure the epoch is still active
+                if (this._epoch.active.value) {
+                    try {
+                        await this.syncCandlesticks(this._epoch.active.value)
+                    } catch (e) { console.error(e) }
+                }
+            }, this.candlesticksSyncIntervalSeconds * 1000);
+        }
     }
+
 
 
 
@@ -203,7 +245,10 @@ export class PredictionService implements IPredictionService {
      */
     public stop(): void {
         if (this.predictionInterval) clearInterval(this.predictionInterval);
+        this.predictionInterval = undefined;
         this.active.next(undefined);
+        if (this.candlesticksSyncInterval) clearInterval(this.candlesticksSyncInterval);
+        this.candlesticksSyncInterval = undefined;
     }
 
 
@@ -244,5 +289,102 @@ export class PredictionService implements IPredictionService {
 
         // Finally, store it in the database
         await this.model.savePrediction(epoch_id, prediction);
+    }
+
+
+
+
+
+
+
+    /* Prediction Candlesticks */
+
+
+
+
+
+    /* Retrievers */
+
+
+
+
+
+    /**
+     * Lists the prediction candlesticks for a given epoch based on the provided params.
+     * @param epochID 
+     * @param startAt 
+     * @param endAt
+     * @returns Promise<IPredictionCandlestick[]>
+     */
+     public async listPredictionCandlesticks(
+        epochID: string, 
+        startAt: number, 
+        endAt: number
+    ): Promise<IPredictionCandlestick[]> {
+        // Init the starting or ending point as well as the limit
+        startAt = isNaN(startAt) || startAt == 0 ? undefined: startAt;
+        endAt = isNaN(endAt) || endAt == 0 ? undefined: endAt;
+
+        // Validate the request
+        this.validations.canListPredictions(epochID, startAt, endAt, true);
+
+        // Finally, return the list of predictions
+        return await this.model.listPredictionCandlesticks(epochID, startAt, endAt);
+    }
+
+
+
+
+
+
+
+
+
+
+    /* Sync Manager */
+
+
+
+
+
+    /**
+     * Syncs the candlesticks for a given epoch.
+     * @param epoch 
+     * @returns Promise<void>
+     */
+    private async syncCandlesticks(epoch: IEpochRecord): Promise<void> {
+        try {
+            // Find all the candlesticks that can be saved
+            let candlesticks: IPredictionCandlestick[] = [];
+
+            // Initialize the open & close timestamps
+            let openTime: number = epoch.installed;
+            let closeTime: number|undefined;
+
+            // Calculate the current time
+            const currentTime: number = Date.now();
+
+            // Iterate for as long as there is time in between
+            while (openTime <= currentTime) {
+                // Calculate the open and close times
+                openTime = typeof closeTime == "number" ? closeTime + 1: await this.model.getLastOpenTimestamp(epoch.id, epoch.installed);
+                closeTime = this.model.getPredictionCandlestickCloseTime(openTime);
+
+                // Retrieve all the predictions within the period
+                const preds: IPrediction[] = await this.model.listPredictions(epoch.id, openTime, closeTime);
+
+                // Make sure there are predictions in the range
+                if (preds.length > 0) {
+                    // Build the candlestick
+                    const candlestick: IPredictionCandlestick = this.model.buildCandlestick(preds);
+
+                    // Add it to the list of saveable candlesticks
+                    candlesticks.push(candlestick);
+                }
+            }
+
+            // Finally, save the candlesticks if any was found
+            if (candlesticks.length) await this.model.savePredictionCandlesticks(epoch.id, candlesticks);
+        } catch (e) { console.error(e) }
     }
 }

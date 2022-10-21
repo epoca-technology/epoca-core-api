@@ -216,4 +216,30 @@ export const TABLES: IRawTable[] = [
 
     // Epoch Positions
     // @TODO
+
+
+
+
+    // Prediction Candlesticks
+    {
+        name: "epoch_prediction_candlesticks",
+        sql: (tableName: string): string => {
+            /**
+             * In order to create the foreign key, the epoch"s table name must be derived
+             * based on the mode the API is running in.
+             */
+            const epochsTableName: string = tableName.includes("test_") ? "test_epochs": "epochs";
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                epoch_id    VARCHAR(100) NOT NULL REFERENCES ${epochsTableName}(id),
+                ot          BIGINT NOT NULL PRIMARY KEY,
+                ct          BIGINT NOT NULL,
+                o           NUMERIC(10,6) NOT NULL,
+                h           NUMERIC(10,6) NOT NULL,
+                l           NUMERIC(10,6) NOT NULL,
+                c           NUMERIC(10,6) NOT NULL,
+                sm          NUMERIC(10,6) NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_epoch_id ON ${tableName}(epoch_id);`
+        }
+    },
 ];

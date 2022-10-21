@@ -6,11 +6,11 @@ import {
     INumberConfig,
     IAPIResponse
 } from "./interfaces";
-import {BigNumber} from 'bignumber.js';
-import * as moment from 'moment';
-import * as momenttz from 'moment-timezone';
-import { v4 as uuidv4 } from 'uuid';
-import {generate, GenerateOptions} from 'generate-password';
+import {BigNumber} from "bignumber.js";
+import * as moment from "moment";
+import * as momenttz from "moment-timezone";
+import { v4 as uuidv4 } from "uuid";
+import {generate, GenerateOptions} from "generate-password";
 
 
 
@@ -226,11 +226,11 @@ export class UtilitiesService implements IUtilitiesService {
 
         // Return the desired format
         switch(config.of) {
-            case 's':
+            case "s":
                 return bn.toString();
-            case 'n':
+            case "n":
                 return bn.toNumber();
-            case 'bn':
+            case "bn":
                 return bn;
             default:
                 throw new Error(`The provided output format ${config.of} is invalid.`);
@@ -246,7 +246,7 @@ export class UtilitiesService implements IUtilitiesService {
 
     
     /**
-     * It will retrieve a BigNumber based on the value's format
+     * It will retrieve a BigNumber based on the value"s format
      * @param value 
      * @returns BigNumber
      */
@@ -264,7 +264,7 @@ export class UtilitiesService implements IUtilitiesService {
 
 
     /**
-     * Given the provided configuration, it will fill the parameters that weren't 
+     * Given the provided configuration, it will fill the parameters that weren"t 
      * provided with defaults.
      * @param config 
      * @returns INumberConfig
@@ -277,7 +277,7 @@ export class UtilitiesService implements IUtilitiesService {
         return {
             dp: typeof config.dp == "number" ? config.dp: 2,
             rm: config.ru == true ? BigNumber.ROUND_UP: BigNumber.ROUND_DOWN,
-            of: typeof config.of == "string" ? config.of: 'n'
+            of: typeof config.of == "string" ? config.of: "n"
         }
     }
 
@@ -395,7 +395,7 @@ export class UtilitiesService implements IUtilitiesService {
             if (code) return Number(code);
         }
 
-        // If a code is not found, return 0 for 'unknown'
+        // If a code is not found, return 0 for "unknown"
         return 0;
     }
 
@@ -429,7 +429,7 @@ export class UtilitiesService implements IUtilitiesService {
      */
     public getErrorMessage(e: any): string {
         // Unknown error
-        const unknownError: string = 'The error message could not be retrieved, find more information in the server logs.';
+        const unknownError: string = "The error message could not be retrieved, find more information in the server logs.";
 
         // Handle String
         if (typeof e == "string") {
@@ -505,7 +505,7 @@ export class UtilitiesService implements IUtilitiesService {
 
 
     /**
-     * Given a date in the following format '19/05/2020' it will return the timestamp.
+     * Given a date in the following format "19/05/2020" it will return the timestamp.
      * @param date 
      * @returns number
      */
@@ -550,7 +550,7 @@ export class UtilitiesService implements IUtilitiesService {
      * @returns string
      */
      public generatePassword(options?: GenerateOptions): string {
-        // Init options in case they weren't provided
+        // Init options in case they weren"t provided
         options = options ? options: {};
 
         // Generate and return the password
@@ -560,7 +560,7 @@ export class UtilitiesService implements IUtilitiesService {
             symbols: typeof options.symbols == "boolean" ? options.symbols: false,
             lowercase: typeof options.lowercase == "boolean" ? options.lowercase: true,
             uppercase: typeof options.uppercase == "boolean" ? options.uppercase: true,
-            exclude: `"'=`,
+            exclude: `""=`,
             strict: true
         });
     }

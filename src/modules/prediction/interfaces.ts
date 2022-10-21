@@ -17,13 +17,19 @@ export interface IPredictionService {
     listPredictions(
         epochID: string, 
         startAt: number, 
-        endAt: number,
-        limit: number
+        endAt: number
     ): Promise<IPrediction[]>,
     
     // Initializer
     initialize(): Promise<void>,
-    stop(): void
+    stop(): void,
+
+    // Prediction Candlesticks
+    listPredictionCandlesticks(
+        epochID: string, 
+        startAt: number, 
+        endAt: number
+    ): Promise<IPredictionCandlestick[]>,
 }
 
 
@@ -37,7 +43,7 @@ export interface IPredictionValidations {
         epochID: string, 
         startAt: number|undefined, 
         endAt: number|undefined,
-        limit: number|undefined, 
+        listingCandlesticks?: boolean, 
     ): void,
 
     // Prediction Generator
@@ -48,16 +54,52 @@ export interface IPredictionValidations {
 
 // Model
 export interface IPredictionModel {
+    /* Predictions Management */
+
     // Retrievers
     listPredictions(
         epochID: string, 
         startAt: number|undefined, 
-        endAt: number|undefined,
-        limit: number|undefined
+        endAt: number|undefined
     ): Promise<IPrediction[]>,
 
     // Prediction Saving
-    savePrediction(epochID: string, pred: IPrediction): Promise<void>
+    savePrediction(epochID: string, pred: IPrediction): Promise<void>,
+
+
+    /* Predictions Candlestick Management */
+
+    // Candlesticks Retrievers
+    listPredictionCandlesticks(
+        epochID: string, 
+        startAt: number|undefined, 
+        endAt: number|undefined
+    ): Promise<IPredictionCandlestick[]>,
+    getLastOpenTimestamp(epochID: string, epochInstalled: number): Promise<number>,
+
+
+    // Candlesticks Saving
+    savePredictionCandlesticks(epochID: string, candlesticks: IPredictionCandlestick[]): Promise<void>,
+
+    // Candlesticks Misc Helpers
+    buildCandlestick(preds: IPrediction[]): IPredictionCandlestick,
+    getPredictionCandlestickCloseTime(ot: number): number,
 }
 
 
+
+
+
+
+
+
+// Prediction Candlestick Record
+export interface IPredictionCandlestick {
+    ot: number,                 // Open Time
+    ct: number,                 // Close Time
+    o: number,                  // Open Sum
+    h: number,                  // High Sum
+    l: number,                  // Low Sum
+    c: number,                  // Close Sum
+    sm: number                  // Sum Mean
+}

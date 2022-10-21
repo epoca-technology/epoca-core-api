@@ -23,8 +23,14 @@ export class PredictionValidations implements IPredictionValidations {
      * If a prediction was generated prior to this value, it is considered to be 
      * expired and should not be traded.
      */
-     private readonly predictionDurationSeconds: number = 120;
+    private readonly predictionDurationSeconds: number = 120;
 
+
+    /**
+     * The limit of data in milliseconds that can be read per request.
+     */
+    private readonly predictionListLimit: number = 3 * 60 * 60 * 1000;                      // 3 Hours
+    private readonly predictionCandlesticksListLimit: number = 91 * 24 * 60 * 60 * 1000;    // 91 days
 
 
 
@@ -74,51 +80,35 @@ export class PredictionValidations implements IPredictionValidations {
      * @param epochID 
      * @param startAt 
      * @param endAt 
-     * @param limit 
+     * @param listingCandlesticks?
      */
     public canListPredictions(
         epochID: string, 
         startAt: number|undefined, 
         endAt: number|undefined,
-        limit: number|undefined, 
+        listingCandlesticks?: boolean, 
     ): void {
         // Validate the Epoch ID
         if (!this._validations.epochIDValid(epochID)) {
             throw new Error(this._utils.buildApiError(`The provided Epoch ID (${epochID}) is invalid.`, 21001));
         }
 
-        // Make sure that the start or the end were provided
-        if (startAt == undefined && endAt == undefined) {
-            throw new Error(this._utils.buildApiError(`The startAt or/and the endAt must be provided in order to list predictions.`, 21010));
+        // Make sure the start and the end have been provided
+        if (typeof startAt != "number" || typeof endAt != "number") {
+            throw new Error(this._utils.buildApiError(`The predictions range is invalid. Received: ${startAt} - ${endAt}.`, 21002));
         }
 
-        // If only the start was provided, there must be a valid limit
-        if (typeof startAt == "number" && endAt == undefined && (typeof limit != "number" || limit < 1 || limit > 300)) {
-            throw new Error(this._utils.buildApiError(`When the startAt alone is provided, it must be followed by a valid limit 
-            ranging 1 and 300. Received: ${limit}`, 21006));
+        // The start cannot be greater or equals to the end
+        if (startAt >= endAt) {
+            throw new Error(this._utils.buildApiError(`The predictions starting point must be less than the end. Received: ${startAt} - ${endAt}.`, 21003));
         }
 
-        // If only the end was provided, there must be a valid limit
-        if (startAt == undefined && typeof endAt == "number" && (typeof limit != "number" || limit < 1 || limit > 300)) {
-            throw new Error(this._utils.buildApiError(`When the endAt alone is provided, it must be followed by a valid limit 
-            ranging 1 and 300. Received: ${limit}`, 21007));
-        }
-
-        // If both, the start and the end were provided, the limit must be undefined
-        if (typeof startAt == "number" && typeof endAt == "number") {
-            // Make sure the limit wasn't provided
-            if (limit != undefined) {
-                throw new Error(this._utils.buildApiError(`When the startAt and the endAt are provided, the limit must not 
-                be set. Received: ${limit}`, 21008));
-            }
-            
-            // Make sure the query does not exceed 15 days worth of data
-            const daysLimit: number = 15 * 24 * 60 * 60 * 1000;
-            const difference: number = endAt - startAt;
-            if (difference > daysLimit) {
-                throw new Error(this._utils.buildApiError(`The predictions query is larger than 15 days worth of data. 
-                Received: ${difference}`, 21009));
-            }
+        // Make sure the query does not exceed 15 days worth of data
+        const dataLimit: number = listingCandlesticks ? this.predictionCandlesticksListLimit: this.predictionListLimit;
+        const difference: number = endAt - startAt;
+        if (difference > dataLimit) {
+            throw new Error(this._utils.buildApiError(`The predictions query is larger than the permitted data limit. 
+            Limit: ${dataLimit}, Received: ${difference}`, 21006));
         }
     }
 
