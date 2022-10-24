@@ -6,7 +6,13 @@
 
 ## Binance (1 - 999)
 
-1: `Binance returned an invalid candlesticks series.`
+1: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the candlesticks series.`
+
+2: `Binance returned an invalid candlesticks series.`
+
+3: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the order book.`
+
+4: `Binance returned an invalid order book.`
 
 
 
@@ -417,3 +423,21 @@
 22001: ``
 
 22002: ``
+
+
+
+
+
+
+
+#
+## Order Book Service (23.000 - 23.999)
+
+23000: `The integrity of the order book cannot be validated because there are no spot candlesticks in the stream.`
+
+23001: `The difference between the current candlestick (spot) and the safe bid (futures) exceeds the established tolerance. Difference: ${bidDiff}%`
+
+23002: `The difference between the current candlestick (spot) and the safe ask (futures) exceeds the established tolerance. Difference: ${askDiff}%`
+
+23003: `The order book's safe bid cannot be greater than the safe ask. Bid: ${safeBid}, Ask: ${safeAsk}`
+

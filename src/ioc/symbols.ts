@@ -44,6 +44,7 @@
     PredictionService: Symbol.for("PredictionService"),
     PredictionValidations: Symbol.for("PredictionValidations"),
     PredictionModel: Symbol.for("PredictionModel"),
+    SignalService: Symbol.for("SignalService"),
 
     // GUI Version
     GuiVersionService: Symbol.for("GuiVersionService"),
@@ -55,6 +56,9 @@
 
     // Notifications
     NotificationService: Symbol.for("NotificationService"),
+
+    // Order Book
+    OrderBookService: Symbol.for("OrderBookService"),
 
     // Request Guard
     RequestGuardService: Symbol.for("RequestGuardService"),
@@ -110,6 +114,7 @@ export interface ISymbols {
     PredictionService: symbol,
     PredictionValidations: symbol,
     PredictionModel: symbol,
+    SignalService: symbol,
 
 
     GuiVersionService: symbol,
@@ -121,6 +126,9 @@ export interface ISymbols {
 
 
     NotificationService: symbol,
+
+
+    OrderBookService: symbol,
 
 
     RequestGuardService: symbol,

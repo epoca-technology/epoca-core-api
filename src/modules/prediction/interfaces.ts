@@ -103,3 +103,11 @@ export interface IPredictionCandlestick {
     c: number,                  // Close Sum
     sm: number                  // Sum Mean
 }
+
+
+
+
+/* TO BE DEPRECATED */
+export interface ISignalService {
+    
+}

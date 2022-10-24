@@ -17,16 +17,19 @@ export interface IBinanceService {
         endTime?: number, 
         limit?:number
     ): Promise<IBinanceCandlestick[]>,
+    getOrderBook(limit?:number): Promise<IBinanceOrderBook>
 }
 
 
 
 
 
+/* Candlesticks */
+
 
 
 // Candlestick Series Intervals
-export type IBinanceCandlestickInterval = '1m'|'3m'|'5m'|'15m'|'30m'|'1h'|'2h'|'4h'|'6h'|'8h'|'12h'|'1d'|'3d'|'1w'|'1M';
+export type IBinanceCandlestickInterval = "1m"|"3m"|"5m"|"15m"|"30m"|"1h"|"2h"|"4h"|"6h"|"8h"|"12h"|"1d"|"3d"|"1w"|"1M";
 
 
 
@@ -46,3 +49,29 @@ export type IBinanceCandlestick = [
     string,     // 10 = Taker buy quote asset volume    E.g. "79236207.41530900"
     string      // Ignore.
 ]
+
+
+
+
+
+
+
+/* Order Book */
+
+
+
+
+
+// Order Book
+export interface IBinanceOrderBook {
+    // Binance Internals
+    lastUpdateId: number,
+    E: number, // -> Message output time E represents the time a certain data was pushed out from the server
+    T: number, // -> The transaction time T records the time that the data (e.g. account, order related) got updated
+
+    // Order Book Bids - Buy Orders
+    bids: Array<Array<string>>,
+
+    // Order Book Asks - Sell Orders
+    asks: Array<Array<string>>,
+}

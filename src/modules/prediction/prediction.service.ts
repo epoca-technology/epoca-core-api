@@ -69,7 +69,7 @@ export class PredictionService implements IPredictionService {
      * is recommended to use the getActive method because it performs
      * additional validations.
      */
-    public active: BehaviorSubject<IPrediction|undefined> = new BehaviorSubject(undefined)
+    public active: BehaviorSubject<IPrediction|undefined> = new BehaviorSubject(undefined);
 
 
     /**

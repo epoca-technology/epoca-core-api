@@ -18,6 +18,7 @@ import { predictionModule } from "../modules/prediction";
 import { guiVersionModule } from "../modules/gui-version";
 import { ipBlacklistModule } from "../modules/ip-blacklist";
 import { notificationModule } from "../modules/notification";
+import { orderBookModule } from "../modules/order-book";
 import { requestGuardModule } from "../modules/request-guard";
 import { serverModule } from "../modules/server";
 import { utilitiesModule } from "../modules/utilities";
@@ -77,6 +78,9 @@ appContainer.load(
 
     // Notification
     notificationModule,
+
+    // Order Book
+    orderBookModule,
 
     // Request Guard
     requestGuardModule,

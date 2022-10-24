@@ -18,6 +18,10 @@ const _auth = appContainer.get<IAuthService>(SYMBOLS.AuthService);
 import {ICandlestickService} from "./modules/candlestick";
 const _candlestick = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
+// Order Book
+import {IOrderBookService} from "./modules/order-book";
+const _orderBook = appContainer.get<IOrderBookService>(SYMBOLS.OrderBookService);
+
 // Database
 import {IDatabaseService} from "./modules/database";
 const _db = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
@@ -47,21 +51,23 @@ const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
  * 1) Database Module
  * 2) Auth Module
  * 3) Candlestick Module
- * 4) Server Module
- * 5) IP Blacklist Module
- * 6) Epoch Module
+ * 4) Order Book Module
+ * 5) Server Module
+ * 6) IP Blacklist Module
  * 7) Epoch Module
- * 8) Trading Simulation Module
- * 9) Trading Session Module
+ * 8) Epoch Module
+ * 9) Trading Simulation Module
+ * 10) Trading Session Module
  * 
  * If any of the initialization actions triggers an error, it crashes the execution and
  * stop the following modules:
  * 1) Candlestick Module
- * 2) Server Module
- * 3) Epoch Module
+ * 2) Order Book Module
+ * 3) Server Module
  * 4) Epoch Module
- * 5) Trading Simulation Module
- * 6) Trading Session Module
+ * 5) Prediction Module
+ * 6) Trading Simulation Module
+ * 7) Trading Session Module
  */
 export async function init(): Promise<void> {
     try {
@@ -102,6 +108,14 @@ export async function init(): Promise<void> {
                 console.error("Error when initializing the Candlestick Module: ", e)
                 throw e;
             }
+
+            // Initialize the Order Book Syncing
+            try {
+                await _orderBook.initialize();
+            } catch (e) {
+                console.error("Error when initializing the Order Book Module: ", e)
+                throw e;
+            }
             
             // Initialize the Server Module
             try {
@@ -127,7 +141,7 @@ export async function init(): Promise<void> {
                 throw e;
             }
 
-            // Initialize the Epoch Module
+            // Initialize the Prediction Module
             try {
                 await _prediction.initialize();
             } catch (e) {
@@ -157,6 +171,9 @@ export async function init(): Promise<void> {
     } catch (e) {
         // Stop the Candlestick Module
         _candlestick.stop();
+
+        // Stop the Order Book Module
+        _orderBook.stop();
 
         // Stop the Server Module
         _server.stop();

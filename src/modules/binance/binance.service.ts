@@ -1,8 +1,17 @@
 import {inject, injectable} from "inversify";
-import { IBinanceService, IBinanceCandlestickInterval, IBinanceCandlestick } from "./interfaces";
 import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
-import { IExternalRequestOptions, IExternalRequestResponse, IExternalRequestService } from "../external-request";
+import { 
+    IExternalRequestOptions, 
+    IExternalRequestResponse, 
+    IExternalRequestService 
+} from "../external-request";
+import { 
+    IBinanceService, 
+    IBinanceCandlestickInterval, 
+    IBinanceCandlestick, 
+    IBinanceOrderBook 
+} from "./interfaces";
 
 
 @injectable()
@@ -14,7 +23,7 @@ export class BinanceService implements IBinanceService {
 
 
     /**
-     * The very first candlestick that can be retrieved through Binance's API.
+     * The very first candlestick that can be retrieved through Binance"s API.
      * Thursday, August 17, 2017 4:00:00 AM     - GMT
      * Thursday, August 17, 2017 12:00:00 AM    - Venezuela
      */
@@ -59,8 +68,6 @@ export class BinanceService implements IBinanceService {
 
 
 
-
-
     /**
      * Retrieves the candlesticks series accoring to params.
      * @param interval?      Defaults to 1m
@@ -79,7 +86,7 @@ export class BinanceService implements IBinanceService {
         let path: string = `/api/v3/klines?symbol=BTCUSDT`;
 
         // Add the interval
-        path += `&interval=${interval || '1m'}`;
+        path += `&interval=${interval || "1m"}`;
 
         // Add the start time if provided
         if (startTime) path += `&startTime=${startTime}`;
@@ -92,24 +99,71 @@ export class BinanceService implements IBinanceService {
 
         // Build options
         const options: IExternalRequestOptions = {
-            host: 'api.binance.com',
+            host: "api.binance.com",
             path: path,
-            method: 'GET',
+            method: "GET",
             headers: {
-                'Content-Type': 'application/json'
+                "Content-Type": "application/json"
             }
         };
 
-        // Retrieve the candlesticks status
+        // Retrieve the candlesticks
         const response: IExternalRequestResponse = await this._er.request(options);
 
         // Validate the response
-        // @TODO
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the candlesticks series.`, 1));
+        }
 
-        // Validate the data
-        if (!response.data || typeof response.data != "object") {
+        // Validate the response's data
+        if (!response.data || !Array.isArray(response.data) || !response.data.length) {
             console.log(response);
-            throw new Error(this._utils.buildApiError(`Binance returned an invalid candlesticks series.`, 1));
+            throw new Error(this._utils.buildApiError("Binance returned an invalid candlesticks series.", 2));
+        }
+
+        // Return the series
+        return response.data;
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Retrieves the current order book state.
+     * @param limit?  -> Defaults to 50
+     * @returns Promise<IBinanceOrderBook>
+     */
+     public async getOrderBook(limit?: number): Promise<IBinanceOrderBook> {
+        // Build options
+        const options: IExternalRequestOptions = {
+            host: "fapi.binance.com",
+            path: `/fapi/v1/depth?symbol=BTCUSDT&limit=${limit || 50}`,
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        };
+
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the order book.`, 3));
+        }
+
+        // Validate the response's data
+        if (!response.data || typeof response.data != "object" || !Array.isArray(response.data.bids) || !Array.isArray(response.data.asks)) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError("Binance returned an invalid order book.", 4));
         }
 
         // Return the series
