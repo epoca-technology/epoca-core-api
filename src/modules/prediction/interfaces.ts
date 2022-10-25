@@ -106,8 +106,3 @@ export interface IPredictionCandlestick {
 
 
 
-
-/* TO BE DEPRECATED */
-export interface ISignalService {
-    
-}

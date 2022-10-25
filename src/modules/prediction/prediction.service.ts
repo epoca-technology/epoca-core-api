@@ -1,5 +1,6 @@
 import {inject, injectable} from "inversify";
 import { BehaviorSubject } from "rxjs";
+import * as moment from "moment";
 import { environment, SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { 
@@ -10,8 +11,9 @@ import {
 import { IApiErrorService } from "../api-error";
 import { IEpochRecord, IEpochService } from "../epoch";
 import { ICandlestickService } from "../candlestick";
+import { IOrderBookService } from "../order-book";
 import { INotificationService } from "../notification";
-import { IPrediction } from "../epoch-builder";
+import { IPrediction, IPredictionResult } from "../epoch-builder";
 import { 
     IPredictionCandlestick, 
     IPredictionModel, 
@@ -32,6 +34,7 @@ export class PredictionService implements IPredictionService {
     @inject(SYMBOLS.ApiErrorService)                  private _apiError: IApiErrorService;
     @inject(SYMBOLS.EpochService)                     private _epoch: IEpochService;
     @inject(SYMBOLS.CandlestickService)               private _candlestick: ICandlestickService;
+    @inject(SYMBOLS.OrderBookService)                 private _orderBook: IOrderBookService;
     @inject(SYMBOLS.NotificationService)              private _notification: INotificationService;
 
 
@@ -81,6 +84,12 @@ export class PredictionService implements IPredictionService {
     private candlesticksSyncInterval: any;
     private readonly candlesticksSyncIntervalSeconds: number = 180; // 3 minutes
 
+
+    /**
+     * Signal (To be deprecated)
+     */
+    private readonly throttleMinutes: number = 10;
+    private lastBroadcast: number|undefined = undefined;
 
 
 
@@ -287,6 +296,9 @@ export class PredictionService implements IPredictionService {
         // Broadcast the prediction
         this.active.next(prediction);
 
+        // Broadcast the signal (To be deprecated)
+        this.broadcastPrediction(prediction);
+
         // Finally, store it in the database
         await this.model.savePrediction(epoch_id, prediction);
     }
@@ -392,5 +404,93 @@ export class PredictionService implements IPredictionService {
             // Finally, save the candlesticks if any was found
             if (candlesticks.length) await this.model.savePredictionCandlesticks(epoch.id, candlesticks);
         } catch (e) { console.error(e) }
+    }
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+    /* Signal */
+
+
+
+
+    public async broadcastPrediction(pred: IPrediction|undefined): Promise<void> {
+        // Init the current time
+        const currentTime: number = Date.now();
+
+        // Check if a signal should be broadcasted
+        if (
+            this._epoch.active.value && 
+            pred && 
+            pred.r != 0 &&
+            (this.lastBroadcast == undefined || this.lastBroadcast < moment(currentTime).subtract(this.throttleMinutes, "minutes").valueOf())
+        ) {
+            try {
+                // Init signal
+                let signal: {
+                    kind: IPredictionResult, 
+                    entry: number, 
+                    takeProfit: number,
+                    stopLoss: number
+                } = { kind: 0, entry: 0, takeProfit: 0, stopLoss: 0 }
+
+                // Retrieve the safe rates from order book
+                const { safe_bid, safe_ask } = await this._orderBook.getBook();
+
+                // Handle a long prediction
+                if (pred.r == 1) {
+                    signal = {
+                        kind: 1,
+                        entry: safe_ask,
+                        takeProfit: <number>this._utils.alterNumberByPercentage(
+                            safe_ask, 
+                            this._epoch.active.value.model.price_change_requirement,
+                            {dp: 0, ru: true}
+                        ),
+                        stopLoss: <number>this._utils.alterNumberByPercentage(
+                            safe_ask, 
+                            -this._epoch.active.value.model.price_change_requirement,
+                            {dp: 0, ru: true}
+                        )
+                    }
+                }
+
+                // Otherwise, handle a short prediction
+                else {
+                    signal = {
+                        kind: -1,
+                        entry: safe_bid,
+                        takeProfit: <number>this._utils.alterNumberByPercentage(
+                            safe_bid, 
+                            -this._epoch.active.value.model.price_change_requirement,
+                            {dp: 0, ru: true}
+                        ),
+                        stopLoss: <number>this._utils.alterNumberByPercentage(
+                            safe_bid, 
+                            this._epoch.active.value.model.price_change_requirement,
+                            {dp: 0, ru: true}
+                        )
+                    }
+                }
+
+                // Broadcast the signal
+                await this._notification.broadcast({
+                    sender: "PREDICTION",
+                    title: `${signal.kind == 1 ? 'Long': 'Short'} Signal (${pred.s})`,
+                    description: `Entry: ${signal.entry}\nTake Profit: ${signal.takeProfit}\nStop Loss: ${signal.stopLoss}`
+                });
+                this.lastBroadcast = currentTime;
+            } catch (e) { console.error(e) }
+        }
     }
 }

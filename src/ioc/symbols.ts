@@ -44,7 +44,6 @@
     PredictionService: Symbol.for("PredictionService"),
     PredictionValidations: Symbol.for("PredictionValidations"),
     PredictionModel: Symbol.for("PredictionModel"),
-    SignalService: Symbol.for("SignalService"),
 
     // GUI Version
     GuiVersionService: Symbol.for("GuiVersionService"),
@@ -114,7 +113,6 @@ export interface ISymbols {
     PredictionService: symbol,
     PredictionValidations: symbol,
     PredictionModel: symbol,
-    SignalService: symbol,
 
 
     GuiVersionService: symbol,
