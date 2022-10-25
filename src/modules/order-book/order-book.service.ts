@@ -40,8 +40,10 @@ export class OrderBookService implements IOrderBookService {
      * This is the price that will be chosen as "Safe" from the processed order
      * book. In case the length of the side is less than safePriceDepth, the last
      * price will be set instead.
+     * IMPORTANT: safePriceDepth refers to the index. If 0 is provided, the first
+     * item will be used.
      */
-    private readonly safePriceDepth: number = 5;
+    private readonly safePriceDepth: number = 4; // 5th item
 
 
 
@@ -185,8 +187,8 @@ export class OrderBookService implements IOrderBookService {
         const asks: IOrderBookItem[] = this.buildBookItems(rawBook.asks, false);
 
         // Calculate the safe bid and ask
-        const safeBid: number = bids.length > this.safePriceDepth ? bids[this.safePriceDepth].price: bids.at(-1).price;
-        const safeAsk: number = asks.length > this.safePriceDepth ? asks[this.safePriceDepth].price: asks.at(-1).price;
+        const safeBid: number = bids.length > this.safePriceDepth + 1 ? bids[this.safePriceDepth].price: bids.at(-1).price;
+        const safeAsk: number = asks.length > this.safePriceDepth + 1 ? asks[this.safePriceDepth].price: asks.at(-1).price;
 
         // Validate the integrity of the safe rates
         this.validateSafeRatesIntegrity(safeBid, safeAsk);
