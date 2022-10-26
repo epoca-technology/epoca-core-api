@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "build": "gulp",
+    "build": "node ./node_modules/gulp/bin/gulp.js",
     "test": "jasmine-ts --config=./jasmine/e2e.json",
     "test-api-error": "jasmine-ts --config=./jasmine/api-error.json",
     "test-auth": "jasmine-ts --config=./jasmine/auth.json",
@@ -15,7 +15,6 @@
     "test-ip-blacklist": "jasmine-ts --config=./jasmine/ip-blacklist.json",
     "test-notification": "jasmine-ts --config=./jasmine/notification.json",
     "test-server": "jasmine-ts --config=./jasmine/server.json",
-    "test-trading-simulation": "jasmine-ts --config=./jasmine/trading-simulation.json",
     "test-utils": "jasmine-ts --config=./jasmine/utils.json"
   },
   "repository": {

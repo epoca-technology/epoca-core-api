@@ -17,13 +17,11 @@ Epoca Core is an API designed to manage the system as well as communicating with
 
 ### Local Testing
 
-- NodeJS: v16.13.1
+- NodeJS: v16.14.0
 
-- NPM: v8.1.2
+- NPM: v8.3.1
 
 - PostgreSQL: v14
-
-- Python: v3.7
 
 
 
@@ -64,7 +62,5 @@ This script provides a series of functionalities that enable the database backup
 **Notification:** `npm run test-notification`
 
 **Server:** `npm run test-server`
-
-**Trading Simulation:** `npm run test-trading-simulation`
 
 **Utilities:** `npm run test-utils`
