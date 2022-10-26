@@ -88,7 +88,7 @@ export class PredictionService implements IPredictionService {
     /**
      * Signal (To be deprecated)
      */
-    private readonly throttleMinutes: number = 10;
+    private readonly throttleMinutes: number = 30;
     private lastBroadcast: number|undefined = undefined;
 
 
