@@ -31,10 +31,10 @@ const DatabaseRoute = express.Router();
  * Retrieves the Database Summary.
  * @requires id-token
  * @requires api-secret
- * @requires authority: 5
+ * @requires authority: 4
  * @returns IAPIResponse<IDatabaseSummary>
 */
-DatabaseRoute.route(`/getDatabaseSummary`).get(highRiskLimit, async (req: express.Request, res: express.Response) => {
+DatabaseRoute.route("/getDatabaseSummary").get(highRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -43,7 +43,7 @@ DatabaseRoute.route(`/getDatabaseSummary`).get(highRiskLimit, async (req: expres
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 5);
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4);
 
         // Perform Action
         const summary: IDatabaseSummary = await _db.getDatabaseSummary();
