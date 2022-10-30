@@ -9,7 +9,7 @@ import {
     IExternalRequestService 
 } from "../external-request";
 import { IApiErrorService } from "../api-error";
-import { IEpochRecord, IEpochService } from "../epoch";
+import { IEpochService } from "../epoch";
 import { ICandlestickService } from "../candlestick";
 import { IOrderBookService } from "../order-book";
 import { INotificationService } from "../notification";
@@ -18,6 +18,7 @@ import {
     IPredictionCandlestick, 
     IPredictionModel, 
     IPredictionService, 
+    IPredictionState, 
     IPredictionValidations 
 } from "./interfaces";
 
@@ -74,19 +75,23 @@ export class PredictionService implements IPredictionService {
      */
     public active: BehaviorSubject<IPrediction|undefined> = new BehaviorSubject(undefined);
 
-
     /**
-     * Prediction Candlesticks
-     * In order to optimize how predictions are queried, they will be stored in 
-     * candlestick format, following the 30 minute interval.
-     * The syncing of the candlesticks only occurs when an epoch is active.
+     * Active Prediction State
+     * The state of the prediction stands for the trend being followed by the
+     * last 5 hours worth of candlesticks. The states are the following:
+     * 1) Flat: there isn't a clear trend being followed and is represented by a 0.
+     * 2) Up: there is an increase trend and is be represented by an int from 1 to 11.
+     * 3) Down: there is a decrease trend and is be represented by an int from -1 to -11.
+     * The number represents the number of candlesticks backing the trend. The higher, 
+     * the more intense.
      */
-    private candlesticksSyncInterval: any;
-    private readonly candlesticksSyncIntervalSeconds: number = 180; // 3 minutes
+    public activeState: IPredictionState = 0;
+
+
 
 
     /**
-     * Signal (To be deprecated)
+     * Signal (TO BE DEPRECATED)
      */
     private readonly throttleMinutes: number = 30;
     private lastBroadcast: number|undefined = undefined;
@@ -101,7 +106,13 @@ export class PredictionService implements IPredictionService {
 
 
 
-    /* Retrievers */
+
+
+
+
+    /**************
+     * Retrievers *
+     **************/
 
 
 
@@ -163,7 +174,10 @@ export class PredictionService implements IPredictionService {
 
 
 
-    /* Initializer */
+    /***************
+     * Initializer *
+     ***************/
+
 
 
 
@@ -185,7 +199,7 @@ export class PredictionService implements IPredictionService {
          * ensure a quick response.
          */
         if (this._epoch.active.value && this._candlestick.isStreamInSync(this._candlestick.stream.value)) {
-            try { await this.predict(this._epoch.active.value.id) } 
+            try { await this.predict() } 
             catch (e) { 
                 console.error(e);
                 await Promise.all([
@@ -204,7 +218,7 @@ export class PredictionService implements IPredictionService {
          */
         this.predictionInterval = setInterval(async () => {
             if (this._epoch.active.value) {
-                try { await this.predict(this._epoch.active.value.id) } 
+                try { await this.predict() } 
                 catch (e) { 
                     console.error(e);
                     await Promise.all([
@@ -216,30 +230,6 @@ export class PredictionService implements IPredictionService {
                 }
             }
         }, this.intervalSeconds * 1000);
-
-
-
-        /**
-         * Prediction Candlesticks
-         * If there is an active epoch, initialize the interval that will keep 
-         * them in sync.
-         */
-        if (this._epoch.active.value) {
-            // Perform the initial sync safely
-            try {
-                await this.syncCandlesticks(this._epoch.active.value)
-            } catch (e) { console.error(e) }
-
-            // Initialize the interval
-            this.candlesticksSyncInterval = setInterval(async () => {
-                // Make sure the epoch is still active
-                if (this._epoch.active.value) {
-                    try {
-                        await this.syncCandlesticks(this._epoch.active.value)
-                    } catch (e) { console.error(e) }
-                }
-            }, this.candlesticksSyncIntervalSeconds * 1000);
-        }
     }
 
 
@@ -256,8 +246,7 @@ export class PredictionService implements IPredictionService {
         if (this.predictionInterval) clearInterval(this.predictionInterval);
         this.predictionInterval = undefined;
         this.active.next(undefined);
-        if (this.candlesticksSyncInterval) clearInterval(this.candlesticksSyncInterval);
-        this.candlesticksSyncInterval = undefined;
+        this.activeState = 0;
     }
 
 
@@ -270,9 +259,9 @@ export class PredictionService implements IPredictionService {
 
 
 
-
-
-    /* Prediction Generator */
+    /************************
+     * Prediction Generator *
+     ************************/
 
 
 
@@ -280,12 +269,16 @@ export class PredictionService implements IPredictionService {
     /**
      * Generates, broadcasts and stores brand new predictions at any
      * point for as long as an Epoch is active.
-     * @param epoch_id
      * @returns Promise<void>
      */
-    private async predict(epoch_id: string): Promise<void> {
+    private async predict(): Promise<void> {
+        // Make sure the epoch is still active
+        if (!this._epoch.active.value) {
+            throw new Error(this._utils.buildApiError(`A prediction cannot be generated if there isn't an active epoch.`, 20000));
+        }
+
         // Set the path
-        this.options.path = `/predict?epoch_id=${epoch_id}`;
+        this.options.path = `/predict?epoch_id=${this._epoch.active.value.id}`;
 
         // Generate the prediction with a request to the Prediction API
         const response: IExternalRequestResponse = await this._req.request(this.options, {}, "http");
@@ -293,14 +286,20 @@ export class PredictionService implements IPredictionService {
         // Extract the prediction from the response
         const prediction: IPrediction = this.validations.validateGeneratedPrediction(response);
 
+        // Finally, store it in the database
+        await this.model.savePrediction(this._epoch.active.value.id, prediction);
+
+        // Sync the candlesticks
+        await this.syncCandlesticks();
+
+        // Update the prediction state
+        this.activeState = await this.getActiveState(prediction);
+
         // Broadcast the prediction
         this.active.next(prediction);
 
-        // Broadcast the signal (To be deprecated)
-        this.broadcastPrediction(prediction);
-
-        // Finally, store it in the database
-        await this.model.savePrediction(epoch_id, prediction);
+        // Broadcast the signal (TO BE DEPRECATED)
+        this.broadcastPrediction();
     }
 
 
@@ -313,16 +312,9 @@ export class PredictionService implements IPredictionService {
 
     
 
-
-
-    /* Prediction Candlesticks */
-
-
-
-
-
-    /* Retrievers */
-
+    /***************************
+     * Prediction Candlesticks *
+     ***************************/
 
 
 
@@ -355,28 +347,17 @@ export class PredictionService implements IPredictionService {
 
 
 
-
-
-
-
-    /* Sync Manager */
-
-
-
-
-
     /**
-     * Syncs the candlesticks for a given epoch.
-     * @param epoch 
+     * Syncs the candlesticks for the active epoch.
      * @returns Promise<void>
      */
-    private async syncCandlesticks(epoch: IEpochRecord): Promise<void> {
+    private async syncCandlesticks(): Promise<void> {
         try {
             // Find all the candlesticks that can be saved
             let candlesticks: IPredictionCandlestick[] = [];
 
             // Initialize the open & close timestamps
-            let openTime: number = epoch.installed;
+            let openTime: number = this._epoch.active.value.installed;
             let closeTime: number|undefined;
 
             // Calculate the current time
@@ -385,11 +366,18 @@ export class PredictionService implements IPredictionService {
             // Iterate for as long as there is time in between
             while (openTime <= currentTime) {
                 // Calculate the open and close times
-                openTime = typeof closeTime == "number" ? closeTime + 1: await this.model.getLastOpenTimestamp(epoch.id, epoch.installed);
+                openTime = typeof closeTime == "number" ? closeTime + 1: await this.model.getLastOpenTimestamp(
+                    this._epoch.active.value.id, 
+                    this._epoch.active.value.installed
+                );
                 closeTime = this.model.getPredictionCandlestickCloseTime(openTime);
 
                 // Retrieve all the predictions within the period
-                const preds: IPrediction[] = await this.model.listPredictions(epoch.id, openTime, closeTime);
+                const preds: IPrediction[] = await this.model.listPredictions(
+                    this._epoch.active.value.id, 
+                    openTime, 
+                    closeTime
+                );
 
                 // Make sure there are predictions in the range
                 if (preds.length > 0) {
@@ -402,10 +390,89 @@ export class PredictionService implements IPredictionService {
             }
 
             // Finally, save the candlesticks if any was found
-            if (candlesticks.length) await this.model.savePredictionCandlesticks(epoch.id, candlesticks);
+            if (candlesticks.length) {
+                await this.model.savePredictionCandlesticks(
+                    this._epoch.active.value.id, 
+                    candlesticks
+                );
+            }
         } catch (e) { console.error(e) }
     }
 
+
+
+
+
+
+
+    
+
+    /********************
+     * Prediction State *
+     ********************/
+
+
+
+
+
+    /**
+     * Calculates the prediction state based on the past 5 hours worth
+     * of data. If there are less than 7 candlesticks within the range,
+     * it returns 0.
+     * @param pred 
+     * @returns Promise<IPredictionState>
+     */
+    private async getActiveState(pred: IPrediction): Promise<IPredictionState> {
+        // Retrieve the candlesticks
+        const candlesticks: IPredictionCandlestick[] = await this.model.listPredictionCandlesticks(
+            this._epoch.active.value.id,
+            moment(pred.t).subtract(5, "hours").valueOf(),
+            pred.t
+        );
+
+        // Make sure there are enough candlesticks within the range
+        if (candlesticks.length >= 7) {
+            // Iterate over each candlestick in order to determine the trend and the count
+            let i: number = candlesticks.length - 1;
+            let sequenceType: 1|0|-1 = 0;
+            let sequenceCount: number = 0;
+            let sequenceEnded: boolean = candlesticks.at(-1).sm == candlesticks.at(-2).sm;
+            while (i > 0 && sequenceEnded == false) {
+                // Check if the current value is greater than the previous one (Potential uptrend sequence)
+                if (candlesticks[i].sm > candlesticks[i - 1].sm) {
+                    // If there was a downtrend sequence, end the loop
+                    if (sequenceType == -1) { sequenceEnded = true }
+
+                    // Otherwise, set the sequence type
+                    else {
+                        sequenceType = 1;
+                        sequenceCount += 1;
+                    }
+                }
+
+                // Check if the current value is less than the previous one (Potential downtrend sequence)
+                else if (candlesticks[i].sm < candlesticks[i - 1].sm) {
+                    // If there was an uptrend sequence, end the loop
+                    if (sequenceType == 1) { sequenceEnded = true }
+
+                    // Otherwise, set the sequence type
+                    else {
+                        sequenceType = -1;
+                        sequenceCount += 1;
+                    }
+                }
+
+                // Decrement the counter
+                i -= 1;
+            }
+
+            // Finally, return the current state
+            return sequenceType == -1 ? <IPredictionState>-(sequenceCount): <IPredictionState>sequenceCount;
+        } 
+        
+        // Otherwise, return a completely flat state
+        else { return 0 }
+    }
 
 
 
@@ -419,20 +486,28 @@ export class PredictionService implements IPredictionService {
 
 
 
-    /* Signal */
 
 
 
 
-    public async broadcastPrediction(pred: IPrediction|undefined): Promise<void> {
+
+
+
+
+    /*****************************
+     * Signal - TO BE DEPRECATED *
+     *****************************/
+
+
+
+
+    public async broadcastPrediction(): Promise<void> {
         // Init the current time
         const currentTime: number = Date.now();
 
         // Check if a signal should be broadcasted
         if (
-            this._epoch.active.value && 
-            pred && 
-            pred.r != 0 &&
+            this.active.value.r != 0 &&
             (this.lastBroadcast == undefined || this.lastBroadcast < moment(currentTime).subtract(this.throttleMinutes, "minutes").valueOf())
         ) {
             try {
@@ -448,7 +523,7 @@ export class PredictionService implements IPredictionService {
                 const { safe_bid, safe_ask } = await this._orderBook.getBook();
 
                 // Handle a long prediction
-                if (pred.r == 1) {
+                if (this.active.value.r == 1) {
                     signal = {
                         kind: 1,
                         entry: safe_ask,
@@ -486,7 +561,7 @@ export class PredictionService implements IPredictionService {
                 // Broadcast the signal
                 await this._notification.broadcast({
                     sender: "PREDICTION",
-                    title: `${signal.kind == 1 ? 'Long': 'Short'} Signal (${pred.s})`,
+                    title: `${signal.kind == 1 ? 'Long': 'Short'} Signal (${this.active.value.s} | ${this.activeState})`,
                     description: `Entry: ${signal.entry}\nTake Profit: ${signal.takeProfit}\nStop Loss: ${signal.stopLoss}`
                 });
                 this.lastBroadcast = currentTime;

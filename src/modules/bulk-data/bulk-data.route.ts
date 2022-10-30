@@ -53,7 +53,7 @@ BulkDataRoute.route("/getAppBulk").get(ultraLowRiskLimit, async (req: express.Re
         reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
 
         // Perform Action
-        const data: IAppBulk = _bulk.getAppBulk();
+        const data: IAppBulk = await _bulk.getAppBulk();
 
         // Return the response
         res.send(_utils.apiResponse(data));

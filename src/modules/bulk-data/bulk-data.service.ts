@@ -3,8 +3,14 @@ import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { IEpochService } from "../epoch";
 import { IPredictionService } from "../prediction";
+import { IGuiVersionService } from "../gui-version";
 import { IServerService } from "../server";
-import { IAppBulk, IBulkDataService, IServerDataBulk, IServerResourcesBulk } from "./interfaces";
+import { 
+    IAppBulk, 
+    IBulkDataService, 
+    IServerDataBulk, 
+    IServerResourcesBulk 
+} from "./interfaces";
 
 
 
@@ -14,6 +20,7 @@ export class BulkDataService implements IBulkDataService {
     // Inject dependencies
     @inject(SYMBOLS.EpochService)                   private _epoch: IEpochService;
     @inject(SYMBOLS.PredictionService)              private _prediction: IPredictionService;
+    @inject(SYMBOLS.GuiVersionService)              private _guiVersion: IGuiVersionService;
     @inject(SYMBOLS.ServerService)                  private _server: IServerService;
     @inject(SYMBOLS.ApiErrorService)                private _apiError: IApiErrorService;
 
@@ -33,13 +40,14 @@ export class BulkDataService implements IBulkDataService {
      * and stay in sync with the server.
      * @returns IAppBulk
      */
-    public getAppBulk(): IAppBulk {
+    public async getAppBulk(): Promise<IAppBulk> {
         return {
             serverTime: Date.now(),
+            guiVersion: typeof this._guiVersion.activeVersion == "string" ? this._guiVersion.activeVersion: await this._guiVersion.get(),
             epoch: this._epoch.getActiveEpochSummary(),
             prediction: this._prediction.active.value,
-            simulations: [], // @TODO
-            sessions: [] // @TODO
+            predictionState: this._prediction.activeState,
+            session: undefined // @TODO
         }
     }
 

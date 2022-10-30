@@ -14,7 +14,10 @@ export class GuiVersionService implements IGuiVersionService {
     @inject(SYMBOLS.UtilitiesService)                  private _utils: IUtilitiesService;
 
     // Default Version - Inserted when no data is available
-    private readonly defaultVersion: string = '0.0.1';
+    private readonly defaultVersion: string = "0.0.1";
+
+    // The current version. It is updated when the version is retrieved or changed
+    public activeVersion: string|undefined = undefined;
 
 
     constructor() {}
@@ -42,6 +45,10 @@ export class GuiVersionService implements IGuiVersionService {
 
             // If there is a record in the db, return it
             if (rows.length && typeof rows[0].version == "string") {
+                // Set the active version
+                this.activeVersion = rows[0].version;
+
+                // Finally, return it
                 return rows[0].version;
             }
 
@@ -52,6 +59,9 @@ export class GuiVersionService implements IGuiVersionService {
                     text: `INSERT INTO ${this._db.tn.gui_version}(id, version) VALUES(1, $1)`,
                     values: [this.defaultVersion]
                 });
+
+                // Set the active version
+                this.activeVersion = this.defaultVersion;
 
                 // Finally, return it
                 return this.defaultVersion;
@@ -89,5 +99,8 @@ export class GuiVersionService implements IGuiVersionService {
             text: `UPDATE ${this._db.tn.gui_version} SET version=$1 WHERE id=1`,
             values: [newVersion]
         });
+
+        // Set the active version
+        this.activeVersion = newVersion;
     }
 }

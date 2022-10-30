@@ -374,7 +374,7 @@
 #
 ## Prediction Service (20.000 - 20.999)
 
-20000: ``
+20000: `A prediction cannot be generated if there isn't an active epoch.`
 
 20001: ``
 
