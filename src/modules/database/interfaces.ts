@@ -73,10 +73,9 @@ export interface ITableNames {
     api_errors: string,
     epochs: string,
     predictions: string,
+    epoch_prediction_candlesticks: string,
     prediction_model_certificates: string,
     regression_certificates: string,
-    epoch_metrics: string,
-    epoch_prediction_candlesticks: string,
 }
 
 

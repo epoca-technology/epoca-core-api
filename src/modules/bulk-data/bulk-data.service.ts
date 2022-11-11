@@ -44,10 +44,11 @@ export class BulkDataService implements IBulkDataService {
         return {
             serverTime: Date.now(),
             guiVersion: typeof this._guiVersion.activeVersion == "string" ? this._guiVersion.activeVersion: await this._guiVersion.get(),
-            epoch: this._epoch.getActiveEpochSummary(),
+            epoch: this._epoch.active.value,
             prediction: this._prediction.active.value,
             predictionState: this._prediction.activeState,
-            session: undefined // @TODO
+            tradingSession: undefined, // @TODO
+            coinStackerSession: undefined, // @TODO
         }
     }
 

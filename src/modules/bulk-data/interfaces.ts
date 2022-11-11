@@ -1,4 +1,4 @@
-import { IEpochSummary } from "../epoch";
+import { IEpochRecord } from "../epoch";
 import { IServerData, IServerResources } from "../server";
 import { IApiError } from "../api-error";
 import { IPrediction } from "../epoch-builder";
@@ -37,8 +37,8 @@ export interface IAppBulk {
     // The current version of the GUI
     guiVersion: string,
 
-    // The summary of the active epoch. If none is active, it will be undefined
-    epoch: IEpochSummary|undefined,
+    // The record of the active epoch. If none is active, it will be undefined
+    epoch: IEpochRecord|undefined,
 
     // The active prediction. If there isn't one, or an epoch isn't active, it will be undefined
     prediction: IPrediction|undefined,
@@ -47,7 +47,10 @@ export interface IAppBulk {
     predictionState: IPredictionState,
 
     // The active trading session metrics. If there isn't one, it will be undefined
-    session: object|undefined // @TODO
+    tradingSession: object|undefined, // @TODO
+
+    // The active coin stacker session. If there isn't one, it will be undefined
+    coinStackerSession: object|undefined // @TODO
 }
 
 

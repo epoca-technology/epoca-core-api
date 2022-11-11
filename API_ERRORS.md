@@ -298,7 +298,7 @@
 #
 ## Epoch Service (16.000 - 16.999)
 
-16000: ``
+16000: `The epoch record ${epochID} was not be found in the database.`
 
 16001: ``
 
@@ -346,7 +346,7 @@
 #
 ## Epoch Model (18.000 - 18.999)
 
-18000: `The metrics for epoch ${epochID} could not be found in the database.`
+18000: ``
 
 18001: `The prediction model certificate ${id} could not be found in the database.`
 

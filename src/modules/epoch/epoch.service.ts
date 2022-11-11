@@ -4,16 +4,14 @@ import { environment, SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { IBackgroundTask, BackgroundTask, IBackgroundTaskInfo } from "../background-task";
 import { IPredictionModelCertificate, IRegressionTrainingCertificate } from "../epoch-builder";
+import { IUtilitiesService } from "../utilities";
 import { 
     IEpochService, 
-    IEpochMetricsRecord, 
     IEpochRecord, 
     IEpochValidations, 
     IEpochModel, 
     IEpochFile,
     IUnpackedEpochFile,
-    IEpochPositionRecord,
-    IEpochSummary,
     IEpochListItem
 } from "./interfaces";
 
@@ -27,6 +25,7 @@ export class EpochService implements IEpochService {
     @inject(SYMBOLS.EpochFile)                  private file: IEpochFile;
     @inject(SYMBOLS.EpochModel)                 private model: IEpochModel;
     @inject(SYMBOLS.ApiErrorService)            private _apiError: IApiErrorService;
+    @inject(SYMBOLS.UtilitiesService)            private _utils: IUtilitiesService;
 
 
     /**
@@ -47,13 +46,6 @@ export class EpochService implements IEpochService {
      */
     public readonly active: BehaviorSubject<IEpochRecord|null|undefined> = new BehaviorSubject(undefined);
 
-
-    // Active Epoch's Metrics
-    private metrics: IEpochMetricsRecord|undefined = undefined;
-
-    // Active Epoch's Positions
-    private positions: IEpochPositionRecord[]|undefined = undefined;
-
     // Debug Mode
     private readonly debugMode: boolean = environment.debugMode;
 
@@ -73,83 +65,29 @@ export class EpochService implements IEpochService {
 
     /**
      * Retrieves an Epoch Record by ID. If none is found, it returns 
-     * undefined.
+     * undefined. If validateExistance and the epoch is not found,
+     * it will throw an error. 
      * @param epochID 
+     * @param validateExistance? 
      * @returns Promise<IEpochRecord|undefined>
      */
-    public async getEpochRecord(epochID: string): Promise<IEpochRecord|undefined> {
+    public async getEpochRecord(epochID: string, validateExistance?: boolean): Promise<IEpochRecord|undefined> {
         // Check if the epoch can be retrieved
         this.validations.validateEpochID(epochID);
 
+        // Retrieve the record
+        const record: IEpochRecord|undefined = await this.model.getEpochRecordByID(epochID);
+
+        // Check if the existance needs to be validated
+        if (validateExistance && !record) {
+            throw new Error(this._utils.buildApiError(`The epoch record ${epochID} was not be found in the database.`, 16000))
+        }
+
         // Finally, return the epoch record (If any)
-        return this.model.getEpochRecordByID(epochID);
+        return record;
     }
 
 
-
-
-
-
-
-    /**
-     * Retrieves the summary for the active Epoch. If there isn't an active
-     * Epoch, it returns undefined.
-     * @returns IEpochSummary|undefined
-     */
-    public getActiveEpochSummary(): IEpochSummary|undefined {
-        // Check if there is an active epoch
-        if (this.active.value) {
-            return { record: this.active.value, metrics: this.metrics, positions: this.positions }
-        } 
-
-        // Otherwise, return undefined
-        else { return undefined }
-    }
-
-
-
-
-
-
-
-
-    /**
-     * Retrieves the summary for a provided Epoch ID. If the epoch
-     * matches the active one, it will return the values from RAM.
-     * If no epoch is found it will throw an error.
-     * @param epochID 
-     * @returns Promise<IEpochSummary>
-     */
-    public async getEpochSummary(epochID: string): Promise<IEpochSummary> {
-        // Check if the summary can be retrieved
-        this.validations.validateEpochID(epochID);
-
-        // Check if the ID matches the active Epoch
-        if (this.active.value && this.active.value.id == epochID) {
-            return {
-                record: this.active.value,
-                metrics: this.metrics,
-                positions: this.positions
-            }
-        }
-
-        // Otherwise, download the data from the db
-        else {
-            // Retrieve the required data from the db
-            const values: [IEpochRecord, IEpochMetricsRecord, IEpochPositionRecord[]] = await Promise.all([
-                this.model.getEpochRecordByID(epochID),
-                this.model.getEpochMetrics(epochID),
-                this.model.getEpochPositions(epochID)
-            ]);
-
-            // Finally, return the values
-            return {
-                record: values[0],
-                metrics: values[1],
-                positions: values[2]
-            }
-        }
-    }
 
 
 
@@ -203,14 +141,6 @@ export class EpochService implements IEpochService {
 
         // Check if there is an active epoch
         if (activeRecord) {
-            // Retrieve the general metrics and the positions
-            const values: [IEpochMetricsRecord, IEpochPositionRecord[]] = await Promise.all([
-                this.model.getEpochMetrics(activeRecord.id),
-                this.model.getEpochPositions(activeRecord.id)
-            ]);
-            this.metrics = values[0];
-            this.positions = values[1];
-
             // Broadcast the active epoch
             this.active.next(activeRecord);
         }
@@ -229,11 +159,7 @@ export class EpochService implements IEpochService {
      * Sets the active epoch as undefined and broadcasts it to 
      * all the modules that rely on an active epoch.
      */
-    public stop(): void { 
-        this.active.next(null);
-        this.metrics = undefined;
-        this.positions = undefined;
-    }
+    public stop(): void { this.active.next(null) }
 
 
 

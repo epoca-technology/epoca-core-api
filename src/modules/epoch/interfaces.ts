@@ -2,7 +2,6 @@ import { BehaviorSubject } from "rxjs/internal/BehaviorSubject";
 import { IBackgroundTask, IBackgroundTaskInfo } from "../background-task";
 import { 
     IEpochConfig, 
-    IPositionType, 
     IPredictionModelCertificate, 
     IPredictionModelConfig, 
     IRegressionTrainingCertificate 
@@ -19,9 +18,7 @@ export interface IEpochService {
     active: BehaviorSubject<IEpochRecord|undefined>,
 
     // Retrievers
-    getEpochRecord(epochID: string): Promise<IEpochRecord|undefined>,
-    getActiveEpochSummary(): IEpochSummary|undefined,
-    getEpochSummary(epochID: string): Promise<IEpochSummary>,
+    getEpochRecord(epochID: string, validateExistance?: boolean): Promise<IEpochRecord|undefined>,
     listEpochs(startAt: number, limit: number): Promise<IEpochListItem[]>,
 
     // Initializer
@@ -63,11 +60,6 @@ export interface IEpochModel {
     getActiveEpochRecord(): Promise<IEpochRecord|null|undefined>,
     getEpochRecordByID(epochID: string): Promise<IEpochRecord|undefined>,
     listEpochs(startAt: number|undefined, limit: number): Promise<IEpochListItem[]>,
-
-    // Epoch Metrics
-    getEpochMetrics(epochID: string): Promise<IEpochMetricsRecord>,
-    getEpochPositions(epochID: string): Promise<IEpochPositionRecord[]>,
-    updateEpochMetrics(epochID: string, newMetrics: IEpochMetricsRecord, position: IEpochPositionRecord): Promise<void>,
 
     // Installer
     install(
@@ -156,94 +148,6 @@ export interface IEpochRecord {
 
 
 
-/**
- * Epoch Metrics
- * Summary of the prediction model's performance by Epoch.
- */
-export interface IEpochMetricsRecord {
-    // The identifier of the epoch
-    id: string,
-
-    // The accumulated profits in all trading sessions
-    profit: number,
-
-    // The accumulated fees in all trading sessions
-    fees: number,
-
-    // The number of longs in all trading sessions
-    longs: number,
-    successful_longs: number,
-
-    // The number of shorts in all trading sessions
-    shorts: number,
-    successful_shorts: number,
-
-    // The accuracy in all trading sessions
-    long_accuracy: number,
-    short_accuracy: number,
-    accuracy: number
-}
-
-
-
-
-
-/**
- * Epoch Positions
- * The list of positions executed in the epoch. These positions serve
- * as the metrics' payload.
- */
-export interface IEpochPositionRecord {
-    // The identifier of the epoch
-    eid: string, // Epoch ID
-
-    // The identifier of the trading session position
-    pid: string, // Trading Session Position ID
-
-    // The date range of the position
-    ot: number, // Open Time
-    ct: number, // Close Time
-
-    // The type of position. 1 = long, -1 = short
-    t: IPositionType,
-
-    // The outcome of the position. True = Successful, False = Unsuccessful
-    o: boolean,
-
-    // The mean of the prices received when opening and closing the position
-    opm: number, // Open Price Mean
-    cpm: number, // Close Price Mean
-
-    // The position's total fees
-    f: number,
-
-    // The position's net profit. In case it was unsuccessful, this value will be negative.
-    p: number
-}
-
-
-
-
-
-
-/**
- * Epoch Summary
- * An object containing the configuration and the general performance of the Epoch.
- */
-export interface IEpochSummary {
-    // The Epoch Record
-    record: IEpochRecord,
-
-    // The Epoch Metrics Record
-    metrics: IEpochMetricsRecord,
-
-    // The list of Epoch Positions
-    positions: IEpochPositionRecord[]
-}
-
-
-
-
 
 /**
  * Epoch List Item
@@ -257,6 +161,6 @@ export interface IEpochListItem {
     // The date in which was installed
     installed: number,
 
-    // The net profit (so far, if the epoch is active)
-    profit: number
+    // The date in which it was uninstalled
+    uninstalled: number|undefined
 }

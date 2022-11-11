@@ -16,7 +16,7 @@ import {IApiErrorService} from "../api-error";
 const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.ApiErrorService);
 
 // Epoch Service
-import {IEpochListItem, IEpochRecord, IEpochService, IEpochSummary} from "./interfaces";
+import {IEpochListItem, IEpochRecord, IEpochService} from "./interfaces";
 const _epoch: IEpochService = appContainer.get<IEpochService>(SYMBOLS.EpochService);
 
 // Background Task
@@ -71,79 +71,6 @@ EpochRoute.route("/getEpochRecord").get(lowRiskLimit, async (req: express.Reques
         res.send(_utils.apiResponse(undefined, e));
     }
 });
-
-
-
-
-
-
-
-/**
- * Retrieves the active epoch's summary. If no epoch is active, 
- * it returns undefined.
- * @requires id-token
- * @requires api-secret
- * @requires authority: 1
- * @returns IAPIResponse<IEpochSummary|undefined>
-*/
-/*EpochRoute.route("/getActiveEpochSummary").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Init values
-    const idToken: string = req.get("id-token");
-    const apiSecret: string = req.get("api-secret");
-    const ip: string = req.clientIp;
-    let reqUid: string;
-
-    try {
-        // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, undefined, {});
-
-        // Return the response
-        res.send(_utils.apiResponse(_epoch.getActiveEpochSummary()));
-    } catch (e) {
-		console.log(e);
-        _apiError.log("EpochRoute.getActiveEpochSummary", e, reqUid, ip, req.query);
-        res.send(_utils.apiResponse(undefined, e));
-    }
-});*/
-
-
-
-
-
-
-
-
-/**
- * Retrieves an Epoch Summary based on the provided ID.
- * @requires id-token
- * @requires api-secret
- * @requires authority: 1
- * @param epochID
- * @returns IAPIResponse<IEpochSummary>
-*/
-EpochRoute.route("/getEpochSummary").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Init values
-    const idToken: string = req.get("id-token");
-    const apiSecret: string = req.get("api-secret");
-    const ip: string = req.clientIp;
-    let reqUid: string;
-
-    try {
-        // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["epochID"], req.query);
-
-        // Retrieve the data
-        const data: IEpochSummary = await _epoch.getEpochSummary(<string>req.query.epochID);
-
-        // Return the response
-        res.send(_utils.apiResponse(data));
-    } catch (e) {
-		console.log(e);
-        _apiError.log("EpochRoute.getEpochSummary", e, reqUid, ip, req.query);
-        res.send(_utils.apiResponse(undefined, e));
-    }
-});
-
 
 
 

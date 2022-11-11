@@ -157,9 +157,6 @@ export class EpochValidations implements IEpochValidations {
             throw new Error(this._utils.buildApiError(`The Epoch cannot be uninstalled because none is running.`, 17011));
         }
 
-        // Make sure there are no trading simulations running
-        // @TODO
-
         // Make sure there are no trading sessions running
         // @TODO
     }

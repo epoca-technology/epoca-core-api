@@ -3,13 +3,7 @@ import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { IDatabaseService, IPoolClient } from "../database";
 import { IEpochConfig, IPredictionModelCertificate, IRegressionTrainingCertificate } from "../epoch-builder";
-import { 
-    IEpochMetricsRecord, 
-    IEpochModel, 
-    IEpochPositionRecord, 
-    IEpochRecord,
-    IEpochListItem
-} from "./interfaces";
+import { IEpochModel, IEpochRecord, IEpochListItem } from "./interfaces";
 
 
 
@@ -87,13 +81,8 @@ export class EpochModel implements IEpochModel {
      */
     public async listEpochs(startAt: number|undefined, limit: number): Promise<IEpochListItem[]> {
         // Init the query
-        let text: string = "";
+        let text: string = `SELECT id, installed, uninstalled FROM ${this._db.tn.epochs} `;
         let values: number[] = [];
-
-        // Build the query
-        text += `SELECT ${this._db.tn.epochs}.id, ${this._db.tn.epochs}.installed, ${this._db.tn.epoch_metrics}.profit `;
-        text += `FROM ${this._db.tn.epochs} `;
-        text += `INNER JOIN ${this._db.tn.epoch_metrics} ON ${this._db.tn.epochs}.id = ${this._db.tn.epoch_metrics}.id  `;
 
         // Check if the starting point was provided
         if (typeof startAt == "number") {
@@ -115,79 +104,6 @@ export class EpochModel implements IEpochModel {
         // Return the result
         return rows;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-    /* Epoch Metrics */
-
-
-
-
-
-
-
-    /**
-     * Retrieves the Epoch Metrics Record. If the metrics are not found
-     * it throws an error.
-     * @param epochID 
-     * @returns Promise<IEpochMetricsRecord>
-     */
-    public async getEpochMetrics(epochID: string): Promise<IEpochMetricsRecord> {
-        // Retrieve the record if any
-        const { rows } = await this._db.query({
-            text: `SELECT * FROM  ${this._db.tn.epoch_metrics} WHERE id = $1`,
-            values: [ epochID ]
-        });
-
-        // Make sure the metrics were found
-        if (!rows.length) {
-            throw new Error(this._utils.buildApiError(`The metrics for epoch ${epochID} could not be found in the database.`, 18000))
-        }
-
-        // Return the result
-        return rows[0];
-    }
-
-
-
-
-
-
-    /**
-     * Retrieves the list of positions that have been executed during the epoch.
-     * @param epochID 
-     * @returns IEpochPositionRecord[]
-     */
-     public async getEpochPositions(epochID: string): Promise<IEpochPositionRecord[]> {
-        return []; // @TODO
-    }
-
-
-
-
-
-    /**
-     * Updates the metrics and creates an epoch position record in an ACID manner.
-     * @param epochID 
-     * @param newMetrics 
-     * @param position 
-     * @returns Promise<void>
-     */
-    public async updateEpochMetrics(epochID: string, newMetrics: IEpochMetricsRecord, position: IEpochPositionRecord): Promise<void> {
-        // @TODO
-    }
-
-
-
 
 
 
@@ -227,7 +143,7 @@ export class EpochModel implements IEpochModel {
         // Execute the transaction safely
         try { 
             // Begin the transaction
-            await client.query({text: 'BEGIN'});
+            await client.query({text: "BEGIN"});
 
             // Init the epoch record
             const epoch: IEpochRecord = {
@@ -266,24 +182,14 @@ export class EpochModel implements IEpochModel {
                 });
             }
 
-            // Save the metrics' skeleton
-            await client.query({
-                text: `
-                    INSERT INTO ${this._db.tn.epoch_metrics}(id, profit, fees, longs, successful_longs, 
-                        shorts, successful_shorts, long_accuracy, short_accuracy, accuracy) 
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-                `,
-                values: [epoch.id, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            });
-
             // Commit the writes
-            await client.query({text: 'COMMIT'});
+            await client.query({text: "COMMIT"});
 
             // Finally, return the record
             return epoch;
         } catch (e) {
             // Rollback and rethrow the error
-            await client.query('ROLLBACK');
+            await client.query("ROLLBACK");
             throw e;
         } finally {
             client.release();
