@@ -6,6 +6,9 @@ import { IAuthority } from '../auth';
 // Service
 export interface IUtilitiesService {
     // Numbers
+    calculateMax(values: INumber[], config?: INumberConfig): INumber,
+    calculateMin(values: INumber[], config?: INumberConfig): INumber,
+    calculateSum(values: INumber[], config?: INumberConfig): INumber,
     calculateAverage(numberSeries: INumber[], config?: INumberConfig): INumber,
     alterNumberByPercentage(value: INumber, percent: INumber, config?: INumberConfig): INumber,
     calculatePercentageChange(oldNumber: INumber, newNumber: INumber, config?: INumberConfig): INumber,

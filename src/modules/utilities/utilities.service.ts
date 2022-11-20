@@ -33,6 +33,40 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+    /**
+     * Given a list of numbers, it will retrieve the one with the highest value.
+     * @param values 
+     * @returns INumber
+     */
+    public calculateMax(values: INumber[], config?: INumberConfig): INumber { 
+        return this.outputNumber(BigNumber.max.apply(null, values), config);
+    }
+
+
+
+
+
+    /**
+     * Given a list of numbers, it will retrieve the one with the lowest value.
+     * @param values 
+     * @returns INumber
+     */
+    public calculateMin(values: INumber[], config?: INumberConfig): INumber { 
+        return this.outputNumber(BigNumber.min.apply(null, values), config);
+    }
+
+
+
+
+
+    /**
+     * Given a list of numbers, it will calculate the sum of all of them
+     * @param values 
+     * @returns INumber
+     */
+    public calculateSum(values: INumber[], config?: INumberConfig): INumber { 
+        return this.outputNumber(BigNumber.sum.apply(null, values), config);
+    }
 
 
 
@@ -44,14 +78,7 @@ export class UtilitiesService implements IUtilitiesService {
      * @returns INumber
      */
     public calculateAverage(numberSeries: INumber[], config?: INumberConfig): INumber {
-        // Init values
-        let acum: BigNumber = new BigNumber(0);
-
-        // Iterate over the numbers
-        for (let n of numberSeries) { acum = acum.plus(n)}
-
-        // Return the results
-        return this.outputNumber(acum.dividedBy(numberSeries.length), config);
+        return this.outputNumber(new BigNumber(this.calculateSum(numberSeries)).dividedBy(numberSeries.length), config);
     }
 
 

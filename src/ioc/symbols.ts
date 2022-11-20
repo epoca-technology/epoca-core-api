@@ -53,6 +53,14 @@
     IPBlacklistModel: Symbol.for("IPBlacklistModel"),
     IPBlacklistValidations: Symbol.for("IPBlacklistValidations"),
 
+    // Market State
+    MarketStateService: Symbol.for("MarketStateService"),
+    WindowStateService: Symbol.for("WindowStateService"),
+    KeyZonesStateService: Symbol.for("KeyZonesStateService"),
+    NetworkFeeStateService: Symbol.for("NetworkFeeStateService"),
+    VolumeStateService: Symbol.for("VolumeStateService"),
+    StateUtilitiesService: Symbol.for("StateUtilitiesService"),
+
     // Notifications
     NotificationService: Symbol.for("NotificationService"),
 
@@ -121,6 +129,14 @@ export interface ISymbols {
     IPBlacklistService: symbol,
     IPBlacklistModel: symbol,
     IPBlacklistValidations: symbol,
+
+
+    MarketStateService: symbol,
+    WindowStateService: symbol,
+    KeyZonesStateService: symbol,
+    NetworkFeeStateService: symbol,
+    VolumeStateService: symbol,
+    StateUtilitiesService: symbol,
 
 
     NotificationService: symbol,

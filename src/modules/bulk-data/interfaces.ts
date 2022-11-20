@@ -3,6 +3,7 @@ import { IServerData, IServerResources } from "../server";
 import { IApiError } from "../api-error";
 import { IPrediction } from "../epoch-builder";
 import { IPredictionState } from "../prediction";
+import { IMarketState } from "../market-state";
 
 
 
@@ -40,17 +41,17 @@ export interface IAppBulk {
     // The record of the active epoch. If none is active, it will be undefined
     epoch: IEpochRecord|undefined,
 
+    // The active trading session metrics. If there isn't one, it will be undefined
+    tradingSession: object|undefined, // @TODO
+
     // The active prediction. If there isn't one, or an epoch isn't active, it will be undefined
     prediction: IPrediction|undefined,
 
     // The active prediction state. If there isn't one, or an epoch isn't active, it will be undefined
     predictionState: IPredictionState,
 
-    // The active trading session metrics. If there isn't one, it will be undefined
-    tradingSession: object|undefined, // @TODO
-
-    // The active coin stacker session. If there isn't one, it will be undefined
-    coinStackerSession: object|undefined // @TODO
+    // The active market state.
+    marketState: IMarketState
 }
 
 

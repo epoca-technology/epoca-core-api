@@ -3,6 +3,7 @@ import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { IEpochService } from "../epoch";
 import { IPredictionService } from "../prediction";
+import { IMarketStateService } from "../market-state";
 import { IGuiVersionService } from "../gui-version";
 import { IServerService } from "../server";
 import { 
@@ -20,6 +21,7 @@ export class BulkDataService implements IBulkDataService {
     // Inject dependencies
     @inject(SYMBOLS.EpochService)                   private _epoch: IEpochService;
     @inject(SYMBOLS.PredictionService)              private _prediction: IPredictionService;
+    @inject(SYMBOLS.MarketStateService)             private _marketState: IMarketStateService;
     @inject(SYMBOLS.GuiVersionService)              private _guiVersion: IGuiVersionService;
     @inject(SYMBOLS.ServerService)                  private _server: IServerService;
     @inject(SYMBOLS.ApiErrorService)                private _apiError: IApiErrorService;
@@ -45,10 +47,10 @@ export class BulkDataService implements IBulkDataService {
             serverTime: Date.now(),
             guiVersion: typeof this._guiVersion.activeVersion == "string" ? this._guiVersion.activeVersion: await this._guiVersion.get(),
             epoch: this._epoch.active.value,
+            tradingSession: undefined, // @TODO
             prediction: this._prediction.active.value,
             predictionState: this._prediction.activeState,
-            tradingSession: undefined, // @TODO
-            coinStackerSession: undefined, // @TODO
+            marketState: this._marketState.active.value
         }
     }
 

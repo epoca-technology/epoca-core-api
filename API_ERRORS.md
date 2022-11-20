@@ -441,3 +441,48 @@
 
 23003: `The order book's safe bid cannot be greater than the safe ask. Bid: ${safeBid}, Ask: ${safeAsk}`
 
+
+
+
+#
+## Market State Service (24.000 - 24.999)
+
+24000: ``
+
+24001: ``
+
+
+
+#
+## Window State Service (25.000 - 25.999)
+
+25000: ``
+
+25001: ``
+
+
+
+#
+## Volume State Service (26.000 - 26.999)
+
+26000: ``
+
+26001: ``
+
+
+
+#
+## KeyZone State Service (27.000 - 27.999)
+
+27000: ``
+
+27001: ``
+
+
+
+#
+## Network Fee State Service (28.000 - 28.999)
+
+28000: `Mempool.space returned an invalid HTTP response code (${response.statusCode}) when retrieving the fee records.`
+
+28001: `Mempool.space returned an invalid fee record series.`

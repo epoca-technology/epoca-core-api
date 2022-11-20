@@ -17,6 +17,7 @@ import { fileManagerModule } from "../modules/file-manager";
 import { predictionModule } from "../modules/prediction";
 import { guiVersionModule } from "../modules/gui-version";
 import { ipBlacklistModule } from "../modules/ip-blacklist";
+import { marketStateModule } from "../modules/market-state";
 import { notificationModule } from "../modules/notification";
 import { orderBookModule } from "../modules/order-book";
 import { requestGuardModule } from "../modules/request-guard";
@@ -75,6 +76,9 @@ appContainer.load(
 
     // IP Blacklist
     ipBlacklistModule,
+
+    // Market State
+    marketStateModule,
 
     // Notification
     notificationModule,

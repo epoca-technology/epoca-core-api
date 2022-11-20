@@ -11,6 +11,7 @@ export interface ICandlestickService {
 
     // Candlestick Retrievers
     getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]>,
+    getLast(prediction?: boolean, limit?: number): Promise<ICandlestick[]>,
 
     // Candlestick Syncing
     initialize(): Promise<void>,

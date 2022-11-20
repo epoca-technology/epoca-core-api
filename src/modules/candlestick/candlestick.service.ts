@@ -96,6 +96,18 @@ export class CandlestickService implements ICandlestickService {
 
 
 
+    /**
+     * Retrieves the latest candlesticks based on a given limit.
+     * @param prediction 
+     * @param limit 
+     * @returns Promise<ICandlestick[]>
+     */
+    public getLast(prediction?: boolean, limit?: number): Promise<ICandlestick[]> {
+        return this._model.getLast(prediction, limit);
+    }
+
+
+
 
 
 

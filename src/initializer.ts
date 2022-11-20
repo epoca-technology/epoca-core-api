@@ -18,6 +18,10 @@ const _auth = appContainer.get<IAuthService>(SYMBOLS.AuthService);
 import {ICandlestickService} from "./modules/candlestick";
 const _candlestick = appContainer.get<ICandlestickService>(SYMBOLS.CandlestickService);
 
+// Market State
+import {IMarketStateService} from "./modules/market-state";
+const _marketState = appContainer.get<IMarketStateService>(SYMBOLS.MarketStateService);
+
 // Order Book
 import {IOrderBookService} from "./modules/order-book";
 const _orderBook = appContainer.get<IOrderBookService>(SYMBOLS.OrderBookService);
@@ -51,22 +55,21 @@ const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
  * 1) Database Module
  * 2) Auth Module
  * 3) Candlestick Module
- * 4) Order Book Module
- * 5) Server Module
- * 6) IP Blacklist Module
- * 7) Epoch Module
+ * 4) Market State Module
+ * 5) Order Book Module
+ * 6) Server Module
+ * 7) IP Blacklist Module
  * 8) Epoch Module
- * 9) Trading Simulation Module
- * 10) Trading Session Module
+ * 9) Trading Session Module
  * 
  * If any of the initialization actions triggers an error, it crashes the execution and
  * stop the following modules:
  * 1) Candlestick Module
  * 2) Order Book Module
- * 3) Server Module
- * 4) Epoch Module
- * 5) Prediction Module
- * 6) Trading Simulation Module
+ * 3) Market State Module
+ * 4) Server Module
+ * 5) Epoch Module
+ * 6) Prediction Module
  * 7) Trading Session Module
  */
 export async function init(): Promise<void> {
@@ -109,6 +112,14 @@ export async function init(): Promise<void> {
                 throw e;
             }
 
+            // Initialize the Market State
+            try {
+                await _marketState.initialize();
+            } catch (e) {
+                console.error("Error when initializing the Market State Module: ", e)
+                throw e;
+            }
+
             // Initialize the Order Book Syncing
             try {
                 await _orderBook.initialize();
@@ -148,14 +159,6 @@ export async function init(): Promise<void> {
                 console.error("Error when initializing the Prediction Module: ", e)
                 throw e;
             }
-            
-            // Initialize the Trading Simulation Module
-            try {
-                // @TODO
-            } catch (e) {
-                console.error("Error when initializing the Trading Simulation Module: ", e)
-                throw e;
-            }
 
             // Initialize the Trading Session Module
             try {
@@ -175,6 +178,9 @@ export async function init(): Promise<void> {
         // Stop the Order Book Module
         _orderBook.stop();
 
+        // Stop the Market State Module
+        _marketState.stop();
+
         // Stop the Server Module
         _server.stop();
 
@@ -183,9 +189,6 @@ export async function init(): Promise<void> {
 
         // Stop the Prediction Module
         _prediction.stop();
-
-        // Stop the Trading Simulation Module
-        // @TODO
 
         // Stop the Trading Sessions Module
         // @TODO
