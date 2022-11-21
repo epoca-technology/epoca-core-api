@@ -22,6 +22,8 @@ export interface INotificationService {
     // Prediction Notifications
     predictionGenerationIssue(error: any): Promise<void>,
     
+    // Order Book Notifications
+    orderBookIssue(error: any): Promise<void>,
 }
 
 
@@ -38,4 +40,4 @@ export interface INotification {
 
 
 // Senders
-export type INotificationSender = "UNIT_TEST"|"SERVER"|"CANDLESTICK"|"PREDICTION";
+export type INotificationSender = "UNIT_TEST"|"SERVER"|"CANDLESTICK"|"PREDICTION"|"ORDER_BOOK";

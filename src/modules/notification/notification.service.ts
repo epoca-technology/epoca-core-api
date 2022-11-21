@@ -330,4 +330,32 @@ export class NotificationService implements INotificationService {
             description: this._utils.getErrorMessage(error)
         });
     }
+
+
+
+
+
+
+
+    
+
+    /* Order Book Notifications */
+
+
+
+
+
+
+    /**
+     * Prediction Generation Issue
+     * @param error 
+     * @returns Promise<void>
+     */
+     public orderBookIssue(error: any): Promise<void> {
+        return this.broadcast({
+            sender: "ORDER_BOOK",
+            title: "Error when updating:",
+            description: this._utils.getErrorMessage(error)
+        });
+    }
 }

@@ -5,6 +5,7 @@ import { IUtilitiesService } from "../utilities";
 import { IApiErrorService } from "../api-error";
 import { IBinanceOrderBook, IBinanceService } from "../binance";
 import { ICandlestickService } from "../candlestick";
+import { INotificationService } from "../notification";
 import { IOrderBook, IOrderBookItem, IOrderBookService } from "./interfaces";
 
 
@@ -17,6 +18,7 @@ export class OrderBookService implements IOrderBookService {
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
     @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
+    @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
 
 
     /**
@@ -156,7 +158,10 @@ export class OrderBookService implements IOrderBookService {
                     } catch(e) {
                         // Log the error
                         console.error("It was not possible to build the order book: ", e);
-                        await this._apiError.log("OrderBook.getBook", e);
+                        await Promise.all([
+                            this._apiError.log("OrderBook.getBook", e),
+                            this._notification.orderBookIssue(e)
+                        ]);
 
                         // Rethrow the error
                         throw e;
