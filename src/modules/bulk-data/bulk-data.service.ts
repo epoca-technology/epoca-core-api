@@ -50,7 +50,8 @@ export class BulkDataService implements IBulkDataService {
             positions: { long: undefined, short: undefined }, // @TODO
             prediction: this._prediction.active.value,
             predictionState: this._prediction.activeState,
-            marketState: this._marketState.active.value
+            marketState: this._marketState.active.value,
+            apiErrors: this._apiError.count
         }
     }
 

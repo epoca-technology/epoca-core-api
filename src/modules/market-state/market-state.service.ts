@@ -1,15 +1,21 @@
 import {injectable, inject, postConstruct} from "inversify";
 import { BehaviorSubject } from "rxjs";
+import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { ICandlestick, ICandlestickService } from "../candlestick";
+import { INotificationService } from "../notification";
 import { 
     IMarketStateService,
     IMarketState,
     IWindowStateService,
     IVolumeStateService,
     IKeyZonesStateService,
-    INetworkFeeStateService
+    INetworkFeeStateService,
+    IWindowState,
+    IVolumeState,
+    IKeyZoneState,
+    INetworkFeeState
 } from "./interfaces";
 
 
@@ -24,6 +30,7 @@ export class MarketStateService implements IMarketStateService {
     @inject(SYMBOLS.KeyZonesStateService)               private _keyZoneState: IKeyZonesStateService;
     @inject(SYMBOLS.NetworkFeeStateService)             private _networkFeeState: INetworkFeeStateService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
+    @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
 
 
     /**
@@ -48,6 +55,14 @@ export class MarketStateService implements IMarketStateService {
      */
     public active: BehaviorSubject<IMarketState>;
 
+
+    /**
+    * Price State
+    * Whenever a price state (increasing|decreasing) is detected, it will notify the
+    * users in a throttled manner.
+    */
+    private readonly priceStateThrottleMinutes: number = 30;
+    private priceStateLastNotification: number|undefined = undefined;
 
 
     constructor() {}
@@ -135,17 +150,39 @@ export class MarketStateService implements IMarketStateService {
 
         // Broadcast the new state as long as there are enough candlesticks
         if (window.length == this.windowSize) {
+            // Calculate the states
+            const windowState: IWindowState = this._windowState.calculateState(window);
+            const volumeState: IVolumeState = this._volumeState.calculateState(window);
+            const keyzoneState: IKeyZoneState = this._keyZoneState.calculateState(window.at(-1).c);
+            const networkFeeState: INetworkFeeState = this._networkFeeState.state;
+
+            // Broadcast the states through the observables
             this.active.next({
-                window: this._windowState.calculateState(window),
-                volume: this._volumeState.calculateState(window),
-                keyzone: this._keyZoneState.calculateState(window.at(-1).c),
-                network_fee: this._networkFeeState.state
+                window: windowState,
+                volume: volumeState,
+                keyzone: keyzoneState,
+                network_fee: networkFeeState
             });
+
+            // Check if there is a window state and if can be broadcasted
+            if (
+                windowState.state != "stateless" && 
+                this.priceStateLastNotification < moment(windowState.ts).subtract(this.priceStateThrottleMinutes, "minutes").valueOf()
+            ) {
+                await this._notification.windowState(windowState.state, windowState.state_value);
+                this.priceStateLastNotification = windowState.ts;
+            }
         }
     }
 
 
     
+
+
+
+
+
+
 
 
     /**

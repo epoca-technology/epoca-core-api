@@ -51,7 +51,10 @@ export interface IAppBulk {
     predictionState: IPredictionState,
 
     // The active market state.
-    marketState: IMarketState
+    marketState: IMarketState,
+
+    // The number of api errors in existance
+    apiErrors: number,
 }
 
 

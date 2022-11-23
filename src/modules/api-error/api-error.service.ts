@@ -25,6 +25,9 @@ export class ApiErrorService implements IApiErrorService {
         12001,  // The API cannot accept requests because it has not yet been initialized.
     ]
 
+    // The number of API Errors in existance
+    public count: number = 0;
+
     constructor() {}
 
 
@@ -46,6 +49,9 @@ export class ApiErrorService implements IApiErrorService {
             text: `SELECT * FROM  ${this._db.tn.api_errors} ORDER BY c DESC`,
             values: []
         });
+
+        // Update the count
+        this.count = rows.length;
 
         // Return the list
         return rows;
@@ -82,7 +88,10 @@ export class ApiErrorService implements IApiErrorService {
             params = this.getParams(params);
 
             // Save the error if it shouldnt be ommited
-            if (!this.ommitErrors.includes(code)) await this.saveAPIError(origin, error, uid, ip, params);
+            if (!this.ommitErrors.includes(code)) {
+                await this.saveAPIError(origin, error, uid, ip, params);
+                this.count += 1;
+            }
         } catch (e) {
             console.log(`There was an error when logging an API Error: `, e);
         }
@@ -166,5 +175,6 @@ export class ApiErrorService implements IApiErrorService {
             text: `DELETE FROM ${this._db.tn.api_errors}`,
             values: []
         });
+        this.count = 0;
     }
 }

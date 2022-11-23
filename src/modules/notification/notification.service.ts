@@ -6,6 +6,7 @@ import { IUtilitiesService } from "../utilities";
 import { IAuthService } from "../auth";
 import { IApiErrorService } from "../api-error";
 import { INotificationService, INotification, INotificationChannel } from "./interfaces";
+import { IStateType } from "../market-state";
 
 
 
@@ -347,7 +348,7 @@ export class NotificationService implements INotificationService {
 
 
     /**
-     * Prediction Generation Issue
+     * Order book retrieval issue.
      * @param error 
      * @returns Promise<void>
      */
@@ -356,6 +357,33 @@ export class NotificationService implements INotificationService {
             sender: "ORDER_BOOK",
             title: "Error when updating:",
             description: this._utils.getErrorMessage(error)
+        });
+    }
+
+
+
+
+
+    
+
+    /* Market State Notifications */
+
+
+
+
+
+
+    /**
+     * Increasing or Decreasing Window State.
+     * @param state 
+     * @param stateValue 
+     * @returns Promise<void>
+     */
+     public windowState(state: IStateType, stateValue: number): Promise<void> {
+        return this.broadcast({
+            sender: "MARKET_STATE",
+            title: `Bitcoin is ${state}:`,
+            description: `The price of BTC has changed ${stateValue}% in the current window.`
         });
     }
 }

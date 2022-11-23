@@ -2,6 +2,9 @@
 
 // Service
 export interface IApiErrorService {
+    // Properties
+    count: number,
+
     // Retrievers
     getAll(): Promise<IApiError[]>,
 

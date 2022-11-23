@@ -1,3 +1,4 @@
+import { IStateType } from "../market-state";
 
 
 // Service
@@ -24,6 +25,9 @@ export interface INotificationService {
     
     // Order Book Notifications
     orderBookIssue(error: any): Promise<void>,
+
+    // Market State Notifications
+    windowState(state: IStateType, stateValue: number): Promise<void>,
 }
 
 
@@ -40,4 +44,4 @@ export interface INotification {
 
 
 // Senders
-export type INotificationSender = "UNIT_TEST"|"SERVER"|"CANDLESTICK"|"PREDICTION"|"ORDER_BOOK";
+export type INotificationSender = "UNIT_TEST"|"SERVER"|"CANDLESTICK"|"PREDICTION"|"ORDER_BOOK"|"MARKET_STATE";
