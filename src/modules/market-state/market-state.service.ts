@@ -167,7 +167,10 @@ export class MarketStateService implements IMarketStateService {
             // Check if there is a window state and if can be broadcasted
             if (
                 windowState.state != "stateless" && 
-                this.priceStateLastNotification < moment(windowState.ts).subtract(this.priceStateThrottleMinutes, "minutes").valueOf()
+                (
+                    this.priceStateLastNotification == undefined ||
+                    this.priceStateLastNotification < moment(windowState.ts).subtract(this.priceStateThrottleMinutes, "minutes").valueOf()
+                )
             ) {
                 await this._notification.windowState(windowState.state, windowState.state_value);
                 this.priceStateLastNotification = windowState.ts;
