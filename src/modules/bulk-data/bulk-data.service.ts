@@ -47,7 +47,7 @@ export class BulkDataService implements IBulkDataService {
             serverTime: Date.now(),
             guiVersion: typeof this._guiVersion.activeVersion == "string" ? this._guiVersion.activeVersion: await this._guiVersion.get(),
             epoch: this._epoch.active.value,
-            tradingSession: undefined, // @TODO
+            positions: { long: undefined, short: undefined }, // @TODO
             prediction: this._prediction.active.value,
             predictionState: this._prediction.activeState,
             marketState: this._marketState.active.value

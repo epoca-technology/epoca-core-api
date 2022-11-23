@@ -104,10 +104,22 @@ export class StateUtilitiesService implements IStateUtilitiesService {
         const stateValue: number = <number>this._utils.calculatePercentageChange(initialValue, lastValue);
 
         // Check if it is an increasing state
-        if (stateValue >= minChange && lastValue >= upperBand.start) { state = "increasing" }
+        if (
+            stateValue >= minChange && 
+            initialValue <= lowerBand.start && 
+            lastValue >= upperBand.start
+        ) { 
+            state = "increasing";
+        }
 
         // Check if it is a decreasing state
-        else if (stateValue <= -(minChange) && lastValue <= lowerBand.start) { state = "decreasing" }
+        else if (
+            stateValue <= -(minChange) && 
+            initialValue >= upperBand.start &&
+            lastValue <= lowerBand.start
+        ) { 
+            state = "decreasing";
+        }
 
         // Finally, pack and return the results
         return { state: state, state_value: stateValue }

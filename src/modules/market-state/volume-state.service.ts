@@ -21,7 +21,7 @@ export class VolumeStateService implements IVolumeStateService {
      * Groups
      * The number of groups that will be built.
      */
-    private readonly groups: number = 5;
+    private readonly groups: number = 10;
     
 
     /**

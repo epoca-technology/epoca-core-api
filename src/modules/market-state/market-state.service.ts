@@ -30,7 +30,7 @@ export class MarketStateService implements IMarketStateService {
      * Window Size
      * The number of prediction candlesticks that comprise the window.
      */
-    private readonly windowSize: number = 32;
+    private readonly windowSize: number = 64;
 
 
     /**
