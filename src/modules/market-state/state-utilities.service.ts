@@ -2,7 +2,7 @@ import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { 
-    IStateBand,
+    IStateBandsResult,
     IStateType,
     IStateUtilitiesService,
 } from "./interfaces";
@@ -55,9 +55,9 @@ export class StateUtilitiesService implements IStateUtilitiesService {
      * values within the sequence.
      * @param minVal 
      * @param maxVal 
-     * @returns {upper_band: IStateBand, lower_band: IStateBand}
+     * @returns IStateBandsResult
      */
-    public calculateBands(minVal: number, maxVal: number): {upper_band: IStateBand, lower_band: IStateBand} {
+    public calculateBands(minVal: number, maxVal: number): IStateBandsResult {
         // Init the bands' ends
         const upperBandEnd: number = maxVal;
         const lowerBandEnd: number = minVal;
@@ -71,6 +71,7 @@ export class StateUtilitiesService implements IStateUtilitiesService {
 
         // Finally, pack the bands and return then
         return { 
+            middle: windowMiddle,
             upper_band: {start: upperBandStart, end: upperBandEnd}, 
             lower_band: {start: lowerBandStart, end: lowerBandEnd} 
         }
@@ -87,16 +88,14 @@ export class StateUtilitiesService implements IStateUtilitiesService {
      * Calculates the current state of a module based on the provided params.
      * @param initialValue 
      * @param lastValue 
-     * @param lowerBand 
-     * @param upperBand 
+     * @param bands
      * @param minChange 
      * @returns { state: IStateType, state_value: number }
      */
     public calculateState(
         initialValue: number, 
         lastValue: number, 
-        lowerBand: IStateBand, 
-        upperBand: IStateBand,
+        bands: IStateBandsResult,
         minChange: number
     ): { state: IStateType, state_value: number } { 
         // Init values
@@ -106,8 +105,8 @@ export class StateUtilitiesService implements IStateUtilitiesService {
         // Check if it is an increasing state
         if (
             stateValue >= minChange && 
-            initialValue <= lowerBand.start && 
-            lastValue >= upperBand.start
+            initialValue <= bands.middle && 
+            lastValue >= bands.upper_band.start
         ) { 
             state = "increasing";
         }
@@ -115,8 +114,8 @@ export class StateUtilitiesService implements IStateUtilitiesService {
         // Check if it is a decreasing state
         else if (
             stateValue <= -(minChange) && 
-            initialValue >= upperBand.start &&
-            lastValue <= lowerBand.start
+            initialValue >= bands.middle &&
+            lastValue <= bands.lower_band.start
         ) { 
             state = "decreasing";
         }

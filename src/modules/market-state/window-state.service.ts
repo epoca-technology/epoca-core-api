@@ -3,6 +3,7 @@ import { SYMBOLS } from "../../ioc";
 import { ICandlestick } from "../candlestick";
 import { IUtilitiesService } from "../utilities";
 import { 
+    IStateBandsResult,
     IStateUtilitiesService,
     IWindowState,
     IWindowStateService,
@@ -22,7 +23,7 @@ export class WindowStateService implements IWindowStateService {
      * The minimum percentage change that must exist in the window in order for
      * it to have a state.
      */
-    private readonly minChange: number = 5;
+    private readonly minChange: number = 3;
 
 
 
@@ -48,7 +49,7 @@ export class WindowStateService implements IWindowStateService {
         }
 
         // Calculate the window bands
-        const { upper_band, lower_band } = this._stateUtils.calculateBands(
+        const bands: IStateBandsResult = this._stateUtils.calculateBands(
             <number>this._utils.calculateMin(low), 
             <number>this._utils.calculateMax(high)
         );
@@ -57,8 +58,7 @@ export class WindowStateService implements IWindowStateService {
         const { state, state_value } = this._stateUtils.calculateState(
             window[0].o,
             window.at(-1).c,
-            lower_band,
-            upper_band,
+            bands,
             this.minChange
         );
 
@@ -66,8 +66,8 @@ export class WindowStateService implements IWindowStateService {
         return {
             state: state,
             state_value: state_value,
-            upper_band: upper_band,
-            lower_band: lower_band,
+            upper_band: bands.upper_band,
+            lower_band: bands.lower_band,
             ts: Date.now(),
             window: window
         };

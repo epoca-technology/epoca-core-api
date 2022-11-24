@@ -69,13 +69,12 @@ export interface INetworkFeeStateService {
  */
 export interface IStateUtilitiesService {
     buildAveragedGroups(values: number[], groups: number): number[],
-    calculateBands(minVal: number, maxVal: number): {upper_band: IStateBand, lower_band: IStateBand},
+    calculateBands(minVal: number, maxVal: number): IStateBandsResult,
     calculateState(
         initialValue: number, 
         lastValue: number, 
-        lowerBand: IStateBand, 
-        upperBand: IStateBand,
-        min_change: number
+        bands: IStateBandsResult,
+        minChange: number
     ): { state: IStateType, state_value: number }
 }
 
@@ -113,6 +112,22 @@ export interface IStateBand {
     start: number,
     end: number
 }
+
+
+/**
+ * State Bands Result
+ * Represents the band and the middle of the current state.
+ */
+export interface IStateBandsResult {
+    // The middle of the window
+    middle: number,
+
+    // The upper and lower bands
+    upper_band: IStateBand, 
+    lower_band: IStateBand
+}
+
+
 
 
 

@@ -7,6 +7,7 @@ import {
     IMempoolBlockFeeRecord,
     INetworkFeeState,
     INetworkFeeStateService,
+    IStateBandsResult,
     IStateUtilitiesService,
 } from "./interfaces";
 
@@ -130,7 +131,7 @@ export class NetworkFeeStateService implements INetworkFeeStateService {
         const fees: number[] = this._stateUtils.buildAveragedGroups(rawRecords.map(f => f.avgFee_50), this.groups);
 
         // Calculate the window bands
-        const { upper_band, lower_band } = this._stateUtils.calculateBands(
+        const bands: IStateBandsResult = this._stateUtils.calculateBands(
             <number>this._utils.calculateMin(fees), 
             <number>this._utils.calculateMax(fees)
         );
@@ -139,8 +140,7 @@ export class NetworkFeeStateService implements INetworkFeeStateService {
         const { state, state_value } = this._stateUtils.calculateState(
             fees[0],
             fees.at(-1),
-            lower_band,
-            upper_band,
+            bands,
             this.minChange
         );
 
@@ -148,8 +148,8 @@ export class NetworkFeeStateService implements INetworkFeeStateService {
         this.state = {
             state: state,
             state_value: state_value,
-            upper_band: upper_band,
-            lower_band: lower_band,
+            upper_band: bands.upper_band,
+            lower_band: bands.lower_band,
             ts: Date.now(),
             fees: fees,
             height: rawRecords.at(-1).avgHeight

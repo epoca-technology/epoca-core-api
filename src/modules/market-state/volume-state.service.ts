@@ -3,6 +3,7 @@ import { SYMBOLS } from "../../ioc";
 import { ICandlestick } from "../candlestick";
 import { IUtilitiesService } from "../utilities";
 import { 
+    IStateBandsResult,
     IStateUtilitiesService,
     IVolumeState,
     IVolumeStateService,
@@ -51,7 +52,7 @@ export class VolumeStateService implements IVolumeStateService {
         const volumes: number[] = this._stateUtils.buildAveragedGroups(window.map(c => c.v), this.groups);
 
         // Calculate the window bands
-        const { upper_band, lower_band } = this._stateUtils.calculateBands(
+        const bands: IStateBandsResult = this._stateUtils.calculateBands(
             <number>this._utils.calculateMin(volumes), 
             <number>this._utils.calculateMax(volumes)
         );
@@ -60,8 +61,7 @@ export class VolumeStateService implements IVolumeStateService {
         const { state, state_value } = this._stateUtils.calculateState(
             volumes[0],
             volumes.at(-1),
-            lower_band,
-            upper_band,
+            bands,
             this.minChange
         );
 
@@ -69,8 +69,8 @@ export class VolumeStateService implements IVolumeStateService {
         return {
             state: state,
             state_value: state_value,
-            upper_band: upper_band,
-            lower_band: lower_band,
+            upper_band: bands.upper_band,
+            lower_band: bands.lower_band,
             ts: Date.now(),
             volumes: volumes
         };
