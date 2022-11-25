@@ -10,7 +10,9 @@ import {
     IBinanceService, 
     IBinanceCandlestickInterval, 
     IBinanceCandlestick, 
-    IBinanceOrderBook 
+    IBinanceOrderBook, 
+    IBinanceOpenInterest,
+    IBinanceLongShortRatio
 } from "./interfaces";
 
 
@@ -164,6 +166,96 @@ export class BinanceService implements IBinanceService {
         if (!response.data || typeof response.data != "object" || !Array.isArray(response.data.bids) || !Array.isArray(response.data.asks)) {
             console.log(response);
             throw new Error(this._utils.buildApiError("Binance returned an invalid order book.", 4));
+        }
+
+        // Return the series
+        return response.data;
+    }
+
+
+
+
+
+
+
+    /**
+     * Retrieves the last 32 hours worth of open interest from
+     * Binance's API.
+     * @returns Promise<IBinanceOpenInterest[]>
+     */
+     public async getOpenInterest(): Promise<IBinanceOpenInterest[]> {
+        // Build options
+        const options: IExternalRequestOptions = {
+            host: "fapi.binance.com",
+            path: `/futures/data/openInterestHist?symbol=BTCUSDT&period=30m&limit=64`,
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        };
+
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the open interest.`, 5));
+        }
+
+        // Validate the response's data
+        if (!response.data || !Array.isArray(response.data) || !response.data.length) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError("Binance returned an invalid open interest list.", 6));
+        }
+
+        // Return the series
+        return response.data;
+    }
+
+
+
+
+
+
+
+
+    /* Long/Short Ratio */
+
+
+
+
+    /**
+     * Retrieves the last 32 hours worth of long/short ratio from
+     * Binance's API.
+     * @returns Promise<IBinanceLongShortRatio[]>
+     */
+     public async getLongShortRatio(): Promise<IBinanceLongShortRatio[]> {
+        // Build options
+        const options: IExternalRequestOptions = {
+            host: "fapi.binance.com",
+            path: `/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=30m&limit=64`,
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        };
+
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the long short ratio.`, 7));
+        }
+
+        // Validate the response's data
+        if (!response.data || !Array.isArray(response.data) || !response.data.length) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError("Binance returned an invalid long short ratio list.", 8));
         }
 
         // Return the series

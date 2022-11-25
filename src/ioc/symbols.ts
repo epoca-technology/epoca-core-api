@@ -59,6 +59,8 @@
     KeyZonesStateService: Symbol.for("KeyZonesStateService"),
     NetworkFeeStateService: Symbol.for("NetworkFeeStateService"),
     VolumeStateService: Symbol.for("VolumeStateService"),
+    OpenInterestStateService: Symbol.for("OpenInterestStateService"),
+    LongShortRatioStateService: Symbol.for("LongShortRatioStateService"),
     StateUtilitiesService: Symbol.for("StateUtilitiesService"),
 
     // Notifications
@@ -66,6 +68,11 @@
 
     // Order Book
     OrderBookService: Symbol.for("OrderBookService"),
+
+    // Position
+    PositionService: Symbol.for("PositionService"),
+    PositionValidations: Symbol.for("PositionValidations"),
+    PositionModel: Symbol.for("PositionModel"),
 
     // Request Guard
     RequestGuardService: Symbol.for("RequestGuardService"),
@@ -136,6 +143,8 @@ export interface ISymbols {
     KeyZonesStateService: symbol,
     NetworkFeeStateService: symbol,
     VolumeStateService: symbol,
+    OpenInterestStateService: symbol,
+    LongShortRatioStateService: symbol,
     StateUtilitiesService: symbol,
 
 
@@ -143,6 +152,11 @@ export interface ISymbols {
 
 
     OrderBookService: symbol,
+
+
+    PositionService: symbol,
+    PositionValidations: symbol,
+    PositionModel: symbol,
 
 
     RequestGuardService: symbol,

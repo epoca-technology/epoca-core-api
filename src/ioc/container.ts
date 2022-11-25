@@ -20,6 +20,7 @@ import { ipBlacklistModule } from "../modules/ip-blacklist";
 import { marketStateModule } from "../modules/market-state";
 import { notificationModule } from "../modules/notification";
 import { orderBookModule } from "../modules/order-book";
+import { positionModule } from "../modules/position";
 import { requestGuardModule } from "../modules/request-guard";
 import { serverModule } from "../modules/server";
 import { utilitiesModule } from "../modules/utilities";
@@ -85,6 +86,9 @@ appContainer.load(
 
     // Order Book
     orderBookModule,
+
+    // Position
+    positionModule,
 
     // Request Guard
     requestGuardModule,

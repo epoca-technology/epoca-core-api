@@ -17,7 +17,9 @@ export interface IBinanceService {
         endTime?: number, 
         limit?:number
     ): Promise<IBinanceCandlestick[]>,
-    getOrderBook(limit?:number): Promise<IBinanceOrderBook>
+    getOrderBook(limit?:number): Promise<IBinanceOrderBook>,
+    getOpenInterest(): Promise<IBinanceOpenInterest[]>,
+    getLongShortRatio(): Promise<IBinanceLongShortRatio[]>,
 }
 
 
@@ -56,12 +58,6 @@ export type IBinanceCandlestick = [
 
 
 
-/* Order Book */
-
-
-
-
-
 // Order Book
 export interface IBinanceOrderBook {
     // Binance Internals
@@ -74,4 +70,51 @@ export interface IBinanceOrderBook {
 
     // Order Book Asks - Sell Orders
     asks: Array<Array<string>>,
+}
+
+
+
+
+
+
+
+// Open Interest
+export interface IBinanceOpenInterest {
+    // The interest's symbol.
+    symbol: string,
+
+    // The total interest value in BTC.
+    sumOpenInterest: string,
+
+    // The total interest value in USDT.
+    sumOpenInterestValue: string, // <- Value to be used
+
+    // The time at which the interval started.
+    timestamp: number
+}
+
+
+
+
+
+// Long/Short Ration
+export interface IBinanceLongShortRatio {
+    // The market's symbol.
+    symbol: string,
+
+    // The % of futures traders who are longing.
+    longAccount: string,
+
+    // The % of futures traders who are shorting.
+    shortAccount: string,
+
+    /**
+     * The ratio of longs vs shorts. If it is higher than 1, means 
+     * there are more traders longing. If it is less than one means there 
+     * are more traders shorting.
+     */
+     longShortRatio: string, // <- Value to be used
+
+    // The time at which the interval started.
+    timestamp: number
 }

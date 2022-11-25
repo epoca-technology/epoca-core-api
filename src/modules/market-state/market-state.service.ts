@@ -5,6 +5,7 @@ import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { ICandlestick, ICandlestickService } from "../candlestick";
 import { INotificationService } from "../notification";
+import { IUtilitiesService } from "../utilities";
 import { 
     IMarketStateService,
     IMarketState,
@@ -15,7 +16,11 @@ import {
     IWindowState,
     IVolumeState,
     IKeyZoneState,
-    INetworkFeeState
+    INetworkFeeState,
+    IOpenInterestStateService,
+    IOpenInterestState,
+    ILongShortRatioStateService,
+    ILongShortRatioState
 } from "./interfaces";
 
 
@@ -29,8 +34,11 @@ export class MarketStateService implements IMarketStateService {
     @inject(SYMBOLS.VolumeStateService)                 private _volumeState: IVolumeStateService;
     @inject(SYMBOLS.KeyZonesStateService)               private _keyZoneState: IKeyZonesStateService;
     @inject(SYMBOLS.NetworkFeeStateService)             private _networkFeeState: INetworkFeeStateService;
+    @inject(SYMBOLS.OpenInterestStateService)           private _openInterest: IOpenInterestStateService;
+    @inject(SYMBOLS.LongShortRatioStateService)         private _longShortRatio: ILongShortRatioStateService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
+    @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
 
     /**
@@ -98,6 +106,14 @@ export class MarketStateService implements IMarketStateService {
         // Initialize the keyzone module
         await this._keyZoneState.initialize();
 
+        // Initialize the open interest module after a small delay
+        await this._utils.asyncDelay(2);
+        await this._openInterest.initialize();
+
+        // Initialize the long/short ratio module after a small delay
+        await this._utils.asyncDelay(2);
+        await this._longShortRatio.initialize();
+
         // Calculate the state and initialize the interval
         await this.calculateState();
         this.stateInterval = setInterval(async () => {
@@ -155,13 +171,17 @@ export class MarketStateService implements IMarketStateService {
             const volumeState: IVolumeState = this._volumeState.calculateState(window);
             const keyzoneState: IKeyZoneState = this._keyZoneState.calculateState(window.at(-1).c);
             const networkFeeState: INetworkFeeState = this._networkFeeState.state;
+            const openInterestState: IOpenInterestState = this._openInterest.state;
+            const longShortRatioState: ILongShortRatioState = this._longShortRatio.state;
 
             // Broadcast the states through the observables
             this.active.next({
                 window: windowState,
                 volume: volumeState,
                 keyzone: keyzoneState,
-                network_fee: networkFeeState
+                network_fee: networkFeeState,
+                open_interest: openInterestState,
+                long_short_ratio: longShortRatioState,
             });
 
             // Check if there is a window state and if can be broadcasted
@@ -198,7 +218,9 @@ export class MarketStateService implements IMarketStateService {
             window: this._windowState.getDefaultState(),
             volume: this._volumeState.getDefaultState(),
             keyzone: this._keyZoneState.getDefaultState(),
-            network_fee: this._networkFeeState.getDefaultState()
+            network_fee: this._networkFeeState.getDefaultState(),
+            open_interest: this._openInterest.getDefaultState(),
+            long_short_ratio: this._longShortRatio.getDefaultState()
         }
     }
 }

@@ -5,10 +5,18 @@ import {appContainer, SYMBOLS, environment} from "./ioc";
 import {IRequestGuardService} from "./modules/request-guard";
 const _guard = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
+/* Utilities */
+import {IUtilitiesService} from "./modules/utilities";
+const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
+
 
 
 /* Import Modules that require initialization */
 
+
+// Database
+import {IDatabaseService} from "./modules/database";
+const _db = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
 
 // Auth
 import {IAuthService} from "./modules/auth";
@@ -26,9 +34,13 @@ const _marketState = appContainer.get<IMarketStateService>(SYMBOLS.MarketStateSe
 import {IOrderBookService} from "./modules/order-book";
 const _orderBook = appContainer.get<IOrderBookService>(SYMBOLS.OrderBookService);
 
-// Database
-import {IDatabaseService} from "./modules/database";
-const _db = appContainer.get<IDatabaseService>(SYMBOLS.DatabaseService);
+// Server
+import {IServerService} from "./modules/server";
+const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
+
+// IP Blacklist
+import {IIPBlacklistService} from "./modules/ip-blacklist";
+const _ipBlacklist = appContainer.get<IIPBlacklistService>(SYMBOLS.IPBlacklistService);
 
 // Epoch
 import {IEpochService} from "./modules/epoch";
@@ -38,14 +50,9 @@ const _epoch = appContainer.get<IEpochService>(SYMBOLS.EpochService);
 import {IPredictionService} from "./modules/prediction";
 const _prediction = appContainer.get<IPredictionService>(SYMBOLS.PredictionService);
 
-// IP Blacklist
-import {IIPBlacklistService} from "./modules/ip-blacklist";
-const _ipBlacklist = appContainer.get<IIPBlacklistService>(SYMBOLS.IPBlacklistService);
-
-// Server
-import {IServerService} from "./modules/server";
-const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
-
+// Position
+import {IPositionService} from "./modules/position";
+const _position = appContainer.get<IPositionService>(SYMBOLS.PositionService);
 
 
 
@@ -60,7 +67,7 @@ const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
  * 6) Server Module
  * 7) IP Blacklist Module
  * 8) Epoch Module
- * 9) Trading Session Module
+ * 9) Position Module
  * 
  * If any of the initialization actions triggers an error, it crashes the execution and
  * stop the following modules:
@@ -70,9 +77,24 @@ const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
  * 4) Server Module
  * 5) Epoch Module
  * 6) Prediction Module
- * 7) Trading Session Module
+ * 7) Position Module
  */
 export async function init(): Promise<void> {
+    try { await _init() }
+    catch (e) {
+        await _utils.asyncDelay(15);
+        try { await _init() }
+        catch (e) {
+            await _utils.asyncDelay(15);
+            try { await _init() }
+            catch (e) {
+                await _utils.asyncDelay(15);
+                await _init();
+            }
+        }
+    }
+}
+async function _init(): Promise<void> {
     try {
         // Make sure that test mode is not being used in production
         if (environment.production && environment.testMode) {
@@ -160,11 +182,11 @@ export async function init(): Promise<void> {
                 throw e;
             }
 
-            // Initialize the Trading Session Module
+            // Initialize the Position Module
             try {
-                // @TODO
+                await _position.initialize();
             } catch (e) {
-                console.error("Error when initializing the Trading Session Module: ", e)
+                console.error("Error when initializing the Position Module: ", e)
                 throw e;
             }
         }
@@ -190,8 +212,8 @@ export async function init(): Promise<void> {
         // Stop the Prediction Module
         _prediction.stop();
 
-        // Stop the Trading Sessions Module
-        // @TODO
+        // Stop the Positions Module
+        _position.stop();
 
         // Rethrow the error
         throw e;

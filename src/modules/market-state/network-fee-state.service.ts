@@ -124,36 +124,42 @@ export class NetworkFeeStateService implements INetworkFeeStateService {
      * @returns Promise<void>
      */
     private async updateState(): Promise<void> {
-        // Retrieve the raw fee records
-        const rawRecords: IMempoolBlockFeeRecord[] = await this.getRawFeeRecords();
+        try {
+            // Retrieve the raw fee records
+            const rawRecords: IMempoolBlockFeeRecord[] = await this.getRawFeeRecords();
 
-        // Build the averaged list of fees
-        const fees: number[] = this._stateUtils.buildAveragedGroups(rawRecords.map(f => f.avgFee_50), this.groups);
+            // Build the averaged list of fees
+            const fees: number[] = this._stateUtils.buildAveragedGroups(rawRecords.map(f => f.avgFee_50), this.groups);
 
-        // Calculate the window bands
-        const bands: IStateBandsResult = this._stateUtils.calculateBands(
-            <number>this._utils.calculateMin(fees), 
-            <number>this._utils.calculateMax(fees)
-        );
+            // Calculate the window bands
+            const bands: IStateBandsResult = this._stateUtils.calculateBands(
+                <number>this._utils.calculateMin(fees), 
+                <number>this._utils.calculateMax(fees)
+            );
 
-        // Calculate the state
-        const { state, state_value } = this._stateUtils.calculateState(
-            fees[0],
-            fees.at(-1),
-            bands,
-            this.minChange
-        );
+            // Calculate the state
+            const { state, state_value } = this._stateUtils.calculateState(
+                fees[0],
+                fees.at(-1),
+                bands,
+                this.minChange
+            );
 
-        // Finally, update the state
-        this.state = {
-            state: state,
-            state_value: state_value,
-            upper_band: bands.upper_band,
-            lower_band: bands.lower_band,
-            ts: Date.now(),
-            fees: fees,
-            height: rawRecords.at(-1).avgHeight
-        };
+            // Finally, update the state
+            this.state = {
+                state: state,
+                state_value: state_value,
+                upper_band: bands.upper_band,
+                lower_band: bands.lower_band,
+                ts: Date.now(),
+                fees: fees,
+                height: rawRecords.at(-1).avgHeight
+            };
+        } catch (e) {
+            console.error("The network fee state could not be updated due to an error in Mempool.Space API.", e);
+            this._apiError.log("NetworkFeeState.updateState", e);
+            this.state = this.getDefaultState();
+        }
     }
 
 

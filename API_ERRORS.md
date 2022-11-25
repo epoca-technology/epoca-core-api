@@ -14,6 +14,14 @@
 
 4: `Binance returned an invalid order book.`
 
+5: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the open interest.`
+
+6: `Binance returned an invalid open interest list.`
+
+7: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the long short ratio.`
+
+8: `Binance returned an invalid long short ratio list.`
+
 
 
 #

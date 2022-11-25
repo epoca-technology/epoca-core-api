@@ -62,7 +62,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * Every intervalSeconds, the keyzones will be built based on the latest data.
      */
     private buildInterval: any;
-    private readonly intervalSeconds: number = 60 * 60; // ~1 hour
+    private readonly intervalSeconds: number = 60 * 120; // ~2 hours
     private buildTS: number = 0;
 
 
