@@ -39,6 +39,7 @@ const BulkDataRoute = express.Router();
 * @requires id-token
 * @requires api-secret
 * @requires authority: 1
+* @param epochID 
 * @returns IAPIResponse<IAppBulk>
 */
 BulkDataRoute.route("/getAppBulk").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
@@ -50,16 +51,16 @@ BulkDataRoute.route("/getAppBulk").get(ultraLowRiskLimit, async (req: express.Re
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["epochID"], req.query);
 
         // Perform Action
-        const data: IAppBulk = await _bulk.getAppBulk();
+        const data: IAppBulk = await _bulk.getAppBulk(<string>req.query.epochID);
 
         // Return the response
         res.send(_utils.apiResponse(data));
     } catch (e) {
 		console.log(e);
-        _apiError.log("BulkDataRoute.getAppBulk", e, reqUid, ip);
+        _apiError.log("BulkDataRoute.getAppBulk", e, reqUid, ip, {epochID: req.query.epochID});
         res.send(_utils.apiResponse(undefined, e));
     }
 });

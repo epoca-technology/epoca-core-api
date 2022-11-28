@@ -1,5 +1,7 @@
 import {inject, injectable} from "inversify";
-import { SYMBOLS } from "../../ioc";
+import {stringify} from "querystring";
+import * as crypto from "crypto";
+import { SYMBOLS, environment } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { 
     IExternalRequestOptions, 
@@ -12,7 +14,9 @@ import {
     IBinanceCandlestick, 
     IBinanceOrderBook, 
     IBinanceOpenInterest,
-    IBinanceLongShortRatio
+    IBinanceLongShortRatio,
+    IBinanceBalance,
+    IBinanceActivePosition
 } from "./interfaces";
 
 
@@ -29,7 +33,25 @@ export class BinanceService implements IBinanceService {
      * Thursday, August 17, 2017 4:00:00 AM     - GMT
      * Thursday, August 17, 2017 12:00:00 AM    - Venezuela
      */
-     public readonly candlestickGenesisTimestamp: number = 1502942400000;
+    public readonly candlestickGenesisTimestamp: number = 1502942400000;
+
+
+    /**
+     * Binance Credentials
+     * In order to interact with Binance's API in behalf of an account,
+     * the endpoints must contain a signature which ensures the request
+     * is safe.
+     */
+    private readonly apiKey: string = environment.binance.apiKey;
+    private readonly apiSecret: string = environment.binance.apiSecret;
+
+
+    /**
+     * Futures Base URL
+     * The Futures API URL adjusts based on the environment of the process.
+     * This base URL is used for account related operations.
+     */
+    private readonly futuresBaseURL: string = environment.production ? "fapi.binance.com": "testnet.binancefuture.com";
 
 
 
@@ -37,11 +59,141 @@ export class BinanceService implements IBinanceService {
     constructor() {}
 
 
+
+
+
+
+
+    /**
+     * SIGNED ENDPOINTS
+     * Each request as well as its params must be signed prior to dispatching.
+     */
+
+
+
+
+
+    /* Retrievers */
     
 
 
 
+    /**
+     * Retrieves the current accounts' balances for a series
+     * of assets. Make sure to filter all balances that aren't USDT.
+     * @returns Promise<IBinanceBalance[]>
+     */
+    public async getBalances(): Promise<IBinanceBalance[]> {
+        // Build options
+        const params: string = this.buildSignedParamsString();
+        const options: IExternalRequestOptions = {
+            host: this.futuresBaseURL,
+            path: `/fapi/v2/balance?${params}`,
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json;charset=utf-8",
+                "X-MBX-APIKEY": this.apiKey
+            }
+        };
 
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the balances.`, 9));
+        }
+
+        // Validate the response's data
+        if (!response.data || !Array.isArray(response.data) || !response.data.length) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError("Binance returned an invalid list of balances.", 10));
+        }
+
+        // Return the series
+        return response.data;
+    }
+
+
+
+
+
+    /**
+     * Retrieves the list of active positions. The list will
+     * always return 2 items. Make sure to handle position's
+     * that aren't active.
+     * @returns Promise<[IBinanceActivePosition, IBinanceActivePosition]>
+     */
+    public async getActivePositions(): Promise<[IBinanceActivePosition, IBinanceActivePosition]> {
+        // Build options
+        const params: string = this.buildSignedParamsString({symbol: "BTCUSDT"});
+        const options: IExternalRequestOptions = {
+            host: this.futuresBaseURL,
+            path: `/fapi/v2/positionRisk?${params}`,
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json;charset=utf-8",
+                "X-MBX-APIKEY": this.apiKey
+            }
+        };
+
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the active positions.`, 11));
+        }
+
+        // Validate the response's data
+        if (!response.data || !Array.isArray(response.data) || response.data.length != 2) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError("Binance returned an invalid list of active positions.", 12));
+        }
+
+        // Return the series
+        return <[IBinanceActivePosition, IBinanceActivePosition]>response.data;
+    }
+
+
+
+
+
+
+
+    /**
+     * Given a parameters object, it will add the required properties,
+     * convert it into a query string and sign it
+     * @param rawParams 
+     * @returns string
+     */
+    private buildSignedParamsString(rawParams?: any|undefined): string {
+        // Init the current timestamp
+        const timestamp: number = Date.now();
+
+        // Init the params, if none were provided, initialize the requirements
+        rawParams = rawParams ? rawParams: {};
+        rawParams.recvWindow = 5000;
+        rawParams.timestamp = timestamp;
+
+        // Convert the params into a query string
+        const queryString: string = stringify(rawParams);
+
+        // Finally, sign and return the params
+        const signedParams: string = crypto.createHmac("sha256", this.apiSecret).update(queryString).digest("hex");
+        
+        // Return the final query string
+        return `${queryString}&signature=${signedParams}`;
+    } 
+
+
+
+
+    
 
 
 

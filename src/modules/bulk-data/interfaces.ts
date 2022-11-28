@@ -4,6 +4,7 @@ import { IApiError } from "../api-error";
 import { IPrediction } from "../epoch-builder";
 import { IPredictionState } from "../prediction";
 import { IMarketState } from "../market-state";
+import { IPositionSummary } from "../position";
 
 
 
@@ -11,7 +12,7 @@ import { IMarketState } from "../market-state";
 // Service
 export interface IBulkDataService {
     // App Bulk Retrievers
-    getAppBulk(): Promise<IAppBulk>,
+    getAppBulk(epochID: string): Promise<IAppBulk>,
 
     // Server Bulk Retrievers
     getServerDataBulk(): Promise<IServerDataBulk>,
@@ -38,17 +39,22 @@ export interface IAppBulk {
     // The current version of the GUI
     guiVersion: string,
 
-    // The record of the active epoch. If none is active, it will be undefined
-    epoch: IEpochRecord|undefined,
-
-    // The active long and short positions.
-    positions: object|undefined, // @TODO
+    /**
+     * The record of the active epoch which can come in several states. 
+     * IEpochRecord: There is an active epoch that has not been yet retrieved by the client.
+     * undefined: No epoch is currently active
+     * "keep": The client's epoch is up to date and can be kept
+     */
+    epoch: IEpochRecord|"keep"|undefined,
 
     // The active prediction. If there isn't one, or an epoch isn't active, it will be undefined
     prediction: IPrediction|undefined,
 
     // The active prediction state. If there isn't one, or an epoch isn't active, it will be undefined
     predictionState: IPredictionState,
+
+    // The current position summary
+    position: IPositionSummary,
 
     // The active market state.
     marketState: IMarketState,

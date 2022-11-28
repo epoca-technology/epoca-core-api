@@ -5,9 +5,18 @@ export interface IBinanceService {
     // Properties
     candlestickGenesisTimestamp: number,
 
+    /* SIGNED ENDPOINTS */
 
 
-    // PUBLIC ENDPOINTS
+    // Retrievers
+    getBalances(): Promise<IBinanceBalance[]>,
+    getActivePositions(): Promise<[IBinanceActivePosition, IBinanceActivePosition]>,
+
+    // Position Actions
+    // ...
+
+
+    /* PUBLIC ENDPOINTS */
 
 
     // Market Data
@@ -22,6 +31,122 @@ export interface IBinanceService {
     getLongShortRatio(): Promise<IBinanceLongShortRatio[]>,
 }
 
+
+
+/* FUTURES TRADING */
+
+
+
+/**
+ * Futures Balance
+ * The schema for an asset's future balance. The available, on_positions and 
+ * total balance can be derived from this object.
+ */
+export interface IBinanceBalance {
+    // Unique account code.
+    accountAlias: string, // E.g: 'FzSgAuXqFzSgTi'
+
+    // Asset name.
+    asset: string, // E.g: 'USDT'
+
+    // Wallet balance.
+    balance: string, // E.g: '14999.95273379'
+
+    // Crossed wallet balance.
+    crossWalletBalance: string, // E.g: '14958.52189845'
+
+    // Unrealized profit of crossed positions.
+    crossUnPnl: string, // E.g: '0.00000000'
+
+    // Available balance.
+    availableBalance: string, // E.g: '14958.52189845'
+
+    // Maximum amount for transfer out.
+    maxWithdrawAmount: string, // E.g: '14958.52189845'
+
+    // Whether the asset can be used as margin in Multi-Assets mode.
+    marginAvailable: boolean,
+
+    // The timestamp in ms when the balance was last updated.
+    updateTime: number
+}
+
+
+
+/* Positions */
+
+
+// Position Side
+export type IBinancePositionSide = "LONG"|"SHORT";
+
+
+// Margin Type
+export type IBinanceMarginType = "isolated"|"cross";
+
+
+
+/**
+ * Futures Active Positions
+ * Binance's API provides the ability to keep track of the state
+ * for multiple active positions simultaneously.
+ */
+export interface IBinanceActivePosition {
+    // The position's market (BTCUSDT).
+    symbol: string,
+
+    // The size of the position in BTC with leverage included.
+    positionAmt: string,
+
+    // The weighted entry price based on all the trades within the position.
+    entryPrice: string,
+
+    // The mark price when the active positions were updated.
+    markPrice: string,
+
+    // The current unrealized PNL in USDT
+    unRealizedProfit: string,
+
+    // The price at which the position will be automatically liquidated by the exchange.
+    liquidationPrice: string,
+
+    // The leverage used in the position.
+    leverage: string,
+
+    // The maximum notional (USDT w/ leverage) that can be executed in a single trade.
+    maxNotionalValue: string,
+
+    // The type of margin in which the position was opened. Always should be "isolated".
+    marginType: IBinanceMarginType,
+
+    // The current value of the isolatedWallet + Unrealized PNL.
+    isolatedMargin: string,
+
+    // @TODO -> If used, the value returned is a boolean in string format "true"|"false".
+    isAutoAddMargin: string,
+
+    // The type of position "LONG"|"SHORT".
+    positionSide: IBinancePositionSide,
+
+    // The size of the position in USDT with leverage included.
+    notional: string,
+
+    // The total margin (USDT) put into the position.
+    isolatedWallet: string,
+
+    // The timestamp in ms at which the position was updated.
+    updateTime: number
+}
+
+
+
+
+
+
+
+
+
+
+/* MARKET DATA */
 
 
 
@@ -97,7 +222,7 @@ export interface IBinanceOpenInterest {
 
 
 
-// Long/Short Ration
+// Long/Short Ratio
 export interface IBinanceLongShortRatio {
     // The market's symbol.
     symbol: string,
@@ -113,7 +238,7 @@ export interface IBinanceLongShortRatio {
      * there are more traders longing. If it is less than one means there 
      * are more traders shorting.
      */
-     longShortRatio: string, // <- Value to be used
+    longShortRatio: string, // <- Value to be used
 
     // The time at which the interval started.
     timestamp: number

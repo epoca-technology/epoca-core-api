@@ -9,6 +9,10 @@ const _guard = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardServic
 import {IUtilitiesService} from "./modules/utilities";
 const _utils = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
+/* Notifications */
+import {INotificationService} from "./modules/notification";
+const _notification = appContainer.get<INotificationService>(SYMBOLS.NotificationService);
+
 
 
 /* Import Modules that require initialization */
@@ -89,7 +93,11 @@ export async function init(): Promise<void> {
             try { await _init() }
             catch (e) {
                 await _utils.asyncDelay(15);
-                await _init();
+                try { await _init() }
+                catch (e) {
+                    await _notification.apiInitError(e);
+                    throw e;
+                }
             }
         }
     }

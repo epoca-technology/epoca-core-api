@@ -12,6 +12,7 @@ export interface IEnvironment {
     telegraf: ITelegrafConfig,
     recaptchaSecret: string,
     god: IGod,
+    binance: IBinanceCredentials,
     firebase: IFirebaseConfig,
 }
 
@@ -31,6 +32,11 @@ export interface IGod {
     otpSecret: string
 }
 
+// Binance
+export interface IBinanceCredentials {
+    apiKey: string,
+    apiSecret: string
+}
 
 // Firebase
 export interface IFirebaseConfig {
@@ -66,19 +72,20 @@ export interface IFirebaseConfig {
  * kind of issue it will crash the server startup.
  */
 const environment: IEnvironment = {
-    production: getString('NODE_ENV', process.env.NODE_ENV) == 'production',
-    testMode: process.env.testMode == 'true',
-    debugMode: process.env.debugMode == 'true',
-    restoreMode: process.env.restoreMode == 'true',
-    POSTGRES_HOST: getString('POSTGRES_HOST', process.env.POSTGRES_HOST),
-    POSTGRES_USER: getString('POSTGRES_USER', process.env.POSTGRES_USER),
-    POSTGRES_PASSWORD: getString('POSTGRES_PASSWORD', process.env.POSTGRES_PASSWORD),
-    POSTGRES_DB: getString('POSTGRES_DB', process.env.POSTGRES_DB),
-    FLASK_SECRET_KEY: getString('FLASK_SECRET_KEY', process.env.FLASK_SECRET_KEY),
-    telegraf: <ITelegrafConfig>getObject('telegraf', process.env.telegraf),
-    recaptchaSecret: getString('recaptchaSecret', process.env.recaptchaSecret),
-    god: <IGod>getObject('god', process.env.god),
-    firebase: <IFirebaseConfig>getObject('firebase', process.env.firebase),
+    production: getString("NODE_ENV", process.env.NODE_ENV) == "production",
+    testMode: process.env.testMode == "true",
+    debugMode: process.env.debugMode == "true",
+    restoreMode: process.env.restoreMode == "true",
+    POSTGRES_HOST: getString("POSTGRES_HOST", process.env.POSTGRES_HOST),
+    POSTGRES_USER: getString("POSTGRES_USER", process.env.POSTGRES_USER),
+    POSTGRES_PASSWORD: getString("POSTGRES_PASSWORD", process.env.POSTGRES_PASSWORD),
+    POSTGRES_DB: getString("POSTGRES_DB", process.env.POSTGRES_DB),
+    FLASK_SECRET_KEY: getString("FLASK_SECRET_KEY", process.env.FLASK_SECRET_KEY),
+    telegraf: <ITelegrafConfig>getObject("telegraf", process.env.telegraf),
+    recaptchaSecret: getString("recaptchaSecret", process.env.recaptchaSecret),
+    god: <IGod>getObject("god", process.env.god),
+    binance: <IBinanceCredentials>getObject("binance", process.env.binance),
+    firebase: <IFirebaseConfig>getObject("firebase", process.env.firebase),
 }
 
 
@@ -105,7 +112,7 @@ const environment: IEnvironment = {
  */
 function getBoolean(key: string, val: string): boolean {
     isPropertySet(key, val);
-    return val == 'true';
+    return val == "true";
 }
 
 
@@ -163,7 +170,7 @@ function getString(key: string, val: string): string {
 
 
 /**
- * Makes sure that the properties set on the machine's environment
+ * Makes sure that the properties set on the machine"s environment
  * are valid strings, otherwise throws an error.
  * @param key 
  * @param val 

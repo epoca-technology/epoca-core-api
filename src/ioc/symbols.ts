@@ -73,6 +73,7 @@
     PositionService: Symbol.for("PositionService"),
     PositionValidations: Symbol.for("PositionValidations"),
     PositionModel: Symbol.for("PositionModel"),
+    PositionNotifications: Symbol.for("PositionNotifications"),
 
     // Request Guard
     RequestGuardService: Symbol.for("RequestGuardService"),
@@ -157,6 +158,7 @@ export interface ISymbols {
     PositionService: symbol,
     PositionValidations: symbol,
     PositionModel: symbol,
+    PositionNotifications: symbol,
 
 
     RequestGuardService: symbol,

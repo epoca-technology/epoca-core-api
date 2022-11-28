@@ -1,6 +1,6 @@
 {
   "name": "api-development",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Epoca is a pattern finding technology designed to trade Futures Contracts through Bitcoin Exchanges.",
   "main": "index.js",
   "scripts": {
@@ -21,7 +21,7 @@
     "type": "git",
     "url": "git+ssh://git@bitbucket.org/projectplutus/api-development.git"
   },
-  "author": "Plutus",
+  "author": "Epoca",
   "license": "ISC",
   "homepage": "https://bitbucket.org/projectplutus/api-development#readme",
   "dependencies": {

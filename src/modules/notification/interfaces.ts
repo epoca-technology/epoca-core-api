@@ -8,6 +8,9 @@ export interface INotificationService {
 
     /* NOTIFICATION FACTORY */
 
+    // API Initializer Notifications
+    apiInitError(error: any): Promise<void>,
+
     // Candlesticks
     candlestickSyncIssue(error: any): Promise<void>,
 
@@ -44,4 +47,11 @@ export interface INotification {
 
 
 // Senders
-export type INotificationSender = "UNIT_TEST"|"SERVER"|"CANDLESTICK"|"PREDICTION"|"ORDER_BOOK"|"MARKET_STATE";
+export type INotificationSender = 
+"UNIT_TEST"|
+"INITIALIZER"|
+"SERVER"|
+"CANDLESTICK"|
+"PREDICTION"|
+"ORDER_BOOK"|
+"MARKET_STATE";

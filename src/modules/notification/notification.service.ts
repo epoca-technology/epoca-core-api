@@ -169,6 +169,30 @@ export class NotificationService implements INotificationService {
 
 
 
+    /* API Initializer Notifications */
+
+
+
+
+    /**
+     * Triggers whenever the API cannot be initialized for
+     * whatever reason.
+     * @param error 
+     * @returns Promise<void>
+     */
+    public apiInitError(error: any): Promise<void> {
+        return this.broadcast({
+            sender: "INITIALIZER",
+            title: "The API could not be initialized:",
+            description: this._utils.getErrorMessage(error)
+        });
+    }
+
+
+
+
+
+
 
     
 

@@ -22,6 +22,16 @@
 
 8: `Binance returned an invalid long short ratio list.`
 
+9: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the balances.`
+
+10: `Binance returned an invalid list of balances.`
+
+11: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the active positions.`
+
+12: `Binance returned an invalid list of active positions.`
+
+13: ``
+
 
 
 #
@@ -494,3 +504,45 @@
 28000: `Mempool.space returned an invalid HTTP response code (${response.statusCode}) when retrieving the fee records.`
 
 28001: `Mempool.space returned an invalid fee record series.`
+
+
+
+
+
+#
+## Position Service (29.000 - 29.999)
+
+29000: `The strategy state cannot be calculated as the provided position has no margin. Received ${margin}`
+
+29001: `The USDT balance could not be retrieved from the Binance API. Received ${balances.length}`
+
+29002: `The extracted USDT balance object is not complete. Available ${balances[0].availableBalance} | Balance: ${balances[0].balance}`
+
+
+
+#
+## Position Validations (30.000 - 30.999)
+
+30000: `The provided side (${side}) is invalid.`
+
+30001: `Positions cannot be interacted with as there isnt an active Epoch.`
+
+30002: ``
+
+30003: ``
+
+30004: ``
+
+30005: ``
+
+30006: ``
+
+
+
+
+#
+## Position Model (31.000 - 31.999)
+
+31000: ``
+
+31001: ``

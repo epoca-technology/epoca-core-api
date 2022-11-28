@@ -1,7 +1,7 @@
 import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
-import { IEpochService } from "../epoch";
+import { IEpochRecord, IEpochService } from "../epoch";
 import { IPredictionService } from "../prediction";
 import { IMarketStateService } from "../market-state";
 import { IGuiVersionService } from "../gui-version";
@@ -12,6 +12,7 @@ import {
     IServerDataBulk, 
     IServerResourcesBulk 
 } from "./interfaces";
+import { IPositionService } from "../position";
 
 
 
@@ -24,6 +25,7 @@ export class BulkDataService implements IBulkDataService {
     @inject(SYMBOLS.MarketStateService)             private _marketState: IMarketStateService;
     @inject(SYMBOLS.GuiVersionService)              private _guiVersion: IGuiVersionService;
     @inject(SYMBOLS.ServerService)                  private _server: IServerService;
+    @inject(SYMBOLS.PositionService)                private _position: IPositionService;
     @inject(SYMBOLS.ApiErrorService)                private _apiError: IApiErrorService;
 
 
@@ -42,12 +44,19 @@ export class BulkDataService implements IBulkDataService {
      * and stay in sync with the server.
      * @returns IAppBulk
      */
-    public async getAppBulk(): Promise<IAppBulk> {
+    public async getAppBulk(epochID: string): Promise<IAppBulk> {
+        // Build the epoch that will be included in the bulk
+        let epoch: IEpochRecord|undefined|"keep" = undefined;
+        if (this._epoch.active.value) {
+            epoch = this._epoch.active.value.id == epochID ? "keep": this._epoch.active.value;
+        }
+
+        // Finally, return the bulk
         return {
             serverTime: Date.now(),
             guiVersion: typeof this._guiVersion.activeVersion == "string" ? this._guiVersion.activeVersion: await this._guiVersion.get(),
-            epoch: this._epoch.active.value,
-            positions: { long: undefined, short: undefined }, // @TODO
+            epoch: epoch,
+            position: this._position.getSummary(),
             prediction: this._prediction.active.value,
             predictionState: this._prediction.activeState,
             marketState: this._marketState.active.value,

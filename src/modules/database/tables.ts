@@ -204,10 +204,18 @@ export const TABLES: IRawTable[] = [
     },
 
     
-    // Trading Sessions
-    // @TODO
+    // Position Strategy
+    {
+        name: "position_strategy",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id              SMALLINT NOT NULL PRIMARY KEY,
+                strategy        JSONB NOT NULL
+            );`
+        }
+    },
 
     
-    // Coin Stacker Sessions
-    // @TODO
+    // Positions
+    // ...
 ];
