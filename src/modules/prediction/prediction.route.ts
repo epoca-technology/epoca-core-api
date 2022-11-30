@@ -80,8 +80,6 @@ const PredictionRoute = express.Router();
  * @param startAt 
  * @param endAt 
  * @returns IAPIResponse<IPrediction[]>
- * @TODO :
- *    1) Replace ultraLowRiskLimit with mediumRiskLimit
 */
 PredictionRoute.route("/listPredictions").get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values

@@ -26,6 +26,7 @@ export interface IDatabaseService {
     pool: IPool,
     tn: ITableNames,
     apiSecretRef: IReference,
+    appBulkRef: IReference,
     
     // Query
     query(config: IQueryConfig): Promise<IQueryResult>,

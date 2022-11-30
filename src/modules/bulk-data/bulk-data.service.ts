@@ -13,6 +13,7 @@ import {
     IServerResourcesBulk 
 } from "./interfaces";
 import { IPositionService } from "../position";
+import { IDatabaseService } from "../database";
 
 
 
@@ -20,6 +21,7 @@ import { IPositionService } from "../position";
 @injectable()
 export class BulkDataService implements IBulkDataService {
     // Inject dependencies
+    @inject(SYMBOLS.DatabaseService)                private _db: IDatabaseService;
     @inject(SYMBOLS.EpochService)                   private _epoch: IEpochService;
     @inject(SYMBOLS.PredictionService)              private _prediction: IPredictionService;
     @inject(SYMBOLS.MarketStateService)             private _marketState: IMarketStateService;
@@ -29,7 +31,17 @@ export class BulkDataService implements IBulkDataService {
     @inject(SYMBOLS.ApiErrorService)                private _apiError: IApiErrorService;
 
 
+    /**
+     * App Bulk Stream Interval
+     * Every intervalSeconds, the app bulk will be updated on the firebase rtdb.
+     */
+     private streamInterval: any;
+     private readonly streamIntervalSeconds: number = 5; // ~5 seconds
+
+
+
     constructor() {}
+
 
 
 
@@ -63,6 +75,59 @@ export class BulkDataService implements IBulkDataService {
             apiErrors: this._apiError.count
         }
     }
+
+
+
+
+
+
+
+    /* App Bulk Stream */
+
+
+
+
+    /**
+     * Syncs the app bulk and initializes the interval that will
+     * keep it in sync.
+     * @returns Promise<void>
+     */
+    public async initialize(): Promise<void> {
+        await this.updateStream();
+        this.streamInterval = setInterval(async () => {
+            await this.updateStream()
+        }, this.streamIntervalSeconds * 1000);
+    }
+
+
+
+
+    /**
+     * Stops the interval that keeps the app bulk in sync.
+     */
+    public stop(): void {
+        if (this.streamInterval) clearInterval(this.streamInterval);
+        this.streamInterval = undefined;
+    }
+
+
+
+
+
+    /**
+     * Updates the app bulk if a safe manner.
+     * @returns Promise<void>
+     */
+    private async updateStream(): Promise<void> {
+        try {
+            const appBulk: IAppBulk = await this.getAppBulk("undefined");
+            await this._db.appBulkRef.update(JSON.parse(JSON.stringify(appBulk)));
+        } catch (e) {
+            console.error("Error when updating the app bulk stream: ", e);
+        }
+    }
+
+
 
 
 

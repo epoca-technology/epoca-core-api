@@ -64,6 +64,7 @@ import {EpochRoute} from "./modules/epoch/epoch.route";
 import {GuiVersionRoute} from "./modules/gui-version/gui-version.route";
 import {IPBlacklistRoute} from "./modules/ip-blacklist/ip-blacklist.route";
 import {OrderBookRoute} from "./modules/order-book/order-book.route";
+import {PositionRoute} from "./modules/position/position.route";
 import {PredictionRoute} from "./modules/prediction/prediction.route";
 import {ServerRoute} from "./modules/server/server.route";
 
@@ -77,6 +78,7 @@ app.use("/epoch", EpochRoute);
 app.use("/guiVersion", GuiVersionRoute);
 app.use("/ipBlacklist", IPBlacklistRoute);
 app.use("/orderBook", OrderBookRoute);
+app.use("/position", PositionRoute);
 app.use("/prediction", PredictionRoute);
 app.use("/server", ServerRoute);
 

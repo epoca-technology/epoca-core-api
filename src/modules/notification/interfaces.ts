@@ -1,4 +1,5 @@
 import { IStateType } from "../market-state";
+import { IActivePosition } from "../position";
 
 
 // Service
@@ -30,7 +31,11 @@ export interface INotificationService {
     orderBookIssue(error: any): Promise<void>,
 
     // Market State Notifications
-    windowState(state: IStateType, stateValue: number): Promise<void>,
+    windowState(state: IStateType, stateValue: number, currentPrice: number): Promise<void>,
+
+    // Position Notifications
+    positionHitTarget(position: IActivePosition): Promise<void>,
+    liquidationPriceIsWarning(position: IActivePosition, distance: number): Promise<void>,
 }
 
 
@@ -54,4 +59,5 @@ export type INotificationSender =
 "CANDLESTICK"|
 "PREDICTION"|
 "ORDER_BOOK"|
-"MARKET_STATE";
+"MARKET_STATE"|
+"POSITION";

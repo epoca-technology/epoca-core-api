@@ -21,7 +21,7 @@ export class CandlestickService implements ICandlestickService {
 
 
     // Candlestick Syncing Interval
-    private readonly syncIntervalSeconds: number = 10;
+    private readonly syncIntervalSeconds: number = 5;
 
 
     // Debug Mode

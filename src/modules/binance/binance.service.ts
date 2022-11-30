@@ -16,7 +16,10 @@ import {
     IBinanceOpenInterest,
     IBinanceLongShortRatio,
     IBinanceBalance,
-    IBinanceActivePosition
+    IBinanceActivePosition,
+    IBinanceTradeExecutionPayload,
+    IBinancePositionActionSide,
+    IBinancePositionSide
 } from "./interfaces";
 
 
@@ -163,6 +166,65 @@ export class BinanceService implements IBinanceService {
 
 
 
+    /* Position Management */
+
+
+
+
+
+    /**
+     * Creates, increases or closes a position.
+     * @param actionSide
+     * @param positionSide
+     * @param quantity
+     * @returns Promise<IBinanceTradeExecutionPayload|undefined>
+     */
+     public async order(
+        actionSide: IBinancePositionActionSide, 
+        positionSide: IBinancePositionSide, 
+        quantity: number
+    ): Promise<IBinanceTradeExecutionPayload|undefined> {
+        // Build options
+        const params: string = this.buildSignedParamsString({
+            symbol: "BTCUSDT",
+            side: actionSide,
+            positionSide: positionSide,
+            type: "MARKET",
+            quantity: quantity
+        });
+        const options: IExternalRequestOptions = {
+            host: this.futuresBaseURL,
+            path: `/fapi/v1/order?${params}`,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json;charset=utf-8",
+                "X-MBX-APIKEY": this.apiKey
+            }
+        };
+
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when interacting with a position.`, 13));
+        }
+
+        // Return the series
+        return response.data;
+    }
+
+
+
+
+
+
+
+
+
+    /* Request Signer */
 
 
     /**

@@ -1,8 +1,16 @@
 import {inject, injectable} from "inversify";
 import { BigNumber } from "bignumber.js";
+import { Subscription } from "rxjs";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
-import { IBinanceActivePosition, IBinanceBalance, IBinancePositionSide, IBinanceService } from "../binance";
+import { 
+    IBinanceActivePosition, 
+    IBinanceBalance, 
+    IBinancePositionSide, 
+    IBinanceService, 
+    IBinanceTradeExecutionPayload
+} from "../binance";
+import { IOrderBook, IOrderBookService } from "../order-book";
 import { IUtilitiesService } from "../utilities";
 import { 
     IAccountBalance,
@@ -23,6 +31,7 @@ import {
 export class PositionService implements IPositionService {
     // Inject dependencies
     @inject(SYMBOLS.BinanceService)             private _binance: IBinanceService;
+    @inject(SYMBOLS.OrderBookService)           private _orderBook: IOrderBookService;
     @inject(SYMBOLS.PositionValidations)        private _validations: IPositionValidations;
     @inject(SYMBOLS.PositionModel)              private _model: IPositionModel;
     @inject(SYMBOLS.PositionNotifications)      private _notification: IPositionNotifications;
@@ -71,6 +80,15 @@ export class PositionService implements IPositionService {
     private readonly activePositionsIntervalSeconds: number = 30; // Every ~30 seconds
 
 
+    /**
+     * Order Book
+     * In order to be able to calculate the position amount, an estimated price
+     * is required.
+     */
+    private safeAsk: number;
+    private safeBid: number;
+    private orderBookSub: Subscription;
+
 
 
     constructor() {}
@@ -101,6 +119,14 @@ export class PositionService implements IPositionService {
      * @returns Promise<void>
      */
     public async initialize(): Promise<void> {
+        // Subscribe to the order book
+        this.orderBookSub = this._orderBook.active.subscribe((book: IOrderBook) => {
+            if (book) {
+                this.safeAsk = book.safe_ask;
+                this.safeBid = book.safe_bid;
+            }
+        });
+
         // Initialize the strategy
         await this.initializeStrategy();
 
@@ -134,6 +160,7 @@ export class PositionService implements IPositionService {
         this.balanceSyncInterval = undefined;
         if (this.activePositionsSyncInterval) clearInterval(this.activePositionsSyncInterval);
         this.activePositionsSyncInterval = undefined;
+        if (this.orderBookSub) this.orderBookSub.unsubscribe();
     }
 
 
@@ -151,6 +178,7 @@ export class PositionService implements IPositionService {
 
 
 
+
     /**
      * Retrieves the latest position summary without forcing
      * a refresh.
@@ -164,6 +192,13 @@ export class PositionService implements IPositionService {
             short: this.short
         }
     }
+
+
+
+
+
+
+
 
 
 
@@ -289,6 +324,16 @@ export class PositionService implements IPositionService {
                 );
             }
 
+            // Calculate the min increase price
+            let minIncreasePrice: number|undefined = undefined;
+            if (state.next) {
+                minIncreasePrice = <number>this._utils.alterNumberByPercentage(
+                    entryPrice, 
+                    binancePosition.positionSide == "LONG" ? -(this.strategy.level_increase_requirement): this.strategy.level_increase_requirement
+                );
+            }
+
+
             // Calculate the current ROE if the entry price is different to the mark price
             let roe: number = 0;
             if (!entryPrice.isEqualTo(markPrice)) {
@@ -310,6 +355,7 @@ export class PositionService implements IPositionService {
                 mark_price: <number>this._utils.outputNumber(markPrice),
                 target_price: targetPrice,
                 liquidation_price: <number>this._utils.outputNumber(binancePosition.liquidationPrice),
+                min_increase_price: minIncreasePrice,
                 unrealized_pnl: <number>this._utils.outputNumber(binancePosition.unRealizedProfit),
                 roe: roe,
                 isolated_wallet: isolatedWallet,
@@ -384,9 +430,6 @@ export class PositionService implements IPositionService {
 
 
 
-
-
-
     /********************
      * Position Actions *
      ********************/
@@ -408,10 +451,22 @@ export class PositionService implements IPositionService {
         await this.refreshData(false, 1);
 
         // Validate the request
-        // @TODO
+        this._validations.canOpenPosition(
+            side,
+            side == "LONG" ? this.long: this.short,
+            this.strategy.level_1.size,
+            this.balance.available
+        );
 
-        // ...
-        // ...
+        // Calculate the position amount in BTC
+        const positionAmount: number = this.calculatePositionAmount(side, this.strategy.level_1.size);
+
+        // Execute the trade
+        const payload: IBinanceTradeExecutionPayload = await this._binance.order(
+            side == "LONG" ? "BUY": "SELL",
+            side,
+            positionAmount
+        );
 
         // Trigger the refresh event
         await this.refreshData(true, 2);
@@ -432,11 +487,30 @@ export class PositionService implements IPositionService {
         // Refresh the data
         await this.refreshData(false, 1);
 
-        // Validate the request
-        // @TODO
+        // Init the position
+        const position: IActivePosition|undefined = side == "LONG" ? this.long: this.short;
+        if (!position) {
+            throw new Error(this._utils.buildApiError(`The ${side} position cannot be increased because it isnt active.`, 29003));
+        }
 
-        // ...
-        // ...
+        // Calculate the margin allocated to the position
+        const margin: number = side == "LONG" ? this.long.isolated_wallet: this.short.isolated_wallet;
+
+        // Calculate the current strategy state
+        const {current, next} = this.getStrategyState(margin);
+
+        // Validate the request
+        this._validations.canIncreasePosition(side, position, next, this.balance.available);
+
+        // Calculate the position amount in BTC
+        const positionAmount: number = this.calculatePositionAmount(side, next.size);
+
+        // Execute the trade
+        const payload: IBinanceTradeExecutionPayload = await this._binance.order(
+            side == "LONG" ? "BUY": "SELL",
+            side,
+            positionAmount
+        );
 
 
         // Trigger the refresh event
@@ -460,16 +534,44 @@ export class PositionService implements IPositionService {
         await this.refreshActivePositions();
 
         // Validate the request
-        // @TODO
+        this._validations.canClosePosition(side, side == "LONG" ? this.long: this.short);
 
-        // ...
-        // ...
+        // Execute the trade
+        const payload: IBinanceTradeExecutionPayload = await this._binance.order(
+            side == "LONG" ? "SELL": "BUY",
+            side,
+            Math.abs(side == "LONG" ? this.long.position_amount: this.short.position_amount)
+        );
 
         // Trigger the refresh event
         await this.refreshData(true, 2);
+
+        // Trigger a trades update
+        // ...
     }
 
 
+
+
+
+
+    /**
+     * Based on a side and the level size, it will calculate the total
+     * size of a position to be executed.
+     * @param side 
+     * @param levelSize 
+     * @returns number
+     */
+    private calculatePositionAmount(side: IBinancePositionSide, levelSize: number): number { 
+        // Firstly, initialize the rate that will be used
+        const price: number = side == "LONG" ? this.safeAsk: this.safeBid;
+
+        // Calculate the notional size
+        const notional: BigNumber = new BigNumber(levelSize).times(this.strategy.leverage);
+
+        // Convert the notional to BTC and return it
+        return <number>this._utils.outputNumber(notional.dividedBy(price), {dp: 3});
+    }
 
     
 
@@ -534,10 +636,10 @@ export class PositionService implements IPositionService {
         return {
             leverage: 2,
             level_increase_requirement: 5,
-            level_1: { size: 150, target: 1.5},
-            level_2: { size: 300, target: 1},
-            level_3: { size: 600, target: 0.5},
-            level_4: { size: 1200, target: 0},
+            level_1: { id: "level_1", size: 150, target: 1.5},
+            level_2: { id: "level_2", size: 300, target: 1},
+            level_3: { id: "level_3", size: 600, target: 0.5},
+            level_4: { id: "level_4", size: 1200, target: 0},
             ts: Date.now()
         }
     }
@@ -589,11 +691,26 @@ export class PositionService implements IPositionService {
 
 
 
-    /****************
-     * Misc Helpers *
-     ****************/
+    /********************
+     * Position History *
+     ********************/
 
 
 
+
+
+
+
+
+
+    /**
+     * Retrieves the position history for a given date range.
+     * @param startAt 
+     * @param endAt 
+     * @returns Promise<any>
+     */
+    public async getHist(startAt: number, endAt: number): Promise<any> {
+
+    }
     
 }

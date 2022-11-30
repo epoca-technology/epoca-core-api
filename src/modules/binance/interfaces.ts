@@ -13,7 +13,11 @@ export interface IBinanceService {
     getActivePositions(): Promise<[IBinanceActivePosition, IBinanceActivePosition]>,
 
     // Position Actions
-    // ...
+    order(
+        actionSide: IBinancePositionActionSide, 
+        positionSide: IBinancePositionSide, 
+        quantity: number
+    ): Promise<IBinanceTradeExecutionPayload|undefined>,
 
 
     /* PUBLIC ENDPOINTS */
@@ -74,6 +78,10 @@ export interface IBinanceBalance {
 
 
 /* Positions */
+
+
+// Position Action Side
+export type IBinancePositionActionSide = "BUY"|"SELL";
 
 
 // Position Side
@@ -138,6 +146,38 @@ export interface IBinanceActivePosition {
 }
 
 
+
+
+
+
+
+/**
+ * Whenever a position is interacted with, Binance's API returns
+ * a payload object that should be stored.
+ * Keep in mind that if the API for some reason does not return
+ * this object, no error should be raised and should be handled
+ * by the APIError.
+ */
+export interface IBinanceTradeExecutionPayload {
+    symbol: "BTCUSDT",
+    status: string, // e.g: 'NEW'
+    clientOrderId: string, // e.g: 'L6jSvEld7G5DC3QfhlV9mu'
+    price: string, // e.g: '0'
+    avgPrice: string, // e.g: '0.00000'
+    origQty: string, // e.g: '0.018'
+    executedQty: string, // e.g: '0'
+    cumQty: string, // e.g: '0'
+    cumQuote: string, // e.g: '0'
+    timeInForce: string, // e.g: 'GTC'
+    type: "MARKET",
+    reduceOnly: boolean,
+    side: IBinancePositionActionSide,
+    stopPrice: string,
+    workingType: string, // e.g: CONTRACT_PRICE
+    priceProtect: boolean,
+    origType: string,
+    updateTime: number  // e.g: 1669767816395
+}
 
 
 

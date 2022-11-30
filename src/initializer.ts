@@ -58,6 +58,10 @@ const _prediction = appContainer.get<IPredictionService>(SYMBOLS.PredictionServi
 import {IPositionService} from "./modules/position";
 const _position = appContainer.get<IPositionService>(SYMBOLS.PositionService);
 
+// App Bulk Stream
+import {IBulkDataService} from "./modules/bulk-data";
+const _bulkData = appContainer.get<IBulkDataService>(SYMBOLS.BulkDataService);
+
 
 
 /**
@@ -72,6 +76,7 @@ const _position = appContainer.get<IPositionService>(SYMBOLS.PositionService);
  * 7) IP Blacklist Module
  * 8) Epoch Module
  * 9) Position Module
+ * 10) Bulk Data Module
  * 
  * If any of the initialization actions triggers an error, it crashes the execution and
  * stop the following modules:
@@ -82,6 +87,7 @@ const _position = appContainer.get<IPositionService>(SYMBOLS.PositionService);
  * 5) Epoch Module
  * 6) Prediction Module
  * 7) Position Module
+ * 8) Bulk Data Module
  */
 export async function init(): Promise<void> {
     try { await _init() }
@@ -197,6 +203,14 @@ async function _init(): Promise<void> {
                 console.error("Error when initializing the Position Module: ", e)
                 throw e;
             }
+
+            // Initialize the Bulk Data Module
+            try {
+                await _bulkData.initialize();
+            } catch (e) {
+                console.error("Error when initializing the Bulk Data Module: ", e)
+                throw e;
+            }
         }
 
         // API is ready to accept requests
@@ -222,6 +236,9 @@ async function _init(): Promise<void> {
 
         // Stop the Positions Module
         _position.stop();
+
+        // Stop the Bulk Data Module
+        _bulkData.stop();
 
         // Rethrow the error
         throw e;

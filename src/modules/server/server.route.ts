@@ -172,23 +172,6 @@ ServerRoute.route("/setAlarmsConfiguration").post(highRiskLimit, async (req: exp
 
 
 
-/* Essential Routes */
-
-
-
-
-
-/**
- * Allows the GUI to retrieve the current server time.
- * @returns IAPIResponse<number>
- */
-/*ServerRoute.route(`/time`).get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
-    res.send(_utils.apiResponse(Date.now()));
-});*/
-
-
-
-
 
 // Export Routes
 export {ServerRoute}

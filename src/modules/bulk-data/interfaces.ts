@@ -14,6 +14,10 @@ export interface IBulkDataService {
     // App Bulk Retrievers
     getAppBulk(epochID: string): Promise<IAppBulk>,
 
+    // App Bulk Stream
+    initialize(): Promise<void>,
+    stop(): void,
+
     // Server Bulk Retrievers
     getServerDataBulk(): Promise<IServerDataBulk>,
     getServerResourcesBulk(): Promise<IServerResourcesBulk>,

@@ -30,8 +30,11 @@
 
 12: `Binance returned an invalid list of active positions.`
 
-13: ``
+13: `Binance returned an invalid HTTP response code (${response.statusCode}) when interacting with a position.`
 
+14: ``
+
+15: ``
 
 
 #
@@ -52,6 +55,8 @@
 1301: `The end (${end}) timestamp must be greater than the start (${start}) timestamp.`
 
 1302: `The provided minutes interval (${intervalMinutes}) is invalid.`
+
+1303: `The candlesticks query is larger than the permitted data limit. Limit: ${dataLimit}, Received: ${difference}`
 
 
 ### Candlestick File Service
@@ -518,6 +523,14 @@
 
 29002: `The extracted USDT balance object is not complete. Available ${balances[0].availableBalance} | Balance: ${balances[0].balance}`
 
+29003: `The ${side} position cannot be increased because it isnt active.`
+
+29004: ``
+
+29005: ``
+
+29006: ``
+
 
 
 #
@@ -527,15 +540,39 @@
 
 30001: `Positions cannot be interacted with as there isnt an active Epoch.`
 
-30002: ``
+30002: `The strategy cannot be updated because there is an active long position.`
 
-30003: ``
+30003: `The strategy cannot be updated because there is an active short position.`
 
-30004: ``
+30004: `The provided strategy is not a valid object.`
 
-30005: ``
+30005: `The leverage must be a valid number ranging 1-5. Received: ${newStrategy.leverage}`
 
-30006: ``
+30006: `The level increase requirement must be a valid number ranging 0.01-10. Received: ${newStrategy.level_increase_requirement}`
+
+30007: `The strategy could not be updated because level_1 is invalid.`
+
+30008: `The strategy could not be updated because level_2 is invalid.`
+
+30009: `The strategy could not be updated because level_3 is invalid.`
+
+30010: `The strategy could not be updated because level_4 is invalid.`
+
+30011: `The ${side} position cannot be closed because it isnt active.`
+
+30012: `The ${side} position cannot be opened because it is already active.`
+
+30013: `There isnt enough available balance to cover the ${side} position. Has: ${availableBalance}. Needs: ${firstLeveLSize}`
+
+30014: `The ${side} position cannot be increased because it isnt active.`
+
+30015: `The ${side} position cannot be increased because is no next level.`
+
+30016: `There isnt enough available balance to cover the ${side} position increase. Has: ${availableBalance}. Needs: ${nextLevel.size}`
+
+30017: `The ${side} position cannot be increased because the mark price doesnt meet the min increase requirement. Has: ${position.mark_price}. Needs: ${position.min_increase_price}`
+
+30017: ``
 
 
 

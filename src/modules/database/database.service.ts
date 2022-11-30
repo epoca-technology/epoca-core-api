@@ -46,7 +46,8 @@ export class DatabaseService implements IDatabaseService {
 
     // Firebase DB
     private readonly firebaseDB: Database = getDatabase();
-    public readonly apiSecretRef: IReference = this.firebaseDB.ref('apiSecret');
+    public readonly apiSecretRef: IReference = this.firebaseDB.ref("apiSecret");
+    public readonly appBulkRef: IReference = this.firebaseDB.ref().child("appBulk");
 
     
     constructor() {
@@ -150,7 +151,7 @@ export class DatabaseService implements IDatabaseService {
     
         try {
             // Check if the DB exists and create it if it doesn't
-            const {rowCount}: IQueryResult = await client.query('SELECT FROM pg_database WHERE datname = $1', [this.config.database]);
+            const {rowCount}: IQueryResult = await client.query("SELECT FROM pg_database WHERE datname = $1", [this.config.database]);
             if (rowCount == 0) {
                 await client.query(`CREATE DATABASE ${this.config.database}`);
             }
@@ -173,7 +174,7 @@ export class DatabaseService implements IDatabaseService {
      */
     public async deleteDatabase(): Promise<void> {
         // Build the tables list
-        let tables: string = '';
+        let tables: string = "";
         for (let i = 0; i < this.tables.length; i++) {
             if (i == this.tables.length - 1) {
                 tables += `${this.tables[i].name};`;

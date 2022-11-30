@@ -5,8 +5,9 @@ import { getMessaging, Messaging, MulticastMessage } from "firebase-admin/messag
 import { IUtilitiesService } from "../utilities";
 import { IAuthService } from "../auth";
 import { IApiErrorService } from "../api-error";
-import { INotificationService, INotification, INotificationChannel } from "./interfaces";
 import { IStateType } from "../market-state";
+import { IActivePosition } from "../position";
+import { INotificationService, INotification, INotificationChannel } from "./interfaces";
 
 
 
@@ -401,13 +402,64 @@ export class NotificationService implements INotificationService {
      * Increasing or Decreasing Window State.
      * @param state 
      * @param stateValue 
+     * @param currentPrice 
      * @returns Promise<void>
      */
-     public windowState(state: IStateType, stateValue: number): Promise<void> {
+     public windowState(state: IStateType, stateValue: number, currentPrice: number): Promise<void> {
         return this.broadcast({
             sender: "MARKET_STATE",
             title: `Bitcoin is ${state}:`,
-            description: `The price of BTC has changed ${stateValue}% in the current window.`
+            description: `The price has changed ${stateValue > 0 ? '+': ''}${stateValue}% and is currently at $${currentPrice}`
+        });
+    }
+
+
+
+
+
+
+
+    /* Position Notifications */
+
+
+
+
+
+
+    /**
+     * Triggers whenever a position hits the exit target.
+     * @param position 
+     * @returns Promise<void>
+     */
+    public positionHitTarget(position: IActivePosition): Promise<void> {
+        let desc: string = `The price has hit the target set at $${position.target_price}`;
+        desc += ` with an unrealized PNL of ${position.unrealized_pnl > 0 ? '+': ''}$${position.unrealized_pnl}.`;
+        desc += ` The price is currently at $${position.mark_price}`;
+        return this.broadcast({
+            sender: "POSITION",
+            title: `${position.side} target hit:`,
+            description: desc
+        });
+    }
+
+
+
+
+    /**
+     * Triggers whenever the mark price is close to the liquidation
+     * price.
+     * @param position
+     * @param distance
+     * @returns Promise<void>
+     */
+    public liquidationPriceIsWarning(position: IActivePosition, distance: number): Promise<void> {
+        let desc: string = `The distance between the current price $${position.mark_price}`;
+        desc += ` and the liquidation price $${position.liquidation_price} is less than ${distance}%.`;
+        desc += ` make sure to increase the ${position.side} position ASAP.`;
+        return this.broadcast({
+            sender: "POSITION",
+            title: `${position.side} liquidation warning:`,
+            description: desc
         });
     }
 }

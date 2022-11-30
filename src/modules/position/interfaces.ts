@@ -10,6 +10,7 @@ export interface IPositionService {
     stop(): void,
 
     // Position Retrievers
+    getHist(startAt: number, endAt: number): Promise<any>,
     getSummary(): IPositionSummary,
 
     // Position Actions
@@ -18,7 +19,10 @@ export interface IPositionService {
     closePosition(side: IBinancePositionSide): Promise<void>,
 
     // Position Strategy
-    updateStrategy(newStrategy: IPositionStrategy): Promise<void>
+    updateStrategy(newStrategy: IPositionStrategy): Promise<void>,
+
+    // Position History
+    getHist(startAt: number, endAt: number): Promise<any>
 }
 
 
@@ -31,6 +35,19 @@ export interface IPositionValidations {
 
     // Position Management
     canInteractWithPositions(side: IBinancePositionSide): void,
+    canOpenPosition(
+        side: IBinancePositionSide, 
+        position: IActivePosition|undefined, 
+        firstLeveLSize: number, 
+        availableBalance: number
+    ): void,
+    canIncreasePosition(
+        side: IBinancePositionSide, 
+        position: IActivePosition|undefined, 
+        nextLevel: IPositionStrategyLevel|undefined, 
+        availableBalance: number
+    ): void,
+    canClosePosition(side: IBinancePositionSide, position: IActivePosition|undefined): void,
 
     // Position Strategy
     canStrategyBeUpdated(
@@ -103,6 +120,13 @@ export interface IPositionSummary {
 /* Position Strategy */
 
 
+/**
+ * Strategy Level ID
+ * Each level contains an identifier that simplifies the interaction
+ * with the strategy.
+ */
+export type IStrategyLevelID = "level_1"|"level_2"|"level_3"|"level_4";
+
 
 /**
  * Strategy Level
@@ -111,6 +135,9 @@ export interface IPositionSummary {
  * losses.
  */
 export interface IPositionStrategyLevel {
+    // The identifier of the strategy level.
+    id: IStrategyLevelID,
+
     /**
      * The USDT wallet balance that will be placed into the position. When 
      * level 1 is activated, the position is opened. When any subsequent level
@@ -139,8 +166,12 @@ export interface IPositionStrategy {
     leverage: number,
 
     /**
-     * The percentage change the price needs to experience in order to be able to 
-     * increase the position's level.
+     * The percentage change the price needs to experience against the 
+     * position in order to be able to increase the position's level.
+     * Long: The price needs to decrease at least x% from the entry price
+     *      in order to be able to increase the position.
+     * Short: The price needs to increase at least x% from the entry price
+     *      in order to be able to increase the position.
      */
     level_increase_requirement: number,
 
@@ -222,6 +253,14 @@ export interface IActivePosition {
 
     // The price at which the position will be automatically liquidated by the exchange.
     liquidation_price: number,
+
+    /**
+     * The minimum price at which a position can be increased based on its side. 
+     * This value is calculated based on level_increase_requirement.
+     * If the position is at level 4, this value will be undefined as the 
+     * position cannot be increased.
+     */
+    min_increase_price: number|undefined,
 
     // The current unrealized PNL in USDT
     unrealized_pnl: number,

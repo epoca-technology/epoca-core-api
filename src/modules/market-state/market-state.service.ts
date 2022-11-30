@@ -1,9 +1,9 @@
 import {injectable, inject, postConstruct} from "inversify";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, Subscription } from "rxjs";
 import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
-import { ICandlestick, ICandlestickService } from "../candlestick";
+import { ICandlestick, ICandlestickModel, ICandlestickService } from "../candlestick";
 import { INotificationService } from "../notification";
 import { IUtilitiesService } from "../utilities";
 import { 
@@ -30,6 +30,7 @@ import {
 export class MarketStateService implements IMarketStateService {
     // Inject dependencies
     @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
+    @inject(SYMBOLS.CandlestickModel)                   private _candlestickModel: ICandlestickModel;
     @inject(SYMBOLS.WindowStateService)                 private _windowState: IWindowStateService;
     @inject(SYMBOLS.VolumeStateService)                 private _volumeState: IVolumeStateService;
     @inject(SYMBOLS.KeyZonesStateService)               private _keyZoneState: IKeyZonesStateService;
@@ -45,15 +46,15 @@ export class MarketStateService implements IMarketStateService {
      * Window Size
      * The number of prediction candlesticks that comprise the window.
      */
+    private window: ICandlestick[] = [];
     private readonly windowSize: number = 64;
 
 
     /**
-     * Market State Interval
-     * Every intervalSeconds, the market state will be calculated and broadcasted.
+     * Candlestick Stream Subscription
+     * Every time new data becomes available, the market state is calculated.
      */
-    private stateInterval: any;
-    private readonly intervalSeconds: number = 30;
+    private candlestickStreamSub: Subscription;
 
 
     /**
@@ -69,7 +70,7 @@ export class MarketStateService implements IMarketStateService {
     * Whenever a price state (increasing|decreasing) is detected, it will notify the
     * users in a throttled manner.
     */
-    private readonly priceStateThrottleMinutes: number = 60;
+    private readonly priceStateThrottleMinutes: number = 30;
     private priceStateLastNotification: number|undefined = undefined;
 
 
@@ -116,13 +117,13 @@ export class MarketStateService implements IMarketStateService {
 
         // Calculate the state and initialize the interval
         await this.calculateState();
-        this.stateInterval = setInterval(async () => {
+        this.candlestickStreamSub = this._candlestick.stream.subscribe(async (c) => {
             try { await this.calculateState() } 
             catch (e) { 
                 console.error(e);
                 this._apiError.log("MarketStateService.calculateState", e)
             }
-        }, this.intervalSeconds * 1000);
+        });
     }
 
 
@@ -133,8 +134,7 @@ export class MarketStateService implements IMarketStateService {
      * Stops the market state interval as well as the submodules'
      */
     public stop(): void {
-        if (this.stateInterval) clearInterval(this.stateInterval);
-        this.stateInterval = undefined;
+        if (this.candlestickStreamSub) this.candlestickStreamSub.unsubscribe();
         this._keyZoneState.stop();
         this._networkFeeState.stop();
     }
@@ -162,7 +162,7 @@ export class MarketStateService implements IMarketStateService {
      */
     private async calculateState(): Promise<void> {
         // Retrieve the candlesticks window
-        const window: ICandlestick[] = await this._candlestick.getLast(true, this.windowSize);
+        const window: ICandlestick[] = await this.getWindowCandlesticks();
 
         // Broadcast the new state as long as there are enough candlesticks
         if (window.length == this.windowSize) {
@@ -192,14 +192,66 @@ export class MarketStateService implements IMarketStateService {
                     this.priceStateLastNotification < moment(windowState.ts).subtract(this.priceStateThrottleMinutes, "minutes").valueOf()
                 )
             ) {
-                await this._notification.windowState(windowState.state, windowState.state_value);
+                await this._notification.windowState(windowState.state, windowState.state_value, windowState.window.at(-1).c);
                 this.priceStateLastNotification = windowState.ts;
             }
+        } else {
+            console.log(`Could not calculate the market state because received an incorrect number of candlesticks: ${window.length}`);
         }
     }
 
 
     
+
+
+
+
+    /**
+     * Retrieves the candlesticks in the window based on their current
+     * state. If they have been initialized, only the tail is downloaded.
+     * @returns Promise<ICandlestick[]>
+     */
+    private async getWindowCandlesticks(): Promise<ICandlestick[]> {
+        // Check if the candlesticks have already been set
+        if (this.window.length == this.windowSize) {
+            // Retrieve the tail
+            const tail: ICandlestick[] = await this._candlestick.getForPeriod(
+                this.window.at(-1).ot, 
+                moment(this.window.at(-1).ot).add(7, "days").valueOf(), 
+                this._candlestickModel.predictionConfig.intervalMinutes
+            );
+
+            // Update the last candlestick and return the window
+            if (tail.length == 1) {
+                this.window[this.window.length - 1] = tail[0];
+                return this.window;
+            }
+
+            /**
+             * Remove the last window from the head, concatenate the tail
+             * and apply a slice to match the window size.
+             */
+            else if (tail.length > 1) {
+                const head: ICandlestick[] = this.window.slice(0, this.window.length - 1);
+                this.window = head.concat(tail).slice(-this.windowSize);
+                return this.window;
+            }
+
+            // Something went wrong.
+            else {
+                console.log("The window candlesticks tail retrieved is empty.");
+                return [];
+            }
+        }
+
+        // Otherwise, load the entire list and populate the local property
+        else {
+            const candlesticks: ICandlestick[] = await this._candlestick.getLast(true, this.windowSize);
+            this.window = candlesticks;
+            return candlesticks;
+        }
+    }
+
 
 
 
