@@ -267,9 +267,9 @@ export class OrderBookService implements IOrderBookService {
      */
     private validateSafeRatesIntegrity(safeBid: number, safeAsk: number): void {
         // Make sure there are candlesticks in the stream
-        if (!this._candlestick.stream.value.candlesticks.length) {
+        if (!this._candlestick.isStreamInSync(this._candlestick.stream.value)) {
             throw new Error(this._utils.buildApiError(`The integrity of the order book cannot be validated because
-            there are no spot candlesticks in the stream.`, 23000));
+            the candlesticks stream is out of sync.`, 23000));
         }
 
         // Init the current candlestick's close price

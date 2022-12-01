@@ -456,7 +456,7 @@
 #
 ## Order Book Service (23.000 - 23.999)
 
-23000: `The integrity of the order book cannot be validated because there are no spot candlesticks in the stream.`
+23000: `The integrity of the order book cannot be validated because the candlesticks stream is out of sync.`
 
 23001: `The difference between the current candlestick (spot) and the safe bid (futures) exceeds the established tolerance. Difference: ${bidDiff}%`
 

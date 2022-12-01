@@ -1,6 +1,5 @@
 import {inject, injectable} from "inversify";
 import { BigNumber } from "bignumber.js";
-import { Subscription } from "rxjs";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { 
@@ -80,16 +79,6 @@ export class PositionService implements IPositionService {
     private readonly activePositionsIntervalSeconds: number = 30; // Every ~30 seconds
 
 
-    /**
-     * Order Book
-     * In order to be able to calculate the position amount, an estimated price
-     * is required.
-     */
-    private safeAsk: number;
-    private safeBid: number;
-    private orderBookSub: Subscription;
-
-
 
     constructor() {}
 
@@ -119,14 +108,6 @@ export class PositionService implements IPositionService {
      * @returns Promise<void>
      */
     public async initialize(): Promise<void> {
-        // Subscribe to the order book
-        this.orderBookSub = this._orderBook.active.subscribe((book: IOrderBook) => {
-            if (book) {
-                this.safeAsk = book.safe_ask;
-                this.safeBid = book.safe_bid;
-            }
-        });
-
         // Initialize the strategy
         await this.initializeStrategy();
 
@@ -160,7 +141,6 @@ export class PositionService implements IPositionService {
         this.balanceSyncInterval = undefined;
         if (this.activePositionsSyncInterval) clearInterval(this.activePositionsSyncInterval);
         this.activePositionsSyncInterval = undefined;
-        if (this.orderBookSub) this.orderBookSub.unsubscribe();
     }
 
 
@@ -459,7 +439,7 @@ export class PositionService implements IPositionService {
         );
 
         // Calculate the position amount in BTC
-        const positionAmount: number = this.calculatePositionAmount(side, this.strategy.level_1.size);
+        const positionAmount: number = await this.calculatePositionAmount(side, this.strategy.level_1.size);
 
         // Execute the trade
         const payload: IBinanceTradeExecutionPayload = await this._binance.order(
@@ -503,7 +483,7 @@ export class PositionService implements IPositionService {
         this._validations.canIncreasePosition(side, position, next, this.balance.available);
 
         // Calculate the position amount in BTC
-        const positionAmount: number = this.calculatePositionAmount(side, next.size);
+        const positionAmount: number = await this.calculatePositionAmount(side, next.size);
 
         // Execute the trade
         const payload: IBinanceTradeExecutionPayload = await this._binance.order(
@@ -560,11 +540,14 @@ export class PositionService implements IPositionService {
      * size of a position to be executed.
      * @param side 
      * @param levelSize 
-     * @returns number
+     * @returns Promise<number>
      */
-    private calculatePositionAmount(side: IBinancePositionSide, levelSize: number): number { 
-        // Firstly, initialize the rate that will be used
-        const price: number = side == "LONG" ? this.safeAsk: this.safeBid;
+    private async calculatePositionAmount(side: IBinancePositionSide, levelSize: number): Promise<number> {
+        // Firstly, retrieve the order book
+        const book: IOrderBook = await this._orderBook.getBook();
+
+        // Initialize the rate that will be used
+        const price: number = side == "LONG" ? book.safe_ask: book.safe_bid;
 
         // Calculate the notional size
         const notional: BigNumber = new BigNumber(levelSize).times(this.strategy.leverage);
