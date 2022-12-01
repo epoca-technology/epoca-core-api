@@ -656,23 +656,31 @@ export class PositionService implements IPositionService {
      * @returns IPositionStrategyState
      */
     private getStrategyState(margin: number): IPositionStrategyState {
+        // Init the accumulated margin list by level
+        const margin_acum: number[] = [
+            this.strategy.level_1.size,
+            this.strategy.level_1.size + this.strategy.level_2.size,
+            this.strategy.level_1.size + this.strategy.level_2.size + this.strategy.level_3.size,
+            this.strategy.level_1.size + this.strategy.level_2.size + this.strategy.level_3.size + this.strategy.level_4.size,
+        ]
+
         // Level 1 is active
-        if (margin > 0 && margin <= this.strategy.level_1.size) {
+        if (margin > 0 && margin <= margin_acum[0]) {
             return { current: this.strategy.level_1, next: this.strategy.level_2}
         }
 
         // Level 2 is active
-        else if (margin > this.strategy.level_1.size && margin <= this.strategy.level_2.size) {
+        else if (margin > margin_acum[0] && margin <= margin_acum[1]) {
             return { current: this.strategy.level_2, next: this.strategy.level_3}
         }
 
         // Level 3 is active
-        else if (margin > this.strategy.level_2.size && margin <= this.strategy.level_3.size) {
+        else if (margin > margin_acum[1] && margin <= margin_acum[2]) {
             return { current: this.strategy.level_3, next: this.strategy.level_4}
         }
 
         // Level 4 is active
-        else if (margin > this.strategy.level_3.size) {
+        else if (margin > margin_acum[2]) {
             return { current: this.strategy.level_4, next: undefined}
         }
 
