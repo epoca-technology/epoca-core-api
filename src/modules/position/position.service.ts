@@ -546,13 +546,20 @@ export class PositionService implements IPositionService {
         // Firstly, retrieve the order book
         const book: IOrderBook = await this._orderBook.getBook();
 
-        // Initialize the rate that will be used
-        const price: number = side == "LONG" ? book.safe_ask: book.safe_bid;
+        /**
+         * Initialize the rate that will be used
+         * In order to ensure the position amount never exceeds the margin
+         * specified in the strategy level, the prices are moved against 
+         * the position side by 1%.
+         */
+        const price: number = side == "LONG" ? 
+            <number>this._utils.alterNumberByPercentage(book.safe_ask, 1):
+            <number>this._utils.alterNumberByPercentage(book.safe_bid, -1);
 
         // Calculate the notional size
         const notional: BigNumber = new BigNumber(levelSize).times(this.strategy.leverage);
 
-        // Convert the notional to BTC and return it
+        // Finally, convert the notional to BTC and return the position amount
         return <number>this._utils.outputNumber(notional.dividedBy(price), {dp: 3});
     }
 
