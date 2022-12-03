@@ -216,6 +216,22 @@ export const TABLES: IRawTable[] = [
     },
 
     
-    // Positions
-    // ...
+    // Position Trades
+    {
+        name: "position_trades",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id    VARCHAR(200) NOT NULL,
+                t     BIGINT NOT NULL,
+                s     VARCHAR(20) NOT NULL,
+                ps    VARCHAR(20) NOT NULL,
+                p     NUMERIC(20,2) NOT NULL,
+                qty   NUMERIC(20,3) NOT NULL,
+                qqty  NUMERIC(20,2) NOT NULL,
+                rpnl  NUMERIC(20,2) NOT NULL,
+                c     NUMERIC(20,2) NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_t ON ${tableName}(t);`
+        }
+    },
 ];

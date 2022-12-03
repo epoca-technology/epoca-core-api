@@ -11,6 +11,7 @@ export interface IBinanceService {
     // Retrievers
     getBalances(): Promise<IBinanceBalance[]>,
     getActivePositions(): Promise<[IBinanceActivePosition, IBinanceActivePosition]>,
+    getTradeList(startAt: number, endAt: number): Promise<IBinanceTradePayload[]>,
 
     // Position Actions
     order(
@@ -152,6 +153,7 @@ export interface IBinanceActivePosition {
 
 
 /**
+ * Position Trade Execution Payload
  * Whenever a position is interacted with, Binance's API returns
  * a payload object that should be stored.
  * Keep in mind that if the API for some reason does not return
@@ -178,6 +180,64 @@ export interface IBinanceTradeExecutionPayload {
     origType: string,
     updateTime: number  // e.g: 1669767816395
 }
+
+
+
+
+/**
+ * Trade Payload
+ * Binance allows to retrieve the history of trades executed by the account.
+ * This data must be processed and stored locally so it can be visualized
+ * by Epoch.
+ */
+export interface IBinanceTradePayload {
+    // The market's symbol in which the trade was executed
+    symbol: "BTCUSDT",
+
+    // The identifier of the trade
+    id: number, // e.g: 246218451
+
+    // The identifier of the order that was used to execute the trade
+    orderId: number, // e.g: 3257998753
+
+    // The time at which the trade took place
+    time: number, // e.g: 1669988593588
+
+    // The action side of the trade
+    side: IBinancePositionActionSide,
+
+    // The position side of the trade
+    positionSide: IBinancePositionSide,
+    
+    // The price in which the trade was executed
+    price: string,
+
+    // The amount of BTC traded
+    qty: string, // e.g: '0.016'
+
+    // The amount of USDT traded
+    quoteQty: string, // e.g: '269.76000'
+
+    // The realized PNL in USDT
+    realizedPnl: string, // e.g: '-1.13419718'
+
+    // The asset used for the margin. Will always be USDT
+    marginAsset: "USDT",
+
+    // The fee charged by the exchange to execute the trade in USDT
+    commission: string, // e.g: '0.10790400'
+
+    // The asset in which the comission was charged. Will always be USDT
+    commissionAsset: "USDT",
+
+    // The type of trade execution, taker will always be true
+    marker: boolean,
+    taker: boolean
+}
+
+
+
+
 
 
 

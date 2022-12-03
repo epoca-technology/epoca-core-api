@@ -32,9 +32,11 @@
 
 13: `Binance returned an invalid HTTP response code (${response.statusCode}) when interacting with a position.`
 
-14: ``
+14: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the account trades.`
 
-15: ``
+15: `Binance returned an invalid list of account trades.`
+
+16: ``
 
 
 #
@@ -572,7 +574,17 @@
 
 30017: `The ${side} position cannot be increased because the mark price doesnt meet the min increase requirement. Has: ${position.mark_price}. Needs: ${position.min_increase_price}`
 
-30017: ``
+30017: `The trade list date range is invalid. Received: ${startAt} - ${endAt}.`
+
+30018: `The trade list starting point must be less than the end. Received: ${startAt} - ${endAt}.`
+
+30019: `The trade list query is larger than the permitted data limit. Limit: ${this.tradeListLimit}, Received: ${difference}`
+
+30020: ``
+
+30021: ``
+
+30022: ``
 
 
 

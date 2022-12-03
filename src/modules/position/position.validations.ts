@@ -22,25 +22,13 @@ export class PositionValidations implements IPositionValidations {
     @inject(SYMBOLS.UtilitiesService)            private _utils: IUtilitiesService;
 
 
-
+    /**
+     * The limit of data in milliseconds that can be read per request.
+     */
+     private readonly tradeListLimit: number = 730 * 24 * 60 * 60 * 1000;       // 730 days
 
 
     constructor() {}
-
-
-
-    /***********************
-     * Position Retrievers *
-     ***********************/
-
-
-    
-
-
-
-
-
-
 
 
 
@@ -271,6 +259,50 @@ export class PositionValidations implements IPositionValidations {
         ) {
             console.log(newStrategy);
             throw new Error(this._utils.buildApiError(`The strategy could not be updated because level_4 is invalid.`, 30010));
+        }
+    }
+
+
+
+
+
+
+
+
+
+    
+
+
+    /*******************
+     * Position Trades *
+     *******************/
+
+
+
+
+    
+    /**
+     * Ensures the provided date range is valid and that it
+     * isn't larger than the limit.
+     * @param startAt 
+     * @param endAt 
+     */
+    public canTradesBeListed(startAt: number, endAt: number): void {
+        // Make sure the start and the end have been provided
+        if (typeof startAt != "number" || typeof endAt != "number") {
+            throw new Error(this._utils.buildApiError(`The trade list date range is invalid. Received: ${startAt} - ${endAt}.`, 30017));
+        }
+
+        // The start cannot be greater or equals to the end
+        if (startAt >= endAt) {
+            throw new Error(this._utils.buildApiError(`The trade list starting point must be less than the end. Received: ${startAt} - ${endAt}.`, 30018));
+        }
+
+        // Make sure the query does not exceed 15 days worth of data
+        const difference: number = endAt - startAt;
+        if (difference > this.tradeListLimit) {
+            throw new Error(this._utils.buildApiError(`The trade list query is larger than the permitted data limit. 
+            Limit: ${this.tradeListLimit}, Received: ${difference}`, 30019));
         }
     }
 }

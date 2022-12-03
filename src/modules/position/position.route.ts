@@ -17,7 +17,7 @@ import {IUtilitiesService} from "../utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Position Service
-import {IPositionService} from "../position";
+import {IPositionService, IPositionTrade} from "../position";
 const _position: IPositionService = appContainer.get<IPositionService>(SYMBOLS.PositionService);
 
 
@@ -208,15 +208,15 @@ PositionRoute.route("/updateStrategy").post(ultraHighRiskLimit, async (req: expr
 
 
 /**
- * Retrieves the position history for a given range. 
+ * Retrieves the position trades for a given date range.
  * @requires id-token
  * @requires api-secret
  * @requires authority: 2
  * @param startAt 
  * @param endAt 
- * @returns IAPIResponse<any>
+ * @returns IAPIResponse<IPositionTrade[]>
 */
-PositionRoute.route("/getHist").get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
+PositionRoute.route("/listTrades").get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -228,13 +228,13 @@ PositionRoute.route("/getHist").get(mediumRiskLimit, async (req: express.Request
         reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 2, ["startAt", "endAt"], req.query);
 
         // Retrieve the data
-        const data: any = await _position.getHist(Number(req.query.startAt), Number(req.query.endAt));
+        const data: IPositionTrade[] = await _position.listTrades(Number(req.query.startAt), Number(req.query.endAt));
 
         // Return the response
         res.send(_utils.apiResponse(data));
     } catch (e) {
 		console.log(e);
-        _apiError.log("PositionRoute.getHist", e, reqUid, ip, req.query);
+        _apiError.log("PositionRoute.listTrades", e, reqUid, ip, req.query);
         res.send(_utils.apiResponse(undefined, e));
     }
 });

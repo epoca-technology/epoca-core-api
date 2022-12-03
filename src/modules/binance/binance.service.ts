@@ -19,7 +19,8 @@ import {
     IBinanceActivePosition,
     IBinanceTradeExecutionPayload,
     IBinancePositionActionSide,
-    IBinancePositionSide
+    IBinancePositionSide,
+    IBinanceTradePayload
 } from "./interfaces";
 
 
@@ -166,6 +167,59 @@ export class BinanceService implements IBinanceService {
 
 
 
+
+    /**
+     * Retrieves the list of account trades based on a provided starting point.
+     * Note: the response may include an empty list.
+     * @param startAt
+     * @param endAt
+     * @returns Promise<IBinanceTradePayload[]>
+     */
+     public async getTradeList(startAt: number, endAt: number): Promise<IBinanceTradePayload[]> {
+        // Build options
+        const params: string = this.buildSignedParamsString({
+            symbol: "BTCUSDT",
+            startTime: startAt,
+            endTime: endAt,
+            limit: 50
+        });
+        console.log(params);
+        const options: IExternalRequestOptions = {
+            host: this.futuresBaseURL,
+            path: `/fapi/v1/userTrades?${params}`,
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json;charset=utf-8",
+                "X-MBX-APIKEY": this.apiKey
+            }
+        };
+
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the account trades.`, 14));
+        }
+
+        // Validate the response's data
+        if (!response.data || !Array.isArray(response.data)) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError("Binance returned an invalid list of account trades.", 15));
+        }
+
+        // Return the series
+        return response.data;
+    }
+
+
+
+
+
+
+
     /* Position Management */
 
 
@@ -215,6 +269,7 @@ export class BinanceService implements IBinanceService {
         // Return the series
         return response.data;
     }
+
 
 
 

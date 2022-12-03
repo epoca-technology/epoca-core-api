@@ -1,15 +1,18 @@
 import {inject, injectable} from "inversify";
 import { BigNumber } from "bignumber.js";
+import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
-import { IApiErrorService } from "../api-error";
+import { IEpochService } from "../epoch";
 import { 
     IBinanceActivePosition, 
     IBinanceBalance, 
     IBinancePositionSide, 
     IBinanceService, 
-    IBinanceTradeExecutionPayload
+    IBinanceTradeExecutionPayload,
+    IBinanceTradePayload
 } from "../binance";
 import { IOrderBook, IOrderBookService } from "../order-book";
+import { IApiErrorService } from "../api-error";
 import { IUtilitiesService } from "../utilities";
 import { 
     IAccountBalance,
@@ -20,6 +23,7 @@ import {
     IPositionStrategy,
     IPositionStrategyState,
     IPositionSummary,
+    IPositionTrade,
     IPositionValidations
 } from "./interfaces";
 
@@ -29,6 +33,7 @@ import {
 @injectable()
 export class PositionService implements IPositionService {
     // Inject dependencies
+    @inject(SYMBOLS.EpochService)               private _epoch: IEpochService;
     @inject(SYMBOLS.BinanceService)             private _binance: IBinanceService;
     @inject(SYMBOLS.OrderBookService)           private _orderBook: IOrderBookService;
     @inject(SYMBOLS.PositionValidations)        private _validations: IPositionValidations;
@@ -79,6 +84,17 @@ export class PositionService implements IPositionService {
     private readonly activePositionsIntervalSeconds: number = 30; // Every ~30 seconds
 
 
+    /**
+     * Position Trades Syncing
+     * Binance only allows to query less than 7 days at a time. Therefore, trades
+     * should be synced in windows of 5 days. If no data is found within the range,
+     * should move to the next window.
+     */
+    private tradesSyncInterval: any;
+    private readonly tradesIntervalSeconds: number = 60 * 15; // Every ~15 minutes
+    private tradesSyncCheckpoint: number|undefined = undefined;
+
+
 
     constructor() {}
 
@@ -113,6 +129,7 @@ export class PositionService implements IPositionService {
 
         // Initialize the data
         await this.refreshData(false, 2);
+        //await this.updateTrades();
 
         // Initialize the intervals
         this.balanceSyncInterval = setInterval(async () => {
@@ -125,6 +142,12 @@ export class PositionService implements IPositionService {
                 this._apiError.log("PositionService.interval.refreshActivePositions", e);
             }
         }, this.activePositionsIntervalSeconds * 1000);
+        this.tradesSyncInterval = setInterval(async () => {
+            try { await this.updateTrades() } catch (e) { 
+                console.error(e);
+                //this._apiError.log("PositionService.interval.updateTrades", e);
+            }
+        }, this.tradesIntervalSeconds * 1000);
     }
 
 
@@ -141,6 +164,8 @@ export class PositionService implements IPositionService {
         this.balanceSyncInterval = undefined;
         if (this.activePositionsSyncInterval) clearInterval(this.activePositionsSyncInterval);
         this.activePositionsSyncInterval = undefined;
+        if (this.tradesSyncInterval) clearInterval(this.tradesSyncInterval);
+        this.tradesSyncInterval = undefined;
     }
 
 
@@ -388,7 +413,7 @@ export class PositionService implements IPositionService {
      */
      private async refreshData(safe: boolean, delaySeconds?: number): Promise<void> {
         // Refresh the balance
-        if (typeof delaySeconds == "number") await this._utils.asyncDelay(2);
+        if (typeof delaySeconds == "number") await this._utils.asyncDelay(delaySeconds);
         try {
             await this.refreshBalance();
         } catch(e) {
@@ -397,7 +422,7 @@ export class PositionService implements IPositionService {
         }
 
         // Refresh the active positions
-        if (typeof delaySeconds == "number") await this._utils.asyncDelay(2);
+        if (typeof delaySeconds == "number") await this._utils.asyncDelay(delaySeconds);
         try {
             await this.refreshActivePositions();
         } catch(e) {
@@ -428,7 +453,7 @@ export class PositionService implements IPositionService {
         this._validations.canInteractWithPositions(side);
 
         // Refresh the data
-        await this.refreshData(false, 1);
+        await this.refreshData(false, 0.25);
 
         // Validate the request
         this._validations.canOpenPosition(
@@ -465,7 +490,7 @@ export class PositionService implements IPositionService {
         this._validations.canInteractWithPositions(side);
 
         // Refresh the data
-        await this.refreshData(false, 1);
+        await this.refreshData(false, 0.25);
 
         // Init the position
         const position: IActivePosition|undefined = side == "LONG" ? this.long: this.short;
@@ -526,8 +551,13 @@ export class PositionService implements IPositionService {
         // Trigger the refresh event
         await this.refreshData(true, 2);
 
-        // Trigger a trades update
-        // ...
+        // Trigger a trades update safely
+        try {
+            await this.updateTrades();
+        } catch (e) {
+            console.error(e);
+            //this._apiError.log("PositionService.closePosition.refreshTrades", e);
+        }
     }
 
 
@@ -689,12 +719,28 @@ export class PositionService implements IPositionService {
 
 
 
-    /********************
-     * Position History *
-     ********************/
+    /*******************
+     * Position Trades *
+     *******************/
 
 
 
+
+
+    /**
+     * Retrieves the position trades for a given date range.
+     * @param startAt 
+     * @param endAt 
+     * @returns Promise<IPositionTrade[]>
+     */
+    public async listTrades(startAt: number, endAt: number): Promise<IPositionTrade[]> {
+        // Firstly, validate the request
+        this._validations.canTradesBeListed(startAt, endAt);
+
+        // Finally, return the trades
+        return await this._model.listTrades(startAt, endAt);
+    }
+    
 
 
 
@@ -702,13 +748,83 @@ export class PositionService implements IPositionService {
 
 
     /**
-     * Retrieves the position history for a given date range.
-     * @param startAt 
-     * @param endAt 
-     * @returns Promise<any>
+     * Whenever this function is invoked it will firstly make 
+     * sure there is an active Epoch. Later, will compare the
+     * last stored trade (if any) versus the epoch's installation
+     * date. Finally, it will retrieve the account trades from
+     * the Binance API, process them and store them in the db.
+     * @returns Promise<void>
      */
-    public async getHist(startAt: number, endAt: number): Promise<any> {
+    private async updateTrades(): Promise<void> {
+        // Ensure an Epoch is active
+        if (this._epoch.active.value) {
+            // Initialize the current time
+            const ts: number = Date.now();
 
+            /**
+             * Initialize the starting point based on the active checkpoint.
+             * If there is no checkpoint, compare the last stored trade vs the 
+             * epoch's installation. Whichever is greater should be the starting point.
+             */
+            let startAt: number|undefined = this.tradesSyncCheckpoint;
+            if (typeof startAt != "number") {
+                const lastTS: number|undefined = await this._model.getLastTradeTimestamp();
+                if (typeof lastTS == "number" && lastTS > this._epoch.active.value.installed) {
+                    startAt = lastTS + 1; // Increase it by 1ms in order to avoid duplicates
+                } else {
+                    startAt = this._epoch.active.value.installed;
+                }
+            }
+
+            /**
+             * Initialize the end of the range. If the value is greater than the
+             * current time, use that value instead.
+             */
+            let endAt: number = moment(startAt).add(5, "days").valueOf();
+            if (endAt > ts) { endAt = ts }
+
+            // Retrieve the latest trades
+            const trades: IBinanceTradePayload[] = await this._binance.getTradeList(startAt, endAt);
+
+            // If there are any new trades, store them
+            if (trades.length) {
+                // Save the trades
+                await this._model.saveTrades(trades.map((t) => this.processBinanceTrade(t)));
+
+                // Unset the checkpoint
+                this.tradesSyncCheckpoint = undefined;
+            }
+
+            // If the list is empty, save the current end so the syncing can move on
+            else if (!trades.length && endAt != ts) { this.tradesSyncCheckpoint = endAt }
+
+            // Otherwise, just unset the checkpoint
+            else { this.tradesSyncCheckpoint = undefined }
+        }
     }
-    
+
+
+
+
+
+
+    /**
+     * Given a raw binance trade payload, it will convert it 
+     * into a proper trade that will be stored in the db.
+     * @param raw 
+     * @returns IPositionTrade
+     */
+    private processBinanceTrade(raw: IBinanceTradePayload): IPositionTrade {
+        return {
+            id: `${raw.id || 'NA'}_${raw.orderId || 'NA'}`,
+            t: raw.time,
+            s: raw.side,
+            ps: raw.positionSide,
+            p: <number>this._utils.outputNumber(raw.price),
+            qty: <number>this._utils.outputNumber(raw.qty, {dp: 3}),
+            qqty: <number>this._utils.outputNumber(raw.quoteQty),
+            rpnl: <number>this._utils.outputNumber(raw.realizedPnl),
+            c: <number>this._utils.outputNumber(raw.commission, {ru: true})
+        }
+    }
 }
