@@ -183,7 +183,6 @@ export class BinanceService implements IBinanceService {
             endTime: endAt,
             limit: 50
         });
-        console.log(params);
         const options: IExternalRequestOptions = {
             host: this.futuresBaseURL,
             path: `/fapi/v1/userTrades?${params}`,
@@ -199,6 +198,7 @@ export class BinanceService implements IBinanceService {
 
         // Validate the response
         if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(params);
             console.log(response);
             throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
             when retrieving the account trades.`, 14));
@@ -206,6 +206,7 @@ export class BinanceService implements IBinanceService {
 
         // Validate the response's data
         if (!response.data || !Array.isArray(response.data)) {
+            console.log(params);
             console.log(response);
             throw new Error(this._utils.buildApiError("Binance returned an invalid list of account trades.", 15));
         }
