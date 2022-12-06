@@ -579,12 +579,11 @@ export class PositionService implements IPositionService {
         /**
          * Initialize the rate that will be used
          * In order to ensure the position amount never exceeds the margin
-         * specified in the strategy level, the prices are moved against 
-         * the position side by 1%.
+         * specified in the strategy level, the prices are moved by 1.5%.
          */
         const price: number = side == "LONG" ? 
-            <number>this._utils.alterNumberByPercentage(book.safe_ask, 1):
-            <number>this._utils.alterNumberByPercentage(book.safe_bid, -1);
+            <number>this._utils.alterNumberByPercentage(book.safe_ask, 1.5):
+            <number>this._utils.alterNumberByPercentage(book.safe_bid, 1.5);
 
         // Calculate the notional size
         const notional: BigNumber = new BigNumber(levelSize).times(this.strategy.leverage);
