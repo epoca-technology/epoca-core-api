@@ -120,7 +120,8 @@ export class BulkDataService implements IBulkDataService {
      */
     private async updateStream(): Promise<void> {
         try {
-            const appBulk: IAppBulk = await this.getAppBulk("undefined");
+            let appBulk: IAppBulk = await this.getAppBulk(this._epoch.active.value ? this._epoch.active.value.id:"undefined");
+            appBulk.epoch = null;
             await this._db.appBulkRef.update(JSON.parse(JSON.stringify(appBulk)));
         } catch (e) {
             console.error("Error when updating the app bulk stream: ", e);
