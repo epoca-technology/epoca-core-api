@@ -81,7 +81,7 @@ export class PositionService implements IPositionService {
      * Active Positions Syncing
      */
     private activePositionsSyncInterval: any;
-    private readonly activePositionsIntervalSeconds: number = 30; // Every ~30 seconds
+    private readonly activePositionsIntervalSeconds: number = 15; // Every ~15 seconds
 
 
     /**
