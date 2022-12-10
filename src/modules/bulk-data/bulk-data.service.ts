@@ -3,12 +3,15 @@ import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { IEpochRecord, IEpochService } from "../epoch";
 import { IPredictionService } from "../prediction";
-import { IMarketStateService } from "../market-state";
+import { IMarketStateService, IWindowState } from "../market-state";
 import { IGuiVersionService } from "../gui-version";
 import { IServerService } from "../server";
 import { 
     IAppBulk, 
+    IAppBulkStream, 
     IBulkDataService, 
+    ICompressedCandlesticks, 
+    ICompressedWindowState, 
     IServerDataBulk, 
     IServerResourcesBulk 
 } from "./interfaces";
@@ -112,13 +115,73 @@ export class BulkDataService implements IBulkDataService {
 
 
 
+    /**
+     * Updates the app bulk if a safe manner.
+     * @returns Promise<void>
+     */
+    private async updateStream(): Promise<void> {
+        try {
+            await this._db.appBulkRef.update(<IAppBulkStream> {
+                prediction: this._prediction.active.value && typeof this._prediction.active.value == "object" ? this._prediction.active.value: null,
+                predictionState: this._prediction.activeState,
+                position: this._position.getSummary(),
+                marketState: {
+                    window: this.compressWindowState(),
+                    volume: this._marketState.active.value.volume
+                },
+                apiErrors: this._apiError.count
+            });
+        } catch (e) {
+            console.error("Error when updating the app bulk stream: ", e);
+        }
+    }
+
+
+
+    /**
+     * Compresses the candlesticks within the current window state .
+     * @returns ICompressedWindowState
+     */
+    private compressWindowState(): ICompressedWindowState {
+        // Init the compressed candlesticks
+        let compressed: ICompressedCandlesticks = {
+            ot: [],
+            ct: [],
+            o: [],
+            h: [],
+            l: [],
+            c: [],
+            v: [],
+        }
+
+        // Grab a copy of the current window state
+        let state: IWindowState|ICompressedWindowState|any = Object.assign({}, this._marketState.active.value.window);
+
+        // Iterate over each candlestick in the window and build the object
+        for (let candlestick of state.window) {
+            compressed.ot.push(candlestick.ot);
+            compressed.ct.push(candlestick.ct);
+            compressed.o.push(candlestick.o);
+            compressed.h.push(candlestick.h);
+            compressed.l.push(candlestick.l);
+            compressed.c.push(candlestick.c);
+            compressed.v.push(candlestick.v);
+        }
+
+        // Update the candlesticks
+        state.window = compressed;
+
+        // Finally, return the compressed object
+        return state;
+    }
+
 
 
     /**
      * Updates the app bulk if a safe manner.
      * @returns Promise<void>
      */
-    private async updateStream(): Promise<void> {
+    /*private async ___updateStream(): Promise<void> {
         try {
             let appBulk: IAppBulk = await this.getAppBulk(this._epoch.active.value ? this._epoch.active.value.id:"undefined");
             appBulk.epoch = null;
@@ -126,7 +189,7 @@ export class BulkDataService implements IBulkDataService {
         } catch (e) {
             console.error("Error when updating the app bulk stream: ", e);
         }
-    }
+    }*/
 
 
 

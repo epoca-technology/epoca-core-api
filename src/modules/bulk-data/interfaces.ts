@@ -3,7 +3,7 @@ import { IServerData, IServerResources } from "../server";
 import { IApiError } from "../api-error";
 import { IPrediction } from "../epoch-builder";
 import { IPredictionState } from "../prediction";
-import { IMarketState } from "../market-state";
+import { IMarketState, IState, IVolumeState } from "../market-state";
 import { IPositionSummary } from "../position";
 
 
@@ -65,6 +65,57 @@ export interface IAppBulk {
 
     // The number of api errors in existance
     apiErrors: number,
+}
+
+
+
+
+/**
+ * App Bulk Stream
+ * A compressed version of the App Bulk that is updated at a high
+ * frequency.
+ */
+export interface IAppBulkStream {
+    // The active prediction. If there isn't one, or an epoch isn't active, it will be undefined
+    prediction: IPrediction|undefined,
+
+    // The active prediction state. If there isn't one, or an epoch isn't active, it will be undefined
+    predictionState: IPredictionState,
+
+    // The current position summary
+    position: IPositionSummary,
+
+    // The active market state.
+    marketState: ICompressedMarketState,
+
+    // The number of api errors in existance
+    apiErrors: number,
+}
+
+
+/**
+ * Compressed Market State
+ * In order to reduce the bandwidth, the market state is compressed
+ * and then decompressed when downloaded from the GUI.
+ */
+export interface ICompressedMarketState {
+    window: ICompressedWindowState,
+    volume: IVolumeState,
+}
+
+export interface ICompressedWindowState extends IState {
+    // The compressed prediction candlesticks that comprise the window
+    window: ICompressedCandlesticks
+}
+
+export interface ICompressedCandlesticks {
+    ot: number[],                 // Open Times
+    ct: number[],                 // Close Times
+    o: number[],                  // Open Prices
+    h: number[],                  // High Prices
+    l: number[],                  // Low Prices
+    c: number[],                  // Close Prices
+    v: number[]                   // Volumes (USDT)
 }
 
 
