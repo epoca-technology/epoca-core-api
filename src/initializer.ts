@@ -95,14 +95,21 @@ export async function init(): Promise<void> {
         await _utils.asyncDelay(15);
         try { await _init() }
         catch (e) {
-            await _utils.asyncDelay(15);
+            await _utils.asyncDelay(20);
             try { await _init() }
             catch (e) {
-                await _utils.asyncDelay(15);
+                await _utils.asyncDelay(20);
                 try { await _init() }
                 catch (e) {
-                    await _notification.apiInitError(e);
-                    throw e;
+                    try { await _init() }
+                    catch (e) {
+                        await _utils.asyncDelay(25);
+                        try { await _init() }
+                        catch (e) {
+                            await _notification.apiInitError(e);
+                            throw e;
+                        }
+                    }
                 }
             }
         }

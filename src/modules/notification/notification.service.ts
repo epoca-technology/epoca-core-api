@@ -455,7 +455,7 @@ export class NotificationService implements INotificationService {
     public liquidationPriceIsWarning(position: IActivePosition, distance: number): Promise<void> {
         let desc: string = `The distance between the current price $${position.mark_price}`;
         desc += ` and the liquidation price $${position.liquidation_price} is less than ${distance}%.`;
-        desc += ` make sure to increase the ${position.side} position ASAP.`;
+        desc += ` make sure to increase or close the ${position.side} position ASAP.`;
         return this.broadcast({
             sender: "POSITION",
             title: `${position.side} liquidation warning:`,

@@ -255,11 +255,10 @@ export interface IActivePosition {
 
     /**
      * The minimum price at which a position can be increased based on its side. 
-     * This value is calculated based on level_increase_requirement.
-     * If the position is at level 4, this value will be undefined as the 
-     * position cannot be increased.
+     * This value is calculated based on level_increase_requirement and the 
+     * liquidation price.
      */
-    min_increase_price: number|undefined,
+    min_increase_price: number,
 
     // The current unrealized PNL in USDT
     unrealized_pnl: number,

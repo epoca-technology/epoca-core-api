@@ -33,12 +33,10 @@ export class PositionNotifications implements IPositionNotifications {
 
     /**
      * Liquidation
-     * Whenever the distance between the mark price and the liquidation
-     * price becomes smaller than or equals to maxLiquidationDistance,
-     * users must be notified in order to take action.
+     * Whenever the distance between the mark price approaches the
+     * min increase price, users must be notified in order to take action.
      */
     private readonly liquidationThrottleMinutes: number = 3;
-    private readonly minLiquidationDistance: number = 15;
     private longLiquidationLastNotification: number|undefined = undefined;
     private shortLiquidationLastNotification: number|undefined = undefined;
     
@@ -99,14 +97,13 @@ export class PositionNotifications implements IPositionNotifications {
 
         // Check the liquidation price
         if (
-            this.longLiquidationLastNotification == undefined ||
-            this.longLiquidationLastNotification < moment(currentTS).subtract(this.liquidationThrottleMinutes, "minutes").valueOf()
+            (this.longLiquidationLastNotification == undefined ||
+            this.longLiquidationLastNotification < moment(currentTS).subtract(this.liquidationThrottleMinutes, "minutes").valueOf()) &&
+            long.mark_price <= long.min_increase_price
         ) {
-            const liquidationPriceWarning: number = <number>this._utils.alterNumberByPercentage(long.liquidation_price, this.minLiquidationDistance);
-            if (long.mark_price <= liquidationPriceWarning) {
-                await this._notification.liquidationPriceIsWarning(long, this.minLiquidationDistance);
-                this.longLiquidationLastNotification = currentTS;
-            }
+            const distance: number = <number>this._utils.calculatePercentageChange(long.mark_price, long.liquidation_price);
+            await this._notification.liquidationPriceIsWarning(long, distance);
+            this.longLiquidationLastNotification = currentTS;
         }
     }
 
@@ -140,14 +137,13 @@ export class PositionNotifications implements IPositionNotifications {
 
         // Check the liquidation price
         if (
-            this.shortLiquidationLastNotification == undefined ||
-            this.shortLiquidationLastNotification < moment(currentTS).subtract(this.liquidationThrottleMinutes, "minutes").valueOf()
+            (this.shortLiquidationLastNotification == undefined ||
+            this.shortLiquidationLastNotification < moment(currentTS).subtract(this.liquidationThrottleMinutes, "minutes").valueOf()) &&
+            short.mark_price >= short.min_increase_price
         ) {
-            const liquidationPriceWarning: number = <number>this._utils.alterNumberByPercentage(short.liquidation_price, -(this.minLiquidationDistance));
-            if (short.mark_price >= liquidationPriceWarning) {
-                await this._notification.liquidationPriceIsWarning(short, this.minLiquidationDistance);
-                this.shortLiquidationLastNotification = currentTS;
-            }
+            const distance: number = <number>this._utils.calculatePercentageChange(short.mark_price, short.liquidation_price);
+            await this._notification.liquidationPriceIsWarning(short, distance);
+            this.shortLiquidationLastNotification = currentTS;
         }
     }
 }

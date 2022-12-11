@@ -329,15 +329,11 @@ export class PositionService implements IPositionService {
                 );
             }
 
-            // Calculate the min increase price
-            let minIncreasePrice: number|undefined = undefined;
-            if (state.next) {
-                minIncreasePrice = <number>this._utils.alterNumberByPercentage(
-                    entryPrice, 
-                    binancePosition.positionSide == "LONG" ? -(this.strategy.level_increase_requirement): this.strategy.level_increase_requirement
-                );
-            }
-
+            // Calculate the min increase price based on the liquidation
+            const minIncreasePrice: number = <number>this._utils.alterNumberByPercentage(
+                binancePosition.liquidationPrice, 
+                binancePosition.positionSide == "LONG" ? this.strategy.level_increase_requirement: -(this.strategy.level_increase_requirement)
+            );
 
             // Calculate the current ROE if the entry price is different to the mark price
             let roe: number = 0;
