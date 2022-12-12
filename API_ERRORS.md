@@ -364,7 +364,7 @@
 
 17014: `The provided Model ID (${modelID}) is invalid.`
 
-17015: ``
+17015: `The Epoch cannot be uninstalled because there is an active position.`
 
 
 

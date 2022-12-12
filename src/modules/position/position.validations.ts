@@ -183,14 +183,14 @@ export class PositionValidations implements IPositionValidations {
         activeShort: IActivePosition|undefined
     ): void {
         // Make sure there isn't an active long position
-        if (activeLong) {
+        /*if (activeLong) {
             throw new Error(this._utils.buildApiError(`The strategy cannot be updated because there is an active long position.`, 30002));
-        }
+        }*/
 
         // Make sure there isn't an active short position
-        if (activeShort) {
+        /*if (activeShort) {
             throw new Error(this._utils.buildApiError(`The strategy cannot be updated because there is an active short position.`, 30003));
-        }
+        }*/
 
         // Make sure the provided strategy is a valid object
         if (!newStrategy || typeof newStrategy != "object") {
