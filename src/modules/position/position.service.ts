@@ -651,9 +651,9 @@ export class PositionService implements IPositionService {
         return {
             leverage: 2,
             level_increase_requirement: 5,
-            level_1: { id: "level_1", size: 150, target: 1.5},
-            level_2: { id: "level_2", size: 300, target: 1},
-            level_3: { id: "level_3", size: 600, target: 0.5},
+            level_1: { id: "level_1", size: 150, target: 1.25},
+            level_2: { id: "level_2", size: 300, target: 0.5},
+            level_3: { id: "level_3", size: 600, target: 0},
             level_4: { id: "level_4", size: 1200, target: 0},
             ts: Date.now()
         }
