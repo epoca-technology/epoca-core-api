@@ -550,7 +550,7 @@
 
 30005: `The leverage must be a valid number ranging 1-5. Received: ${newStrategy.leverage}`
 
-30006: `The level increase requirement must be a valid number ranging 0.01-10. Received: ${newStrategy.level_increase_requirement}`
+30006: `The level increase requirement must be a valid number ranging 0.01-30. Received: ${newStrategy.level_increase_requirement}`
 
 30007: `The strategy could not be updated because level_1 is invalid.`
 

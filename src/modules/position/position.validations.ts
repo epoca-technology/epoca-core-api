@@ -207,9 +207,9 @@ export class PositionValidations implements IPositionValidations {
         // Validate the level increase requirement
         if (
             typeof newStrategy.level_increase_requirement != "number" || 
-            !this._validations.numberValid(newStrategy.level_increase_requirement, 0.01, 10)
+            !this._validations.numberValid(newStrategy.level_increase_requirement, 0.01, 30)
         ) {
-            throw new Error(this._utils.buildApiError(`The level increase requirement must be a valid number ranging 0.01-10. 
+            throw new Error(this._utils.buildApiError(`The level increase requirement must be a valid number ranging 0.01-30. 
             Received: ${newStrategy.level_increase_requirement}`, 30006));
         }
 

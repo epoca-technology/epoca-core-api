@@ -1,7 +1,6 @@
 import {inject, injectable} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { IRegressionTrainingCertificate } from "../epoch-builder";
-import { IPositionService, IPositionSummary } from "../position";
 import { IUtilitiesService, IValidationsService } from "../utilities";
 import { IEpochModel, IEpochRecord, IEpochValidations, IUnpackedEpochFile } from "./interfaces";
 
@@ -12,7 +11,6 @@ import { IEpochModel, IEpochRecord, IEpochValidations, IUnpackedEpochFile } from
 export class EpochValidations implements IEpochValidations {
     // Inject dependencies
     @inject(SYMBOLS.EpochModel)                       private model: IEpochModel;
-    @inject(SYMBOLS.PositionService)                       private _position: IPositionService;
     @inject(SYMBOLS.ValidationsService)               private _validations: IValidationsService;
     @inject(SYMBOLS.UtilitiesService)                 private _utils: IUtilitiesService;
 
@@ -160,11 +158,11 @@ export class EpochValidations implements IEpochValidations {
         }
 
         // Make sure there are no positions running
-        const positionSummary: IPositionSummary = this._position.getSummary();
+        /*const positionSummary: IPositionSummary = this._position.getSummary();
         if (positionSummary.long !== undefined || positionSummary.short !== undefined) {
             console.log(positionSummary);
             throw new Error(this._utils.buildApiError(`The Epoch cannot be uninstalled because there is an active position.`, 17015));
-        }
+        }*/
     }
 
 
