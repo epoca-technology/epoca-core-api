@@ -329,6 +329,13 @@ export class PositionService implements IPositionService {
                 );
             }
 
+            // Calculate the stop loss price
+            const realStopLossPercent: BigNumber = new BigNumber(this.strategy.stop_loss).dividedBy(this.strategy.leverage);
+            const stopLossPrice: number = <number>this._utils.alterNumberByPercentage(
+                entryPrice,
+                binancePosition.positionSide == "LONG" ? realStopLossPercent.times(-1): realStopLossPercent
+            );
+
             // Calculate the min increase price based on the liquidation
             const minIncreasePrice: number = <number>this._utils.alterNumberByPercentage(
                 binancePosition.liquidationPrice, 
@@ -356,6 +363,7 @@ export class PositionService implements IPositionService {
                 mark_price: <number>this._utils.outputNumber(markPrice),
                 target_price: targetPrice,
                 liquidation_price: <number>this._utils.outputNumber(binancePosition.liquidationPrice),
+                stop_loss_price: stopLossPrice,
                 min_increase_price: minIncreasePrice,
                 unrealized_pnl: <number>this._utils.outputNumber(binancePosition.unRealizedProfit),
                 roe: roe,
@@ -626,7 +634,7 @@ export class PositionService implements IPositionService {
      */
     public async updateStrategy(newStrategy: IPositionStrategy): Promise<void> {
         // Make sure it can be updated
-        this._validations.canStrategyBeUpdated(newStrategy, this.long, this.short);
+        this._validations.canStrategyBeUpdated(newStrategy);
 
         // Update the timestamp
         newStrategy.ts = Date.now();
@@ -651,6 +659,7 @@ export class PositionService implements IPositionService {
         return {
             leverage: 2,
             level_increase_requirement: 5,
+            stop_loss: 15,
             level_1: { id: "level_1", size: 150, target: 1.25},
             level_2: { id: "level_2", size: 300, target: 0.5},
             level_3: { id: "level_3", size: 600, target: 0},

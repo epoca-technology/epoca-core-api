@@ -46,11 +46,7 @@ export interface IPositionValidations {
     canClosePosition(side: IBinancePositionSide, position: IActivePosition|undefined): void,
 
     // Position Strategy
-    canStrategyBeUpdated(
-        newStrategy: IPositionStrategy, 
-        activeLong: IActivePosition|undefined, 
-        activeShort: IActivePosition|undefined
-    ): void,
+    canStrategyBeUpdated(newStrategy: IPositionStrategy): void,
 
     // Position Trades
     canTradesBeListed(startAt: number, endAt: number): void
@@ -165,14 +161,19 @@ export interface IPositionStrategy {
     leverage: number,
 
     /**
-     * The percentage change the price needs to experience against the 
-     * position in order to be able to increase the position's level.
-     * Long: The price needs to decrease at least x% from the entry price
-     *      in order to be able to increase the position.
-     * Short: The price needs to increase at least x% from the entry price
-     *      in order to be able to increase the position.
+     * The distance between the mark and liquidation prices required in 
+     * order to be able to increase the position's level.
      */
     level_increase_requirement: number,
+
+    /**
+     * The percentage of the total margin that the user is willing to
+     * lose instead of increasing a level.
+     * Keep in mind, when calculating the stop_loss price, the current
+     * value is divided by the leverage. F.e: If the strategy's stop loss
+     * is 5% and the leverage is x2, the real stop loss is 2.5%.
+     */
+    stop_loss: number,
 
     // Levels
     level_1: IPositionStrategyLevel,
@@ -252,6 +253,11 @@ export interface IActivePosition {
 
     // The price at which the position will be automatically liquidated by the exchange.
     liquidation_price: number,
+
+    /**
+     * The price at which the position should be closed when it won't be increased.
+     */
+    stop_loss_price: number,
 
     /**
      * The minimum price at which a position can be increased based on its side. 

@@ -542,9 +542,9 @@
 
 30001: `Positions cannot be interacted with as there isnt an active Epoch.`
 
-30002: `The strategy cannot be updated because there is an active long position.`
+30002: `The stop loss must be a valid number ranging 1-50. Received: ${newStrategy.stop_loss}`
 
-30003: `The strategy cannot be updated because there is an active short position.`
+30003: ``
 
 30004: `The provided strategy is not a valid object.`
 

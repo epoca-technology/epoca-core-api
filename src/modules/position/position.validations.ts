@@ -173,25 +173,9 @@ export class PositionValidations implements IPositionValidations {
     /**
      * Verifies if the position strategy can be updated.
      * @param newStrategy 
-     * @param activeLong 
-     * @param activeShort 
      * @returns void
      */
-    public canStrategyBeUpdated(
-        newStrategy: IPositionStrategy, 
-        activeLong: IActivePosition|undefined, 
-        activeShort: IActivePosition|undefined
-    ): void {
-        // Make sure there isn't an active long position
-        /*if (activeLong) {
-            throw new Error(this._utils.buildApiError(`The strategy cannot be updated because there is an active long position.`, 30002));
-        }*/
-
-        // Make sure there isn't an active short position
-        /*if (activeShort) {
-            throw new Error(this._utils.buildApiError(`The strategy cannot be updated because there is an active short position.`, 30003));
-        }*/
-
+    public canStrategyBeUpdated(newStrategy: IPositionStrategy): void {
         // Make sure the provided strategy is a valid object
         if (!newStrategy || typeof newStrategy != "object") {
             console.log(newStrategy);
@@ -202,6 +186,12 @@ export class PositionValidations implements IPositionValidations {
         if (typeof newStrategy.leverage != "number" || !this._validations.numberValid(newStrategy.leverage, 1, 5)) {
             throw new Error(this._utils.buildApiError(`The leverage must be a valid number ranging 1-5. 
             Received: ${newStrategy.leverage}`, 30005));
+        }
+
+        // Validate the stop loss
+        if (typeof newStrategy.stop_loss != "number" || !this._validations.numberValid(newStrategy.stop_loss, 1, 70)) {
+            throw new Error(this._utils.buildApiError(`The stop loss must be a valid number ranging 1-70. 
+            Received: ${newStrategy.stop_loss}`, 30002));
         }
 
         // Validate the level increase requirement
