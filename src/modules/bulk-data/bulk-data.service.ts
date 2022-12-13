@@ -15,7 +15,7 @@ import {
     IServerDataBulk, 
     IServerResourcesBulk 
 } from "./interfaces";
-import { IPositionService } from "../position";
+import { IPositionService, IPositionSummary } from "../position";
 import { IDatabaseService } from "../database";
 
 
@@ -121,10 +121,16 @@ export class BulkDataService implements IBulkDataService {
      */
     private async updateStream(): Promise<void> {
         try {
+            const positionSummary: IPositionSummary = this._position.getSummary();
             await this._db.appBulkRef.update(<IAppBulkStream> {
                 prediction: this._prediction.active.value && typeof this._prediction.active.value == "object" ? this._prediction.active.value: null,
                 predictionState: this._prediction.activeState,
-                position: this._position.getSummary(),
+                position: {
+                    balance: positionSummary.balance,
+                    strategy: positionSummary.strategy,
+                    long: positionSummary.long || null,
+                    short: positionSummary.short || null
+                },
                 marketState: {
                     window: this.compressWindowState(),
                     volume: this._marketState.active.value.volume

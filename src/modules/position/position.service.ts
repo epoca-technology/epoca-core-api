@@ -658,8 +658,8 @@ export class PositionService implements IPositionService {
     private getDefaultStrategy(): IPositionStrategy {
         return {
             leverage: 2,
-            level_increase_requirement: 5,
-            stop_loss: 15,
+            level_increase_requirement: 12,
+            stop_loss: 50,
             level_1: { id: "level_1", size: 150, target: 1.25},
             level_2: { id: "level_2", size: 300, target: 0.5},
             level_3: { id: "level_3", size: 600, target: 0},
