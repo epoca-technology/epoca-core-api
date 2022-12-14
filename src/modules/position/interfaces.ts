@@ -15,7 +15,7 @@ export interface IPositionService {
     // Position Actions
     openPosition(side: IBinancePositionSide): Promise<void>,
     increasePosition(side: IBinancePositionSide): Promise<void>,
-    closePosition(side: IBinancePositionSide): Promise<void>,
+    closePosition(side: IBinancePositionSide, chunkSize: number): Promise<void>,
 
     // Position Strategy
     updateStrategy(newStrategy: IPositionStrategy): Promise<void>,
@@ -43,7 +43,11 @@ export interface IPositionValidations {
         nextLevel: IPositionStrategyLevel|undefined, 
         availableBalance: number
     ): void,
-    canClosePosition(side: IBinancePositionSide, position: IActivePosition|undefined): void,
+    canClosePosition(
+        side: IBinancePositionSide, 
+        position: IActivePosition|undefined, 
+        chunkSize: number
+    ): void,
 
     // Position Strategy
     canStrategyBeUpdated(newStrategy: IPositionStrategy): void,

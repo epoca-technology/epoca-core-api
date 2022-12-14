@@ -580,7 +580,7 @@
 
 30019: `The trade list query is larger than the permitted data limit. Limit: ${this.tradeListLimit}, Received: ${difference}`
 
-30020: ``
+30020: `A position can only be closed with a valid chunk size. Received ${chunkSize}`
 
 30021: ``
 

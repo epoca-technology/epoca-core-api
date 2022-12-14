@@ -147,9 +147,26 @@ export class PositionValidations implements IPositionValidations {
      * @param position 
      * @returns void
      */
-    public canClosePosition(side: IBinancePositionSide, position: IActivePosition|undefined): void {
+    public canClosePosition(
+        side: IBinancePositionSide, 
+        position: IActivePosition|undefined, 
+        chunkSize: number
+    ): void {
+        // Ensure the position is currently active
         if (!position) {
             throw new Error(this._utils.buildApiError(`The ${side} position cannot be closed because it isnt active.`, 30011));
+        }
+
+        // Ensure the chunk size is valid
+        if (
+            chunkSize !== 0.25 && 
+            chunkSize !== 0.33 && 
+            chunkSize !== 0.5 && 
+            chunkSize !== 0.66 && 
+            chunkSize !== 0.75 && 
+            chunkSize !== 1
+        ) {
+            throw new Error(this._utils.buildApiError(`A position can only be closed with a valid chunk size. Received ${chunkSize}`, 30020));
         }
     }
 

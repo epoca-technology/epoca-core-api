@@ -532,10 +532,11 @@ export class PositionService implements IPositionService {
 
     /**
      * Closes a Long or Short position.
-     * @param side 
+     * @param side
+     * @param chunkSize
      * @returns Promise<void>
      */
-     public async closePosition(side: IBinancePositionSide): Promise<void> {
+     public async closePosition(side: IBinancePositionSide, chunkSize: number): Promise<void> {
         // Perform a basic validation
         this._validations.canInteractWithPositions(side);
 
@@ -543,13 +544,18 @@ export class PositionService implements IPositionService {
         await this.refreshActivePositions();
 
         // Validate the request
-        this._validations.canClosePosition(side, side == "LONG" ? this.long: this.short);
+        this._validations.canClosePosition(side, side == "LONG" ? this.long: this.short, chunkSize);
+
+        // Calculate the amount that will be closed based on the chunk size
+        const amount: BigNumber = 
+            new BigNumber(Math.abs(side == "LONG" ? this.long.position_amount: this.short.position_amount))
+            .times(chunkSize)
 
         // Execute the trade
         const payload: IBinanceTradeExecutionPayload = await this._binance.order(
             side == "LONG" ? "SELL": "BUY",
             side,
-            Math.abs(side == "LONG" ? this.long.position_amount: this.short.position_amount)
+            <number>this._utils.outputNumber(amount, { dp: 3, ru: false})
         );
 
         // Trigger the refresh event
@@ -560,7 +566,7 @@ export class PositionService implements IPositionService {
             await this.updateTrades();
         } catch (e) {
             console.error(e);
-            //this._apiError.log("PositionService.closePosition.refreshTrades", e);
+            this._apiError.log("PositionService.closePosition.updateTrades", e);
         }
     }
 

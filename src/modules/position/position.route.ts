@@ -119,6 +119,7 @@ PositionRoute.route("/increase").post(mediumRiskLimit, async (req: express.Reque
  * @requires otp
  * @requires authority: 4
  * @param side
+ * @param chunkSize
  * @returns IAPIResponse<void>
 */
 PositionRoute.route("/close").post(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
@@ -131,10 +132,10 @@ PositionRoute.route("/close").post(mediumRiskLimit, async (req: express.Request,
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["side"], req.body, otp || "");
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["side", "chunkSize"], req.body, otp || "");
 
         // Perform Action
-        await _position.closePosition(req.body.side);
+        await _position.closePosition(req.body.side, req.body.chunkSize);
 
         // Return the response
         res.send(_utils.apiResponse());
