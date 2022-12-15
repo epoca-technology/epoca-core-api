@@ -32,6 +32,18 @@ export class PositionNotifications implements IPositionNotifications {
 
 
     /**
+    * Stop Loss
+    * Whenever the mark price in a position hits the stop loss it will send
+    * a notification to the users to determine if the position should be 
+    * closed entirely, partially and not at all.
+    */
+    private readonly stopLossThrottleMinutes: number = 120;
+    private longStopLossLastNotification: number|undefined = undefined;
+    private shortStopLossLastNotification: number|undefined = undefined;
+
+
+
+    /**
      * Liquidation
      * Whenever the distance between the mark price approaches the
      * min increase price, users must be notified in order to take action.
@@ -95,6 +107,18 @@ export class PositionNotifications implements IPositionNotifications {
             this.longTargetLastNotification = currentTS;
         }
 
+        // Check the stop loss price
+        if (
+            long.mark_price <= long.stop_loss_price && 
+            (
+                this.longStopLossLastNotification == undefined ||
+                this.longStopLossLastNotification < moment(currentTS).subtract(this.stopLossThrottleMinutes, "minutes").valueOf()
+            )
+        ) {
+            await this._notification.positionHitStopLoss(long);
+            this.longStopLossLastNotification = currentTS;
+        }
+
         // Check the liquidation price
         if (
             (this.longLiquidationLastNotification == undefined ||
@@ -133,6 +157,18 @@ export class PositionNotifications implements IPositionNotifications {
         ) {
             await this._notification.positionHitTarget(short);
             this.shortTargetLastNotification = currentTS;
+        }
+
+        // Check the stop loss price
+        if (
+            short.mark_price >= short.stop_loss_price && 
+            (
+                this.shortStopLossLastNotification == undefined ||
+                this.shortStopLossLastNotification < moment(currentTS).subtract(this.stopLossThrottleMinutes, "minutes").valueOf()
+            )
+        ) {
+            await this._notification.positionHitStopLoss(short);
+            this.shortStopLossLastNotification = currentTS;
         }
 
         // Check the liquidation price

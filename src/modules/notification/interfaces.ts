@@ -35,6 +35,7 @@ export interface INotificationService {
 
     // Position Notifications
     positionHitTarget(position: IActivePosition): Promise<void>,
+    positionHitStopLoss(position: IActivePosition): Promise<void>,
     liquidationPriceIsWarning(position: IActivePosition, distance: number): Promise<void>,
 }
 

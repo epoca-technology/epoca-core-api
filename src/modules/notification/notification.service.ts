@@ -445,6 +445,27 @@ export class NotificationService implements INotificationService {
 
 
 
+
+
+    /**
+     * Triggers whenever a position hits the stop loss price.
+     * @param position 
+     * @returns Promise<void>
+     */
+    public positionHitStopLoss(position: IActivePosition): Promise<void> {
+        let desc: string = `The price has hit the stop loss price $${position.stop_loss_price}`;
+        desc += ` and is currently at $${position.mark_price}`;
+        return this.broadcast({
+            sender: "POSITION",
+            title: `${position.side} stop loss hit:`,
+            description: desc
+        });
+    }
+
+
+
+
+
     /**
      * Triggers whenever the mark price is close to the liquidation
      * price.
