@@ -145,7 +145,7 @@ export class PositionService implements IPositionService {
         this.tradesSyncInterval = setInterval(async () => {
             try { await this.updateTrades() } catch (e) { 
                 console.error(e);
-                //this._apiError.log("PositionService.interval.updateTrades", e);
+                this._apiError.log("PositionService.interval.updateTrades", e);
             }
         }, this.tradesIntervalSeconds * 1000);
     }

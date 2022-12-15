@@ -2,7 +2,7 @@ import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { IBinanceCandlestick, IBinanceService } from "../binance";
-import { IUtilitiesService } from "../utilities";
+import { INumberConfig, IUtilitiesService } from "../utilities";
 import { 
     IKeyZone,
     IKeyZonesStateService, 
@@ -24,6 +24,11 @@ export class KeyZonesStateService implements IKeyZonesStateService {
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
     /**
+     * The configuration that will be used in order to output numbers.
+     */
+    private readonly numberConfig: INumberConfig = { dp: 0, ru: true };
+
+    /**
      * KeyZones
      * The list of KeyZones detected in the retrieved candlesticks.
      */
@@ -40,14 +45,14 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * Zone Size
      * The zone's size percentage. The start and end prices are based on this value.
      */
-    private readonly zoneSize: number = 4;
+    private readonly zoneSize: number = 3;
 
     /**
      * Merge Distance
      * Once all zones have been set and ordered by price, it will merge the ones that 
      * are close to one another.
      */
-    private readonly zoneMergeDistanceLimit: number = 3;
+    private readonly zoneMergeDistanceLimit: number = 1;
 
     /**
      * State Limit
@@ -276,7 +281,11 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 // Check if there is a next item before proceeding
                 if (this.tempZones[i + 1]) {
                     // Calculate the % change between the current end and the next start
-                    const change: number = <number>this._utils.calculatePercentageChange(this.tempZones[i].e, this.tempZones[i + 1].s);
+                    const change: number = <number>this._utils.calculatePercentageChange(
+                        this.tempZones[i].e, 
+                        this.tempZones[i + 1].s,
+                        this.numberConfig
+                    );
                     
                     // Merge the zones if needed
                     if (change <= this.zoneMergeDistanceLimit) {
@@ -388,8 +397,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         // Return the unified zone
         return {
             id: z1.id < z2.id ? z1.id: z2.id,
-            s: <number>this._utils.calculateAverage([z1.s, z2.s]),
-            e: <number>this._utils.calculateAverage([z1.e, z2.e]),
+            s: <number>this._utils.calculateAverage([z1.s, z2.s], this.numberConfig),
+            e: <number>this._utils.calculateAverage([z1.e, z2.e], this.numberConfig),
             r: reversals,
             m: this.zoneMutated(reversals)
         }
@@ -426,7 +435,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         // Check if it was a resistance
         if (reversalType == "r") {
             return {
-                s: <number>this._utils.alterNumberByPercentage(candlestick.h, -(this.zoneSize)),
+                s: <number>this._utils.alterNumberByPercentage(candlestick.h, -(this.zoneSize), this.numberConfig),
                 e: candlestick.h
             }
         }
@@ -435,7 +444,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         else {
             return {
                 s: candlestick.l,
-                e: <number>this._utils.alterNumberByPercentage(candlestick.l, this.zoneSize)
+                e: <number>this._utils.alterNumberByPercentage(candlestick.l, this.zoneSize, this.numberConfig)
             }
         }
     }
@@ -464,8 +473,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         return raw.map((rc) => {
             return {
                 ot: rc[0],
-                h: <number>this._utils.outputNumber(rc[2]),
-                l: <number>this._utils.outputNumber(rc[3]),
+                h: <number>this._utils.outputNumber(rc[2], this.numberConfig),
+                l: <number>this._utils.outputNumber(rc[3], this.numberConfig),
             }
         });
     }
