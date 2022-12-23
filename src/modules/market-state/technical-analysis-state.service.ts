@@ -150,11 +150,12 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
      * @returns Promise<ITAIntervalState>
      */
     private async buildIntervalState(ds: ITADataset): Promise<ITAIntervalState> {
-        // Build the oscillators
-        let osc: ITAOscillatorsBuild = await this.buildOscillators(ds);
-
         // Build the moving averages
         let ma: ITAMovingAveragesBuild = await this.buildMovingAverages(ds);
+
+        // Build the oscillators
+        let osc: ITAOscillatorsBuild = await this.buildOscillators(ds, ma.counter);
+
 
         // Build the results
         const results: ITAIntervalStateResultBuild = this.buildIntervalStateResult(osc.counter, ma.counter);
@@ -237,75 +238,6 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
 
 
     /**
-     * Builds the oscillators data based on a given dataset.
-     * @param ds 
-     * @returns Promise<ITAOscillatorsBuild>
-     */
-    private async buildOscillators(ds: ITADataset): Promise<ITAOscillatorsBuild> {
-        // Initialize the counter
-        let counter: ITAIndicatorActionCounter = { BUY: 0, SELL: 0, NEUTRAL: 0 };
-
-        // Calculate the RSI
-        const rsi_14: ITAIndicatorPayload = await this.rsi(ds.close, 14);
-        counter[rsi_14.a] += 1;
-
-        // Calculate the CCI
-        const cci_20: ITAIndicatorPayload = await this.cci(ds.high, ds.low, ds.close, 20);
-        counter[cci_20.a] += 1;
-
-        // Calculate the ADX
-        const adx_14: ITAIndicatorPayload = await this.adx(ds.high, ds.low, ds.close, 14);
-        counter[adx_14.a] += 1;
-
-        // Calculate the AO
-        const ao: ITAIndicatorPayload = await this.ao(ds.high, ds.low);
-        counter[ao.a] += 1;
-
-        // Calculate the MOM
-        const mom_10: ITAIndicatorPayload = await this.mom(ds.close, 10);
-        counter[mom_10.a] += 1;
-
-        // Calculate the MACD
-        const macd_12_26_9: ITAIndicatorPayload = await this.macd(ds.close, 12, 26, 9);
-        counter[macd_12_26_9.a] += 1;
-
-        // Calculate the Stoch
-        const stoch_14_1_3: ITAIndicatorPayload = await this.stoch(ds.high, ds.low, ds.close, 14, 1, 3);
-        counter[stoch_14_1_3.a] += 1;
-
-        // Calculate the Stoch RSI
-        const stochrsi_14: ITAIndicatorPayload = await this.stochrsi(ds.close, 14);
-        counter[stochrsi_14.a] += 1;
-
-        // Calculate the WILLR
-        const willr_14: ITAIndicatorPayload = await this.willr(ds.high, ds.low, ds.close, 14);
-        counter[willr_14.a] += 1;
-
-        // Calculate the ULTOSC
-        const ultosc_7_14_28: ITAIndicatorPayload = await this.ultosc(ds.high, ds.low, ds.close, 7, 14, 28);
-        counter[ultosc_7_14_28.a] += 1;
-
-        // Finally, return the build
-        return {
-            counter: counter,
-            rsi_14: rsi_14,
-            cci_20: cci_20,
-            adx_14: adx_14,
-            ao: ao,
-            mom_10: mom_10,
-            macd_12_26_9: macd_12_26_9,
-            stoch_14_1_3: stoch_14_1_3,
-            stochrsi_14: stochrsi_14,
-            willr_14: willr_14,
-            ultosc_7_14_28: ultosc_7_14_28
-        }
-    } 
-
-
-
-
-
-    /**
      * Builds the moving averages data based on a given dataset.
      * @param ds 
      * @returns Promise<ITAMovingAveragesBuild>
@@ -365,6 +297,76 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
         }
     } 
 
+
+
+
+
+
+    /**
+     * Builds the oscillators data based on a given dataset.
+     * @param ds 
+     * @param maCounter 
+     * @returns Promise<ITAOscillatorsBuild>
+     */
+    private async buildOscillators(ds: ITADataset, maCounter: ITAIndicatorActionCounter): Promise<ITAOscillatorsBuild> {
+        // Initialize the counter
+        let counter: ITAIndicatorActionCounter = { BUY: 0, SELL: 0, NEUTRAL: 0 };
+
+        // Calculate the RSI
+        const rsi_14: ITAIndicatorPayload = await this.rsi(ds.close, 14);
+        counter[rsi_14.a] += 1;
+
+        // Calculate the CCI
+        const cci_20: ITAIndicatorPayload = await this.cci(ds.high, ds.low, ds.close, 20);
+        counter[cci_20.a] += 1;
+
+        // Calculate the ADX
+        const adx_14: ITAIndicatorPayload = await this.adx(ds.high, ds.low, ds.close, 14, maCounter);
+        counter[adx_14.a] += 1;
+
+        // Calculate the AO
+        const ao: ITAIndicatorPayload = await this.ao(ds.high, ds.low);
+        counter[ao.a] += 1;
+
+        // Calculate the MOM
+        const mom_10: ITAIndicatorPayload = await this.mom(ds.close, 10);
+        counter[mom_10.a] += 1;
+
+        // Calculate the MACD
+        const macd_12_26_9: ITAIndicatorPayload = await this.macd(ds.close, 12, 26, 9);
+        counter[macd_12_26_9.a] += 1;
+
+        // Calculate the Stoch
+        const stoch_14_1_3: ITAIndicatorPayload = await this.stoch(ds.high, ds.low, ds.close, 14, 1, 3);
+        counter[stoch_14_1_3.a] += 1;
+
+        // Calculate the Stoch RSI
+        const stochrsi_14: ITAIndicatorPayload = await this.stochrsi(ds.close, 14);
+        counter[stochrsi_14.a] += 1;
+
+        // Calculate the WILLR
+        const willr_14: ITAIndicatorPayload = await this.willr(ds.high, ds.low, ds.close, 14);
+        counter[willr_14.a] += 1;
+
+        // Calculate the ULTOSC
+        const ultosc_7_14_28: ITAIndicatorPayload = await this.ultosc(ds.high, ds.low, ds.close, 7, 14, 28);
+        counter[ultosc_7_14_28.a] += 1;
+
+        // Finally, return the build
+        return {
+            counter: counter,
+            rsi_14: rsi_14,
+            cci_20: cci_20,
+            adx_14: adx_14,
+            ao: ao,
+            mom_10: mom_10,
+            macd_12_26_9: macd_12_26_9,
+            stoch_14_1_3: stoch_14_1_3,
+            stochrsi_14: stochrsi_14,
+            willr_14: willr_14,
+            ultosc_7_14_28: ultosc_7_14_28
+        }
+    } 
 
 
 
@@ -585,17 +587,23 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
      * @param low 
      * @param close 
      * @param period 
+     * @param maCounter 
      * @returns Promise<ITAIndicatorPayload>
      */
-    private async adx(high: number[], low: number[], close: number[], period: number): Promise<ITAIndicatorPayload> {
+    private async adx(
+        high: number[], 
+        low: number[], 
+        close: number[], 
+        period: number, 
+        maCounter: ITAIndicatorActionCounter
+    ): Promise<ITAIndicatorPayload> {
         // Calculate the current ADX
         const adx: number = await this._adx(high, low, close, period);
 
         // Suggest an action
         let action: ITAIndicatorAction = "NEUTRAL";
-        // @TODO
-        /*if      (cci < -100) { action = "BUY" } 
-        else if (cci > 100)  { action = "SELL" }*/
+        if      (adx >= 25 && maCounter.BUY > maCounter.SELL) { action = "BUY" } 
+        else if (adx >= 25 && maCounter.SELL > maCounter.BUY)  { action = "SELL" }
 
         // Finally, return the payload
         return { v: [adx], a: action }
@@ -780,22 +788,23 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
      */
     private async stochrsi(close: number[], period: number): Promise<ITAIndicatorPayload> {
         // Calculate the current Stoch RSI
-        const stochRSI: number = await this._stochrsi(close, period);
+        const stochRSI: number[] = await this._stochrsi(close, period);
+        const current: number = stochRSI.at(-1);
+        const prev: number = stochRSI.at(-2);
 
         // Suggest an action
         let action: ITAIndicatorAction = "NEUTRAL";
-        // @TODO
-        /*if      (cci < -100) { action = "BUY" } 
-        else if (cci > 100)  { action = "SELL" }*/
+        if      (current < 0.2 && current > prev) { action = "BUY" } 
+        else if (current > 0.8 && current < prev) { action = "SELL" }  
 
         // Finally, return the payload
-        return { v: [stochRSI], a: action }
+        return { v: [current], a: action }
     }
-    private _stochrsi(close: number[], period: number): Promise<number> {
+    private _stochrsi(close: number[], period: number): Promise<number[]> {
         return new Promise((resolve, reject) => {
             tulind.indicators.stochrsi.indicator([close], [period], (err, results) => {
                 if (err) reject(`STOCHRSI_ERROR: ${this._utils.getErrorMessage(err)}`);
-                resolve(results[0].at(-1));
+                resolve(results[0]);
             });
         });
     }
@@ -821,9 +830,8 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
 
         // Suggest an action
         let action: ITAIndicatorAction = "NEUTRAL";
-        // @TODO
-        /*if      (cci < -100) { action = "BUY" } 
-        else if (cci > 100)  { action = "SELL" }*/
+        if      (willr <= -80)  { action = "BUY" } 
+        else if (willr >= -20)  { action = "SELL" }
 
         // Finally, return the payload
         return { v: [willr], a: action }
