@@ -506,11 +506,24 @@
 
 
 #
-## Network Fee State Service (28.000 - 28.999)
+## Network Fee State Service (28.000 - 28.499)
 
 28000: `Mempool.space returned an invalid HTTP response code (${response.statusCode}) when retrieving the fee records.`
 
 28001: `Mempool.space returned an invalid fee record series.`
+
+
+
+#
+## Technical Analysis State Service (28.500 - 28.999)
+
+28500: `The retrieved candlesticks are not sufficient to generate the trading analysis state. Has: ${candlesticks.length}. Needs: ${requirement}`
+
+28501: ``
+
+28502: ``
+
+28503: ``
 
 
 
@@ -548,7 +561,7 @@
 
 30004: `The provided strategy is not a valid object.`
 
-30005: `The leverage must be a valid number ranging 1-5. Received: ${newStrategy.leverage}`
+30005: `The leverage must be a valid number ranging 2-15. Received: ${newStrategy.leverage}`
 
 30006: `The level increase requirement must be a valid number ranging 0.01-30. Received: ${newStrategy.level_increase_requirement}`
 

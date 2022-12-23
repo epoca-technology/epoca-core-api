@@ -93,6 +93,21 @@ export interface ILongShortRatioStateService {
 
 
 
+/* TECHNICAL ANALYSIS STATE */
+export interface ITechnicalAnalysisStateService {
+    // Properties
+    state: ITAState,
+
+    // Initializer
+    initialize(): Promise<void>,
+    stop(): void,
+
+    // Retrievers
+    getDefaultState(): ITAState,
+}
+
+
+
 
 
 /**
@@ -110,6 +125,9 @@ export interface IStateUtilitiesService {
         minChange: number
     ): { state: IStateType, state_value: number }
 }
+
+
+
 
 
 
@@ -188,6 +206,11 @@ export interface IState {
 
 
 
+
+
+
+
+
 /****************************************************************************
  * WINDOW STATE                                                             *
  * The purpose of the window state is to enable programatic understanding   *
@@ -197,6 +220,14 @@ export interface IWindowState extends IState {
     // The prediction candlesticks that comprise the window
     window: ICandlestick[]
 }
+
+
+
+
+
+
+
+
 
 
 
@@ -238,6 +269,10 @@ export interface IMempoolBlockFeeRecord {
 
 
 
+
+
+
+
 /****************************************************************************
  * NETWORK FEE STATE                                                        *
  * The purpose of the network fee state is to enable programatic            *
@@ -250,6 +285,10 @@ export interface IMempoolBlockFeeRecord {
     // The list of grouped fees
     fees: number[]
 }
+
+
+
+
 
 
 
@@ -273,6 +312,13 @@ export interface IMempoolBlockFeeRecord {
 
 
 
+
+
+
+
+
+
+
 /****************************************************************************
  * LONG/SHORT RATIO STATE                                                   *
  * The purpose of the long/short state is to enable programatic             *
@@ -282,6 +328,16 @@ export interface IMempoolBlockFeeRecord {
     // The list of grouped long/short ratio values
     ratio: number[]
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -393,6 +449,269 @@ export interface IKeyZoneState {
 
 
 
+
+
+
+
+
+
+
+
+/****************************
+ * TECHNICAL ANALYSIS STATE *
+ ****************************/
+
+
+
+
+/**
+ * Technical Analysis Datasets
+ * In order to optimize the calculation process, the candlesticks
+ * must be converted into datasets. Each list should have at least
+ * 210 items.
+ */
+export interface ITADataset {
+    open: number[],
+    close: number[],
+    high: number[],
+    low: number[],
+    volume: number[]
+}
+export interface ITADatasets {
+    "30m": ITADataset,
+    "2h": ITADataset,
+    "4h": ITADataset,
+    "1d": ITADataset
+}
+
+
+
+
+
+/**
+ * Interval Identifier
+ * In order to be able to identify what most traders are seeing, 
+ * the indicators are calculated for all popular intervals.
+ */
+export type ITAIntervalID = "30m"|"2h"|"4h"|"1d";
+
+
+
+/**
+ * Indicator State Action
+ * The indicator's suggested action.
+ */
+export type ITAIndicatorAction = "BUY"|"SELL"|"NEUTRAL";
+
+
+
+
+/**
+ * Interval State Action
+ * In contrast to the indicator state, if many buys or sells suggestions
+ * accumulate, a "strong" state is generated.
+ */
+export type ITAIntervalStateAction = "BUY"|"STRONG_BUY"|"SELL"|"STRONG_SELL"|"NEUTRAL";
+
+
+
+/**
+ * Interval State Result Counter
+ * The counter used to store the indicators' suggested actions.
+ */
+export interface ITAIndicatorActionCounter {
+    BUY: number,
+    SELL: number,
+    NEUTRAL: number
+}
+
+
+
+/**
+ * Interval State Result
+ * The result for the summary, oscillators and the moving averages.
+ */
+export interface ITAIntervalStateResult {
+    // Action: the action suggested by the state results
+    a: ITAIntervalStateAction,
+
+    // Buy: the count of the indicators that suggest the price will rise
+    b: number,
+
+    // Sell: The count of the indicators that suggest the price will fall
+    s: number,
+
+    // Neutral: the count of the indicators that have no suggestions
+    n: number
+}
+
+
+
+/**
+ * Indicator Payload
+ * The object built when an indicator is calculated and evaluated.
+ */
+export interface ITAIndicatorPayload {
+    // Value: the result of the indicator
+    v: number[],
+
+    // Action: the action suggested by the indicator
+    a: ITAIndicatorAction
+}
+
+
+
+
+/**
+ * Oscillators Build
+ * All the data related to the current state of the oscillators
+ * for a given interval.
+ */
+export interface ITAOscillatorsBuild {
+    // The indicator Action Counter for the oscillators only
+    counter: ITAIndicatorActionCounter,
+
+    // Indicators Payload
+    rsi_14: ITAIndicatorPayload,
+    cci_20: ITAIndicatorPayload,
+    adx_14: ITAIndicatorPayload,
+    ao: ITAIndicatorPayload,
+    mom_10: ITAIndicatorPayload,
+    macd_12_26_9: ITAIndicatorPayload,
+    stoch_14_1_3: ITAIndicatorPayload,
+    stochrsi_14: ITAIndicatorPayload,
+    willr_14: ITAIndicatorPayload,
+    ultosc_7_14_28: ITAIndicatorPayload
+}
+
+
+/**
+ * Moving Averages Build
+ * All the data related to the current state of the moving averages
+ * for a given interval.
+ */
+export interface ITAMovingAveragesBuild {
+    // The indicator Action Counter for the moving averages only
+    counter: ITAIndicatorActionCounter,
+
+    // Indicators Payload
+    ema_10: ITAIndicatorPayload,
+    ema_20: ITAIndicatorPayload,
+    ema_30: ITAIndicatorPayload,
+    ema_50: ITAIndicatorPayload,
+    ema_100: ITAIndicatorPayload,
+    ema_200: ITAIndicatorPayload,
+    sma_10: ITAIndicatorPayload,
+    sma_20: ITAIndicatorPayload,
+    sma_30: ITAIndicatorPayload,
+    sma_50: ITAIndicatorPayload,
+    sma_100: ITAIndicatorPayload,
+    sma_200: ITAIndicatorPayload,
+    hma_9: ITAIndicatorPayload
+}
+
+
+
+/**
+ * Interval State Result Build
+ * Object generated once all technical analysis indicators have been
+ * calculated. Contains the results for each category.
+ */
+export interface ITAIntervalStateResultBuild {
+    summary: ITAIntervalStateResult,
+    oscillators: ITAIntervalStateResult,
+    moving_averages: ITAIntervalStateResult,
+}
+
+
+
+
+
+/**
+ * Interval State
+ * The object containing the final technical analysis state for an interval.
+ */
+export interface ITAIntervalState {
+    // Summary: The result of the state, combining oscillators and moving averages
+    s: ITAIntervalStateResult,
+
+    // Oscillators: The result of the oscillators
+    o: ITAIntervalStateResult,
+
+    // Moving Averages: The result of the moving averages
+    m: ITAIntervalStateResult,
+
+    // The payload containing the indicator's data
+    p: {
+        // Oscillators
+        rsi_14: ITAIndicatorPayload,
+        cci_20: ITAIndicatorPayload,
+        adx_14: ITAIndicatorPayload,
+        ao: ITAIndicatorPayload,
+        mom_10: ITAIndicatorPayload,
+        macd_12_26_9: ITAIndicatorPayload,
+        stoch_14_1_3: ITAIndicatorPayload,
+        stochrsi_14: ITAIndicatorPayload,
+        willr_14: ITAIndicatorPayload,
+        ultosc_7_14_28: ITAIndicatorPayload,
+
+        // Moving Averages
+        ema_10: ITAIndicatorPayload,
+        ema_20: ITAIndicatorPayload,
+        ema_30: ITAIndicatorPayload,
+        ema_50: ITAIndicatorPayload,
+        ema_100: ITAIndicatorPayload,
+        ema_200: ITAIndicatorPayload,
+        sma_10: ITAIndicatorPayload,
+        sma_20: ITAIndicatorPayload,
+        sma_30: ITAIndicatorPayload,
+        sma_50: ITAIndicatorPayload,
+        sma_100: ITAIndicatorPayload,
+        sma_200: ITAIndicatorPayload,
+        hma_9: ITAIndicatorPayload
+    }
+}
+
+
+
+
+
+/**
+ * Technical Analysis State
+ * The current state of the technicals based on the intervals. This object is 
+ * inserted into the market state.
+ */
+export interface ITAState {
+    // States by Interval
+    "30m": ITAIntervalState,
+    "2h": ITAIntervalState,
+    "4h": ITAIntervalState,
+    "1d": ITAIntervalState,
+
+    // The timestamp in which the state was generated
+    ts: number
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*********************************************************************************
  * MARKET STATE                                                                  *
  * Every certain period of time, the market state is calculated and broadcasted. *
@@ -404,5 +723,6 @@ export interface IMarketState {
     keyzone: IKeyZoneState,
     network_fee: INetworkFeeState,
     open_interest: IOpenInterestState,
-    long_short_ratio: ILongShortRatioState
+    long_short_ratio: ILongShortRatioState,
+    technical_analysis: ITAState
 }

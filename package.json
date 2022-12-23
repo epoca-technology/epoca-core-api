@@ -48,6 +48,7 @@
     "rxjs": "7.5.2",
     "systeminformation": "5.10.5",
     "telegraf": "4.6.0",
+    "tulind": "0.8.20",
     "uuid": "8.3.2"
   },
   "devDependencies": {

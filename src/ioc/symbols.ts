@@ -61,6 +61,7 @@
     VolumeStateService: Symbol.for("VolumeStateService"),
     OpenInterestStateService: Symbol.for("OpenInterestStateService"),
     LongShortRatioStateService: Symbol.for("LongShortRatioStateService"),
+    TechnicalAnalysisStateService: Symbol.for("TechnicalAnalysisStateService"),
     StateUtilitiesService: Symbol.for("StateUtilitiesService"),
 
     // Notifications
@@ -146,6 +147,7 @@ export interface ISymbols {
     VolumeStateService: symbol,
     OpenInterestStateService: symbol,
     LongShortRatioStateService: symbol,
+    TechnicalAnalysisStateService: symbol,
     StateUtilitiesService: symbol,
 
 

@@ -323,7 +323,7 @@ export class CandlestickModel implements ICandlestickModel {
 
 
     /**
-     * Given a list of candlesticks, it will merge the properties and return a 
+     * Given a list of candlesticks, it will merge the properties and return an 
      * unified object.
      * @param candlesticks 
      * @returns ICandlestick

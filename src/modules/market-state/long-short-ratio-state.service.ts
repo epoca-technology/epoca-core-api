@@ -41,7 +41,7 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
      * Every intervalSeconds, the open interest state will be calculated and stored temporarily.
      */
     private stateInterval: any;
-    private readonly intervalSeconds: number = 60 * 5; // ~5 minutes
+    private readonly intervalSeconds: number = 60 * 3; // ~3 minutes
 
 
     /**
@@ -73,7 +73,7 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
 
     /**
      * Calculates the state and initializes the interval that will
-     * update the state every ~10 minutes.
+     * update the state every ~3 minutes.
      * @returns  Promise<void>
      */
     public async initialize(): Promise<void> {

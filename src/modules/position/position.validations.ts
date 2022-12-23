@@ -200,8 +200,8 @@ export class PositionValidations implements IPositionValidations {
         }
 
         // Validate the leverage
-        if (typeof newStrategy.leverage != "number" || !this._validations.numberValid(newStrategy.leverage, 1, 5)) {
-            throw new Error(this._utils.buildApiError(`The leverage must be a valid number ranging 1-5. 
+        if (typeof newStrategy.leverage != "number" || !this._validations.numberValid(newStrategy.leverage, 2, 15)) {
+            throw new Error(this._utils.buildApiError(`The leverage must be a valid number ranging 2-15. 
             Received: ${newStrategy.leverage}`, 30005));
         }
 

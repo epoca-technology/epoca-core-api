@@ -45,14 +45,14 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * Zone Size
      * The zone's size percentage. The start and end prices are based on this value.
      */
-    private readonly zoneSize: number = 3;
+    private readonly zoneSize: number = 1;
 
     /**
      * Merge Distance
      * Once all zones have been set and ordered by price, it will merge the ones that 
      * are close to one another.
      */
-    private readonly zoneMergeDistanceLimit: number = 1;
+    private readonly zoneMergeDistanceLimit: number = 0.5;
 
     /**
      * State Limit
@@ -67,7 +67,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * Every intervalSeconds, the keyzones will be built based on the latest data.
      */
     private buildInterval: any;
-    private readonly intervalSeconds: number = 60 * 120; // ~2 hours
+    private readonly intervalSeconds: number = 60 * 480; // ~8 hours
     private buildTS: number = 0;
 
 

@@ -74,14 +74,14 @@ export class PositionService implements IPositionService {
      * Balance Syncing
      */
     private balanceSyncInterval: any;
-    private readonly balanceIntervalSeconds: number = 60 * 5; // Every ~5 minutes
+    private readonly balanceIntervalSeconds: number = 60 * 3; // Every ~3 minutes
 
 
     /**
      * Active Positions Syncing
      */
     private activePositionsSyncInterval: any;
-    private readonly activePositionsIntervalSeconds: number = 15; // Every ~15 seconds
+    private readonly activePositionsIntervalSeconds: number = 12; // Every ~12 seconds
 
 
     /**
@@ -457,7 +457,7 @@ export class PositionService implements IPositionService {
         this._validations.canInteractWithPositions(side);
 
         // Refresh the data
-        await this.refreshData(false, 0.25);
+        //await this.refreshData(false, 0.1);
 
         // Validate the request
         this._validations.canOpenPosition(
@@ -494,7 +494,7 @@ export class PositionService implements IPositionService {
         this._validations.canInteractWithPositions(side);
 
         // Refresh the data
-        await this.refreshData(false, 0.25);
+        //await this.refreshData(false, 0.1);
 
         // Init the position
         const position: IActivePosition|undefined = side == "LONG" ? this.long: this.short;
@@ -541,7 +541,7 @@ export class PositionService implements IPositionService {
         this._validations.canInteractWithPositions(side);
 
         // Refresh the active positions
-        await this.refreshActivePositions();
+        //await this.refreshActivePositions();
 
         // Validate the request
         this._validations.canClosePosition(side, side == "LONG" ? this.long: this.short, chunkSize);
