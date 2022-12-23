@@ -26,7 +26,7 @@ export class OrderBookService implements IOrderBookService {
      * Every intervalSeconds, the order book will be synced and broadcasted.
      */
     private syncInterval: any;
-    private readonly intervalSeconds: number = 45;
+    private readonly intervalSeconds: number = 120;
  
  
     /**

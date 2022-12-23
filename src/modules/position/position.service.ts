@@ -74,7 +74,7 @@ export class PositionService implements IPositionService {
      * Balance Syncing
      */
     private balanceSyncInterval: any;
-    private readonly balanceIntervalSeconds: number = 60 * 3; // Every ~3 minutes
+    private readonly balanceIntervalSeconds: number = 60 * 5; // Every ~5 minutes
 
 
     /**
@@ -128,7 +128,7 @@ export class PositionService implements IPositionService {
         await this.initializeStrategy();
 
         // Initialize the data
-        await this.refreshData(false, 2);
+        await this.refreshData(false, 4);
         //await this.updateTrades();
 
         // Initialize the intervals

@@ -95,15 +95,15 @@ export async function init(): Promise<void> {
         await _utils.asyncDelay(15);
         try { await _init() }
         catch (e) {
-            await _utils.asyncDelay(20);
+            await _utils.asyncDelay(30);
             try { await _init() }
             catch (e) {
-                await _utils.asyncDelay(20);
+                await _utils.asyncDelay(60);
                 try { await _init() }
                 catch (e) {
                     try { await _init() }
                     catch (e) {
-                        await _utils.asyncDelay(25);
+                        await _utils.asyncDelay(120);
                         try { await _init() }
                         catch (e) {
                             await _notification.apiInitError(e);
@@ -155,7 +155,8 @@ async function _init(): Promise<void> {
                 throw e;
             }
 
-            // Initialize the Market State
+            // Initialize the Market State after a delay
+            await _utils.asyncDelay(60);
             try {
                 await _marketState.initialize();
             } catch (e) {
@@ -163,7 +164,8 @@ async function _init(): Promise<void> {
                 throw e;
             }
 
-            // Initialize the Order Book Syncing
+            // Initialize the Order Book Syncing after a delay
+            await _utils.asyncDelay(60);
             try {
                 await _orderBook.initialize();
             } catch (e) {
@@ -203,7 +205,8 @@ async function _init(): Promise<void> {
                 throw e;
             }
 
-            // Initialize the Position Module
+            // Initialize the Position Module after a delay
+            await _utils.asyncDelay(60);
             try {
                 await _position.initialize();
             } catch (e) {
