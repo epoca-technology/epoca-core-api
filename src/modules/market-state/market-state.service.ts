@@ -103,16 +103,18 @@ export class MarketStateService implements IMarketStateService {
         // Initialize the network fee module
         await this._networkFeeState.initialize();
 
-        // Initialize the keyzone module
+        // Initialize the keyzone module after a small delay
+        await this._utils.asyncDelay(4);
         await this._keyZoneState.initialize();
 
         // Initialize the open interest module after a small delay
-        await this._utils.asyncDelay(2);
+        await this._utils.asyncDelay(4);
         await this._openInterest.initialize();
 
         // Initialize the long/short ratio module after a small delay
-        await this._utils.asyncDelay(2);
+        await this._utils.asyncDelay(4);
         await this._longShortRatio.initialize();
+        await this._utils.asyncDelay(4);
 
         // Initialize the Technical Analysis Module
         await this._ta.initialize();
