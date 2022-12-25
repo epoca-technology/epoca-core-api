@@ -270,7 +270,7 @@ export class PredictionService implements IPredictionService {
         }
 
         // Set the path
-        this.options.path = `/predict?epoch_id=${this._epoch.active.value.id}`;
+        this.options.path = `/predict?epoch_id=${this._epoch.active.value.id}&trend_state=${this.activeState}`;
 
         // Generate the prediction with a request to the Prediction API
         const response: IExternalRequestResponse = await this._req.request(this.options, {}, "http");
@@ -315,7 +315,7 @@ export class PredictionService implements IPredictionService {
      * @param endAt
      * @returns Promise<IPredictionCandlestick[]>
      */
-     public async listPredictionCandlesticks(
+    public async listPredictionCandlesticks(
         epochID: string, 
         startAt: number, 
         endAt: number
