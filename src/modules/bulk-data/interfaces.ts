@@ -1,7 +1,7 @@
 import { IEpochRecord } from "../epoch";
 import { IServerData, IServerResources } from "../server";
 import { IApiError } from "../api-error";
-import { IPrediction } from "../epoch-builder";
+import { IPrediction, IPredictionResult } from "../epoch-builder";
 import { IPredictionState } from "../prediction";
 import { IMarketState, IState, IVolumeState } from "../market-state";
 import { IPositionSummary } from "../position";
@@ -57,6 +57,9 @@ export interface IAppBulk {
     // The active prediction state. If there isn't one, or an epoch isn't active, it will be undefined
     predictionState: IPredictionState,
 
+    // The current signal based on the cancellation policies
+    signal: IPredictionResult,
+
     // The current position summary
     position: IPositionSummary,
 
@@ -81,6 +84,9 @@ export interface IAppBulkStream {
 
     // The active prediction state. If there isn't one, or an epoch isn't active, it will be undefined
     predictionState: IPredictionState,
+
+    // The current signal based on the cancellation policies
+    signal: IPredictionResult,
 
     // The current position summary
     position: IPositionSummary,

@@ -608,3 +608,25 @@
 31000: ``
 
 31001: ``
+
+
+
+
+#
+## Signal Service (35.000 - 35.999)
+
+35000: `The provided cancellation policies are invalid.`
+
+35001: `The provided state for ${itemName} is invalid. Received: ${itemState}`
+
+35002: ``
+
+35003: ``
+
+35004: ``
+
+35005: ``
+
+35006: ``
+
+35007: ``

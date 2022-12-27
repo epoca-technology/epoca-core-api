@@ -6,6 +6,9 @@ import { IPredictionService } from "../prediction";
 import { IMarketStateService, IWindowState } from "../market-state";
 import { IGuiVersionService } from "../gui-version";
 import { IServerService } from "../server";
+import { IPositionService, IPositionSummary } from "../position";
+import { IDatabaseService } from "../database";
+import { ISignalService } from "../signal";
 import { 
     IAppBulk, 
     IAppBulkStream, 
@@ -15,8 +18,6 @@ import {
     IServerDataBulk, 
     IServerResourcesBulk 
 } from "./interfaces";
-import { IPositionService, IPositionSummary } from "../position";
-import { IDatabaseService } from "../database";
 
 
 
@@ -27,6 +28,7 @@ export class BulkDataService implements IBulkDataService {
     @inject(SYMBOLS.DatabaseService)                private _db: IDatabaseService;
     @inject(SYMBOLS.EpochService)                   private _epoch: IEpochService;
     @inject(SYMBOLS.PredictionService)              private _prediction: IPredictionService;
+    @inject(SYMBOLS.SignalService)                  private _signal: ISignalService;
     @inject(SYMBOLS.MarketStateService)             private _marketState: IMarketStateService;
     @inject(SYMBOLS.GuiVersionService)              private _guiVersion: IGuiVersionService;
     @inject(SYMBOLS.ServerService)                  private _server: IServerService;
@@ -74,6 +76,7 @@ export class BulkDataService implements IBulkDataService {
             position: this._position.getSummary(),
             prediction: this._prediction.active.value,
             predictionState: this._prediction.activeState,
+            signal: this._signal.active.value,
             marketState: this._marketState.active.value,
             apiErrors: this._apiError.count
         }
@@ -125,6 +128,7 @@ export class BulkDataService implements IBulkDataService {
             await this._db.appBulkRef.update(<IAppBulkStream> {
                 prediction: this._prediction.active.value && typeof this._prediction.active.value == "object" ? this._prediction.active.value: null,
                 predictionState: this._prediction.activeState,
+                signal: this._signal.active.value,
                 position: {
                     balance: positionSummary.balance,
                     strategy: positionSummary.strategy,

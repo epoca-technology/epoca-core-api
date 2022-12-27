@@ -23,6 +23,7 @@ import { orderBookModule } from "../modules/order-book";
 import { positionModule } from "../modules/position";
 import { requestGuardModule } from "../modules/request-guard";
 import { serverModule } from "../modules/server";
+import { signalModule } from "../modules/signal";
 import { utilitiesModule } from "../modules/utilities";
 
 
@@ -95,6 +96,9 @@ appContainer.load(
 
     // Server
     serverModule,
+
+    // Signal
+    signalModule,
 
     // Utilities
     utilitiesModule,

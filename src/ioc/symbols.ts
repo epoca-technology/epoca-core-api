@@ -83,6 +83,9 @@
     ServerService: Symbol.for("ServerService"),
     ServerValidations: Symbol.for("ServerValidations"),
 
+    // Signal
+    SignalService: Symbol.for("SignalService"),
+
     // Utilities
     UtilitiesService: Symbol.for("UtilitiesService"),
     ValidationsService: Symbol.for("ValidationsService"),
@@ -168,6 +171,9 @@ export interface ISymbols {
 
     ServerService: symbol,
     ServerValidations: symbol,
+
+
+    SignalService: symbol,
     
 
     UtilitiesService: symbol,
