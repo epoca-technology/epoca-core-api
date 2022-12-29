@@ -532,13 +532,13 @@
 #
 ## Position Service (29.000 - 29.999)
 
-29000: `The strategy state cannot be calculated as the provided position has no margin. Received ${margin}`
+29000: ``
 
 29001: `The USDT balance could not be retrieved from the Binance API. Received ${balances.length}`
 
 29002: `The extracted USDT balance object is not complete. Available ${balances[0].availableBalance} | Balance: ${balances[0].balance}`
 
-29003: `The ${side} position cannot be increased because it isnt active.`
+29003: `The positions cannot be evaluated against the current price because the candlesticks stream is out of sync.`
 
 29004: ``
 
@@ -555,7 +555,7 @@
 
 30001: `Positions cannot be interacted with as there isnt an active Epoch.`
 
-30002: `The stop loss must be a valid number ranging 1-50. Received: ${newStrategy.stop_loss}`
+30002: `The stop loss must be a valid number ranging 0.5-10. Received: ${newStrategy.stop_loss}`
 
 30003: ``
 
@@ -563,21 +563,21 @@
 
 30005: `The leverage must be a valid number ranging 2-15. Received: ${newStrategy.leverage}`
 
-30006: `The level increase requirement must be a valid number ranging 0.01-30. Received: ${newStrategy.level_increase_requirement}`
+30006: `The position size must be a valid number ranging 150-100.000 Received: ${newStrategy.position_size}`
 
-30007: `The strategy could not be updated because level_1 is invalid.`
+30007: `The long and short statuses must be valid booleans. Received: ${newStrategy.long_status}, ${newStrategy.short_status}`
 
-30008: `The strategy could not be updated because level_2 is invalid.`
+30008: `The take profit must be a valid number ranging 0.5-10. Received: ${newStrategy.take_profit}`
 
-30009: `The strategy could not be updated because level_3 is invalid.`
+30009: `The long and short idle minutes must be valid numbers ranging 1-1,000 Received: ${newStrategy.long_status}, ${newStrategy.short_status}`
 
-30010: `The strategy could not be updated because level_4 is invalid.`
+30010: `The following properties cannot be changed by the user: long_idle_until, short_idle_until and ts.`
 
 30011: `The ${side} position cannot be closed because it isnt active.`
 
 30012: `The ${side} position cannot be opened because it is already active.`
 
-30013: `There isnt enough available balance to cover the ${side} position. Has: ${availableBalance}. Needs: ${firstLeveLSize}`
+30013: `There isnt enough available balance to cover the ${side} position size. Has: ${availableBalance}. Needs: ${positionSize}`
 
 30014: `The ${side} position cannot be increased because it isnt active.`
 

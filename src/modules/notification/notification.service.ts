@@ -8,6 +8,7 @@ import { IApiErrorService } from "../api-error";
 import { IStateType } from "../market-state";
 import { IActivePosition } from "../position";
 import { INotificationService, INotification, INotificationChannel } from "./interfaces";
+import { IBinancePositionSide } from "../binance";
 
 
 
@@ -419,25 +420,29 @@ export class NotificationService implements INotificationService {
 
 
 
+
+
+
+
+
     /* Position Notifications */
 
 
 
 
-
-
     /**
-     * Triggers whenever a position hits the exit target.
-     * @param position 
+     * Triggers whenever a position is opened.
+     * @param side 
+     * @param margin 
+     * @param amount 
      * @returns Promise<void>
      */
-    public positionHitTarget(position: IActivePosition): Promise<void> {
-        let desc: string = `The price has hit the target set at $${position.target_price}`;
-        desc += ` with an unrealized PNL of ${position.unrealized_pnl > 0 ? '+': ''}$${position.unrealized_pnl}.`;
-        desc += ` The price is currently at $${position.mark_price}`;
+    public onNewPosition(side: IBinancePositionSide, margin: number, amount: number): Promise<void> {
+        let desc: string = `A ${side} position has been opened with a margin of ~$${margin}`;
+        desc += ` and a total amount of ~${amount} BTC.`;
         return this.broadcast({
             sender: "POSITION",
-            title: `${position.side} target hit:`,
+            title: `New ${side} Position:`,
             description: desc
         });
     }
@@ -445,22 +450,30 @@ export class NotificationService implements INotificationService {
 
 
 
-
-
     /**
-     * Triggers whenever a position hits the stop loss price.
+     * Triggers whenever a position is closed.
      * @param position 
+     * @param chunkSize 
+     * @param closePrice 
+     * @param pnl 
      * @returns Promise<void>
      */
-    public positionHitStopLoss(position: IActivePosition): Promise<void> {
-        let desc: string = `The price has hit the stop loss price $${position.stop_loss_price}`;
-        desc += ` and is currently at $${position.mark_price}`;
+    public onPositionClose(
+        side: IBinancePositionSide, 
+        chunkSize: number, 
+        closePrice: number,
+        pnl: number
+    ): Promise<void> {
+        let desc: string = `The ${side} position has been ${chunkSize == 1 ? 'fully': 'partially'} closed`;
+        desc += ` at $${closePrice}. The estimated PNL is: ${pnl > 0 ? '+': ''}${this._utils.outputNumber(pnl * chunkSize)} USDT.`;
         return this.broadcast({
             sender: "POSITION",
-            title: `${position.side} stop loss hit:`,
+            title: `${side} Position Closed (${chunkSize*100}%):`,
             description: desc
         });
     }
+
+
 
 
 
@@ -479,8 +492,25 @@ export class NotificationService implements INotificationService {
         desc += ` make sure to increase or close the ${position.side} position ASAP.`;
         return this.broadcast({
             sender: "POSITION",
-            title: `${position.side} liquidation warning:`,
+            title: `${position.side} Liquidation Warning:`,
             description: desc
+        });
+    }
+
+
+
+
+    /**
+     * Triggers whenever there is an error during a position operation.
+     * @param source
+     * @param error
+     * @returns Promise<void>
+     */
+    public positionError(source: string, error: any): Promise<void> {
+        return this.broadcast({
+            sender: "POSITION",
+            title: `${source} Error:`,
+            description: this._utils.getErrorMessage(error)
         });
     }
 }

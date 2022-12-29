@@ -1,5 +1,4 @@
 import {inject, injectable} from "inversify";
-import { BigNumber } from "bignumber.js";
 import { SYMBOLS } from "../../ioc";
 import { IBinancePositionSide } from "../binance";
 import { IEpochService } from "../epoch";
@@ -7,7 +6,6 @@ import { IUtilitiesService, IValidationsService } from "../utilities";
 import { 
     IActivePosition,
     IPositionStrategy,
-    IPositionStrategyLevel,
     IPositionValidations
 } from "./interfaces";
 
@@ -44,28 +42,6 @@ export class PositionValidations implements IPositionValidations {
 
 
     /**
-     * Performs a basic validation in order to ensure that positions
-     * can be interacted with.
-     * @param side 
-     */
-    public canInteractWithPositions(side: IBinancePositionSide): void {
-        // Make sure the provided side is valid
-        if (side != "LONG" && side != "SHORT") {
-            throw new Error(this._utils.buildApiError(`The provided side (${side}) is invalid.`, 30000));
-        }
-
-        // Make sure there is an active epoch
-        if (!this._epoch.active.value) {
-            throw new Error(this._utils.buildApiError(`Positions cannot be interacted with as there isnt an active Epoch.`, 30001));
-        }
-    }
-
-
-
-
-
-
-    /**
      * Verifies if a position can be opened.
      * @param side 
      * @param position 
@@ -75,67 +51,23 @@ export class PositionValidations implements IPositionValidations {
     public canOpenPosition(
         side: IBinancePositionSide, 
         position: IActivePosition|undefined, 
-        firstLeveLSize: number, 
+        positionSize: number, 
         availableBalance: number
     ): void {
+        // Ensure the positions can be interacted with
+        this.canInteractWithPositions(side);
+
         // Make sure the position is not active
         if (position) {
             throw new Error(this._utils.buildApiError(`The ${side} position cannot be opened because it is already active.`, 30012));
         }
 
-        // Ensure there is enough balance to cover the level size
-        if (firstLeveLSize > availableBalance) {
-            throw new Error(this._utils.buildApiError(`There isnt enough available balance to cover the ${side} position. 
-            Has: ${availableBalance}. Needs: ${firstLeveLSize}`, 30013));
+        // Ensure there is enough balance to cover the position size
+        if (positionSize > availableBalance) {
+            throw new Error(this._utils.buildApiError(`There isnt enough available balance to cover the ${side} position size. 
+            Has: ${availableBalance}. Needs: ${positionSize}`, 30013));
         }
     }
-
-
-    
-
-
-
-    /**
-     * Verifies if a position can be increased.
-     * @param side 
-     * @param position 
-     * @param nextLevel
-     * @param availableBalance 
-     */
-    public canIncreasePosition(
-        side: IBinancePositionSide, 
-        position: IActivePosition|undefined, 
-        nextLevel: IPositionStrategyLevel|undefined, 
-        availableBalance: number
-    ): void {
-        // Make sure the position is active
-        if (!position) {
-            throw new Error(this._utils.buildApiError(`The ${side} position cannot be increased because it isnt active.`, 30014));
-        }
-
-        // Make sure the price meets the min inrease requirement
-        if (position.side == "LONG" && position.mark_price > position.min_increase_price) {
-            throw new Error(this._utils.buildApiError(`The ${side} position cannot be increased because the mark price doesnt meet the 
-            min increase requirement. Has: ${position.mark_price}. Needs: ${position.min_increase_price}`, 30017));
-        }
-        if (position.side == "SHORT" && position.mark_price < position.min_increase_price) {
-            throw new Error(this._utils.buildApiError(`The ${side} position cannot be increased because the mark price doesnt meet the 
-            min increase requirement. Has: ${position.mark_price}. Needs: ${position.min_increase_price}`, 30017));
-        }
-
-        // Make sure there is a next level
-        if (!nextLevel) {
-            throw new Error(this._utils.buildApiError(`The ${side} position cannot be increased because is no next level.`, 30015));
-        }
-
-        // Make sure there is enough available balance
-        if (nextLevel.size > availableBalance) {
-            throw new Error(this._utils.buildApiError(`There isnt enough available balance to cover the ${side} position increase. 
-            Has: ${availableBalance}. Needs: ${nextLevel.size}`, 30016));
-        }
-    }
-
-
 
 
 
@@ -152,6 +84,9 @@ export class PositionValidations implements IPositionValidations {
         position: IActivePosition|undefined, 
         chunkSize: number
     ): void {
+        // Ensure the positions can be interacted with
+        this.canInteractWithPositions(side);
+
         // Ensure the position is currently active
         if (!position) {
             throw new Error(this._utils.buildApiError(`The ${side} position cannot be closed because it isnt active.`, 30011));
@@ -175,6 +110,30 @@ export class PositionValidations implements IPositionValidations {
 
 
 
+    /**
+     * Performs a basic validation in order to ensure that positions
+     * can be interacted with.
+     * @param side 
+     */
+    private canInteractWithPositions(side: IBinancePositionSide): void {
+        // Make sure the provided side is valid
+        if (side != "LONG" && side != "SHORT") {
+            throw new Error(this._utils.buildApiError(`The provided side (${side}) is invalid.`, 30000));
+        }
+
+        // Make sure there is an active epoch
+        if (!this._epoch.active.value) {
+            throw new Error(this._utils.buildApiError(`Positions cannot be interacted with as there isnt an active Epoch.`, 30001));
+        }
+    }
+
+
+
+
+
+
+
+
 
 
 
@@ -189,10 +148,11 @@ export class PositionValidations implements IPositionValidations {
 
     /**
      * Verifies if the position strategy can be updated.
+     * @param currentStrategy 
      * @param newStrategy 
      * @returns void
      */
-    public canStrategyBeUpdated(newStrategy: IPositionStrategy): void {
+    public canStrategyBeUpdated(currentStrategy: IPositionStrategy, newStrategy: IPositionStrategy): void {
         // Make sure the provided strategy is a valid object
         if (!newStrategy || typeof newStrategy != "object") {
             console.log(newStrategy);
@@ -205,67 +165,49 @@ export class PositionValidations implements IPositionValidations {
             Received: ${newStrategy.leverage}`, 30005));
         }
 
+        // Validate the position size
+        if (typeof newStrategy.position_size != "number" || !this._validations.numberValid(newStrategy.position_size, 150, 100000)) {
+            throw new Error(this._utils.buildApiError(`The position size must be a valid number ranging 150-100,000. 
+            Received: ${newStrategy.position_size}`, 30006));
+        }
+
+        // Validate the statuses
+        if (typeof newStrategy.long_status != "boolean" || typeof newStrategy.short_status != "boolean") {
+            throw new Error(this._utils.buildApiError(`The long and short statuses must be valid booleans. 
+            Received: ${newStrategy.long_status}, ${newStrategy.short_status}`, 30007));
+        }
+
+        // Validate the take profit
+        if (typeof newStrategy.take_profit != "number" || !this._validations.numberValid(newStrategy.take_profit, 0.5, 10)) {
+            throw new Error(this._utils.buildApiError(`The take profit must be a valid number ranging 0.5-10.
+            Received: ${newStrategy.take_profit}`, 30008));
+        }
+
         // Validate the stop loss
-        if (typeof newStrategy.stop_loss != "number" || !this._validations.numberValid(newStrategy.stop_loss, 1, 70)) {
-            throw new Error(this._utils.buildApiError(`The stop loss must be a valid number ranging 1-70. 
+        if (typeof newStrategy.stop_loss != "number" || !this._validations.numberValid(newStrategy.stop_loss, 0.5, 10)) {
+            throw new Error(this._utils.buildApiError(`The stop loss must be a valid number ranging 0.5-10. 
             Received: ${newStrategy.stop_loss}`, 30002));
         }
 
-        // Validate the level increase requirement
+        // Validate the idle minutes
         if (
-            typeof newStrategy.level_increase_requirement != "number" || 
-            !this._validations.numberValid(newStrategy.level_increase_requirement, 0.01, 30)
+            typeof newStrategy.long_idle_minutes != "number" ||
+            !this._validations.numberValid(newStrategy.long_idle_minutes, 1, 1000) ||
+            typeof newStrategy.short_idle_minutes != "number" ||
+            !this._validations.numberValid(newStrategy.short_idle_minutes, 1, 1000)
         ) {
-            throw new Error(this._utils.buildApiError(`The level increase requirement must be a valid number ranging 0.01-30. 
-            Received: ${newStrategy.level_increase_requirement}`, 30006));
+            throw new Error(this._utils.buildApiError(`The long and short idle minutes must be valid numbers ranging 1-1,000. 
+            Received: ${newStrategy.long_status}, ${newStrategy.short_status}`, 30009));
         }
 
-        // Validate level_1
+        // Ensure non of the inmutable properties have changed
         if (
-            !newStrategy.level_1 || 
-            typeof newStrategy.level_1 != "object" ||
-            newStrategy.level_1.id != "level_1" ||
-            !this._validations.numberValid(newStrategy.level_1.size, 150, 500000) ||
-            !this._validations.numberValid(newStrategy.level_1.target, 0, 10)
+            currentStrategy.long_idle_until != newStrategy.long_idle_until ||
+            currentStrategy.short_idle_until != newStrategy.short_idle_until ||
+            currentStrategy.ts != newStrategy.ts
         ) {
-            console.log(newStrategy);
-            throw new Error(this._utils.buildApiError(`The strategy could not be updated because level_1 is invalid.`, 30007));
-        }
-
-        // Validate level_2
-        if (
-            !newStrategy.level_2 || 
-            typeof newStrategy.level_2 != "object" ||
-            newStrategy.level_2.id != "level_2" ||
-            newStrategy.level_2.size != this._utils.outputNumber(new BigNumber(newStrategy.level_1.size).times(2)) ||
-            !this._validations.numberValid(newStrategy.level_2.target, 0, 10)
-        ) {
-            console.log(newStrategy);
-            throw new Error(this._utils.buildApiError(`The strategy could not be updated because level_2 is invalid.`, 30008));
-        }
-
-        // Validate level_3
-        if (
-            !newStrategy.level_3 || 
-            typeof newStrategy.level_3 != "object" ||
-            newStrategy.level_3.id != "level_3" ||
-            newStrategy.level_3.size != this._utils.outputNumber(new BigNumber(newStrategy.level_2.size).times(2)) ||
-            !this._validations.numberValid(newStrategy.level_3.target, 0, 10)
-        ) {
-            console.log(newStrategy);
-            throw new Error(this._utils.buildApiError(`The strategy could not be updated because level_3 is invalid.`, 30009));
-        }
-
-        // Validate level_4
-        if (
-            !newStrategy.level_4 || 
-            typeof newStrategy.level_4 != "object" ||
-            newStrategy.level_4.id != "level_4" ||
-            newStrategy.level_4.size != this._utils.outputNumber(new BigNumber(newStrategy.level_3.size).times(2)) ||
-            !this._validations.numberValid(newStrategy.level_4.target, 0, 10)
-        ) {
-            console.log(newStrategy);
-            throw new Error(this._utils.buildApiError(`The strategy could not be updated because level_4 is invalid.`, 30010));
+            throw new Error(this._utils.buildApiError(`The following properties cannot be changed by the user: 
+            long_idle_until, short_idle_until and ts.`, 30010));
         }
     }
 
@@ -305,7 +247,7 @@ export class PositionValidations implements IPositionValidations {
             throw new Error(this._utils.buildApiError(`The trade list starting point must be less than the end. Received: ${startAt} - ${endAt}.`, 30018));
         }
 
-        // Make sure the query does not exceed 15 days worth of data
+        // Make sure the query does not exceed 730 days worth of data
         const difference: number = endAt - startAt;
         if (difference > this.tradeListLimit) {
             throw new Error(this._utils.buildApiError(`The trade list query is larger than the permitted data limit. 

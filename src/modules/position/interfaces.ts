@@ -14,7 +14,6 @@ export interface IPositionService {
 
     // Position Actions
     openPosition(side: IBinancePositionSide): Promise<void>,
-    increasePosition(side: IBinancePositionSide): Promise<void>,
     closePosition(side: IBinancePositionSide, chunkSize: number): Promise<void>,
 
     // Position Strategy
@@ -30,17 +29,10 @@ export interface IPositionService {
 // Validations
 export interface IPositionValidations {
     // Position Management
-    canInteractWithPositions(side: IBinancePositionSide): void,
     canOpenPosition(
         side: IBinancePositionSide, 
         position: IActivePosition|undefined, 
-        firstLeveLSize: number, 
-        availableBalance: number
-    ): void,
-    canIncreasePosition(
-        side: IBinancePositionSide, 
-        position: IActivePosition|undefined, 
-        nextLevel: IPositionStrategyLevel|undefined, 
+        positionSize: number, 
         availableBalance: number
     ): void,
     canClosePosition(
@@ -50,7 +42,7 @@ export interface IPositionValidations {
     ): void,
 
     // Position Strategy
-    canStrategyBeUpdated(newStrategy: IPositionStrategy): void,
+    canStrategyBeUpdated(currentStrategy: IPositionStrategy, newStrategy: IPositionStrategy): void,
 
     // Position Trades
     canTradesBeListed(startAt: number, endAt: number): void
@@ -77,10 +69,17 @@ export interface IPositionModel {
 
 // Notifications
 export interface IPositionNotifications {
+    // On Position Refresh
     onActivePositionRefresh(
         long: IActivePosition|undefined, 
         short: IActivePosition|undefined
-    ): Promise<void>
+    ): Promise<void>,
+
+    // On Position Action
+    onNewPosition(side: IBinancePositionSide, margin: number, amount: number): Promise<void>,
+    onPositionClose(position: IActivePosition, chunkSize: number): Promise<void>,
+    onNewCandlesticksError(error: any): Promise<void>,
+    onNewSignalError(error: any): Promise<void>
 }
 
 
@@ -119,88 +118,55 @@ export interface IPositionSummary {
 /* Position Strategy */
 
 
-/**
- * Strategy Level ID
- * Each level contains an identifier that simplifies the interaction
- * with the strategy.
- */
-export type IStrategyLevelID = "level_1"|"level_2"|"level_3"|"level_4";
-
-
-/**
- * Strategy Level
- * Each level details how much money should be placed into the 
- * position, as well as a target in order to take profit / reduce
- * losses.
- */
-export interface IPositionStrategyLevel {
-    // The identifier of the strategy level.
-    id: IStrategyLevelID,
-
-    /**
-     * The USDT wallet balance that will be placed into the position. When 
-     * level 1 is activated, the position is opened. When any subsequent level
-     * is activated, the position is increased instead.
-     */
-    size: number,
-
-    /**
-     * The price percentage change from the entry price required
-     * in order for the position to be closeable. Keep in mind this value may be 0.
-     */
-    target: number
-}
-
-
-
 
 /**
  * Strategy 
- * Levels are activated in a chained manner and must meet
- * a series of requirements in order to ensure the safety of the 
- * funds.
+ * The configuration that handles the core position entry and exit flow.
  */
 export interface IPositionStrategy {
     // The leverage that will be used on positions
     leverage: number,
 
     /**
-     * The distance between the mark and liquidation prices required in 
-     * order to be able to increase the position's level.
+     * Position Size
+     * The amount of money allocated to the position will always be 
+     * the same, no matter the side. If there isn't enough balance
+     * to cover the size, the position cannot be opened.
      */
-    level_increase_requirement: number,
+    position_size: number,
 
     /**
-     * The percentage of the total margin that the user is willing to
-     * lose instead of increasing a level.
-     * Keep in mind, when calculating the stop_loss price, the current
-     * value is divided by the leverage. F.e: If the strategy's stop loss
-     * is 5% and the leverage is x2, the real stop loss is 2.5%.
+     * Position Status
+     * Each side has its own status. When enabled and a matching prediction
+     * is generated, it will open a position.
      */
+    long_status: boolean,
+    short_status: boolean,
+
+    /**
+     * Position Exit Combination
+     * Every position 
+     */
+    take_profit: number,
     stop_loss: number,
 
-    // Levels
-    level_1: IPositionStrategyLevel,
-    level_2: IPositionStrategyLevel,
-    level_3: IPositionStrategyLevel,
-    level_4: IPositionStrategyLevel,
+    /**
+     * Idle
+     * When a position is closed, the model remains idle for idle_minutes 
+     * before being able to open more positions.
+     * A side can open a position as long as: 
+     * state == true && current_time > idle_until
+     */
+    long_idle_minutes: number,
+    long_idle_until: number,
+    short_idle_minutes: number,
+    short_idle_until: number,
 
     // The timestamp in which the strategy was last updated
     ts: number
 }
 
 
-
-
-/**
- * Position Strategy State
- * The state of the strategy allows to easily calculate
- * targets and increase sizes.
- */
-export interface IPositionStrategyState {
-    current: IPositionStrategyLevel,
-    next: IPositionStrategyLevel|undefined
-}
 
 
 
@@ -253,22 +219,13 @@ export interface IActivePosition {
     mark_price: number,
 
     // The price in which the position is labeled as "successful" and is ready to be closed.
-    target_price: number,
+    take_profit_price: number,
+
+    // The price in which the position is labeled as "unsuccessful" and is ready to be closed.
+    stop_loss_price: number,
 
     // The price at which the position will be automatically liquidated by the exchange.
     liquidation_price: number,
-
-    /**
-     * The price at which the position should be closed when it won't be increased.
-     */
-    stop_loss_price: number,
-
-    /**
-     * The minimum price at which a position can be increased based on its side. 
-     * This value is calculated based on level_increase_requirement and the 
-     * liquidation price.
-     */
-    min_increase_price: number,
 
     // The current unrealized PNL in USDT
     unrealized_pnl: number,

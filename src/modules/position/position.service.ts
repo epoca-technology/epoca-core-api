@@ -12,8 +12,11 @@ import {
     IBinanceTradePayload
 } from "../binance";
 import { IOrderBook, IOrderBookService } from "../order-book";
+import { IPredictionResult } from "../epoch-builder";
+import { ICandlestickService, ICandlestickStream } from "../candlestick";
+import { ISignalService } from "../signal";
 import { IApiErrorService } from "../api-error";
-import { IUtilitiesService } from "../utilities";
+import { INumber, IUtilitiesService } from "../utilities";
 import { 
     IAccountBalance,
     IActivePosition,
@@ -21,11 +24,11 @@ import {
     IPositionNotifications,
     IPositionService,
     IPositionStrategy,
-    IPositionStrategyState,
     IPositionSummary,
     IPositionTrade,
     IPositionValidations
 } from "./interfaces";
+import { Subscription } from "rxjs";
 
 
 
@@ -35,6 +38,8 @@ export class PositionService implements IPositionService {
     // Inject dependencies
     @inject(SYMBOLS.EpochService)               private _epoch: IEpochService;
     @inject(SYMBOLS.BinanceService)             private _binance: IBinanceService;
+    @inject(SYMBOLS.CandlestickService)         private _candlestick: ICandlestickService;
+    @inject(SYMBOLS.SignalService)              private _signal: ISignalService;
     @inject(SYMBOLS.OrderBookService)           private _orderBook: IOrderBookService;
     @inject(SYMBOLS.PositionValidations)        private _validations: IPositionValidations;
     @inject(SYMBOLS.PositionModel)              private _model: IPositionModel;
@@ -42,11 +47,13 @@ export class PositionService implements IPositionService {
     @inject(SYMBOLS.ApiErrorService)            private _apiError: IApiErrorService;
     @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
 
+
     /**
      * Account Balance
      * The balance of the futures account.
      */
     private balance: IAccountBalance;
+
 
 
     /**
@@ -56,11 +63,13 @@ export class PositionService implements IPositionService {
     private strategy: IPositionStrategy;
 
 
+
     /**
      * Long Position
      * The active long position, if none is, this value is undefined.
      */
     private long: IActivePosition|undefined;
+
 
 
     /**
@@ -71,10 +80,26 @@ export class PositionService implements IPositionService {
 
 
     /**
+     * Candlesticks Stream
+     * Stream of new candlesticks for the watcher to evaluate active positions.
+     */
+    private candlesticksSub: Subscription;
+
+
+    /**
+     * Signal
+     * Stream of signals for the strategy to open positions accordingly.
+     */
+    private signalSub: Subscription;
+
+
+
+    /**
      * Balance Syncing
      */
     private balanceSyncInterval: any;
     private readonly balanceIntervalSeconds: number = 60 * 5; // Every ~5 minutes
+
 
 
     /**
@@ -82,6 +107,7 @@ export class PositionService implements IPositionService {
      */
     private activePositionsSyncInterval: any;
     private readonly activePositionsIntervalSeconds: number = 12; // Every ~12 seconds
+
 
 
     /**
@@ -129,7 +155,30 @@ export class PositionService implements IPositionService {
 
         // Initialize the data
         await this.refreshData(false, 4);
-        //await this.updateTrades();
+
+        // Subscribe to the candlesticks module
+        this.candlesticksSub = this._candlestick.stream.subscribe(async (stream: ICandlestickStream) => {
+            try {
+                await this.onNewCandlesticks(stream);
+            } catch (e) {
+                console.log(e);
+                this._apiError.log("PositionService.initialize.candlesticksSub", e);
+                this._notification.onNewCandlesticksError(e);
+            }
+        });
+
+        // Subscribe to the signals module
+        this.signalSub = this._signal.active.subscribe(async (pred: IPredictionResult) => {
+            if (pred != 0) {
+                try {
+                    await this.onNewSignal(pred);
+                } catch (e) {
+                    console.log(e);
+                    this._apiError.log("PositionService.initialize.signalSub", e);
+                    this._notification.onNewSignalError(e);
+                }
+            }
+        });
 
         // Initialize the intervals
         this.balanceSyncInterval = setInterval(async () => {
@@ -160,6 +209,8 @@ export class PositionService implements IPositionService {
      * Stops the position module entirely.
      */
     public stop(): void { 
+        if (this.candlesticksSub) this.candlesticksSub.unsubscribe();
+        if (this.signalSub) this.signalSub.unsubscribe();
         if (this.balanceSyncInterval) clearInterval(this.balanceSyncInterval);
         this.balanceSyncInterval = undefined;
         if (this.activePositionsSyncInterval) clearInterval(this.activePositionsSyncInterval);
@@ -167,6 +218,14 @@ export class PositionService implements IPositionService {
         if (this.tradesSyncInterval) clearInterval(this.tradesSyncInterval);
         this.tradesSyncInterval = undefined;
     }
+
+
+
+
+
+
+
+
 
 
 
@@ -316,30 +375,12 @@ export class PositionService implements IPositionService {
             const markPrice: BigNumber = new BigNumber(binancePosition.markPrice);
             const isolatedWallet: number = <number>this._utils.outputNumber(binancePosition.isolatedWallet);
 
-            // Retrieve the state of the position strategy
-            const state: IPositionStrategyState = this.getStrategyState(isolatedWallet);
-
-            // Calculate the target price based on the position side
-            let targetPrice: number|undefined = 
-                state.current.target == 0 ? <number>this._utils.outputNumber(entryPrice): undefined;
-            if (!targetPrice) {
-                targetPrice = <number>this._utils.alterNumberByPercentage(
-                    entryPrice, 
-                    binancePosition.positionSide == "LONG" ? state.current.target: -(state.current.target)
-                );
-            }
-
-            // Calculate the stop loss price
-            const realStopLossPercent: BigNumber = new BigNumber(this.strategy.stop_loss).dividedBy(this.strategy.leverage);
-            const stopLossPrice: number = <number>this._utils.alterNumberByPercentage(
+            // Calculate the position exit combination
+            const { take_profit_price, stop_loss_price } = this.calculatePositionExitCombination(
+                binancePosition.positionSide,
                 entryPrice,
-                binancePosition.positionSide == "LONG" ? realStopLossPercent.times(-1): realStopLossPercent
-            );
-
-            // Calculate the min increase price based on the liquidation
-            const minIncreasePrice: number = <number>this._utils.alterNumberByPercentage(
-                binancePosition.liquidationPrice, 
-                binancePosition.positionSide == "LONG" ? this.strategy.level_increase_requirement: -(this.strategy.level_increase_requirement)
+                this.strategy.take_profit,
+                this.strategy.stop_loss
             );
 
             // Calculate the current ROE if the entry price is different to the mark price
@@ -361,10 +402,9 @@ export class PositionService implements IPositionService {
                 side: binancePosition.positionSide,
                 entry_price: <number>this._utils.outputNumber(entryPrice),
                 mark_price: <number>this._utils.outputNumber(markPrice),
-                target_price: targetPrice,
+                take_profit_price: take_profit_price,
+                stop_loss_price: stop_loss_price,
                 liquidation_price: <number>this._utils.outputNumber(binancePosition.liquidationPrice),
-                stop_loss_price: stopLossPrice,
-                min_increase_price: minIncreasePrice,
                 unrealized_pnl: <number>this._utils.outputNumber(binancePosition.unRealizedProfit),
                 roe: roe,
                 isolated_wallet: isolatedWallet,
@@ -378,6 +418,38 @@ export class PositionService implements IPositionService {
         // Otherwise, there isn't an active position on the given side
         else { return undefined }
     }
+
+
+
+
+
+    /**
+     * Calculates the take profit and stop loss prices.
+     * @param side 
+     * @param entryPrice 
+     * @param take_profit 
+     * @param stop_loss 
+     * @returns { take_profit_price: number, stop_loss_price: number }
+     */
+    private calculatePositionExitCombination(
+        side: IBinancePositionSide, 
+        entryPrice: INumber,
+        take_profit: number,
+        stop_loss: number
+    ): { take_profit_price: number, stop_loss_price: number } {
+        return {
+            take_profit_price: <number>this._utils.alterNumberByPercentage(
+                entryPrice, 
+                side == "LONG" ? take_profit: -(take_profit)
+            ),
+            stop_loss_price: <number>this._utils.alterNumberByPercentage(
+                entryPrice, 
+                side == "LONG" ? -(stop_loss): stop_loss
+            )
+        }
+    }
+
+
 
 
 
@@ -439,6 +511,148 @@ export class PositionService implements IPositionService {
 
 
 
+
+
+
+
+
+
+
+
+
+
+    /*********************
+     * Signal Management *
+     *********************/
+
+
+
+
+
+    /**
+     * When a non-neutral signal is generated, it verifies
+     * if a new position can be opened. The requirements are:
+     * - Non-neutral prediction
+     * - Non-existant position side
+     * - Enabled position side
+     * - Not Idling
+     * @param pred 
+     * @returns Promise<void>
+     */
+    private async onNewSignal(pred: IPredictionResult): Promise<void> {
+        // Init the current time
+        const ts: number = Date.now();
+
+        // Check if a long position can be opened
+        if (
+            pred == 1 &&
+            !this.long &&
+            this.strategy.long_status &&
+            ts >= this.strategy.long_idle_until
+        ) { await this.openPosition("LONG") }
+
+        // Check if a short position can be opened
+        else if (
+            pred == -1 &&
+            !this.short &&
+            this.strategy.short_status &&
+            ts >= this.strategy.short_idle_until
+        ) { await this.openPosition("SHORT") }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /********************
+     * Position Watcher *
+     ********************/
+
+
+
+
+
+    /**
+     * Whenever new candlesticks are processed, active positions
+     * are evaluated and closed if the criteria is met.
+     * @param stream 
+     * @returns Promise<void>
+     */
+    private async onNewCandlesticks(stream: ICandlestickStream): Promise<void> {
+        // Ensure there is an active position before proceeding
+        if (this.long || this.short) {
+            // Firstly, ensure the stream is synced
+            if (!this._candlestick.isStreamInSync(stream)) {
+                throw new Error(this._utils.buildApiError(`The positions cannot be evaluated against the current price
+                because the candlesticks stream is out of sync.`, 29003));
+            }
+
+            // Init the current price
+            const spotPrice: number = stream.candlesticks.at(-1).c;
+
+            // Init the error list
+            let errors: string[] = [];
+
+            // Evaluate if the long position should be closed (if any)
+            if (
+                this.long &&
+                (spotPrice >= this.long.take_profit_price || spotPrice <= this.long.stop_loss_price)
+            ) {
+                try {
+                    await this.closePosition("LONG", 1);
+                } catch(e) {
+                    console.log("Error when closing long: ", e);
+                    errors.push(this._utils.getErrorMessage(e));
+                }
+            }
+
+            // Evaluate if the short position should be closed (if any)
+            if (
+                this.short &&
+                (spotPrice <= this.short.take_profit_price || spotPrice >= this.short.stop_loss_price)
+            ) {
+                try {
+                    await this.closePosition("SHORT", 1);
+                } catch(e) {
+                    console.log("Error when closing short: ", e);
+                    errors.push(this._utils.getErrorMessage(e));
+                }
+            }
+
+            // Finally, rethrow the errors if any
+            if (errors.length > 0) throw new Error(errors.join(", "));
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /********************
      * Position Actions *
      ********************/
@@ -453,22 +667,16 @@ export class PositionService implements IPositionService {
      * @returns Promise<void>
      */
     public async openPosition(side: IBinancePositionSide): Promise<void> {
-        // Perform a basic validation
-        this._validations.canInteractWithPositions(side);
-
-        // Refresh the data
-        //await this.refreshData(false, 0.1);
-
         // Validate the request
         this._validations.canOpenPosition(
             side,
             side == "LONG" ? this.long: this.short,
-            this.strategy.level_1.size,
+            this.strategy.position_size,
             this.balance.available
         );
 
         // Calculate the position amount in BTC
-        const positionAmount: number = await this.calculatePositionAmount(side, this.strategy.level_1.size);
+        const positionAmount: number = await this.calculatePositionAmount(side);
 
         // Execute the trade
         const payload: IBinanceTradeExecutionPayload = await this._binance.order(
@@ -477,54 +685,16 @@ export class PositionService implements IPositionService {
             positionAmount
         );
 
-        // Trigger the refresh event
-        await this.refreshData(true, 2);
-    }
-
-
-
-
-    /**
-     * Increases an active position to the next level.
-     * @param side 
-     * @returns Promise<void>
-     */
-    public async increasePosition(side: IBinancePositionSide): Promise<void> {
-        // Perform a basic validation
-        this._validations.canInteractWithPositions(side);
-
-        // Refresh the data
-        //await this.refreshData(false, 0.1);
-
-        // Init the position
-        const position: IActivePosition|undefined = side == "LONG" ? this.long: this.short;
-        if (!position) {
-            throw new Error(this._utils.buildApiError(`The ${side} position cannot be increased because it isnt active.`, 29003));
-        }
-
-        // Calculate the margin allocated to the position
-        const margin: number = side == "LONG" ? this.long.isolated_wallet: this.short.isolated_wallet;
-
-        // Calculate the current strategy state
-        const {current, next} = this.getStrategyState(margin);
-
-        // Validate the request
-        this._validations.canIncreasePosition(side, position, next, this.balance.available);
-
-        // Calculate the position amount in BTC
-        const positionAmount: number = await this.calculatePositionAmount(side, next.size);
-
-        // Execute the trade
-        const payload: IBinanceTradeExecutionPayload = await this._binance.order(
-            side == "LONG" ? "BUY": "SELL",
-            side,
-            positionAmount
-        );
-
+        // Send the notification
+        this._notification.onNewPosition(side, this.strategy.position_size, positionAmount);
 
         // Trigger the refresh event
         await this.refreshData(true, 2);
     }
+
+
+
+
 
 
 
@@ -536,13 +706,7 @@ export class PositionService implements IPositionService {
      * @param chunkSize
      * @returns Promise<void>
      */
-     public async closePosition(side: IBinancePositionSide, chunkSize: number): Promise<void> {
-        // Perform a basic validation
-        this._validations.canInteractWithPositions(side);
-
-        // Refresh the active positions
-        //await this.refreshActivePositions();
-
+    public async closePosition(side: IBinancePositionSide, chunkSize: number): Promise<void> {
         // Validate the request
         this._validations.canClosePosition(side, side == "LONG" ? this.long: this.short, chunkSize);
 
@@ -557,6 +721,12 @@ export class PositionService implements IPositionService {
             side,
             <number>this._utils.outputNumber(amount, { dp: 3, ru: false})
         );
+
+        // Activate the idle
+        await this.activateIdle(side);
+
+        // Send the notification
+        this._notification.onPositionClose(side == "LONG" ? this.long: this.short, chunkSize);
 
         // Trigger the refresh event
         await this.refreshData(true, 2);
@@ -576,30 +746,28 @@ export class PositionService implements IPositionService {
 
 
     /**
-     * Based on a side and the level size, it will calculate the total
-     * size of a position to be executed.
+     * Based on a side, it will calculate the total the position amount
+     * in BTC.
      * @param side 
-     * @param levelSize 
      * @returns Promise<number>
      */
-    private async calculatePositionAmount(side: IBinancePositionSide, levelSize: number): Promise<number> {
+    private async calculatePositionAmount(side: IBinancePositionSide): Promise<number> {
         // Firstly, retrieve the order book
         const book: IOrderBook = await this._orderBook.getBook();
 
         /**
-         * Initialize the rate that will be used
-         * In order to ensure the position amount never exceeds the margin
-         * specified in the strategy level, the prices are moved by 1%.
+         * Price
+         * In order to calculate the price that will be used to open the position,
+         * the order book is retrieved and the safe rate is selected according
+         * to the position side.
          */
-        const price: number = side == "LONG" ? 
-            <number>this._utils.alterNumberByPercentage(book.safe_ask, 1):
-            <number>this._utils.alterNumberByPercentage(book.safe_bid, 1);
+        const price: number = side == "LONG" ? book.safe_ask: book.safe_bid;
 
         // Calculate the notional size
-        const notional: BigNumber = new BigNumber(levelSize).times(this.strategy.leverage);
+        const notional: BigNumber = new BigNumber(this.strategy.position_size).times(this.strategy.leverage);
 
         // Finally, convert the notional to BTC and return the position amount
-        return <number>this._utils.outputNumber(notional.dividedBy(price), {dp: 3});
+        return <number>this._utils.outputNumber(notional.dividedBy(price), {dp: 3, ru: false});
     }
 
     
@@ -611,9 +779,20 @@ export class PositionService implements IPositionService {
 
 
 
+
+
+
+
+
+
+
+
+
+
     /*********************
      * Position Strategy *
      *********************/
+
 
 
 
@@ -633,6 +812,8 @@ export class PositionService implements IPositionService {
 
 
 
+
+
     /**
      * Updates the current trading strategy.
      * @param newStrategy 
@@ -640,7 +821,7 @@ export class PositionService implements IPositionService {
      */
     public async updateStrategy(newStrategy: IPositionStrategy): Promise<void> {
         // Make sure it can be updated
-        this._validations.canStrategyBeUpdated(newStrategy);
+        this._validations.canStrategyBeUpdated(this.strategy, newStrategy);
 
         // Update the timestamp
         newStrategy.ts = Date.now();
@@ -657,68 +838,68 @@ export class PositionService implements IPositionService {
 
 
     /**
-     * Builds the default strategy object in case it hasn't 
-     * yet been initialized.
-     * @returns IPositionStrategy
+     * The idle is activated for a side when a position
+     * is closed.
+     * @param side 
+     * @returns Promise<void>
      */
-    private getDefaultStrategy(): IPositionStrategy {
-        return {
-            leverage: 2,
-            level_increase_requirement: 12,
-            stop_loss: 50,
-            level_1: { id: "level_1", size: 150, target: 1.25},
-            level_2: { id: "level_2", size: 300, target: 0.5},
-            level_3: { id: "level_3", size: 600, target: 0},
-            level_4: { id: "level_4", size: 1200, target: 0},
-            ts: Date.now()
+    private async activateIdle(side: IBinancePositionSide): Promise<void> {
+        // Init the current time
+        const currentTS: number = Date.now();
+
+        // Increment the side accordingly
+        if (side == "LONG") {
+            this.strategy.long_idle_until = moment(currentTS).add(this.strategy.long_idle_minutes, "minutes").valueOf();
+        } else {
+            this.strategy.short_idle_until = moment(currentTS).add(this.strategy.short_idle_minutes, "minutes").valueOf();
         }
+        
+        // Update the strategy record
+        this.strategy.ts = currentTS;
+        await this._model.updateStrategy(this.strategy);
     }
+
 
 
 
 
 
     /**
-     * Calculates the strategy state for a position, returning
-     * the current level and the next. This function should 
-     * not be invoked if there is no margin in the position.
-     * @param margin
-     * @returns IPositionStrategyState
+     * Builds the default strategy object in case it hasn't 
+     * yet been initialized.
+     * @returns IPositionStrategy
      */
-    private getStrategyState(margin: number): IPositionStrategyState {
-        // Init the accumulated margin list by level
-        const margin_acum: number[] = [
-            this.strategy.level_1.size,
-            this.strategy.level_1.size + this.strategy.level_2.size,
-            this.strategy.level_1.size + this.strategy.level_2.size + this.strategy.level_3.size,
-            this.strategy.level_1.size + this.strategy.level_2.size + this.strategy.level_3.size + this.strategy.level_4.size,
-        ]
-
-        // Level 1 is active
-        if (margin > 0 && margin <= margin_acum[0]) {
-            return { current: this.strategy.level_1, next: this.strategy.level_2}
-        }
-
-        // Level 2 is active
-        else if (margin > margin_acum[0] && margin <= margin_acum[1]) {
-            return { current: this.strategy.level_2, next: this.strategy.level_3}
-        }
-
-        // Level 3 is active
-        else if (margin > margin_acum[1] && margin <= margin_acum[2]) {
-            return { current: this.strategy.level_3, next: this.strategy.level_4}
-        }
-
-        // Level 4 is active
-        else if (margin > margin_acum[2]) {
-            return { current: this.strategy.level_4, next: undefined}
-        }
-
-        // Otherwise, there is something wrong with the margin
-        else {
-            throw new Error(this._utils.buildApiError(`The strategy state cannot be calculated as the provided position has no margin. Received ${margin}`, 29000));
+    private getDefaultStrategy(): IPositionStrategy {
+        const currentTS: number = Date.now();
+        return {
+            leverage: 5,
+            position_size: 150,
+            long_status: false,
+            short_status: false,
+            long_idle_minutes: 30,
+            long_idle_until: currentTS,
+            short_idle_minutes: 30,
+            short_idle_until: currentTS,
+            take_profit: 3,
+            stop_loss: 3,
+            ts: currentTS
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

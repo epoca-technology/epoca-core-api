@@ -1,6 +1,7 @@
 import {inject, injectable} from "inversify";
 import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
+import { IBinancePositionSide } from "../binance";
 import { INotificationService } from "../notification";
 import { IUtilitiesService } from "../utilities";
 import { 
@@ -20,34 +21,11 @@ export class PositionNotifications implements IPositionNotifications {
 
 
     /**
-    * Target
-    * Whenever the mark price in a position hits the target it will send
-    * a notification to the users to determine when the position should 
-    * be closed.
-    */
-    private readonly targetThrottleMinutes: number = 5;
-    private longTargetLastNotification: number|undefined = undefined;
-    private shortTargetLastNotification: number|undefined = undefined;
-
-
-
-    /**
-    * Stop Loss
-    * Whenever the mark price in a position hits the stop loss it will send
-    * a notification to the users to determine if the position should be 
-    * closed entirely, partially and not at all.
-    */
-    private readonly stopLossThrottleMinutes: number = 120;
-    private longStopLossLastNotification: number|undefined = undefined;
-    private shortStopLossLastNotification: number|undefined = undefined;
-
-
-
-    /**
      * Liquidation
-     * Whenever the distance between the mark price approaches the
-     * min increase price, users must be notified in order to take action.
+     * Whenever the mark price approaches the liquidation price users
+     * are notified as positions are not suposed to get to this point.
      */
+    private readonly liquidationAcceptableDistance: number = 15;
     private readonly liquidationThrottleMinutes: number = 3;
     private longLiquidationLastNotification: number|undefined = undefined;
     private shortLiquidationLastNotification: number|undefined = undefined;
@@ -57,6 +35,17 @@ export class PositionNotifications implements IPositionNotifications {
 
     constructor() {}
 
+
+
+
+
+
+
+
+
+    /******************************
+     * On Active Position Refresh *
+     ******************************/
 
 
 
@@ -95,43 +84,18 @@ export class PositionNotifications implements IPositionNotifications {
         // Init the current time
         const currentTS: number = Date.now();
 
-        // Check the target price
-        if (
-            long.mark_price >= long.target_price && 
-            (
-                this.longTargetLastNotification == undefined ||
-                this.longTargetLastNotification < moment(currentTS).subtract(this.targetThrottleMinutes, "minutes").valueOf()
-            )
-        ) {
-            await this._notification.positionHitTarget(long);
-            this.longTargetLastNotification = currentTS;
-        }
-
-        // Check the stop loss price
-        if (
-            long.mark_price <= long.stop_loss_price && 
-            (
-                this.longStopLossLastNotification == undefined ||
-                this.longStopLossLastNotification < moment(currentTS).subtract(this.stopLossThrottleMinutes, "minutes").valueOf()
-            )
-        ) {
-            await this._notification.positionHitStopLoss(long);
-            this.longStopLossLastNotification = currentTS;
-        }
-
         // Check the liquidation price
         if (
             (this.longLiquidationLastNotification == undefined ||
-            this.longLiquidationLastNotification < moment(currentTS).subtract(this.liquidationThrottleMinutes, "minutes").valueOf()) &&
-            long.mark_price <= long.min_increase_price
+            this.longLiquidationLastNotification < moment(currentTS).subtract(this.liquidationThrottleMinutes, "minutes").valueOf())
         ) {
             const distance: number = <number>this._utils.calculatePercentageChange(long.mark_price, long.liquidation_price);
-            await this._notification.liquidationPriceIsWarning(long, distance);
-            this.longLiquidationLastNotification = currentTS;
+            if (Math.abs(distance) <= this.liquidationAcceptableDistance) {
+                await this._notification.liquidationPriceIsWarning(long, distance);
+                this.longLiquidationLastNotification = currentTS;
+            }
         }
     }
-
-
 
 
 
@@ -147,39 +111,124 @@ export class PositionNotifications implements IPositionNotifications {
         // Init the current time
         const currentTS: number = Date.now();
 
-        // Check the target price
-        if (
-            short.mark_price <= short.target_price && 
-            (
-                this.shortTargetLastNotification == undefined ||
-                this.shortTargetLastNotification < moment(currentTS).subtract(this.targetThrottleMinutes, "minutes").valueOf()
-            )
-        ) {
-            await this._notification.positionHitTarget(short);
-            this.shortTargetLastNotification = currentTS;
-        }
-
-        // Check the stop loss price
-        if (
-            short.mark_price >= short.stop_loss_price && 
-            (
-                this.shortStopLossLastNotification == undefined ||
-                this.shortStopLossLastNotification < moment(currentTS).subtract(this.stopLossThrottleMinutes, "minutes").valueOf()
-            )
-        ) {
-            await this._notification.positionHitStopLoss(short);
-            this.shortStopLossLastNotification = currentTS;
-        }
-
         // Check the liquidation price
         if (
             (this.shortLiquidationLastNotification == undefined ||
-            this.shortLiquidationLastNotification < moment(currentTS).subtract(this.liquidationThrottleMinutes, "minutes").valueOf()) &&
-            short.mark_price >= short.min_increase_price
+            this.shortLiquidationLastNotification < moment(currentTS).subtract(this.liquidationThrottleMinutes, "minutes").valueOf())
         ) {
             const distance: number = <number>this._utils.calculatePercentageChange(short.mark_price, short.liquidation_price);
-            await this._notification.liquidationPriceIsWarning(short, distance);
-            this.shortLiquidationLastNotification = currentTS;
+            if (Math.abs(distance) <= this.liquidationAcceptableDistance) {
+                await this._notification.liquidationPriceIsWarning(short, distance);
+                this.shortLiquidationLastNotification = currentTS;
+            }
         }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*************************
+     * Position Entry / Exit *
+     *************************/
+
+
+
+
+
+
+    /**
+     * Triggers whenever a new position is opened.
+     * @param side 
+     * @param margin 
+     * @param amount 
+     * @returns Promise<void> 
+     */
+    public onNewPosition(side: IBinancePositionSide, margin: number, amount: number): Promise<void> {
+        return this._notification.onNewPosition(side, margin, amount);
+    }
+
+
+
+
+
+
+    /**
+     * Triggers whenever a position is closed fully or partially
+     * and regardless of the result.
+     * @param position 
+     * @param chunkSize 
+     * @returns Promise<void> 
+     */
+    public onPositionClose(position: IActivePosition, chunkSize: number): Promise<void> {
+        /**
+         * Even though it is unlikely, it is possible for the position 
+         * to be unset prior to this notification being sent.
+         */
+        if (position) {
+            return this._notification.onPositionClose(
+                position.side, 
+                chunkSize, 
+                position.mark_price, 
+                position.unrealized_pnl
+            );
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*************************
+     * Position Action Error *
+     *************************/
+
+
+
+
+
+
+    /**
+     * Triggers whenever there is an error during during
+     * the candlestick stream.
+     * @param error 
+     * @returns Promise<void>
+     */
+    public onNewCandlesticksError(error: any): Promise<void> {
+        return this._notification.positionError("Position.onNewCandlesticks", error);
+    }
+
+
+
+
+
+
+
+    /**
+     * Triggers whenever there is an error during during
+     * the signal stream.
+     * @param error 
+     * @returns Promise<void>
+     */
+    public onNewSignalError(error: any): Promise<void> {
+        return this._notification.positionError("Position.onNewSignal", error);
     }
 }
