@@ -141,7 +141,7 @@ function getString(key: string, val: string): string {
  function getNumber(key: string, val: string): number {
     isPropertySet(key, val);
     const numberVal: number = Number(val);
-    if (numberVal == NaN) throw new Error(`Environment: The property ${key} is not a valid number.`);
+    if (Number.isNaN(numberVal)) throw new Error(`Environment: The property ${key} is not a valid number.`);
     return numberVal;
 }
 
