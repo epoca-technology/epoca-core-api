@@ -6,6 +6,7 @@ import {
     IPositionModel, 
     IPositionStrategy, 
     IPositionTrade,
+    IPositionHealthState,
 } from "./interfaces";
 
 
@@ -98,7 +99,85 @@ export class PositionModel implements IPositionModel {
 
 
 
-    /* Position Trades */
+
+
+
+
+    /*******************
+     * Position Health *
+     *******************/
+
+
+
+
+    /**
+     * Retrieves current position health. If none has been set,
+     * it returns undefined
+     * @returns Promise<IPositionHealthState|undefined>
+     */
+    public async getHealth(): Promise<IPositionHealthState|undefined> {
+        // Retrieve the user
+        const { rows } = await this._db.query({
+            text: `SELECT health FROM  ${this._db.tn.position_health} WHERE id = 1`,
+            values: []
+        });
+
+        // Return the result
+        return rows.length ? rows[0].health: undefined;
+    }
+
+
+
+
+
+    /**
+     * Stores the health record.
+     * @param health 
+     * @returns Promise<void>
+     */
+    public async createHealth(health: IPositionHealthState): Promise<void> {
+        await this._db.query({
+            text: `INSERT INTO ${this._db.tn.position_health}(id, health) VALUES(1, $1)`,
+            values: [health]
+        });
+    }
+
+
+
+
+
+
+    /**
+     * Updates the current health.
+     * @param health 
+     * @returns Promise<void>
+     */
+     public async updateHealth(health: IPositionHealthState): Promise<void> {
+        await this._db.query({
+            text: `UPDATE ${this._db.tn.position_health} SET health=$1 WHERE id=1`,
+            values: [health]
+        });
+    }
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+    /*******************
+     * Position Trades *
+     *******************/
 
 
 

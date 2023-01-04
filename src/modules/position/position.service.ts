@@ -1,6 +1,7 @@
 import {inject, injectable} from "inversify";
 import { BigNumber } from "bignumber.js";
 import * as moment from "moment";
+import { Subscription } from "rxjs";
 import { SYMBOLS } from "../../ioc";
 import { IEpochService } from "../epoch";
 import { 
@@ -20,6 +21,7 @@ import { INumber, IUtilitiesService } from "../utilities";
 import { 
     IAccountBalance,
     IActivePosition,
+    IPositionHealth,
     IPositionModel,
     IPositionNotifications,
     IPositionService,
@@ -28,7 +30,6 @@ import {
     IPositionTrade,
     IPositionValidations
 } from "./interfaces";
-import { Subscription } from "rxjs";
 
 
 
@@ -42,6 +43,7 @@ export class PositionService implements IPositionService {
     @inject(SYMBOLS.SignalService)              private _signal: ISignalService;
     @inject(SYMBOLS.OrderBookService)           private _orderBook: IOrderBookService;
     @inject(SYMBOLS.PositionValidations)        private _validations: IPositionValidations;
+    @inject(SYMBOLS.PositionHealth)             private _health: IPositionHealth;
     @inject(SYMBOLS.PositionModel)              private _model: IPositionModel;
     @inject(SYMBOLS.PositionNotifications)      private _notification: IPositionNotifications;
     @inject(SYMBOLS.ApiErrorService)            private _apiError: IApiErrorService;
@@ -153,6 +155,9 @@ export class PositionService implements IPositionService {
         // Initialize the strategy
         await this.initializeStrategy();
 
+        // Initialize the health
+        await this._health.initialize();
+
         // Initialize the data
         await this.refreshData(false, 4);
 
@@ -253,7 +258,11 @@ export class PositionService implements IPositionService {
             balance: this.balance,
             strategy: this.strategy,
             long: this.long,
-            short: this.short
+            short: this.short,
+            health: {
+                long: this._health.long,
+                short: this._health.short
+            }
         }
     }
 
@@ -354,6 +363,9 @@ export class PositionService implements IPositionService {
         // Update the local properties
         this.long = this.processActivePosition(rawLong);
         this.short = this.processActivePosition(rawShort);
+
+        // Calculate the position health by side
+        await this._health.onPositionRefresh(this.long, this.short);
 
         // Verify if an event should be broadcasted
         await this._notification.onActivePositionRefresh(this.long, this.short);
@@ -606,27 +618,21 @@ export class PositionService implements IPositionService {
             let errors: string[] = [];
 
             // Evaluate if the long position should be closed (if any)
-            if (
-                this.long &&
-                (spotPrice >= this.long.take_profit_price || spotPrice <= this.long.stop_loss_price)
-            ) {
+            if (this.long) {
                 try {
-                    await this.closePosition("LONG", 1);
+                    await this.evaluateActiveLong(spotPrice);
                 } catch(e) {
-                    console.log("Error when closing long: ", e);
+                    console.log("Error when evaluating active long: ", e);
                     errors.push(this._utils.getErrorMessage(e));
                 }
             }
 
             // Evaluate if the short position should be closed (if any)
-            if (
-                this.short &&
-                (spotPrice <= this.short.take_profit_price || spotPrice >= this.short.stop_loss_price)
-            ) {
+            if (this.short) {
                 try {
-                    await this.closePosition("SHORT", 1);
+                    await this.evaluateActiveShort(spotPrice);
                 } catch(e) {
-                    console.log("Error when closing short: ", e);
+                    console.log("Error when evaluating active short: ", e);
                     errors.push(this._utils.getErrorMessage(e));
                 }
             }
@@ -638,6 +644,39 @@ export class PositionService implements IPositionService {
 
 
 
+
+
+    /**
+     * Evaluates an active long position. If conditions are met
+     * it is closed.
+     * @param spotPrice 
+     * @returns Promise<void>
+     */
+    private async evaluateActiveLong(spotPrice: number): Promise<void> {
+        if (
+            (spotPrice >= this.long.take_profit_price || spotPrice <= this.long.stop_loss_price)
+        ) {
+            await this.closePosition("LONG", 1);
+        }
+    }
+
+
+
+
+
+    /**
+     * Evaluates an active short position. If conditions are met
+     * it is closed.
+     * @param spotPrice 
+     * @returns Promise<void>
+     */
+    private async evaluateActiveShort(spotPrice: number): Promise<void> {
+        if (
+            (spotPrice <= this.short.take_profit_price || spotPrice >= this.short.stop_loss_price)
+        ) {
+            await this.closePosition("SHORT", 1);
+        }
+    }
 
 
 

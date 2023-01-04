@@ -611,6 +611,18 @@
 
 
 
+#
+## Position Health (32.000 - 32.999)
+
+32000: `The position health could not be calculated because the prediction model is not currently active.`
+
+32001: `The position health could not be calculated because the market state is not currently active.`
+
+32002: ``
+
+
+
+
 
 #
 ## Signal Service (35.000 - 35.999)

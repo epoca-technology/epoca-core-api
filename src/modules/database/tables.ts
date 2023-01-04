@@ -228,6 +228,18 @@ export const TABLES: IRawTable[] = [
     },
 
     
+    // Position Health
+    {
+        name: "position_health",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id            SMALLINT NOT NULL PRIMARY KEY,
+                health        JSONB NOT NULL
+            );`
+        }
+    },
+
+    
     // Position Trades
     {
         name: "position_trades",

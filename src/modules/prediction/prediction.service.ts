@@ -78,8 +78,8 @@ export class PredictionService implements IPredictionService {
      * The state of the prediction stands for the trend being followed by the
      * last 5 hours worth of candlesticks. The states are the following:
      * 1) Flat: there isn't a clear trend being followed and is represented by a 0.
-     * 2) Up: there is an increase trend and is be represented by an int from 1 to 11.
-     * 3) Down: there is a decrease trend and is be represented by an int from -1 to -11.
+     * 2) Up: there is an increase trend and is be represented by an int from 1 to 9.
+     * 3) Down: there is a decrease trend and is be represented by an int from -1 to -9.
      * The number represents the number of candlesticks backing the trend. The higher, 
      * the more intense.
      */

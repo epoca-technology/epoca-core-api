@@ -133,7 +133,11 @@ export class BulkDataService implements IBulkDataService {
                     balance: positionSummary.balance,
                     strategy: positionSummary.strategy,
                     long: positionSummary.long || null,
-                    short: positionSummary.short || null
+                    short: positionSummary.short || null,
+                    health: {
+                        long: positionSummary.health.long,
+                        short: positionSummary.health.short
+                    }
                 },
                 marketState: {
                     window: this.compressWindowState(),

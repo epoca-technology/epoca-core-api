@@ -79,6 +79,7 @@ export interface ITableNames {
     regression_certificates: string,
     prediction_cancellation_policies: string,
     position_strategy: string,
+    position_health: string,
     position_trades: string,
 }
 
