@@ -33,14 +33,14 @@ export class PositionHealth implements IPositionHealth {
      * position's health points.
      */
     private readonly weights: IPositionHealthWeights = {
-        trend_sum: 70,
+        trend_sum: 77,
         trend_state: 5,
-        ta_30m: 2.5,
-        ta_2h: 2.5,
-        ta_4h: 2.5,
-        ta_1d: 2.5,
-        open_interest: 7.5,
-        long_short_ratio: 7.5
+        ta_30m: 1,
+        ta_2h: 2,
+        ta_4h: 2,
+        ta_1d: 3,
+        open_interest: 5,
+        long_short_ratio: 5
     }
 
 
@@ -241,6 +241,9 @@ export class PositionHealth implements IPositionHealth {
 
         // Evaluate the long/short ratio
         hp += this.evaluateLongShortRatio(side);
+
+        // Format the HP correctly
+        hp = <number>this._utils.outputNumber(hp);
 
         // Complete the health object if it was partially initialized
         if (health.ohp == 0) {
