@@ -618,7 +618,13 @@
 
 32001: `The position health could not be calculated because the market state is not currently active.`
 
-32002: ``
+32002: `The position health candlesticks cannot be retrieved because the provided side is invalid. Received: ${side}`
+
+32003: ``
+
+32004: ``
+
+32005: ``
 
 
 

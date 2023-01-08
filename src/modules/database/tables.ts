@@ -2,7 +2,10 @@ import { IRawTable } from "./interfaces";
 
 /* Tables */
 export const TABLES: IRawTable[] = [
-    // GUI Version
+    /**
+     * GUI Version
+     * 
+     */
     {
         name: "gui_version",
         sql: (tableName: string): string => {
@@ -13,7 +16,11 @@ export const TABLES: IRawTable[] = [
         }
     },
 
-    // Server Alarms
+    
+    /**
+     * Server Alarms
+     * 
+     */
     {
         name: "server_alarms",
         sql: (tableName: string): string => {
@@ -30,7 +37,11 @@ export const TABLES: IRawTable[] = [
         }
     },
 
-    // Candlesticks
+
+    /**
+     * Candlesticks
+     * 
+     */
     {
         name: "candlesticks",
         sql: (tableName: string): string => {
@@ -46,7 +57,11 @@ export const TABLES: IRawTable[] = [
         }
     },
 
-    // Prediction Candlesticks
+    
+    /**
+     * Prediction Candlesticks
+     * 
+     */
     {
         name: "prediction_candlesticks",
         sql: (tableName: string): string => {
@@ -62,7 +77,11 @@ export const TABLES: IRawTable[] = [
         }
     },
 
-    // Users
+
+    /**
+     * Users
+     * 
+     */
     {
         name: "users",
         sql: (tableName: string): string => {
@@ -78,7 +97,11 @@ export const TABLES: IRawTable[] = [
         }
     },
 
-    // IP Blacklist
+
+    /**
+     * IP Blacklist
+     * 
+     */
     {
         name: "ip_blacklist",
         sql: (tableName: string): string => {
@@ -90,7 +113,11 @@ export const TABLES: IRawTable[] = [
         }
     },
 
-    // API Errors
+
+    /**
+     * API Errors
+     * 
+     */
     {
         name: "api_errors",
         sql: (tableName: string): string => {
@@ -105,7 +132,11 @@ export const TABLES: IRawTable[] = [
         }
     },
 
-    // Epochs
+
+    /**
+     * Epochs
+     * 
+     */
     {
         name: "epochs",
         sql: (tableName: string): string => {
@@ -121,7 +152,11 @@ export const TABLES: IRawTable[] = [
         }
     },
 
-    // Predictions
+
+    /**
+     * Predictions
+     * 
+     */
     {
         name: "predictions",
         sql: (tableName: string): string => {
@@ -142,7 +177,10 @@ export const TABLES: IRawTable[] = [
     },
 
 
-    // Epoch Prediction Candlesticks
+    /**
+     * Epoch Prediction Candlesticks
+     * 
+     */
     {
         name: "epoch_prediction_candlesticks",
         sql: (tableName: string): string => {
@@ -166,7 +204,10 @@ export const TABLES: IRawTable[] = [
     },
 
 
-    // Prediction Model Certificates
+    /**
+     * Prediction Model Certificates
+     * 
+     */
     {
         name: "prediction_model_certificates",
         sql: (tableName: string): string => {
@@ -185,7 +226,10 @@ export const TABLES: IRawTable[] = [
     },
 
 
-    // Regression Certificates
+    /**
+     * Regression Certificates
+     * 
+     */
     {
         name: "regression_certificates",
         sql: (tableName: string): string => {
@@ -204,7 +248,10 @@ export const TABLES: IRawTable[] = [
     },
 
     
-    // Prediction Cancellation Policies
+    /**
+     * Prediction Cancellation Policies
+     * 
+     */
     {
         name: "prediction_cancellation_policies",
         sql: (tableName: string): string => {
@@ -216,7 +263,10 @@ export const TABLES: IRawTable[] = [
     },
 
     
-    // Position Strategy
+    /**
+     * Position Strategy
+     * 
+     */
     {
         name: "position_strategy",
         sql: (tableName: string): string => {
@@ -228,7 +278,10 @@ export const TABLES: IRawTable[] = [
     },
 
     
-    // Position Health
+    /**
+     * Position Health
+     * 
+     */
     {
         name: "position_health",
         sql: (tableName: string): string => {
@@ -240,7 +293,50 @@ export const TABLES: IRawTable[] = [
     },
 
     
-    // Position Trades
+    /**
+     * Position Health Points Candlesticks
+     * 
+     */
+    {
+        name: "position_hp_candlesticks",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                side  VARCHAR(10) NOT NULL,
+                ot    BIGINT NOT NULL,
+                o     NUMERIC(20,2) NOT NULL,
+                h     NUMERIC(20,2) NOT NULL,
+                l     NUMERIC(20,2) NOT NULL,
+                c     NUMERIC(20,2) NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_side ON ${tableName}(side);`
+        }
+    },
+
+
+    /**
+     * Position Health Points Drawdown Candlesticks
+     * 
+     */
+    {
+        name: "position_dd_candlesticks",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                side  VARCHAR(10) NOT NULL,
+                ot    BIGINT NOT NULL,
+                o     NUMERIC(20,2) NOT NULL,
+                h     NUMERIC(20,2) NOT NULL,
+                l     NUMERIC(20,2) NOT NULL,
+                c     NUMERIC(20,2) NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_side ON ${tableName}(side);`
+        }
+    },
+
+    
+    /**
+     * Position Trades
+     * 
+     */
     {
         name: "position_trades",
         sql: (tableName: string): string => {

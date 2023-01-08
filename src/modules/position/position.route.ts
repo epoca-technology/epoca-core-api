@@ -17,8 +17,10 @@ import {IUtilitiesService} from "../utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Position Service
-import {IPositionService, IPositionTrade} from "../position";
+import {IPositionService, IPositionHealth, IPositionTrade, IPositionHealthCandlesticks} from "../position";
+import { IBinancePositionSide } from "../binance";
 const _position: IPositionService = appContainer.get<IPositionService>(SYMBOLS.PositionService);
+const _positionHealth: IPositionHealth = appContainer.get<IPositionHealth>(SYMBOLS.PositionHealth);
 
 
 
@@ -32,7 +34,10 @@ const PositionRoute = express.Router();
 
 
 
-/* Position Management */
+
+/***********************
+ * Position Management *
+ ***********************/
 
 
 
@@ -121,7 +126,10 @@ PositionRoute.route("/close").post(mediumRiskLimit, async (req: express.Request,
 
 
 
-/* Position Strategy Management */
+
+/********************************
+ * Position Strategy Management *
+ ********************************/
 
 
 
@@ -166,7 +174,73 @@ PositionRoute.route("/updateStrategy").post(ultraHighRiskLimit, async (req: expr
 
 
 
-/* Position History */
+
+
+
+
+
+
+/********************************
+ * Position Health Candlesticks *
+ ********************************/
+
+
+
+
+
+
+/**
+ * Retrieves the position health candlesticks for a side.
+ * @requires id-token
+ * @requires api-secret
+ * @requires authority: 1
+ * @param side
+ * @returns IAPIResponse<IPositionHealthCandlesticks>
+*/
+PositionRoute.route("/getPositionHealthCandlesticks").get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["side"], req.query);
+
+        // Retrieve the data
+        const data: IPositionHealthCandlesticks = await _positionHealth.getPositionHealthCandlesticks(
+            <IBinancePositionSide>req.query.side
+        );
+
+        // Return the response
+        res.send(_utils.apiResponse(data));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("PositionRoute.getPositionHealthCandlesticks", e, reqUid, ip, req.query);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/********************
+ * Position History *
+ ********************/
 
 
 
@@ -176,7 +250,7 @@ PositionRoute.route("/updateStrategy").post(ultraHighRiskLimit, async (req: expr
  * Retrieves the position trades for a given date range.
  * @requires id-token
  * @requires api-secret
- * @requires authority: 2
+ * @requires authority: 1
  * @param startAt 
  * @param endAt 
  * @returns IAPIResponse<IPositionTrade[]>
@@ -190,7 +264,7 @@ PositionRoute.route("/listTrades").get(mediumRiskLimit, async (req: express.Requ
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 2, ["startAt", "endAt"], req.query);
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["startAt", "endAt"], req.query);
 
         // Retrieve the data
         const data: IPositionTrade[] = await _position.listTrades(Number(req.query.startAt), Number(req.query.endAt));
