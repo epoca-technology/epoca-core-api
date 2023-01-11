@@ -5,13 +5,13 @@ import { IApiErrorService } from "../api-error";
 import { ICandlestick, ICandlestickModel } from "../candlestick";
 import { IUtilitiesService } from "../utilities";
 import { 
+    IStateType,
     ITADataset,
     ITADatasets,
     ITAIndicatorAction,
     ITAIndicatorActionCounter,
     ITAIndicatorPayload,
     ITAIntervalState,
-    ITAIntervalStateAction,
     ITAIntervalStateResult,
     ITAIntervalStateResultBuild,
     ITAMovingAveragesBuild,
@@ -206,11 +206,11 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
     /**
      * Builds the interval state result based on a given counter
      * @param counter 
-     * @returns 
+     * @returns ITAIntervalStateResult
      */
     private getIntervalStateResult(counter: ITAIndicatorActionCounter): ITAIntervalStateResult {
         // Init the action
-        let action: ITAIntervalStateAction = "NEUTRAL";
+        let action: IStateType = 0;
 
         // Calculate the mean
         const totalIndicators: number = counter.BUY + counter.SELL + counter.NEUTRAL;
@@ -218,11 +218,11 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
         const mean: number = sum / totalIndicators;
 
         // Set the action accordingly
-        if      (mean >= -1 && mean < -0.5) { action = "STRONG_SELL" }
-        else if (mean >= -0.5 && mean < -0.1) { action = "SELL" }
-        else if (mean >= -0.1 && mean <= 0.1) { action = "NEUTRAL" }
-        else if (mean > 0.1 && mean <= 0.5) { action = "BUY" }
-        else if (mean > 0.5 && mean <= 1) { action = "STRONG_BUY" }
+        if      (mean >= -1 && mean < -0.5) { action = -2 }
+        else if (mean >= -0.5 && mean < -0.1) { action = -1 }
+        else if (mean >= -0.1 && mean <= 0.1) { action = 0 }
+        else if (mean > 0.1 && mean <= 0.5) { action = 1 }
+        else if (mean > 0.5 && mean <= 1) { action = 2 }
 
         // Finally, return the result
         return {
@@ -1042,9 +1042,9 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
      */
     private getDefaultIntervalState(): ITAIntervalState {
         return {
-            s: {a: "NEUTRAL", b: 0, s: 0, n: 0 },
-            o: {a: "NEUTRAL", b: 0, s: 0, n: 0 },
-            m: {a: "NEUTRAL", b: 0, s: 0, n: 0 },
+            s: {a: 0, b: 0, s: 0, n: 0 },
+            o: {a: 0, b: 0, s: 0, n: 0 },
+            m: {a: 0, b: 0, s: 0, n: 0 },
             p: {
                 rsi_14: { v: [0], a: "NEUTRAL"},
                 cci_20: { v: [0], a: "NEUTRAL"},

@@ -11,11 +11,9 @@ import {
     IMarketState,
     IWindowStateService,
     IVolumeStateService,
-    IKeyZonesStateService,
     INetworkFeeStateService,
     IWindowState,
     IVolumeState,
-    IKeyZoneState,
     IOpenInterestStateService,
     ILongShortRatioStateService,
     ITechnicalAnalysisStateService,
@@ -31,7 +29,6 @@ export class MarketStateService implements IMarketStateService {
     @inject(SYMBOLS.CandlestickModel)                   private _candlestickModel: ICandlestickModel;
     @inject(SYMBOLS.WindowStateService)                 private _windowState: IWindowStateService;
     @inject(SYMBOLS.VolumeStateService)                 private _volumeState: IVolumeStateService;
-    @inject(SYMBOLS.KeyZonesStateService)               private _keyZoneState: IKeyZonesStateService;
     @inject(SYMBOLS.NetworkFeeStateService)             private _networkFeeState: INetworkFeeStateService;
     @inject(SYMBOLS.OpenInterestStateService)           private _openInterest: IOpenInterestStateService;
     @inject(SYMBOLS.LongShortRatioStateService)         private _longShortRatio: ILongShortRatioStateService;
@@ -103,9 +100,6 @@ export class MarketStateService implements IMarketStateService {
         // Initialize the network fee module
         await this._networkFeeState.initialize();
 
-        // Initialize the keyzone module
-        await this._keyZoneState.initialize();
-
         // Initialize the open interest module after a small delay
         await this._utils.asyncDelay(4);
         await this._openInterest.initialize();
@@ -137,7 +131,6 @@ export class MarketStateService implements IMarketStateService {
      */
     public stop(): void {
         if (this.candlestickStreamSub) this.candlestickStreamSub.unsubscribe();
-        this._keyZoneState.stop();
         this._openInterest.stop();
         this._longShortRatio.stop();
         this._networkFeeState.stop();
@@ -174,13 +167,11 @@ export class MarketStateService implements IMarketStateService {
             // Calculate the states
             const windowState: IWindowState = this._windowState.calculateState(window);
             const volumeState: IVolumeState = this._volumeState.calculateState(window);
-            const keyzoneState: IKeyZoneState = this._keyZoneState.calculateState(window.at(-1).c);
 
             // Broadcast the states through the observables
             this.active.next({
                 window: windowState,
                 volume: volumeState,
-                keyzone: keyzoneState,
                 network_fee: this._networkFeeState.state,
                 open_interest: this._openInterest.state,
                 long_short_ratio: this._longShortRatio.state,
@@ -189,7 +180,7 @@ export class MarketStateService implements IMarketStateService {
 
             // Check if there is a window state and if can be broadcasted
             if (
-                windowState.state != "stateless" && 
+                windowState.state != 0 && 
                 (
                     this.priceStateLastNotification == undefined ||
                     this.priceStateLastNotification < moment(windowState.ts).subtract(this.priceStateThrottleMinutes, "minutes").valueOf()
@@ -272,7 +263,6 @@ export class MarketStateService implements IMarketStateService {
         return {
             window: this._windowState.getDefaultState(),
             volume: this._volumeState.getDefaultState(),
-            keyzone: this._keyZoneState.getDefaultState(),
             network_fee: this._networkFeeState.getDefaultState(),
             open_interest: this._openInterest.getDefaultState(),
             long_short_ratio: this._longShortRatio.getDefaultState(),

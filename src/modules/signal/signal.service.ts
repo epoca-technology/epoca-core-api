@@ -3,13 +3,12 @@ import { BehaviorSubject, Subscription } from "rxjs";
 import { SYMBOLS } from "../../ioc";
 import { IDatabaseService } from "../database";
 import { IPrediction, IPredictionResult } from "../epoch-builder";
-import { IMarketState, IMarketStateService } from "../market-state";
+import { IMarketState, IMarketStateService, IStateType } from "../market-state";
 import { IPredictionService } from "../prediction";
 import { IUtilitiesService } from "../utilities";
 import { 
     IPredictionCancellationPolicies, 
     IPredictionCancellationPolicy, 
-    IPredictionCancellationPolicyItemState, 
     ISignalService 
 } from "./interfaces";
 
@@ -54,9 +53,7 @@ export class SignalService implements ISignalService {
      * Each policy item can have its own state which will be used when
      * evaluating a non-neutral prediction.
      */
-    private readonly states: IPredictionCancellationPolicyItemState[] = [
-        "IGNORE", "STRONG_BUY", "STRONG_SELL", "INCREASING", "DECREASING"
-    ];
+    private readonly states: IStateType[] = [-2, -1, 0, 1, 2];
 
 
     constructor() {}
@@ -158,43 +155,115 @@ export class SignalService implements ISignalService {
         let proNeutralizeItems: number = 0;
 
         // Evaluate technical analysis
-        if (policy.ta_30m != "IGNORE") {
+        if (policy.ta_30m != 0) {
             evaluatedItems += 1;
-            if (policy.ta_30m == ms.technical_analysis["30m"].s.a) proNeutralizeItems += 1;
+            if (policy.ta_30m == 1 && (ms.technical_analysis["30m"].s.a == 1 || ms.technical_analysis["30m"].s.a == 2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.ta_30m == 2 && ms.technical_analysis["30m"].s.a == 2) {
+                proNeutralizeItems += 1;
+            } else if (policy.ta_30m == -1 && (ms.technical_analysis["30m"].s.a == -1 || ms.technical_analysis["30m"].s.a == -2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.ta_30m == -2 && ms.technical_analysis["30m"].s.a == -2) {
+                proNeutralizeItems += 1;
+            }
         }
-        if (policy.ta_2h != "IGNORE") {
+        if (policy.ta_2h != 0) {
             evaluatedItems += 1;
-            if (policy.ta_2h == ms.technical_analysis["2h"].s.a) proNeutralizeItems += 1;
+            if (policy.ta_2h == 1 && (ms.technical_analysis["2h"].s.a == 1 || ms.technical_analysis["2h"].s.a == 2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.ta_2h == 2 && ms.technical_analysis["2h"].s.a == 2) {
+                proNeutralizeItems += 1;
+            } else if (policy.ta_2h == -1 && (ms.technical_analysis["2h"].s.a == -1 || ms.technical_analysis["2h"].s.a == -2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.ta_2h == -2 && ms.technical_analysis["2h"].s.a == -2) {
+                proNeutralizeItems += 1;
+            }
         }
-        if (policy.ta_4h != "IGNORE") {
+        if (policy.ta_4h != 0) {
             evaluatedItems += 1;
-            if (policy.ta_4h == ms.technical_analysis["4h"].s.a) proNeutralizeItems += 1;
+            if (policy.ta_4h == 1 && (ms.technical_analysis["4h"].s.a == 1 || ms.technical_analysis["4h"].s.a == 2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.ta_4h == 2 && ms.technical_analysis["4h"].s.a == 2) {
+                proNeutralizeItems += 1;
+            } else if (policy.ta_4h == -1 && (ms.technical_analysis["4h"].s.a == -1 || ms.technical_analysis["4h"].s.a == -2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.ta_4h == -2 && ms.technical_analysis["4h"].s.a == -2) {
+                proNeutralizeItems += 1;
+            }
         }
-        if (policy.ta_1d != "IGNORE") {
+        if (policy.ta_1d != 0) {
             evaluatedItems += 1;
-            if (policy.ta_1d == ms.technical_analysis["1d"].s.a) proNeutralizeItems += 1;
+            if (policy.ta_1d == 1 && (ms.technical_analysis["1d"].s.a == 1 || ms.technical_analysis["1d"].s.a == 2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.ta_1d == 2 && ms.technical_analysis["1d"].s.a == 2) {
+                proNeutralizeItems += 1;
+            } else if (policy.ta_1d == -1 && (ms.technical_analysis["1d"].s.a == -1 || ms.technical_analysis["1d"].s.a == -2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.ta_1d == -2 && ms.technical_analysis["1d"].s.a == -2) {
+                proNeutralizeItems += 1;
+            }
         }
 
         // Evaluate market state
-        if (policy.window != "IGNORE") {
+        if (policy.window != 0) {
             evaluatedItems += 1;
-            if (policy.window == ms.window.state.toUpperCase()) proNeutralizeItems += 1;
+            if (policy.window == 1 && (ms.window.state == 1 || ms.window.state == 2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.window == 2 && ms.window.state == 2) {
+                proNeutralizeItems += 1;
+            } else if (policy.window == -1 && (ms.window.state == -1 || ms.window.state == -2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.window == -2 && ms.window.state == -2) {
+                proNeutralizeItems += 1;
+            }
         }
-        if (policy.volume != "IGNORE") {
+        if (policy.volume != 0) {
             evaluatedItems += 1;
-            if (policy.volume == ms.volume.state.toUpperCase()) proNeutralizeItems += 1;
+            if (policy.volume == 1 && (ms.volume.state == 1 || ms.volume.state == 2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.volume == 2 && ms.volume.state == 2) {
+                proNeutralizeItems += 1;
+            } else if (policy.volume == -1 && (ms.volume.state == -1 || ms.volume.state == -2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.volume == -2 && ms.volume.state == -2) {
+                proNeutralizeItems += 1;
+            }
         }
-        if (policy.network_fee != "IGNORE") {
+        if (policy.network_fee != 0) {
             evaluatedItems += 1;
-            if (policy.network_fee == ms.network_fee.state.toUpperCase()) proNeutralizeItems += 1;
+            if (policy.network_fee == 1 && (ms.network_fee.state == 1 || ms.network_fee.state == 2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.network_fee == 2 && ms.network_fee.state == 2) {
+                proNeutralizeItems += 1;
+            } else if (policy.network_fee == -1 && (ms.network_fee.state == -1 || ms.network_fee.state == -2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.network_fee == -2 && ms.network_fee.state == -2) {
+                proNeutralizeItems += 1;
+            }
         }
-        if (policy.open_interest != "IGNORE") {
+        if (policy.open_interest != 0) {
             evaluatedItems += 1;
-            if (policy.open_interest == ms.open_interest.state.toUpperCase()) proNeutralizeItems += 1;
+            if (policy.open_interest == 1 && (ms.open_interest.state == 1 || ms.open_interest.state == 2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.open_interest == 2 && ms.open_interest.state == 2) {
+                proNeutralizeItems += 1;
+            } else if (policy.open_interest == -1 && (ms.open_interest.state == -1 || ms.open_interest.state == -2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.open_interest == -2 && ms.open_interest.state == -2) {
+                proNeutralizeItems += 1;
+            }
         }
-        if (policy.long_short_ratio != "IGNORE") {
+        if (policy.long_short_ratio != 0) {
             evaluatedItems += 1;
-            if (policy.long_short_ratio == ms.long_short_ratio.state.toUpperCase()) proNeutralizeItems += 1;
+            if (policy.long_short_ratio == 1 && (ms.long_short_ratio.state == 1 || ms.long_short_ratio.state == 2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.long_short_ratio == 2 && ms.long_short_ratio.state == 2) {
+                proNeutralizeItems += 1;
+            } else if (policy.long_short_ratio == -1 && (ms.long_short_ratio.state == -1 || ms.long_short_ratio.state == -2)) {
+                proNeutralizeItems += 1;
+            } else if (policy.long_short_ratio == -2 && ms.long_short_ratio.state == -2) {
+                proNeutralizeItems += 1;
+            }
         }
 
         // Finally, check if the decision was unanimous
@@ -342,8 +411,8 @@ export class SignalService implements ISignalService {
      * @param itemName 
      * @param itemState 
      */
-    private validatePolicyItemState(itemName: string, itemState: IPredictionCancellationPolicyItemState): void {
-        if (typeof itemState != "string" || !this.states.includes(itemState)) {
+    private validatePolicyItemState(itemName: string, itemState: IStateType): void {
+        if (typeof itemState != "number" || !this.states.includes(itemState)) {
             throw new Error(this._utils.buildApiError(`The provided state for ${itemName} is invalid. Received: ${itemState}`, 35001));
         }
     }
@@ -376,15 +445,15 @@ export class SignalService implements ISignalService {
      */
     private buildDefaultPolicy(): IPredictionCancellationPolicy {
         return {
-            ta_30m: "IGNORE",
-            ta_2h: "IGNORE",
-            ta_4h: "IGNORE",
-            ta_1d: "IGNORE",
-            window: "IGNORE",
-            volume: "IGNORE",
-            network_fee: "IGNORE",
-            open_interest: "IGNORE",
-            long_short_ratio: "IGNORE",
+            ta_30m: 0,
+            ta_2h: 0,
+            ta_4h: 0,
+            ta_1d: 0,
+            window: 0,
+            volume: 0,
+            network_fee: 0,
+            open_interest: 0,
+            long_short_ratio: 0
         }
     }
 }

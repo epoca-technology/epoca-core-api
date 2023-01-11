@@ -444,13 +444,13 @@ export class PositionHealth implements IPositionHealth {
         let score: number = 0.5;
 
         // Evaluate the current state score based on the side
-        if (this.ms.technical_analysis[taInterval].s.a == "STRONG_SELL") {
+        if (this.ms.technical_analysis[taInterval].s.a == -2) {
             score = side == "SHORT" ? 1: 0
-        } else if (this.ms.technical_analysis[taInterval].s.a == "SELL") {
+        } else if (this.ms.technical_analysis[taInterval].s.a == -1) {
             score = side == "SHORT" ? 0.75: 0.25
-        } else if (this.ms.technical_analysis[taInterval].s.a == "BUY") {
+        } else if (this.ms.technical_analysis[taInterval].s.a == 1) {
             score = side == "LONG" ? 0.75: 0.25
-        } else if (this.ms.technical_analysis[taInterval].s.a == "STRONG_BUY") {
+        } else if (this.ms.technical_analysis[taInterval].s.a == 2) {
             score = side == "LONG" ? 1: 0
         }
 
@@ -473,9 +473,13 @@ export class PositionHealth implements IPositionHealth {
         let score: number = 0.5;
 
         // Evaluate the current state score based on the side
-        if (this.ms.open_interest.state == "increasing") {
+        if (this.ms.open_interest.state == 2) {
             score = side == "LONG" ? 1: 0
-        } else if (this.ms.open_interest.state == "decreasing") {
+        } else if (this.ms.open_interest.state == 1) {
+            score = side == "LONG" ? 0.75: 0.25
+        } else if (this.ms.open_interest.state == -1) {
+            score = side == "SHORT" ? 0.75: 0.25
+        } else if (this.ms.open_interest.state == -2) {
             score = side == "SHORT" ? 1: 0
         }
 
@@ -496,9 +500,13 @@ export class PositionHealth implements IPositionHealth {
         let score: number = 0.5;
 
         // Evaluate the current state score based on the side
-        if (this.ms.long_short_ratio.state == "increasing") {
+        if (this.ms.long_short_ratio.state == 2) {
             score = side == "LONG" ? 1: 0
-        } else if (this.ms.long_short_ratio.state == "decreasing") {
+        } else if (this.ms.long_short_ratio.state == 1) {
+            score = side == "LONG" ? 0.75: 0.25
+        } else if (this.ms.long_short_ratio.state == -1) {
+            score = side == "SHORT" ? 0.75: 0.25
+        } else if (this.ms.long_short_ratio.state == -2) {
             score = side == "SHORT" ? 1: 0
         }
 

@@ -30,11 +30,12 @@ export class NetworkFeeStateService implements INetworkFeeStateService {
     
 
     /**
-     * Minimum Change
-     * The minimum percentage change that must exist in the window in order for
+     * Window Change
+     * The percentage changes that must exist in the window in order for
      * it to have a state.
      */
      private readonly minChange: number = 10;
+     private readonly strongChange: number = 30;
 
 
     /**
@@ -142,7 +143,8 @@ export class NetworkFeeStateService implements INetworkFeeStateService {
                 fees[0],
                 fees.at(-1),
                 bands,
-                this.minChange
+                this.minChange,
+                this.strongChange
             );
 
             // Finally, update the state
@@ -234,7 +236,7 @@ export class NetworkFeeStateService implements INetworkFeeStateService {
      */
     public getDefaultState(): INetworkFeeState {
         return {
-            state: "stateless",
+            state: 0,
             state_value: 0,
             upper_band: { start: 0, end: 0 },
             lower_band: { start: 0, end: 0 },

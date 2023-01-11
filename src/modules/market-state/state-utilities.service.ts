@@ -90,16 +90,18 @@ export class StateUtilitiesService implements IStateUtilitiesService {
      * @param lastValue 
      * @param bands
      * @param minChange 
+     * @param strongChange 
      * @returns { state: IStateType, state_value: number }
      */
     public calculateState(
         initialValue: number, 
         lastValue: number, 
         bands: IStateBandsResult,
-        minChange: number
+        minChange: number,
+        strongChange: number
     ): { state: IStateType, state_value: number } { 
         // Init values
-        let state: IStateType = "stateless";
+        let state: IStateType = 0;
         const stateValue: number = <number>this._utils.calculatePercentageChange(initialValue, lastValue);
 
         // Check if it is an increasing state
@@ -108,7 +110,7 @@ export class StateUtilitiesService implements IStateUtilitiesService {
             initialValue <= bands.middle && 
             lastValue >= bands.upper_band.start
         ) { 
-            state = "increasing";
+            state = stateValue >= strongChange ? 2: 1;
         }
 
         // Check if it is a decreasing state
@@ -117,7 +119,7 @@ export class StateUtilitiesService implements IStateUtilitiesService {
             initialValue >= bands.middle &&
             lastValue <= bands.lower_band.start
         ) { 
-            state = "decreasing";
+            state = stateValue <= -(strongChange) ? -2: -1;
         }
 
         // Finally, pack and return the results

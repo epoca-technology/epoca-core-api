@@ -25,12 +25,14 @@ export class VolumeStateService implements IVolumeStateService {
     private readonly groups: number = 10;
     
 
+
     /**
-     * Minimum Change
-     * The minimum percentage change that must exist in the window in order for
+     * Window Change
+     * The percentage changes that must exist in the window in order for
      * it to have a state.
      */
      private readonly minChange: number = 10;
+     private readonly strongChange: number = 30;
 
 
 
@@ -62,7 +64,8 @@ export class VolumeStateService implements IVolumeStateService {
             volumes[0],
             volumes.at(-1),
             bands,
-            this.minChange
+            this.minChange,
+            this.strongChange
         );
 
         // Finally, return the state
@@ -86,7 +89,7 @@ export class VolumeStateService implements IVolumeStateService {
      */
     public getDefaultState(): IVolumeState {
         return {
-            state: "stateless",
+            state: 0,
             state_value: 0,
             upper_band: { start: 0, end: 0 },
             lower_band: { start: 0, end: 0 },

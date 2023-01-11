@@ -19,11 +19,12 @@ export class WindowStateService implements IWindowStateService {
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
     /**
-     * Minimum Change
-     * The minimum percentage change that must exist in the window in order for
+     * Window Change
+     * The percentage changes that must exist in the window in order for
      * it to have a state.
      */
     private readonly minChange: number = 1;
+    private readonly strongChange: number = 5;
 
 
 
@@ -59,7 +60,8 @@ export class WindowStateService implements IWindowStateService {
             window[0].o,
             window.at(-1).c,
             bands,
-            this.minChange
+            this.minChange,
+            this.strongChange
         );
 
         // Finally, return the state
@@ -86,7 +88,7 @@ export class WindowStateService implements IWindowStateService {
      */
     public getDefaultState(): IWindowState {
         return {
-            state: "stateless",
+            state: 0,
             state_value: 0,
             upper_band: { start: 0, end: 0 },
             lower_band: { start: 0, end: 0 },

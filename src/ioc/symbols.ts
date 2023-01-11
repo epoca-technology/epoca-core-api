@@ -56,7 +56,6 @@
     // Market State
     MarketStateService: Symbol.for("MarketStateService"),
     WindowStateService: Symbol.for("WindowStateService"),
-    KeyZonesStateService: Symbol.for("KeyZonesStateService"),
     NetworkFeeStateService: Symbol.for("NetworkFeeStateService"),
     VolumeStateService: Symbol.for("VolumeStateService"),
     OpenInterestStateService: Symbol.for("OpenInterestStateService"),
@@ -146,7 +145,6 @@ export interface ISymbols {
 
     MarketStateService: symbol,
     WindowStateService: symbol,
-    KeyZonesStateService: symbol,
     NetworkFeeStateService: symbol,
     VolumeStateService: symbol,
     OpenInterestStateService: symbol,

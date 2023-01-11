@@ -407,9 +407,10 @@ export class NotificationService implements INotificationService {
      * @returns Promise<void>
      */
      public windowState(state: IStateType, stateValue: number, currentPrice: number): Promise<void> {
+        const stateName: string = state > 0 ? "increasing": "decreasing";
         return this.broadcast({
             sender: "MARKET_STATE",
-            title: `Bitcoin is ${state}:`,
+            title: `Bitcoin is ${stateName}:`,
             description: `The price has changed ${stateValue > 0 ? '+': ''}${stateValue}% and is currently at $${currentPrice}`
         });
     }
