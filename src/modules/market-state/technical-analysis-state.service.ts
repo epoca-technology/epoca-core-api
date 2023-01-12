@@ -43,7 +43,7 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
      * Every intervalSeconds, the technical analysis state state will be calculated and stored temporarily.
      */
     private stateInterval: any;
-    private readonly intervalSeconds: number = 60 * 3; // ~3 minutes
+    private readonly intervalSeconds: number = 60 * 2; // ~2 minutes
 
 
     /**
