@@ -567,7 +567,7 @@
 
 30007: `The long and short statuses must be valid booleans. Received: ${newStrategy.long_status}, ${newStrategy.short_status}`
 
-30008: `The take profit must be a valid number ranging 0.5-10. Received: ${newStrategy.take_profit}`
+30008: `The take profit 'n' must be a valid object containing the price change requirement and the max hp drawdown.`
 
 30009: `The long and short idle minutes must be valid numbers ranging 1-1,000 Received: ${newStrategy.long_status}, ${newStrategy.short_status}`
 
@@ -595,7 +595,7 @@
 
 30020: `A position can only be closed with a valid chunk size. Received ${chunkSize}`
 
-30021: ``
+30021: `The price change requirements in the take profits must be provided in ascending order.`
 
 30022: ``
 

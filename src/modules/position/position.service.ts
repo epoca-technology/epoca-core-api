@@ -28,7 +28,8 @@ import {
     IPositionStrategy,
     IPositionSummary,
     IPositionTrade,
-    IPositionValidations
+    IPositionValidations,
+    IPositionExitStrategy
 } from "./interfaces";
 
 
@@ -388,11 +389,9 @@ export class PositionService implements IPositionService {
             const isolatedWallet: number = <number>this._utils.outputNumber(binancePosition.isolatedWallet);
 
             // Calculate the position exit combination
-            const { take_profit_price, stop_loss_price } = this.calculatePositionExitCombination(
+            const exitStrategy: IPositionExitStrategy = this.calculatePositionExitCombination(
                 binancePosition.positionSide,
-                entryPrice,
-                this.strategy.take_profit,
-                this.strategy.stop_loss
+                entryPrice
             );
 
             // Calculate the current ROE if the entry price is different to the mark price
@@ -414,8 +413,12 @@ export class PositionService implements IPositionService {
                 side: binancePosition.positionSide,
                 entry_price: <number>this._utils.outputNumber(entryPrice),
                 mark_price: <number>this._utils.outputNumber(markPrice),
-                take_profit_price: take_profit_price,
-                stop_loss_price: stop_loss_price,
+                take_profit_price_1: exitStrategy.take_profit_price_1,
+                take_profit_price_2: exitStrategy.take_profit_price_2,
+                take_profit_price_3: exitStrategy.take_profit_price_3,
+                take_profit_price_4: exitStrategy.take_profit_price_4,
+                take_profit_price_5: exitStrategy.take_profit_price_5,
+                stop_loss_price: exitStrategy.stop_loss_price,
                 liquidation_price: <number>this._utils.outputNumber(binancePosition.liquidationPrice),
                 unrealized_pnl: <number>this._utils.outputNumber(binancePosition.unRealizedProfit),
                 roe: roe,
@@ -438,25 +441,34 @@ export class PositionService implements IPositionService {
     /**
      * Calculates the take profit and stop loss prices.
      * @param side 
-     * @param entryPrice 
-     * @param take_profit 
-     * @param stop_loss 
-     * @returns { take_profit_price: number, stop_loss_price: number }
+     * @param entryPrice
+     * @returns IPositionExitStrategy
      */
-    private calculatePositionExitCombination(
-        side: IBinancePositionSide, 
-        entryPrice: INumber,
-        take_profit: number,
-        stop_loss: number
-    ): { take_profit_price: number, stop_loss_price: number } {
+    private calculatePositionExitCombination(side: IBinancePositionSide, entryPrice: INumber): IPositionExitStrategy {
         return {
-            take_profit_price: <number>this._utils.alterNumberByPercentage(
+            take_profit_price_1: <number>this._utils.alterNumberByPercentage(
                 entryPrice, 
-                side == "LONG" ? take_profit: -(take_profit)
+                side == "LONG" ? this.strategy.take_profit_1.price_change_requirement: -(this.strategy.take_profit_1.price_change_requirement)
+            ),
+            take_profit_price_2: <number>this._utils.alterNumberByPercentage(
+                entryPrice, 
+                side == "LONG" ? this.strategy.take_profit_2.price_change_requirement: -(this.strategy.take_profit_2.price_change_requirement)
+            ),
+            take_profit_price_3: <number>this._utils.alterNumberByPercentage(
+                entryPrice, 
+                side == "LONG" ? this.strategy.take_profit_3.price_change_requirement: -(this.strategy.take_profit_3.price_change_requirement)
+            ),
+            take_profit_price_4: <number>this._utils.alterNumberByPercentage(
+                entryPrice, 
+                side == "LONG" ? this.strategy.take_profit_4.price_change_requirement: -(this.strategy.take_profit_4.price_change_requirement)
+            ),
+            take_profit_price_5: <number>this._utils.alterNumberByPercentage(
+                entryPrice, 
+                side == "LONG" ? this.strategy.take_profit_5.price_change_requirement: -(this.strategy.take_profit_5.price_change_requirement)
             ),
             stop_loss_price: <number>this._utils.alterNumberByPercentage(
                 entryPrice, 
-                side == "LONG" ? -(stop_loss): stop_loss
+                side == "LONG" ? -(this.strategy.stop_loss): this.strategy.stop_loss
             )
         }
     }
@@ -653,10 +665,20 @@ export class PositionService implements IPositionService {
      * @returns Promise<void>
      */
     private async evaluateActiveLong(spotPrice: number): Promise<void> {
-        if (
-            (spotPrice >= this.long.take_profit_price || spotPrice <= this.long.stop_loss_price)
-        ) {
+        // Check if the price hit the stop loss
+        if (spotPrice <= this.long.stop_loss_price) {
             await this.closePosition("LONG", 1);
+        }
+
+        // Otherwise, check if it is in a profitable level
+        else if (spotPrice >= this.long.take_profit_price_1) {
+            // Retrieve the max hp drawdown based on the current level
+            const max_hp_drawdown: number = this.calculateMaxHPDrawdown("LONG", spotPrice);
+
+            // Check if the position should be closed
+            if (max_hp_drawdown == 0 || this._health.long.dd <= max_hp_drawdown) {
+                await this.closePosition("LONG", 1);
+            }
         }
     }
 
@@ -671,15 +693,65 @@ export class PositionService implements IPositionService {
      * @returns Promise<void>
      */
     private async evaluateActiveShort(spotPrice: number): Promise<void> {
-        if (
-            (spotPrice <= this.short.take_profit_price || spotPrice >= this.short.stop_loss_price)
-        ) {
+        // Check if the price hit the stop loss
+        if (spotPrice >= this.short.stop_loss_price) {
             await this.closePosition("SHORT", 1);
+        }
+
+        // Otherwise, check if it is in a profitable level
+        else if (spotPrice <= this.short.take_profit_price_1) {
+            // Retrieve the max hp drawdown based on the current level
+            const max_hp_drawdown: number = this.calculateMaxHPDrawdown("SHORT", spotPrice);
+
+            // Check if the position should be closed
+            if (max_hp_drawdown == 0 || this._health.short.dd <= max_hp_drawdown) {
+                await this.closePosition("SHORT", 1);
+            }
         }
     }
 
 
 
+
+
+    /**
+     * Based on the current price and the position side, it derives the 
+     * current take profit level and returns the max hp drawdown allowed.
+     * @param side 
+     * @param spotPrice 
+     * @returns number
+     */
+    private calculateMaxHPDrawdown(side: IBinancePositionSide, spotPrice: number): number {
+        // Calculate the current level's max hp drawdown for a long position
+        if (side == "LONG") {
+            if (spotPrice >= this.long.take_profit_price_1 && spotPrice < this.long.take_profit_price_2) {
+                return this.strategy.take_profit_1.max_hp_drawdown;
+            } else if (spotPrice >= this.long.take_profit_price_2 && spotPrice < this.long.take_profit_price_3) {
+                return this.strategy.take_profit_2.max_hp_drawdown;
+            } else if (spotPrice >= this.long.take_profit_price_3 && spotPrice < this.long.take_profit_price_4) {
+                return this.strategy.take_profit_3.max_hp_drawdown;
+            } else if (spotPrice >= this.long.take_profit_price_4 && spotPrice < this.long.take_profit_price_5) {
+                return this.strategy.take_profit_4.max_hp_drawdown;
+            } else if (spotPrice >= this.long.take_profit_price_5) {
+                return this.strategy.take_profit_5.max_hp_drawdown;
+            }
+        } 
+        
+        // Calculate the current level's max hp drawdown for a short position
+        else {
+            if (spotPrice > this.short.take_profit_price_2 && spotPrice <= this.short.take_profit_price_1) {
+                return this.strategy.take_profit_1.max_hp_drawdown;
+            } else if (spotPrice > this.short.take_profit_price_3 && spotPrice <= this.short.take_profit_price_2) {
+                return this.strategy.take_profit_2.max_hp_drawdown;
+            } else if (spotPrice > this.short.take_profit_price_4 && spotPrice <= this.short.take_profit_price_3) {
+                return this.strategy.take_profit_3.max_hp_drawdown;
+            } else if (spotPrice > this.short.take_profit_price_5 && spotPrice <= this.short.take_profit_price_4) {
+                return this.strategy.take_profit_4.max_hp_drawdown;
+            } else if (spotPrice <= this.short.take_profit_price_5) {
+                return this.strategy.take_profit_5.max_hp_drawdown;
+            }
+        }
+    }
 
 
 
@@ -919,7 +991,11 @@ export class PositionService implements IPositionService {
             long_idle_until: currentTS,
             short_idle_minutes: 30,
             short_idle_until: currentTS,
-            take_profit: 3,
+            take_profit_1: { price_change_requirement: 0.75, max_hp_drawdown: -40 },
+            take_profit_2: { price_change_requirement: 1.5, max_hp_drawdown: -30 },
+            take_profit_3: { price_change_requirement: 2.25, max_hp_drawdown: -15 },
+            take_profit_4: { price_change_requirement: 3, max_hp_drawdown: -5 },
+            take_profit_5: { price_change_requirement: 6, max_hp_drawdown: 0 },
             stop_loss: 3,
             ts: currentTS
         }

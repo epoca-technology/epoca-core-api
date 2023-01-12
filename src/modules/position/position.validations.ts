@@ -177,10 +177,71 @@ export class PositionValidations implements IPositionValidations {
             Received: ${newStrategy.long_status}, ${newStrategy.short_status}`, 30007));
         }
 
-        // Validate the take profit
-        if (typeof newStrategy.take_profit != "number" || !this._validations.numberValid(newStrategy.take_profit, 0.5, 10)) {
-            throw new Error(this._utils.buildApiError(`The take profit must be a valid number ranging 0.5-10.
-            Received: ${newStrategy.take_profit}`, 30008));
+        // Validate the take profit 1
+        if (
+            typeof newStrategy.take_profit_1 != "object" || 
+            !this._validations.numberValid(newStrategy.take_profit_1.price_change_requirement, 0.4, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_1.max_hp_drawdown, -70, 0)
+        ) {
+            console.log(newStrategy.take_profit_1);
+            throw new Error(this._utils.buildApiError(`The take profit 1 must be a valid object containing the price change 
+            requirement and the max hp drawdown.`, 30008));
+        }
+
+        // Validate the take profit 2
+        if (
+            typeof newStrategy.take_profit_2 != "object" || 
+            !this._validations.numberValid(newStrategy.take_profit_2.price_change_requirement, 0.4, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_2.max_hp_drawdown, -70, 0)
+        ) {
+            console.log(newStrategy.take_profit_2);
+            throw new Error(this._utils.buildApiError(`The take profit 2 must be a valid object containing the price change 
+            requirement and the max hp drawdown.`, 30008));
+        }
+
+        // Validate the take profit 3
+        if (
+            typeof newStrategy.take_profit_3 != "object" || 
+            !this._validations.numberValid(newStrategy.take_profit_3.price_change_requirement, 0.4, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_3.max_hp_drawdown, -70, 0)
+        ) {
+            console.log(newStrategy.take_profit_3);
+            throw new Error(this._utils.buildApiError(`The take profit 3 must be a valid object containing the price change 
+            requirement and the max hp drawdown.`, 30008));
+        }
+
+        // Validate the take profit 4
+        if (
+            typeof newStrategy.take_profit_4 != "object" || 
+            !this._validations.numberValid(newStrategy.take_profit_4.price_change_requirement, 0.4, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_4.max_hp_drawdown, -70, 0)
+        ) {
+            console.log(newStrategy.take_profit_4);
+            throw new Error(this._utils.buildApiError(`The take profit 4 must be a valid object containing the price change 
+            requirement and the max hp drawdown.`, 30008));
+        }
+
+        // Validate the take profit 5
+        if (
+            typeof newStrategy.take_profit_5 != "object" || 
+            !this._validations.numberValid(newStrategy.take_profit_5.price_change_requirement, 0.4, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_5.max_hp_drawdown, -70, 0)
+        ) {
+            console.log(newStrategy.take_profit_5);
+            throw new Error(this._utils.buildApiError(`The take profit 5 must be a valid object containing the price change 
+            requirement and the max hp drawdown.`, 30008));
+        }
+
+        // Ensure the take profit levels are in ascending order
+        const ascendingTakeProfits: boolean = 
+            newStrategy.take_profit_2.price_change_requirement > newStrategy.take_profit_1.price_change_requirement &&
+            newStrategy.take_profit_3.price_change_requirement > newStrategy.take_profit_2.price_change_requirement &&
+            newStrategy.take_profit_4.price_change_requirement > newStrategy.take_profit_3.price_change_requirement &&
+            newStrategy.take_profit_5.price_change_requirement > newStrategy.take_profit_4.price_change_requirement;
+        if (!ascendingTakeProfits) {
+            console.log(newStrategy);
+            throw new Error(this._utils.buildApiError(`The price change requirements in the take profits must be provided
+            in ascending order.`, 30021));
         }
 
         // Validate the stop loss
