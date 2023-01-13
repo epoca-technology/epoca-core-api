@@ -159,6 +159,17 @@ export class PositionValidations implements IPositionValidations {
             throw new Error(this._utils.buildApiError(`The provided strategy is not a valid object.`, 30004));
         }
 
+        // Validate the statuses
+        if (typeof newStrategy.long_status != "boolean" || typeof newStrategy.short_status != "boolean") {
+            throw new Error(this._utils.buildApiError(`The long and short statuses must be valid booleans. 
+            Received: ${newStrategy.long_status}, ${newStrategy.short_status}`, 30007));
+        }
+
+        // Validate the hedge mode
+        if (typeof newStrategy.hedge_mode != "boolean") {
+            throw new Error(this._utils.buildApiError(`The hedge_mode must be a valid boolean. Received: ${newStrategy.hedge_mode}`, 30003));
+        }
+
         // Validate the leverage
         if (typeof newStrategy.leverage != "number" || !this._validations.numberValid(newStrategy.leverage, 2, 15)) {
             throw new Error(this._utils.buildApiError(`The leverage must be a valid number ranging 2-15. 
@@ -169,12 +180,6 @@ export class PositionValidations implements IPositionValidations {
         if (typeof newStrategy.position_size != "number" || !this._validations.numberValid(newStrategy.position_size, 150, 100000)) {
             throw new Error(this._utils.buildApiError(`The position size must be a valid number ranging 150-100,000. 
             Received: ${newStrategy.position_size}`, 30006));
-        }
-
-        // Validate the statuses
-        if (typeof newStrategy.long_status != "boolean" || typeof newStrategy.short_status != "boolean") {
-            throw new Error(this._utils.buildApiError(`The long and short statuses must be valid booleans. 
-            Received: ${newStrategy.long_status}, ${newStrategy.short_status}`, 30007));
         }
 
         // Validate the take profit 1
@@ -248,6 +253,10 @@ export class PositionValidations implements IPositionValidations {
         if (typeof newStrategy.stop_loss != "number" || !this._validations.numberValid(newStrategy.stop_loss, 0.5, 10)) {
             throw new Error(this._utils.buildApiError(`The stop loss must be a valid number ranging 0.5-10. 
             Received: ${newStrategy.stop_loss}`, 30002));
+        }
+        if (!this._validations.numberValid(newStrategy.stop_loss_max_hp_drawdown, -99, -50)) {
+            throw new Error(this._utils.buildApiError(`The stop loss max hp drawdown must be a valid number ranging -99 - -50. 
+            Received: ${newStrategy.stop_loss_max_hp_drawdown}`, 30022));
         }
 
         // Validate the idle minutes

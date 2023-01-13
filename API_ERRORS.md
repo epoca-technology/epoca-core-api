@@ -557,7 +557,7 @@
 
 30002: `The stop loss must be a valid number ranging 0.5-10. Received: ${newStrategy.stop_loss}`
 
-30003: ``
+30003: `The hedge_mode must be a valid boolean. Received: ${newStrategy.hedge_mode}`
 
 30004: `The provided strategy is not a valid object.`
 
@@ -597,7 +597,7 @@
 
 30021: `The price change requirements in the take profits must be provided in ascending order.`
 
-30022: ``
+30022: `The stop loss max hp drawdown must be a valid number ranging -99 - -50. Received: ${newStrategy.stop_loss_max_hp_drawdown}`
 
 
 

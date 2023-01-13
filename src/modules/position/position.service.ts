@@ -572,7 +572,8 @@ export class PositionService implements IPositionService {
             pred == 1 &&
             !this.long &&
             this.strategy.long_status &&
-            ts >= this.strategy.long_idle_until
+            ts >= this.strategy.long_idle_until &&
+            (!this.short || this.strategy.hedge_mode)
         ) { await this.openPosition("LONG") }
 
         // Check if a short position can be opened
@@ -580,7 +581,8 @@ export class PositionService implements IPositionService {
             pred == -1 &&
             !this.short &&
             this.strategy.short_status &&
-            ts >= this.strategy.short_idle_until
+            ts >= this.strategy.short_idle_until &&
+            (!this.long || this.strategy.hedge_mode)
         ) { await this.openPosition("SHORT") }
     }
 
@@ -665,8 +667,14 @@ export class PositionService implements IPositionService {
      * @returns Promise<void>
      */
     private async evaluateActiveLong(spotPrice: number): Promise<void> {
-        // Check if the price hit the stop loss
-        if (spotPrice <= this.long.stop_loss_price) {
+        /**
+         * Check if the price has hit the stop loss or if the position's 
+         * HP drawdown has exceeded the limit
+         */
+        if (
+            spotPrice <= this.long.stop_loss_price ||
+            this._health.long.dd <= this.strategy.stop_loss_max_hp_drawdown
+        ) {
             await this.closePosition("LONG", 1);
         }
 
@@ -693,8 +701,14 @@ export class PositionService implements IPositionService {
      * @returns Promise<void>
      */
     private async evaluateActiveShort(spotPrice: number): Promise<void> {
-        // Check if the price hit the stop loss
-        if (spotPrice >= this.short.stop_loss_price) {
+        /**
+         * Check if the price has hit the stop loss or if the position's 
+         * HP drawdown has exceeded the limit
+         */
+        if (
+            spotPrice >= this.short.stop_loss_price ||
+            this._health.short.dd <= this.strategy.stop_loss_max_hp_drawdown
+        ) {
             await this.closePosition("SHORT", 1);
         }
 
@@ -983,20 +997,22 @@ export class PositionService implements IPositionService {
     private getDefaultStrategy(): IPositionStrategy {
         const currentTS: number = Date.now();
         return {
-            leverage: 5,
-            position_size: 150,
             long_status: false,
             short_status: false,
+            hedge_mode: false,
+            leverage: 5,
+            position_size: 150,
             long_idle_minutes: 30,
             long_idle_until: currentTS,
             short_idle_minutes: 30,
             short_idle_until: currentTS,
-            take_profit_1: { price_change_requirement: 0.75, max_hp_drawdown: -40 },
-            take_profit_2: { price_change_requirement: 1.5, max_hp_drawdown: -30 },
-            take_profit_3: { price_change_requirement: 2.25, max_hp_drawdown: -15 },
+            take_profit_1: { price_change_requirement: 0.75, max_hp_drawdown: -20 },
+            take_profit_2: { price_change_requirement: 1.5, max_hp_drawdown: -15 },
+            take_profit_3: { price_change_requirement: 2.25, max_hp_drawdown: -10 },
             take_profit_4: { price_change_requirement: 3, max_hp_drawdown: -5 },
-            take_profit_5: { price_change_requirement: 6, max_hp_drawdown: 0 },
+            take_profit_5: { price_change_requirement: 5, max_hp_drawdown: 0 },
             stop_loss: 3,
+            stop_loss_max_hp_drawdown: -95,
             ts: currentTS
         }
     }

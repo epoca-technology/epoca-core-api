@@ -210,6 +210,22 @@ export interface ITakeProfitLevel {
  * The configuration that handles the core position entry and exit flow.
  */
 export interface IPositionStrategy {
+    /**
+     * Position Status
+     * Each side has its own status. When enabled and a matching prediction
+     * is generated, it will open a position.
+     */
+    long_status: boolean,
+    short_status: boolean,
+
+    /**
+     * Hedge Mode
+     * If this option is enabled, the model can open a long and a short
+     * simultaneously. Otherwise, it will only handle 1 active position at
+     * a time.
+     */
+    hedge_mode: boolean,
+
     // The leverage that will be used on positions
     leverage: number,
 
@@ -222,24 +238,26 @@ export interface IPositionStrategy {
     position_size: number,
 
     /**
-     * Position Status
-     * Each side has its own status. When enabled and a matching prediction
-     * is generated, it will open a position.
-     */
-    long_status: boolean,
-    short_status: boolean,
-
-    /**
-     * Position Exit Combination
-     * Every position has an exit strategy that can generate profits or 
-     * calculated losses.
+     * Profit Optimization Strategy
+     * When a position is opened, a take profit grid is generated. Each level
+     * activates when hit by the spot price. The position is maintained active
+     * until the HP experiences a drawdown that goes past the level's tolerance.
      */
     take_profit_1: ITakeProfitLevel,
     take_profit_2: ITakeProfitLevel,
     take_profit_3: ITakeProfitLevel,
     take_profit_4: ITakeProfitLevel,
     take_profit_5: ITakeProfitLevel,
+
+    /**
+     * Loss Optimization Strategy
+     * Each position has a fixed price in which it will be closed no matter what.
+     * Additionally, if the position's HP drawdown was to exceed the tolerance
+     * in stop_loss_max_hp_drawdown, the position will be closed automatically,
+     * regardless of the spot price.
+     */
     stop_loss: number,
+    stop_loss_max_hp_drawdown: number,
 
     /**
      * Idle
