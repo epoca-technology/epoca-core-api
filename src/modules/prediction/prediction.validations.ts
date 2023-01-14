@@ -29,7 +29,7 @@ export class PredictionValidations implements IPredictionValidations {
     /**
      * The limit of data in milliseconds that can be read per request.
      */
-    private readonly predictionListLimit: number = 5 * 60 * 60 * 1000;                          // 5 Hours
+    private readonly predictionListLimit: number = 5 * 60 * 60 * 1000;                          // 4 Hours
     private readonly predictionCandlesticksListLimit: number = 121 * 24 * 60 * 60 * 1000;       // 121 days
 
 
