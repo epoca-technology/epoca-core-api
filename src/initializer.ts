@@ -238,6 +238,9 @@ async function _init(): Promise<void> {
             }
         }
 
+        // Send the notification
+        await _notification.apiInit();
+
         // API is ready to accept requests
         _guard.apiInitialized = true;
     } catch (e) {

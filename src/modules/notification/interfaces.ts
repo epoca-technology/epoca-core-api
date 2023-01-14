@@ -11,6 +11,7 @@ export interface INotificationService {
     /* NOTIFICATION FACTORY */
 
     // API Initializer Notifications
+    apiInit(): Promise<void>,
     apiInitError(error: any): Promise<void>,
 
     // Candlesticks

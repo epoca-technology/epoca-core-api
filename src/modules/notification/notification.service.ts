@@ -175,6 +175,23 @@ export class NotificationService implements INotificationService {
 
 
 
+    /**
+     * Triggers whenever the API cannot be initialized for
+     * whatever reason.
+     * @param error 
+     * @returns Promise<void>
+     */
+    public apiInit(): Promise<void> {
+        return this.broadcast({
+            sender: "INITIALIZER",
+            title: "Core API Initialized:",
+            description: `The Core API has been initialized successfully and is ready to accept requests.`
+        });
+    }
+
+
+
+
 
     /**
      * Triggers whenever the API cannot be initialized for
