@@ -23,8 +23,8 @@ export class WindowStateService implements IWindowStateService {
      * The percentage changes that must exist in the window in order for
      * it to have a state.
      */
-    private readonly minChange: number = 1;
-    private readonly strongChange: number = 5;
+    private readonly minChange: number = 1.5;
+    private readonly strongChange: number = 10;
 
 
 
