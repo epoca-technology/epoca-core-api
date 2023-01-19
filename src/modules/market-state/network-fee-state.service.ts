@@ -34,8 +34,8 @@ export class NetworkFeeStateService implements INetworkFeeStateService {
      * The percentage changes that must exist in the window in order for
      * it to have a state.
      */
-     private readonly minChange: number = 10;
-     private readonly strongChange: number = 30;
+    private readonly minChange: number = 15;
+    private readonly strongChange: number = 50;
 
 
     /**

@@ -3,7 +3,7 @@ import { BehaviorSubject, Subscription } from "rxjs";
 import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
-import { ICandlestick, ICandlestickModel, ICandlestickService } from "../candlestick";
+import { ICandlestick, ICandlestickService } from "../candlestick";
 import { INotificationService } from "../notification";
 import { IUtilitiesService } from "../utilities";
 import { 
@@ -26,7 +26,6 @@ import {
 export class MarketStateService implements IMarketStateService {
     // Inject dependencies
     @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
-    @inject(SYMBOLS.CandlestickModel)                   private _candlestickModel: ICandlestickModel;
     @inject(SYMBOLS.WindowStateService)                 private _windowState: IWindowStateService;
     @inject(SYMBOLS.VolumeStateService)                 private _volumeState: IVolumeStateService;
     @inject(SYMBOLS.NetworkFeeStateService)             private _networkFeeState: INetworkFeeStateService;
@@ -42,7 +41,6 @@ export class MarketStateService implements IMarketStateService {
      * Window Size
      * The number of prediction candlesticks that comprise the window.
      */
-    private window: ICandlestick[] = [];
     private readonly windowSize: number = 64;
 
 
@@ -101,11 +99,11 @@ export class MarketStateService implements IMarketStateService {
         await this._networkFeeState.initialize();
 
         // Initialize the open interest module after a small delay
-        await this._utils.asyncDelay(4);
+        await this._utils.asyncDelay(10);
         await this._openInterest.initialize();
 
         // Initialize the long/short ratio module after a small delay
-        await this._utils.asyncDelay(4);
+        await this._utils.asyncDelay(10);
         await this._longShortRatio.initialize();
 
         // Initialize the Technical Analysis Module
@@ -160,7 +158,7 @@ export class MarketStateService implements IMarketStateService {
      */
     private async calculateState(): Promise<void> {
         // Retrieve the candlesticks window
-        const window: ICandlestick[] = await this.getWindowCandlesticks();
+        const window: ICandlestick[] = this._candlestick.predictionLookback.slice(-this.windowSize);
 
         // Broadcast the new state as long as there are enough candlesticks
         if (window.length == this.windowSize) {
@@ -196,55 +194,6 @@ export class MarketStateService implements IMarketStateService {
 
 
     
-
-
-
-
-    /**
-     * Retrieves the candlesticks in the window based on their current
-     * state. If they have been initialized, only the tail is downloaded.
-     * @returns Promise<ICandlestick[]>
-     */
-    private async getWindowCandlesticks(): Promise<ICandlestick[]> {
-        // Check if the candlesticks have already been set
-        if (this.window.length == this.windowSize) {
-            // Retrieve the tail
-            const tail: ICandlestick[] = await this._candlestick.getForPeriod(
-                this.window.at(-1).ot, 
-                moment(this.window.at(-1).ot).add(7, "days").valueOf(), 
-                this._candlestickModel.predictionConfig.intervalMinutes
-            );
-
-            // Update the last candlestick and return the window
-            if (tail.length == 1) {
-                this.window[this.window.length - 1] = tail[0];
-                return this.window;
-            }
-
-            /**
-             * Remove the last window from the head, concatenate the tail
-             * and apply a slice to match the window size.
-             */
-            else if (tail.length > 1) {
-                const head: ICandlestick[] = this.window.slice(0, this.window.length - 1);
-                this.window = head.concat(tail).slice(-this.windowSize);
-                return this.window;
-            }
-
-            // Something went wrong.
-            else {
-                console.log("The window candlesticks tail retrieved is empty.");
-                return [];
-            }
-        }
-
-        // Otherwise, load the entire list and populate the local property
-        else {
-            const candlesticks: ICandlestick[] = await this._candlestick.getLast(true, this.windowSize);
-            this.window = candlesticks;
-            return candlesticks;
-        }
-    }
 
 
 

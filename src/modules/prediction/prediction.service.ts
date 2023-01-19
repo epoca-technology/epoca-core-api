@@ -18,7 +18,9 @@ import {
     IPredictionModel, 
     IPredictionService, 
     IPredictionState, 
-    IPredictionValidations 
+    IPredictionStateIntesity,
+    IPredictionStateResult,
+    IPredictionValidations,
 } from "./interfaces";
 
 
@@ -62,7 +64,7 @@ export class PredictionService implements IPredictionService {
      * and stored if there is an active epoch.
      */
     private predictionInterval: any;
-    private readonly intervalSeconds: number = 10;
+    private readonly intervalSeconds: number = 20;
 
 
     /**
@@ -86,6 +88,13 @@ export class PredictionService implements IPredictionService {
     public activeState: IPredictionState = 0;
 
 
+    /**
+     * Active Prediction State Intensity
+     * The intensity of the direction the trend is taking.
+     */
+    public activeStateIntesity: IPredictionStateIntesity = 0;
+    private readonly intensityRequirement: number = 20;
+    private readonly strongIntensityRequirement: number = 40;
 
 
 
@@ -239,6 +248,7 @@ export class PredictionService implements IPredictionService {
         this.predictionInterval = undefined;
         this.active.next(undefined);
         this.activeState = 0;
+        this.activeStateIntesity = 0;
     }
 
 
@@ -270,7 +280,7 @@ export class PredictionService implements IPredictionService {
         }
 
         // Set the path
-        this.options.path = `/predict?epoch_id=${this._epoch.active.value.id}&trend_state=${this.activeState}`;
+        this.options.path = this.buildPredictionAPIPath(this._epoch.active.value.id, this.activeState, this.activeStateIntesity);
 
         // Generate the prediction with a request to the Prediction API
         const response: IExternalRequestResponse = await this._req.request(this.options, {}, "http");
@@ -284,8 +294,10 @@ export class PredictionService implements IPredictionService {
         // Sync the candlesticks
         await this.syncCandlesticks();
 
-        // Update the prediction state
-        this.activeState = await this.getActiveState(prediction);
+        // Update the prediction state and the intensity
+        const { state, intensity } = await this.getActiveState(prediction);
+        this.activeState = state;
+        this.activeStateIntesity = intensity;
 
         // Broadcast the prediction
         this.active.next(prediction);
@@ -293,6 +305,22 @@ export class PredictionService implements IPredictionService {
 
 
 
+
+    /**
+     * Builds the path in which the Prediction API generates
+     * new predictions.
+     * @param epochID 
+     * @param state 
+     * @param intensity 
+     * @returns string
+     */
+    private buildPredictionAPIPath(
+        epochID: string, 
+        state: IPredictionState, 
+        intensity: IPredictionStateIntesity
+    ): string { 
+        return `/predict?epoch_id=${epochID}&trend_state=${state}&trend_state_intensity=${intensity}`;
+    }
 
 
 
@@ -409,9 +437,9 @@ export class PredictionService implements IPredictionService {
      * of data. If there are less than 7 candlesticks within the range,
      * it returns 0.
      * @param pred 
-     * @returns Promise<IPredictionState>
+     * @returns Promise<IPredictionStateResult>
      */
-    private async getActiveState(pred: IPrediction): Promise<IPredictionState> {
+    private async getActiveState(pred: IPrediction): Promise<IPredictionStateResult> {
         // Retrieve the candlesticks
         const candlesticks: IPredictionCandlestick[] = await this.model.listPredictionCandlesticks(
             this._epoch.active.value.id,
@@ -455,11 +483,101 @@ export class PredictionService implements IPredictionService {
                 i -= 1;
             }
 
-            // Finally, return the current state
-            return sequenceType == -1 ? <IPredictionState>-(sequenceCount): <IPredictionState>sequenceCount;
+            // Build the state
+            const state: IPredictionState = sequenceType == -1 ? <IPredictionState>-(sequenceCount): <IPredictionState>sequenceCount;
+
+            // Calculate the intensity
+            const intensity: IPredictionStateIntesity = this.calculateStateIntensity(candlesticks, state);
+
+            // Finally, return the results
+            return { state: state, intensity: intensity };
         } 
         
         // Otherwise, return a completely flat state
-        else { return 0 }
+        else { return { state: 0, intensity: 0 } }
+    }
+
+
+
+
+
+    /**
+     * Calculates the intensity of the trend's direction.
+     * @param candlesticks 
+     * @param state 
+     * @returns IPredictionStateIntesity
+     */
+    private calculateStateIntensity(
+        candlesticks: IPredictionCandlestick[], 
+        state: IPredictionState
+    ): IPredictionStateIntesity {
+        // If the state is 0, there is no intensity
+        if (state == 0) { return 0 }
+
+        // Otherwise, calculate the intensity
+        else {
+            // Initialize the initial and the current sums
+            const initial: number = candlesticks[candlesticks.length - Math.abs(state)].sm;
+            const current: number = candlesticks.at(-1).sm;
+
+            // Handle a positive initial sum
+            if (initial > 0) {
+                // Check if there has been an increase
+                if (initial < current) {
+                    if (current >= this._utils.alterNumberByPercentage(initial, this.strongIntensityRequirement)) {
+                        return 2;
+                    } else if (current >= this._utils.alterNumberByPercentage(initial, this.intensityRequirement)) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                }
+
+                // Check if there has been a decrease
+                else if (initial > current) {
+                    if (current <= this._utils.alterNumberByPercentage(initial, -(this.strongIntensityRequirement))) {
+                        return -2;
+                    } else if (current <= this._utils.alterNumberByPercentage(initial, -(this.intensityRequirement))) {
+                        return -1;
+                    } else {
+                        return 0;
+                    }
+                }
+
+                // If the initial sum is equals to the current one, there is no intensity
+                else { return 0 }
+            }
+
+            // Handle a negative initial sum
+            else if (initial < 0) {
+                // Check if there has been a decrease
+                if (initial > current) {
+                    if (current <= this._utils.alterNumberByPercentage(initial, this.strongIntensityRequirement)) {
+                        return -2;
+                    } else if (current <= this._utils.alterNumberByPercentage(initial, this.intensityRequirement)) {
+                        return -1;
+                    } else {
+                        return 0;
+                    }
+                }
+
+                // Check if there has been an increase
+                else if (initial < current) {
+                    if (current >= this._utils.alterNumberByPercentage(initial, -(this.strongIntensityRequirement))) {
+                        return 2;
+                    } else if (current >= this._utils.alterNumberByPercentage(initial, -(this.intensityRequirement))) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                }
+
+                // If the initial sum is equals to the current one, there is no intensity
+                else { return 0 }
+            }
+
+            // Otherwise, there is no intensity
+            else { return 0 }
+        }
     }
 }

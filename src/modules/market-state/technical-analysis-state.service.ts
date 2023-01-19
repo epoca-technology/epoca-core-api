@@ -2,7 +2,7 @@ import {injectable, inject, postConstruct} from "inversify";
 import * as tulind from "tulind";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
-import { ICandlestick, ICandlestickModel } from "../candlestick";
+import { ICandlestick, ICandlestickModel, ICandlestickService } from "../candlestick";
 import { IUtilitiesService } from "../utilities";
 import { 
     IStateType,
@@ -27,6 +27,7 @@ import {
 export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateService {
     // Inject dependencies
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
+    @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
     @inject(SYMBOLS.CandlestickModel)                   private _candlestickModel: ICandlestickModel;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
@@ -43,7 +44,7 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
      * Every intervalSeconds, the technical analysis state state will be calculated and stored temporarily.
      */
     private stateInterval: any;
-    private readonly intervalSeconds: number = 60 * 2; // ~2 minutes
+    private readonly intervalSeconds: number = 20; // ~20 seconds
 
 
     /**
@@ -123,11 +124,12 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
     private async updateState(): Promise<void> {
         try {
             // Build the datasets
-            const ds: ITADatasets = await this.makeDatasets();
+            const ds: ITADatasets = this.makeDatasets();
 
             // Build and update the state for all intervals
             this.state = {
                 "30m": await this.buildIntervalState(ds["30m"]),
+                "1h": await this.buildIntervalState(ds["1h"]),
                 "2h": await this.buildIntervalState(ds["2h"]),
                 "4h": await this.buildIntervalState(ds["4h"]),
                 "1d": await this.buildIntervalState(ds["1d"]),
@@ -390,15 +392,18 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
     /**
      * Retrieves the required number of prediction candlesticks,
      * merges them accordingly and build the datasets.
-     * @returns Promise<ITADatasets>
+     * @returns ITADatasets
      */
-    private async makeDatasets(): Promise<ITADatasets> {
+    private makeDatasets(): ITADatasets {
         // Retrieve the raw prediction candlesticks
-        const candlesticks: ICandlestick[] = await this.getRawPredictionCandlesticks();
+        const candlesticks: ICandlestick[] = this.getRawPredictionCandlesticks();
 
         // Build the datasets by merging the raw candlesticks accordingly
         return {
             "30m": this.makeDataset(candlesticks.slice(-this.windowSize)),
+            "1h": this.makeDataset(this.mergeCandlesticks(
+                candlesticks.slice((60 / this._candlestickModel.predictionConfig.intervalMinutes) * this.windowSize)
+            )),
             "2h": this.makeDataset(this.mergeCandlesticks(
                 candlesticks.slice((120 / this._candlestickModel.predictionConfig.intervalMinutes) * this.windowSize)
             )),
@@ -470,16 +475,16 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
     /**
      * Retrieves all the candlesticks required in order to
      * build the datasets.
-     * @returns Promise<ICandlestick[]>
+     * @returns ICandlestick[]
      */
-    private async getRawPredictionCandlesticks(): Promise<ICandlestick[]> {
+    private getRawPredictionCandlesticks(): ICandlestick[] {
         // Calculate the total number of prediction candlesticks required for the daily interval
         const minutesInADay: number = 60 * 24;
         const candlesticksInADay: number = minutesInADay / this._candlestickModel.predictionConfig.intervalMinutes;
         const requirement: number = candlesticksInADay * this.windowSize;
 
-        // Retrieve the candlesticks from the db
-        const candlesticks: ICandlestick[] = await this._candlestickModel.getLast(true, requirement);
+        // Retrieve the candlesticks from the lookback
+        const candlesticks: ICandlestick[] = this._candlestick.predictionLookback.slice(-(requirement));
 
         // Ensure there are enough candlesticks for the window
         if (candlesticks.length != requirement) {
@@ -1025,6 +1030,7 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
     public getDefaultState(): ITAState {
         return {
             "30m": this.getDefaultIntervalState(),
+            "1h": this.getDefaultIntervalState(),
             "2h": this.getDefaultIntervalState(),
             "4h": this.getDefaultIntervalState(),
             "1d": this.getDefaultIntervalState(),

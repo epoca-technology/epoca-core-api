@@ -34,6 +34,15 @@ export class CandlestickService implements ICandlestickService {
     public readonly stream: BehaviorSubject<ICandlestickStream> = new BehaviorSubject({lastUpdate: 0, candlesticks: []});
 
 
+    /**
+     * Prediction Candlestick Lookback
+     * Since many models require a number of synced candlesticks in order to 
+     * operate, a lookback will be loaded into RAM and kept updated if the
+     * default candlesticks are synced. Notice that this property can be
+     * an empty list.
+     */
+    private readonly predictionLookbackDays: number = 220;
+    public predictionLookback: ICandlestick[] = [];
 
     
     constructor() {}
@@ -152,13 +161,13 @@ export class CandlestickService implements ICandlestickService {
         this.streamInterval = setInterval(async () => { 
             try { 
                 candlesticks = await this.syncCandlesticks();
-                this.broadcastStream(candlesticks) 
+                this.broadcastStream(candlesticks);
             } catch(e) { 
                 console.log(`Failed to sync the Candlesticks, attempting again in a few seconds: `, e);
                 await this._utils.asyncDelay(5);
                 try { 
                     candlesticks = await this.syncCandlesticks();
-                    this.broadcastStream(candlesticks) 
+                    this.broadcastStream(candlesticks);
                 } catch (e) {
                     console.log(`Failed to sync the candlesticks again, will attempt again when the interval triggers: `, e);
                     this._apiError.log("CandlestickService.startSync", e);
@@ -448,11 +457,24 @@ export class CandlestickService implements ICandlestickService {
      * Given a list of candlesticks, it will broadcast a stream.
      * @param candlesticks 
      * @param error?
-     * @returns void
+     * @returns Promise<void>
      */
-    private broadcastStream(candlesticks: ICandlestick[], error?: any): void {
+    private async broadcastStream(candlesticks: ICandlestick[], error?: any): Promise<void> {
+        // Init the current time
+        const ts: number = Date.now();
+
+        // Update the prediction lookback if the candlesticks are synced
+        if (
+            candlesticks && 
+            candlesticks.length && 
+            candlesticks.at(-1).ct > moment(ts).subtract(this.streamSyncSecondsTolerance, "seconds").valueOf()
+        ) {
+            await this.updatePredictionLookback();
+        }
+
+        // Finally, broadcast the stream
         this.stream.next({
-            lastUpdate: Date.now(),
+            lastUpdate: ts,
             candlesticks: candlesticks,
             error: error ? this._utils.getErrorMessage(error): undefined
         });
@@ -494,6 +516,62 @@ export class CandlestickService implements ICandlestickService {
     
 
 
+
+    /* Prediction Lookback */
+
+
+
+    /**
+     * Whenever the candlesticks are refreshed and in sync, the prediction
+     * lookback is also updated.
+     * @returns Promise<void>
+     */
+    private async updatePredictionLookback(): Promise<void> {
+        // Check if the lookback has already been initialized
+        if (this.predictionLookback.length) {
+            // Retrieve the tail
+            const tail: ICandlestick[] = await this._model.get(
+                this.predictionLookback.at(-1).ot, 
+                moment(this.predictionLookback.at(-1).ot).add(7, "days").valueOf(), 
+                undefined,
+                true
+            );
+
+            // Update the last candlestick only
+            if (tail.length == 1) {
+                this.predictionLookback[this.predictionLookback.length - 1] = tail[0];
+            }
+
+            /**
+             * Remove the last window from the head, concatenate the tail
+             * and apply a slice to match the window size.
+             */
+            else if (tail.length > 1) {
+                const minutesInADay: number = 60 * 24;
+                const candlesticksInADay: number = minutesInADay / this._model.predictionConfig.intervalMinutes;
+                const windowSize: number = Math.ceil(candlesticksInADay * this.predictionLookbackDays);
+                const head: ICandlestick[] = this.predictionLookback.slice(0, this.predictionLookback.length - 1);
+                this.predictionLookback = head.concat(tail).slice(-windowSize);
+            }
+
+            // Something went wrong.
+            else {
+                console.log("The prediction lookback candlesticks tail retrieved is empty.");
+            }
+        }
+
+        // Otherwise, initialize it
+        else {
+            const endAt: number = Date.now();
+            const startAt: number = moment(endAt).subtract(this.predictionLookbackDays, "days").valueOf();
+            this.predictionLookback = await this._model.get(
+                startAt,
+                endAt,
+                undefined,
+                true
+            );
+        }
+    }
 
 
 

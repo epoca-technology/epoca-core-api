@@ -14,6 +14,7 @@ import {
     IAppBulkStream, 
     IBulkDataService, 
     ICompressedCandlesticks, 
+    ICompressedMarketState, 
     ICompressedWindowState, 
     IServerDataBulk, 
     IServerResourcesBulk 
@@ -41,7 +42,7 @@ export class BulkDataService implements IBulkDataService {
      * Every intervalSeconds, the app bulk will be updated on the firebase rtdb.
      */
     private streamInterval: any;
-    private readonly streamIntervalSeconds: number = 5; // ~5 seconds
+    private readonly streamIntervalSeconds: number = 7.5; // ~7.5 seconds
 
 
 
@@ -76,6 +77,7 @@ export class BulkDataService implements IBulkDataService {
             position: this._position.getSummary(),
             prediction: this._prediction.active.value,
             predictionState: this._prediction.activeState,
+            predictionStateIntesity: this._prediction.activeStateIntesity,
             signal: this._signal.active.value,
             marketState: this._marketState.active.value,
             apiErrors: this._apiError.count
@@ -128,6 +130,7 @@ export class BulkDataService implements IBulkDataService {
             await this._db.appBulkRef.update(<IAppBulkStream> {
                 prediction: this._prediction.active.value && typeof this._prediction.active.value == "object" ? this._prediction.active.value: null,
                 predictionState: this._prediction.activeState,
+                predictionStateIntesity: this._prediction.activeStateIntesity,
                 signal: this._signal.active.value,
                 position: {
                     balance: positionSummary.balance,
@@ -139,9 +142,12 @@ export class BulkDataService implements IBulkDataService {
                         short: positionSummary.health.short
                     }
                 },
-                marketState: {
+                marketState: <ICompressedMarketState>{
                     window: this.compressWindowState(),
-                    volume: this._marketState.active.value.volume
+                    volume: this._marketState.active.value.volume,
+                    open_interest: this._marketState.active.value.open_interest,
+                    long_short_ratio: this._marketState.active.value.long_short_ratio,
+                    technical_analysis: this._marketState.active.value.technical_analysis,
                 },
                 apiErrors: this._apiError.count
             });

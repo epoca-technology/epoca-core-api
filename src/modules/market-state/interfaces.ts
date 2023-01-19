@@ -242,6 +242,9 @@ export interface IWindowState extends IState {
  * of the volume based on the current value.                                *
  ****************************************************************************/
 export interface IVolumeState extends IState {
+    // The direction in which the volume is driving the price
+    direction: IStateType,
+
     // The list of grouped volumes
     volumes: number[]
 }
@@ -370,6 +373,7 @@ export interface ITADataset {
 }
 export interface ITADatasets {
     "30m": ITADataset,
+    "1h": ITADataset,
     "2h": ITADataset,
     "4h": ITADataset,
     "1d": ITADataset
@@ -384,7 +388,7 @@ export interface ITADatasets {
  * In order to be able to identify what most traders are seeing, 
  * the indicators are calculated for all popular intervals.
  */
-export type ITAIntervalID = "30m"|"2h"|"4h"|"1d";
+export type ITAIntervalID = "30m"|"1h"|"2h"|"4h"|"1d";
 
 
 
@@ -576,6 +580,7 @@ export interface ITAIntervalState {
 export interface ITAState {
     // States by Interval
     "30m": ITAIntervalState,
+    "1h": ITAIntervalState,
     "2h": ITAIntervalState,
     "4h": ITAIntervalState,
     "1d": ITAIntervalState,

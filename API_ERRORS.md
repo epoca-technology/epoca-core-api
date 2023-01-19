@@ -597,7 +597,11 @@
 
 30021: `The price change requirements in the take profits must be provided in ascending order.`
 
-30022: `The stop loss max hp drawdown must be a valid number ranging -99 - -50. Received: ${newStrategy.stop_loss_max_hp_drawdown}`
+30022: `The max_hp_drawdown_in_profit must be a valid number ranging -99 - -20. Received: ${newStrategy.max_hp_drawdown_in_profit}`
+
+30023: `The max_hp_drawdown_in_loss must be a valid number ranging -99 - -30. Received: ${newStrategy.max_hp_drawdown_in_loss}`
+
+30024: ``
 
 
 

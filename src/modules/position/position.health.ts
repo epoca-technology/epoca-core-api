@@ -37,14 +37,16 @@ export class PositionHealth implements IPositionHealth {
      * position's health points.
      */
     private readonly weights: IPositionHealthWeights = {
-        trend_sum: 85,
-        trend_state: 5,
-        ta_30m: 1,
-        ta_2h: 1.5,
-        ta_4h: 1.5,
-        ta_1d: 2,
-        open_interest: 2,
-        long_short_ratio: 2
+        trend_sum: 50,
+        trend_state: 7.5,
+        ta_30m: 3.5,
+        ta_1h: 4,
+        ta_2h: 5,
+        ta_4h: 6,
+        ta_1d: 7,
+        open_interest: 7.5,
+        long_short_ratio: 7.5,
+        volume_direction: 2
     }
 
 
@@ -260,6 +262,7 @@ export class PositionHealth implements IPositionHealth {
 
         // Evaluate the TA
         hp += this.evaluateTechnicalAnalysis(side, "30m"); 
+        hp += this.evaluateTechnicalAnalysis(side, "1h"); 
         hp += this.evaluateTechnicalAnalysis(side, "2h"); 
         hp += this.evaluateTechnicalAnalysis(side, "4h"); 
         hp += this.evaluateTechnicalAnalysis(side, "1d"); 
@@ -269,6 +272,9 @@ export class PositionHealth implements IPositionHealth {
 
         // Evaluate the long/short ratio
         hp += this.evaluateLongShortRatio(side);
+
+        // Evaluate the volume direction
+        hp += this.evaluateVolumeDirection(side);
 
         // Format the HP correctly
         hp = <number>this._utils.outputNumber(hp);
@@ -536,45 +542,87 @@ export class PositionHealth implements IPositionHealth {
         // Init the score
         let score: number = 0.5;
 
-        // Evaluate an increasing trend state
-        if (this._prediction.activeState >= 9) {
+        // Evaluate an increasing trend state with low intensity
+        if (this._prediction.activeState >= 9 && this._prediction.activeStateIntesity == 1) {
+            score = side == "LONG" ? 0.68: 0.32;
+        } else if (this._prediction.activeState == 8 && this._prediction.activeStateIntesity == 1) {
+            score = side == "LONG" ? 0.66: 0.34;
+        } else if (this._prediction.activeState == 7 && this._prediction.activeStateIntesity == 1) {
+            score = side == "LONG" ? 0.64: 0.36;
+        } else if (this._prediction.activeState == 6 && this._prediction.activeStateIntesity == 1) {
+            score = side == "LONG" ? 0.62: 0.38;
+        } else if (this._prediction.activeState == 5 && this._prediction.activeStateIntesity == 1) {
+            score = side == "LONG" ? 0.60: 0.40;
+        } else if (this._prediction.activeState == 4 && this._prediction.activeStateIntesity == 1) {
+            score = side == "LONG" ? 0.58: 0.42;
+        } else if (this._prediction.activeState == 3 && this._prediction.activeStateIntesity == 1) {
+            score = side == "LONG" ? 0.56: 0.44;
+        } else if (this._prediction.activeState == 2 && this._prediction.activeStateIntesity == 1) {
+            score = side == "LONG" ? 0.54: 0.46;
+        } else if (this._prediction.activeState == 1 && this._prediction.activeStateIntesity == 1) {
+            score = side == "LONG" ? 0.52: 0.48;
+        }
+
+        // Evaluate an increasing trend state with high intensity
+        else if (this._prediction.activeState >= 9 && this._prediction.activeStateIntesity == 2) {
             score = side == "LONG" ? 1: 0;
-        } else if (this._prediction.activeState == 8) {
+        } else if (this._prediction.activeState == 8 && this._prediction.activeStateIntesity == 2) {
             score = side == "LONG" ? 0.95: 0.05;
-        } else if (this._prediction.activeState == 7) {
+        } else if (this._prediction.activeState == 7 && this._prediction.activeStateIntesity == 2) {
             score = side == "LONG" ? 0.90: 0.10;
-        } else if (this._prediction.activeState == 6) {
+        } else if (this._prediction.activeState == 6 && this._prediction.activeStateIntesity == 2) {
             score = side == "LONG" ? 0.85: 0.15;
-        } else if (this._prediction.activeState == 5) {
+        } else if (this._prediction.activeState == 5 && this._prediction.activeStateIntesity == 2) {
             score = side == "LONG" ? 0.80: 0.20;
-        } else if (this._prediction.activeState == 4) {
+        } else if (this._prediction.activeState == 4 && this._prediction.activeStateIntesity == 2) {
             score = side == "LONG" ? 0.75: 0.25;
-        } else if (this._prediction.activeState == 3) {
+        } else if (this._prediction.activeState == 3 && this._prediction.activeStateIntesity == 2) {
             score = side == "LONG" ? 0.70: 0.30;
-        } else if (this._prediction.activeState == 2) {
+        } else if (this._prediction.activeState == 2 && this._prediction.activeStateIntesity == 2) {
             score = side == "LONG" ? 0.65: 0.35;
-        } else if (this._prediction.activeState == 1) {
+        } else if (this._prediction.activeState == 1 && this._prediction.activeStateIntesity == 2) {
             score = side == "LONG" ? 0.55: 0.45;
         }
 
-        // Evaluate a decreasing trend state
-        else if (this._prediction.activeState == -1) {
+        // Evaluate a decreasing trend state with low intensity
+        else if (this._prediction.activeState == -1 && this._prediction.activeStateIntesity == -1) {
+            score = side == "SHORT" ? 0.52: 0.48;
+        } else if (this._prediction.activeState == -2 && this._prediction.activeStateIntesity == -1) {
+            score = side == "SHORT" ? 0.54: 0.46;
+        } else if (this._prediction.activeState == -3 && this._prediction.activeStateIntesity == -1) {
+            score = side == "SHORT" ? 0.56: 0.44;
+        } else if (this._prediction.activeState == -4 && this._prediction.activeStateIntesity == -1) {
+            score = side == "SHORT" ? 0.58: 0.42;
+        } else if (this._prediction.activeState == -5 && this._prediction.activeStateIntesity == -1) {
+            score = side == "SHORT" ? 0.60: 0.40;
+        } else if (this._prediction.activeState == -6 && this._prediction.activeStateIntesity == -1) {
+            score = side == "SHORT" ? 0.62: 0.38;
+        } else if (this._prediction.activeState == -7 && this._prediction.activeStateIntesity == -1) {
+            score = side == "SHORT" ? 0.64: 0.36;
+        } else if (this._prediction.activeState == -8 && this._prediction.activeStateIntesity == -1) {
+            score = side == "SHORT" ? 0.66: 0.34;
+        } else if (this._prediction.activeState <= -9 && this._prediction.activeStateIntesity == -1) {
+            score = side == "SHORT" ? 0.68: 0.32;
+        }
+
+        // Evaluate a decreasing trend state with high intensity
+        else if (this._prediction.activeState == -1 && this._prediction.activeStateIntesity == -2) {
             score = side == "SHORT" ? 0.55: 0.45;
-        } else if (this._prediction.activeState == -2) {
+        } else if (this._prediction.activeState == -2 && this._prediction.activeStateIntesity == -2) {
             score = side == "SHORT" ? 0.65: 0.35;
-        } else if (this._prediction.activeState == -3) {
+        } else if (this._prediction.activeState == -3 && this._prediction.activeStateIntesity == -2) {
             score = side == "SHORT" ? 0.70: 0.30;
-        } else if (this._prediction.activeState == -4) {
+        } else if (this._prediction.activeState == -4 && this._prediction.activeStateIntesity == -2) {
             score = side == "SHORT" ? 0.75: 0.25;
-        } else if (this._prediction.activeState == -5) {
+        } else if (this._prediction.activeState == -5 && this._prediction.activeStateIntesity == -2) {
             score = side == "SHORT" ? 0.80: 0.20;
-        } else if (this._prediction.activeState == -6) {
+        } else if (this._prediction.activeState == -6 && this._prediction.activeStateIntesity == -2) {
             score = side == "SHORT" ? 0.85: 0.15;
-        } else if (this._prediction.activeState == -7) {
+        } else if (this._prediction.activeState == -7 && this._prediction.activeStateIntesity == -2) {
             score = side == "SHORT" ? 0.90: 0.10;
-        } else if (this._prediction.activeState == -8) {
+        } else if (this._prediction.activeState == -8 && this._prediction.activeStateIntesity == -2) {
             score = side == "SHORT" ? 0.95: 0.05;
-        } else if (this._prediction.activeState <= -9) {
+        } else if (this._prediction.activeState <= -9 && this._prediction.activeStateIntesity == -2) {
             score = side == "SHORT" ? 1: 0;
         }
 
@@ -672,6 +720,31 @@ export class PositionHealth implements IPositionHealth {
 
 
 
+
+
+    /**
+     * Calculates the volume direction HP based on the current state.
+     * @param side 
+     * @returns number
+     */
+    private evaluateVolumeDirection(side: IBinancePositionSide): number {
+        // Init the score
+        let score: number = 0.5;
+
+        // Evaluate the current state score based on the side
+        if (this.ms.volume.direction == 2) {
+            score = side == "LONG" ? 1: 0
+        } else if (this.ms.volume.direction == 1) {
+            score = side == "LONG" ? 0.75: 0.25
+        } else if (this.ms.volume.direction == -1) {
+            score = side == "SHORT" ? 0.75: 0.25
+        } else if (this.ms.volume.direction == -2) {
+            score = side == "SHORT" ? 1: 0
+        }
+
+        // Finally, return the score
+        return this.weights.volume_direction * score;
+    }
 
 
 

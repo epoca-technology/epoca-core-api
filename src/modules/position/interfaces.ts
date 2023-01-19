@@ -1,5 +1,4 @@
 import { IBinancePositionActionSide, IBinancePositionSide } from "../binance";
-import { IPredictionState } from "../prediction";
 
 
 
@@ -252,12 +251,12 @@ export interface IPositionStrategy {
     /**
      * Loss Optimization Strategy
      * Each position has a fixed price in which it will be closed no matter what.
-     * Additionally, if the position's HP drawdown was to exceed the tolerance
-     * in stop_loss_max_hp_drawdown, the position will be closed automatically,
-     * regardless of the spot price.
+     * Additionally, 2 HP Drawdown limits are set which can close the position at
+     * any time based on the status of the position.
      */
     stop_loss: number,
-    stop_loss_max_hp_drawdown: number,
+    max_hp_drawdown_in_profit: number,
+    max_hp_drawdown_in_loss: number,
 
     /**
      * Idle
@@ -369,10 +368,11 @@ export interface IPositionHealthWeights {
     trend_sum: number,
 
     // The direction of the trend sum
-    trend_state: IPredictionState,
+    trend_state: number,
 
     // The state of the technical analysis indicators
     ta_30m: number,
+    ta_1h: number,
     ta_2h: number,
     ta_4h: number,
     ta_1d: number,
@@ -381,7 +381,10 @@ export interface IPositionHealthWeights {
     open_interest: number,
 
     // The state of the long/short ratio within the market state window
-    long_short_ratio: number
+    long_short_ratio: number,
+
+    // The state of the direction in which the price is being driven by the volume
+    volume_direction: number
 }
 
 

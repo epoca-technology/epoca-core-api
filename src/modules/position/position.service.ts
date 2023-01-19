@@ -109,7 +109,7 @@ export class PositionService implements IPositionService {
      * Active Positions Syncing
      */
     private activePositionsSyncInterval: any;
-    private readonly activePositionsIntervalSeconds: number = 12; // Every ~12 seconds
+    private readonly activePositionsIntervalSeconds: number = 10; // Every ~10 seconds
 
 
 
@@ -667,14 +667,18 @@ export class PositionService implements IPositionService {
      * @returns Promise<void>
      */
     private async evaluateActiveLong(spotPrice: number): Promise<void> {
-        /**
-         * Check if the price has hit the stop loss or if the position's 
-         * HP drawdown has exceeded the limit
-         */
-        if (
-            spotPrice <= this.long.stop_loss_price ||
-            this._health.long.dd <= this.strategy.stop_loss_max_hp_drawdown
-        ) {
+        // Check if the stop loss price has been hit
+        if (spotPrice <= this.long.stop_loss_price) {
+            await this.closePosition("LONG", 1);
+        }
+
+        // Check if the position is in profit and the max hp drawdown has been exceeded
+        else if (spotPrice >= this.long.entry_price && this._health.long.dd <= this.strategy.max_hp_drawdown_in_profit) {
+            await this.closePosition("LONG", 1);
+        }
+
+        // Check if the position is in loss and the max hp drawdown has been exceeded
+        else if (spotPrice < this.long.entry_price && this._health.long.dd <= this.strategy.max_hp_drawdown_in_loss) {
             await this.closePosition("LONG", 1);
         }
 
@@ -701,14 +705,18 @@ export class PositionService implements IPositionService {
      * @returns Promise<void>
      */
     private async evaluateActiveShort(spotPrice: number): Promise<void> {
-        /**
-         * Check if the price has hit the stop loss or if the position's 
-         * HP drawdown has exceeded the limit
-         */
-        if (
-            spotPrice >= this.short.stop_loss_price ||
-            this._health.short.dd <= this.strategy.stop_loss_max_hp_drawdown
-        ) {
+        // Check if the stop loss price has been hit
+        if (spotPrice >= this.short.stop_loss_price) {
+            await this.closePosition("SHORT", 1);
+        }
+
+        // Check if the position is in profit and the max hp drawdown has been exceeded
+        else if (spotPrice <= this.short.entry_price && this._health.short.dd <= this.strategy.max_hp_drawdown_in_profit) {
+            await this.closePosition("SHORT", 1);
+        }
+
+        // Check if the position is in loss and the max hp drawdown has been exceeded
+        else if (spotPrice > this.short.entry_price && this._health.short.dd <= this.strategy.max_hp_drawdown_in_loss) {
             await this.closePosition("SHORT", 1);
         }
 
@@ -1002,17 +1010,18 @@ export class PositionService implements IPositionService {
             hedge_mode: false,
             leverage: 5,
             position_size: 150,
-            long_idle_minutes: 30,
+            long_idle_minutes: 90,
             long_idle_until: currentTS,
-            short_idle_minutes: 30,
+            short_idle_minutes: 90,
             short_idle_until: currentTS,
             take_profit_1: { price_change_requirement: 0.75, max_hp_drawdown: -20 },
-            take_profit_2: { price_change_requirement: 1.5, max_hp_drawdown: -13.5 },
+            take_profit_2: { price_change_requirement: 1.5,  max_hp_drawdown: -10 },
             take_profit_3: { price_change_requirement: 2.25, max_hp_drawdown: -5 },
-            take_profit_4: { price_change_requirement: 3, max_hp_drawdown: -2.5 },
-            take_profit_5: { price_change_requirement: 5, max_hp_drawdown: 0 },
+            take_profit_4: { price_change_requirement: 3,    max_hp_drawdown: -2.5 },
+            take_profit_5: { price_change_requirement: 5,    max_hp_drawdown: 0 },
             stop_loss: 3,
-            stop_loss_max_hp_drawdown: -95,
+            max_hp_drawdown_in_profit: -60,
+            max_hp_drawdown_in_loss: -95,
             ts: currentTS
         }
     }

@@ -9,6 +9,9 @@ export interface ICandlestickService {
     // Real Time Candlesticks Stream
     stream: BehaviorSubject<ICandlestickStream>,
 
+    // Prediction Candlestick Lookback
+    predictionLookback: ICandlestick[],
+
     // Candlestick Retrievers
     getForPeriod(start: number, end: number, intervalMinutes: number): Promise<ICandlestick[]>,
     getLast(prediction?: boolean, limit?: number): Promise<ICandlestick[]>,

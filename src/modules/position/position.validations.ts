@@ -254,9 +254,13 @@ export class PositionValidations implements IPositionValidations {
             throw new Error(this._utils.buildApiError(`The stop loss must be a valid number ranging 0.5-10. 
             Received: ${newStrategy.stop_loss}`, 30002));
         }
-        if (!this._validations.numberValid(newStrategy.stop_loss_max_hp_drawdown, -99, -50)) {
-            throw new Error(this._utils.buildApiError(`The stop loss max hp drawdown must be a valid number ranging -99 - -50. 
-            Received: ${newStrategy.stop_loss_max_hp_drawdown}`, 30022));
+        if (!this._validations.numberValid(newStrategy.max_hp_drawdown_in_profit, -99, -20)) {
+            throw new Error(this._utils.buildApiError(`The max_hp_drawdown_in_profit must be a valid number ranging -99 - -20. 
+            Received: ${newStrategy.max_hp_drawdown_in_profit}`, 30022));
+        }
+        if (!this._validations.numberValid(newStrategy.max_hp_drawdown_in_loss, -99, -30)) {
+            throw new Error(this._utils.buildApiError(`The max_hp_drawdown_in_loss must be a valid number ranging -99 - -30. 
+            Received: ${newStrategy.max_hp_drawdown_in_loss}`, 30023));
         }
 
         // Validate the idle minutes

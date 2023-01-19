@@ -12,6 +12,7 @@ export interface IPredictionService {
     // Properties
     active: BehaviorSubject<IPrediction|undefined>,
     activeState: IPredictionState,
+    activeStateIntesity: IPredictionStateIntesity,
 
     // Retrievers
     getActive(): IPrediction,
@@ -118,3 +119,23 @@ export interface IPredictionCandlestick {
  * the more intense.
  */
 export type IPredictionState = 9|8|7|6|5|4|3|2|1|0|-1|-2|-3|-4|-5|-6|-7|-8|-9;
+
+
+
+/**
+ * Prediction State Intensity
+ * The intensity of the direction the trend sum is taking.
+ */
+export type IPredictionStateIntesity = -2|-1|0|1|2;
+
+
+
+
+/**
+ * Prediction State Result
+ * The state and the intensity are calculated in order accordingly.
+ */
+export interface IPredictionStateResult {
+    state: IPredictionState,
+    intensity: IPredictionStateIntesity
+}
