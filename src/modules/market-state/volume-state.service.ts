@@ -78,13 +78,14 @@ export class VolumeStateService implements IVolumeStateService {
         );
 
         // Calculate the direction
-        const direction: IStateType = this.calculateDirection(window);
+        const { direction, direction_value } = this.calculateDirection(window);
 
         // Finally, return the state
         return {
             state: state,
             state_value: state_value,
             direction: direction,
+            direction_value: direction_value,
             upper_band: bands.upper_band,
             lower_band: bands.lower_band,
             ts: Date.now(),
@@ -99,9 +100,9 @@ export class VolumeStateService implements IVolumeStateService {
      * Based on a given list of candlesticks, it will calculate
      * the price direction based on the volume within the window.
      * @param window 
-     * @returns IStateType
+     * @returns { direction: IStateType, direction_value: number}
      */
-    private calculateDirection(window: ICandlestick[]): IStateType {
+    private calculateDirection(window: ICandlestick[]): { direction: IStateType, direction_value: number} {
         // Init the volume accumulators
         let bullVol: number = 0;
         let bearVol: number = 0;
@@ -124,15 +125,15 @@ export class VolumeStateService implements IVolumeStateService {
         const bear: number = <number>this._utils.calculatePercentageOutOfTotal(bearVol, vol);
 
         // Evaluate a possible bull direction
-        if      (bull >= this.strongDirectionRequirement)   { return 2 }
-        else if (bull >= this.directionRequirement)         { return 1 }
+        if      (bull >= this.strongDirectionRequirement)   { return { direction: 2, direction_value: bull } }
+        else if (bull >= this.directionRequirement)         { return { direction: 1, direction_value: bull } }
 
         // Evaluate a possible bear direction
-        else if (bear >= this.strongDirectionRequirement)   { return -2 }
-        else if (bear >= this.directionRequirement)         { return -1 }
+        else if (bear >= this.strongDirectionRequirement)   { return { direction: -2, direction_value: bear } }
+        else if (bear >= this.directionRequirement)         { return { direction: -1, direction_value: bear } }
 
         // Otherwise, there is no direction
-        else                                                { return 0 }
+        else                                                { return { direction: 0, direction_value: 0 } }
     }
 
 
@@ -151,6 +152,7 @@ export class VolumeStateService implements IVolumeStateService {
             state: 0,
             state_value: 0,
             direction: 0,
+            direction_value: 0,
             upper_band: { start: 0, end: 0 },
             lower_band: { start: 0, end: 0 },
             ts: Date.now(),

@@ -519,7 +519,7 @@
 
 28500: `The retrieved candlesticks are not sufficient to generate the trading analysis state. Has: ${candlesticks.length}. Needs: ${requirement}`
 
-28501: ``
+28501: `The provided TA interval is invalid. Received: ${intervalID}`
 
 28502: ``
 

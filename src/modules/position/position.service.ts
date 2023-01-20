@@ -101,7 +101,7 @@ export class PositionService implements IPositionService {
      * Balance Syncing
      */
     private balanceSyncInterval: any;
-    private readonly balanceIntervalSeconds: number = 60 * 5; // Every ~5 minutes
+    private readonly balanceIntervalSeconds: number = 60 * 10; // Every ~10 minutes
 
 
 

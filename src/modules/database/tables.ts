@@ -249,21 +249,6 @@ export const TABLES: IRawTable[] = [
 
     
     /**
-     * Prediction Cancellation Policies
-     * 
-     */
-    {
-        name: "prediction_cancellation_policies",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id              SMALLINT NOT NULL PRIMARY KEY,
-                policies        JSONB NOT NULL
-            );`
-        }
-    },
-
-    
-    /**
      * Position Strategy
      * 
      */

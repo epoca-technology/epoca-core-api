@@ -17,7 +17,9 @@ import {
     ITAMovingAveragesBuild,
     ITAOscillatorsBuild,
     ITAState,
-    ITechnicalAnalysisStateService
+    IMinifiedTAState,
+    ITechnicalAnalysisStateService,
+    ITAIntervalID
 } from "./interfaces";
 
 
@@ -52,6 +54,7 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
      * The latest state calculated by the service.
      */
     public state: ITAState;
+    public minState: IMinifiedTAState;
 
 
 
@@ -60,6 +63,7 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
     @postConstruct()
     public onInit(): void {
         this.state = this.getDefaultState();
+        this.minState = this.minifyState(this.state);
     }
 
 
@@ -104,14 +108,42 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
 
 
 
-    
-
-    
 
 
     /**************
      * Retrievers *
      **************/
+
+
+
+
+    /**
+     * Retrieves an entire interval state.
+     * @param intervalID 
+     * @returns ITAIntervalState
+     */
+    public getIntervalState(intervalID: ITAIntervalID): ITAIntervalState {
+        // Validate the request
+        if (intervalID != "30m" && intervalID != "1h" && intervalID != "2h" && intervalID != "4h" && intervalID != "1d") {
+            throw new Error(this._utils.buildApiError(`The provided TA interval is invalid. Received: ${intervalID}`, 28501));
+        }
+
+        // Return the interval
+        return this.state[intervalID];
+    }
+
+
+
+
+
+    
+
+    
+
+
+    /***************
+     * Calculators *
+     ***************/
 
 
 
@@ -134,11 +166,13 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
                 "4h": await this.buildIntervalState(ds["4h"]),
                 "1d": await this.buildIntervalState(ds["1d"]),
                 ts: Date.now()
-            }
+            };
+            this.minState = this.minifyState(this.state);
         } catch (e) {
             console.log(e);
             this._apiError.log("TechnicalAnalysisState.updateState", e);
             this.state = this.getDefaultState();
+            this.minState = this.minifyState(this.state);
         }
     }
 
@@ -157,7 +191,6 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
 
         // Build the oscillators
         let osc: ITAOscillatorsBuild = await this.buildOscillators(ds, ma.counter);
-
 
         // Build the results
         const results: ITAIntervalStateResultBuild = this.buildIntervalStateResult(osc.counter, ma.counter);
@@ -1076,6 +1109,39 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
                 sma_200: { v: [0], a: "NEUTRAL"},
                 hma_9: { v: [0], a: "NEUTRAL"},
             }
+        }
+    }
+
+
+
+
+
+    /**
+     * Retrieves the module's default state.
+     * @returns IMinifiedTAState
+     */
+    public getDefaultMinifiedState(): IMinifiedTAState {
+        return this.minifyState(this.getDefaultState());
+    }
+
+
+
+
+
+    
+    /**
+     * Minifies a given state.
+     * @param state 
+     * @returns IMinifiedTAState
+     */
+    private minifyState(state: ITAState): IMinifiedTAState {
+        return {
+            "30m": { s: state["30m"].s, o: state["30m"].o, m: state["30m"].m },
+            "1h": { s: state["1h"].s, o: state["1h"].o, m: state["1h"].m },
+            "2h": { s: state["2h"].s, o: state["2h"].o, m: state["2h"].m },
+            "4h": { s: state["4h"].s, o: state["4h"].o, m: state["4h"].m },
+            "1d": { s: state["1d"].s, o: state["1d"].o, m: state["1d"].m },
+            ts: state.ts
         }
     }
 }

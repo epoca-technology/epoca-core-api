@@ -147,7 +147,7 @@ export class MarketStateService implements IMarketStateService {
 
 
     /**************
-     * Retrievers *
+     * Calculator *
      **************/
 
 
@@ -173,7 +173,7 @@ export class MarketStateService implements IMarketStateService {
                 network_fee: this._networkFeeState.state,
                 open_interest: this._openInterest.state,
                 long_short_ratio: this._longShortRatio.state,
-                technical_analysis: this._ta.state
+                technical_analysis: this._ta.minState
             });
 
             // Check if there is a window state and if can be broadcasted
@@ -215,7 +215,7 @@ export class MarketStateService implements IMarketStateService {
             network_fee: this._networkFeeState.getDefaultState(),
             open_interest: this._openInterest.getDefaultState(),
             long_short_ratio: this._longShortRatio.getDefaultState(),
-            technical_analysis: this._ta.getDefaultState()
+            technical_analysis: this._ta.getDefaultMinifiedState()
         }
     }
 }
