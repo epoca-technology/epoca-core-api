@@ -93,8 +93,6 @@ export class PredictionService implements IPredictionService {
      * The intensity of the direction the trend is taking.
      */
     public activeStateIntesity: IPredictionStateIntesity = 0;
-    private readonly intensityRequirement: number = 20;
-    private readonly strongIntensityRequirement: number = 40;
 
 
 
@@ -520,13 +518,16 @@ export class PredictionService implements IPredictionService {
             const initial: number = candlesticks[candlesticks.length - Math.abs(state)].sm;
             const current: number = candlesticks.at(-1).sm;
 
+            // Calculate the intensity requirements
+            const { requirement, strongRequirement } = this.calculateIntensityRequirement(initial);
+
             // Handle a positive initial sum
             if (initial > 0) {
                 // Check if there has been an increase
                 if (initial < current) {
-                    if (current >= this._utils.alterNumberByPercentage(initial, this.strongIntensityRequirement)) {
+                    if (current >= this._utils.alterNumberByPercentage(initial, strongRequirement)) {
                         return 2;
-                    } else if (current >= this._utils.alterNumberByPercentage(initial, this.intensityRequirement)) {
+                    } else if (current >= this._utils.alterNumberByPercentage(initial, requirement)) {
                         return 1;
                     } else {
                         return 0;
@@ -535,9 +536,9 @@ export class PredictionService implements IPredictionService {
 
                 // Check if there has been a decrease
                 else if (initial > current) {
-                    if (current <= this._utils.alterNumberByPercentage(initial, -(this.strongIntensityRequirement))) {
+                    if (current <= this._utils.alterNumberByPercentage(initial, -(strongRequirement))) {
                         return -2;
-                    } else if (current <= this._utils.alterNumberByPercentage(initial, -(this.intensityRequirement))) {
+                    } else if (current <= this._utils.alterNumberByPercentage(initial, -(requirement))) {
                         return -1;
                     } else {
                         return 0;
@@ -552,9 +553,9 @@ export class PredictionService implements IPredictionService {
             else if (initial < 0) {
                 // Check if there has been a decrease
                 if (initial > current) {
-                    if (current <= this._utils.alterNumberByPercentage(initial, this.strongIntensityRequirement)) {
+                    if (current <= this._utils.alterNumberByPercentage(initial, strongRequirement)) {
                         return -2;
-                    } else if (current <= this._utils.alterNumberByPercentage(initial, this.intensityRequirement)) {
+                    } else if (current <= this._utils.alterNumberByPercentage(initial, requirement)) {
                         return -1;
                     } else {
                         return 0;
@@ -563,9 +564,9 @@ export class PredictionService implements IPredictionService {
 
                 // Check if there has been an increase
                 else if (initial < current) {
-                    if (current >= this._utils.alterNumberByPercentage(initial, -(this.strongIntensityRequirement))) {
+                    if (current >= this._utils.alterNumberByPercentage(initial, -(strongRequirement))) {
                         return 2;
-                    } else if (current >= this._utils.alterNumberByPercentage(initial, -(this.intensityRequirement))) {
+                    } else if (current >= this._utils.alterNumberByPercentage(initial, -(requirement))) {
                         return 1;
                     } else {
                         return 0;
@@ -579,5 +580,36 @@ export class PredictionService implements IPredictionService {
             // Otherwise, there is no intensity
             else { return 0 }
         }
+    }
+
+
+
+
+
+    /**
+     * The intensity of the trend state is hard to calculate because the sum
+     * can be a positive or negative number. Moreover, it can get very close
+     * to 0 (6 decimals precision) and it can also go all the way to 8.
+     * Moreover, when calculating the trend state and intensity, there can be
+     * up to 10 candlesticks (~5 hours).
+     * The best approach that comes to mind is to handle dynamic requirements
+     * based on the 
+     * @param initialSum 
+     * @returns {requirement: number, strongRequirement: number}
+     */
+    private calculateIntensityRequirement(initialSum: number): {requirement: number, strongRequirement: number} {
+        // Initialize the absolute sum
+        const sum: number = Math.abs(initialSum);
+
+        // Return the requirements based on the current absolute sum
+        if      (sum < 0.5)             { return { requirement: 22.5,  strongRequirement: 45 } }
+        else if (sum >= 0.5 && sum < 1) { return { requirement: 20,    strongRequirement: 40 } }
+        else if (sum >= 1 && sum < 2)   { return { requirement: 10,    strongRequirement: 20 } }
+        else if (sum >= 2 && sum < 3)   { return { requirement: 7.5,   strongRequirement: 15 } }
+        else if (sum >= 3 && sum < 4)   { return { requirement: 5.5,   strongRequirement: 11 } }
+        else if (sum >= 4 && sum < 5)   { return { requirement: 4,     strongRequirement: 8 } }
+        else if (sum >= 5 && sum < 6)   { return { requirement: 3,     strongRequirement: 6 } }
+        else if (sum >= 6 && sum < 7)   { return { requirement: 2.5,   strongRequirement: 5 } }
+        else                            { return { requirement: 2,     strongRequirement: 4 } }
     }
 }

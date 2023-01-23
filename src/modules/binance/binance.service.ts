@@ -107,7 +107,7 @@ export class BinanceService implements IBinanceService {
         if (!response || typeof response != "object" || response.statusCode != 200) {
             console.log(response);
             throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
-            when retrieving the balances.`, 9));
+            when retrieving the balances: ${this.extractErrorMessage(response)}`, 9));
         }
 
         // Validate the response's data
@@ -150,7 +150,7 @@ export class BinanceService implements IBinanceService {
         if (!response || typeof response != "object" || response.statusCode != 200) {
             console.log(response);
             throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
-            when retrieving the active positions.`, 11));
+            when retrieving the active positions: ${this.extractErrorMessage(response)}`, 11));
         }
 
         // Validate the response's data
@@ -201,7 +201,7 @@ export class BinanceService implements IBinanceService {
             console.log(params);
             console.log(response);
             throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
-            when retrieving the account trades.`, 14));
+            when retrieving the account trades: ${this.extractErrorMessage(response)}`, 14));
         }
 
         // Validate the response's data
@@ -264,7 +264,7 @@ export class BinanceService implements IBinanceService {
         if (!response || typeof response != "object" || response.statusCode != 200) {
             console.log(response);
             throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
-            when interacting with a position.`, 13));
+            when interacting with a position: ${this.extractErrorMessage(response)}`, 13));
         }
 
         // Return the series
@@ -385,7 +385,7 @@ export class BinanceService implements IBinanceService {
         // Validate the response
         if (!response || typeof response != "object" || response.statusCode != 200) {
             throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
-            when retrieving the candlesticks series.`, 1));
+            when retrieving the candlesticks series: ${this.extractErrorMessage(response)}`, 1));
         }
 
         // Validate the response's data
@@ -429,7 +429,7 @@ export class BinanceService implements IBinanceService {
         if (!response || typeof response != "object" || response.statusCode != 200) {
             console.log(response);
             throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
-            when retrieving the order book.`, 3));
+            when retrieving the order book: ${this.extractErrorMessage(response)}`, 3));
         }
 
         // Validate the response's data
@@ -471,7 +471,7 @@ export class BinanceService implements IBinanceService {
         if (!response || typeof response != "object" || response.statusCode != 200) {
             console.log(response);
             throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
-            when retrieving the open interest.`, 5));
+            when retrieving the open interest: ${this.extractErrorMessage(response)}`, 5));
         }
 
         // Validate the response's data
@@ -519,7 +519,7 @@ export class BinanceService implements IBinanceService {
         if (!response || typeof response != "object" || response.statusCode != 200) {
             console.log(response);
             throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
-            when retrieving the long short ratio.`, 7));
+            when retrieving the long short ratio: ${this.extractErrorMessage(response)}`, 7));
         }
 
         // Validate the response's data
@@ -530,5 +530,50 @@ export class BinanceService implements IBinanceService {
 
         // Return the series
         return response.data;
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /* Misc Helpers */
+
+
+
+
+
+    /**
+     * Given a response object, it will attempt to extract the error 
+     * message returned by Binance.
+     * @param res 
+     * @returns string
+     */
+    private extractErrorMessage(res: IExternalRequestResponse|any): string {
+        const defaultError: string = "The error message could not be extracted.";
+        try {
+            // If the value is a string, return it
+            if (typeof res == "string" && res.length) return res;
+
+            // If it is an object, check if the error message was included
+            if (
+                res && typeof res == "object" && 
+                res.data && typeof res.data == "object" &&
+                typeof res.data.msg == "string"
+            ) {
+                return `${res.data.msg} (${typeof res.data.code == 'number' ? res.data.code: 0})`;
+            }
+
+            // Otherwise, return the default error
+            return defaultError;
+        } catch (e) {
+            console.log(e);
+            return defaultError;
+        }
     }
 }

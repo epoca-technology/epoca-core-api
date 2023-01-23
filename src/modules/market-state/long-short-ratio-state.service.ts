@@ -42,7 +42,7 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
      * Every intervalSeconds, the open interest state will be calculated and stored temporarily.
      */
     private stateInterval: any;
-    private readonly intervalSeconds: number = 30;
+    private readonly intervalSeconds: number = 20;
 
 
     /**

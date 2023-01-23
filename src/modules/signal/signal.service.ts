@@ -1,12 +1,15 @@
 import {inject, injectable} from "inversify";
 import { BehaviorSubject, Subscription } from "rxjs";
 import { SYMBOLS } from "../../ioc";
+import { IBinancePositionSide } from "../binance";
 import { IPrediction, IPredictionResult } from "../epoch-builder";
 import { IMarketStateService } from "../market-state";
 import { IPredictionService } from "../prediction";
+import { IUtilitiesService } from "../utilities";
 import { 
     ISignalService,
-    ISignalDataset
+    ISignalDataset,
+    ISignalSidePolicies
 } from "./interfaces";
 
 
@@ -15,6 +18,7 @@ export class SignalService implements ISignalService {
     // Inject dependencies
     @inject(SYMBOLS.PredictionService)           private _prediction: IPredictionService;
     @inject(SYMBOLS.MarketStateService)          private _marketState: IMarketStateService;
+    @inject(SYMBOLS.UtilitiesService)            private _utils: IUtilitiesService;
 
 
     /**
@@ -28,9 +32,160 @@ export class SignalService implements ISignalService {
 
 
 
+    /**
+     * Long Policies
+     * Issuance and cancellation policies for long signals.
+     */
+    private readonly long: ISignalSidePolicies = {
+        // Issuance
+        issuance: {
+            technicals: {
+                trend_state: 3,
+                trend_intensity: 2,
+                ta_30m: 1,
+                ta_1h: 1,
+                ta_2h: 1,
+                ta_4h: 1,
+                ta_1d: 1,
+            },
+            technicals_open_interest: {
+                trend_state: 3,
+                trend_intensity: 2,
+                ta_2h: 1,
+                ta_4h: 1,
+                ta_1d: 1,
+                open_interest: 1,
+            },
+            technicals_long_short_ratio: {
+                trend_state: 3,
+                trend_intensity: 2,
+                ta_2h: 1,
+                ta_4h: 1,
+                ta_1d: 1,
+                long_short_ratio: 1,
+            },
+            open_interest_long_short_ratio: {
+                trend_state: 3,
+                trend_intensity: 2,
+                open_interest: 1,
+                long_short_ratio: 1,
+            }
+        },
+
+        // Cancellation
+        cancellation: {
+            window: {
+                window: 2
+            },
+            technicals: {
+                ta_30m: -1,
+                ta_1h: -1,
+                ta_2h: -1,
+                ta_4h: -1,
+                ta_1d: -1,
+            },
+            technicals_open_interest: {
+                ta_2h: -1,
+                ta_4h: -1,
+                ta_1d: -1,
+                open_interest: -1,
+            },
+            technicals_long_short_ratio: {
+                ta_2h: -1,
+                ta_4h: -1,
+                ta_1d: -1,
+                long_short_ratio: -1,
+            },
+            open_interest_long_short_ratio: {
+                open_interest: -1,
+                long_short_ratio: -1,
+            }
+        }
+    }
+
+
+
+
+
+    /**
+     * Short Policies
+     * Issuance and cancellation policies for short signals.
+     */
+    private readonly short: ISignalSidePolicies = {
+        // Issuance
+        issuance: {
+            technicals: {
+                trend_state: -3,
+                trend_intensity: -2,
+                ta_30m: -1,
+                ta_1h: -1,
+                ta_2h: -1,
+                ta_4h: -1,
+                ta_1d: -1,
+            },
+            technicals_open_interest: {
+                trend_state: -3,
+                trend_intensity: -2,
+                ta_2h: -1,
+                ta_4h: -1,
+                ta_1d: -1,
+                open_interest: -1
+            },
+            technicals_long_short_ratio: {
+                trend_state: -3,
+                trend_intensity: -2,
+                ta_2h: -1,
+                ta_4h: -1,
+                ta_1d: -1,
+                long_short_ratio: -1
+            },
+            open_interest_long_short_ratio: {
+                trend_state: -3,
+                trend_intensity: -2,
+                open_interest: -1,
+                long_short_ratio: -1
+            }
+        },
+
+        // Cancellation
+        cancellation: {
+            window: {
+                window: -2
+            },
+            technicals: {
+                ta_30m: 1,
+                ta_1h: 1,
+                ta_2h: 1,
+                ta_4h: 1,
+                ta_1d: 1,
+            },
+            technicals_open_interest: {
+                ta_2h: 1,
+                ta_4h: 1,
+                ta_1d: 1,
+                open_interest: 1
+            },
+            technicals_long_short_ratio: {
+                ta_2h: 1,
+                ta_4h: 1,
+                ta_1d: 1,
+                long_short_ratio: 1
+            },
+            open_interest_long_short_ratio: {
+                open_interest: 1,
+                long_short_ratio: 1
+            }
+        }
+    }
+
+
 
 
     constructor() {}
+
+
+
+
 
 
 
@@ -68,6 +223,36 @@ export class SignalService implements ISignalService {
     }
 
 
+
+
+
+
+
+
+
+
+    /**************
+     * Retrievers *
+     **************/
+
+
+
+
+
+    /**
+     * Retrieves the issuance and cancellation policies for a side.
+     * @param side 
+     * @returns ISignalSidePolicies
+     */
+    public getPolicies(side: IBinancePositionSide): ISignalSidePolicies {
+        // Validate the side
+        if (side != "LONG" && side != "SHORT") {
+            throw new Error(this._utils.buildApiError(`The provided side is invalid. Received: ${side}`, 35000));
+        }
+
+        // Return the policies accordingly
+        return side == "LONG" ? this.long: this.short;
+    }
 
 
 
@@ -115,6 +300,9 @@ export class SignalService implements ISignalService {
 
             // Evaluate Technicals Long Short Ratio Policies
             if (result == 0) result = this.evaluateTechnicalsLongShortRatioIssuance(ds);
+
+            // Evaluate Open Interest Long Short Ratio Policies
+            if (result == 0) result = this.evaluateOpenInterestLongShortRatioIssuance(ds);
         }
 
 
@@ -167,26 +355,26 @@ export class SignalService implements ISignalService {
     private evaluateTechnicalsIssuance(ds: ISignalDataset): IPredictionResult {
         // Evaluate if a long signal should be issued
         if (
-            ds.trendState >= 3 &&
-            ds.trendStateIntensity >= 2 &&
-            ds.marketState.technical_analysis["30m"].s.a >= 1 &&
-            ds.marketState.technical_analysis["1h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["2h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["4h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["1d"].s.a >= 1
+            ds.trendState >= this.long.issuance.technicals.trend_state &&
+            ds.trendStateIntensity >= this.long.issuance.technicals.trend_intensity &&
+            ds.marketState.technical_analysis["30m"].s.a >= this.long.issuance.technicals.ta_30m &&
+            ds.marketState.technical_analysis["1h"].s.a >= this.long.issuance.technicals.ta_1h &&
+            ds.marketState.technical_analysis["2h"].s.a >= this.long.issuance.technicals.ta_2h &&
+            ds.marketState.technical_analysis["4h"].s.a >= this.long.issuance.technicals.ta_4h &&
+            ds.marketState.technical_analysis["1d"].s.a >= this.long.issuance.technicals.ta_1d
         ) {
             return 1;
         }
 
         // Evaluate if a short signal should be issued
         else if (
-            ds.trendState <= -3 &&
-            ds.trendStateIntensity <= -2 &&
-            ds.marketState.technical_analysis["30m"].s.a <= -1 &&
-            ds.marketState.technical_analysis["1h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["2h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["4h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["1d"].s.a <= -1
+            ds.trendState <= this.short.issuance.technicals.trend_state &&
+            ds.trendStateIntensity <= this.short.issuance.technicals.trend_intensity &&
+            ds.marketState.technical_analysis["30m"].s.a <= this.short.issuance.technicals.ta_30m &&
+            ds.marketState.technical_analysis["1h"].s.a <= this.short.issuance.technicals.ta_1h &&
+            ds.marketState.technical_analysis["2h"].s.a <= this.short.issuance.technicals.ta_2h &&
+            ds.marketState.technical_analysis["4h"].s.a <= this.short.issuance.technicals.ta_4h &&
+            ds.marketState.technical_analysis["1d"].s.a <= this.short.issuance.technicals.ta_1d
         ) {
             return -1;
         }
@@ -208,24 +396,24 @@ export class SignalService implements ISignalService {
     private evaluateTechnicalsOpenInterestIssuance(ds: ISignalDataset): IPredictionResult {
         // Evaluate if a long signal should be issued
         if (
-            ds.trendState >= 3 &&
-            ds.trendStateIntensity >= 2 &&
-            ds.marketState.technical_analysis["2h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["4h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["1d"].s.a >= 1 &&
-            ds.marketState.open_interest.state >= 1
+            ds.trendState >= this.long.issuance.technicals_open_interest.trend_state &&
+            ds.trendStateIntensity >= this.long.issuance.technicals_open_interest.trend_intensity &&
+            ds.marketState.technical_analysis["2h"].s.a >= this.long.issuance.technicals_open_interest.ta_2h &&
+            ds.marketState.technical_analysis["4h"].s.a >= this.long.issuance.technicals_open_interest.ta_4h &&
+            ds.marketState.technical_analysis["1d"].s.a >= this.long.issuance.technicals_open_interest.ta_1d &&
+            ds.marketState.open_interest.state >= this.long.issuance.technicals_open_interest.open_interest
         ) {
             return 1;
         }
 
         // Evaluate if a short signal should be issued
         else if (
-            ds.trendState <= -3 &&
-            ds.trendStateIntensity <= -2 &&
-            ds.marketState.technical_analysis["2h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["4h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["1d"].s.a <= -1 &&
-            ds.marketState.open_interest.state <= -1
+            ds.trendState <= this.short.issuance.technicals_open_interest.trend_state &&
+            ds.trendStateIntensity <= this.short.issuance.technicals_open_interest.trend_intensity &&
+            ds.marketState.technical_analysis["2h"].s.a <= this.short.issuance.technicals_open_interest.ta_2h &&
+            ds.marketState.technical_analysis["4h"].s.a <= this.short.issuance.technicals_open_interest.ta_4h &&
+            ds.marketState.technical_analysis["1d"].s.a <= this.short.issuance.technicals_open_interest.ta_1d &&
+            ds.marketState.open_interest.state <= this.short.issuance.technicals_open_interest.open_interest
         ) {
             return -1;
         }
@@ -248,24 +436,59 @@ export class SignalService implements ISignalService {
     private evaluateTechnicalsLongShortRatioIssuance(ds: ISignalDataset): IPredictionResult {
         // Evaluate if a long signal should be issued
         if (
-            ds.trendState >= 3 &&
-            ds.trendStateIntensity >= 2 &&
-            ds.marketState.technical_analysis["2h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["4h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["1d"].s.a >= 1 &&
-            ds.marketState.long_short_ratio.state >= 1
+            ds.trendState >= this.long.issuance.technicals_long_short_ratio.trend_state &&
+            ds.trendStateIntensity >= this.long.issuance.technicals_long_short_ratio.trend_intensity &&
+            ds.marketState.technical_analysis["2h"].s.a >= this.long.issuance.technicals_long_short_ratio.ta_2h &&
+            ds.marketState.technical_analysis["4h"].s.a >= this.long.issuance.technicals_long_short_ratio.ta_4h &&
+            ds.marketState.technical_analysis["1d"].s.a >= this.long.issuance.technicals_long_short_ratio.ta_1d &&
+            ds.marketState.long_short_ratio.state >= this.long.issuance.technicals_long_short_ratio.long_short_ratio
         ) {
             return 1;
         }
 
         // Evaluate if a short signal should be issued
         else if (
-            ds.trendState <= -3 &&
-            ds.trendStateIntensity <= -2 &&
-            ds.marketState.technical_analysis["2h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["4h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["1d"].s.a <= -1 &&
-            ds.marketState.long_short_ratio.state <= -1
+            ds.trendState <= this.short.issuance.technicals_long_short_ratio.trend_state &&
+            ds.trendStateIntensity <= this.short.issuance.technicals_long_short_ratio.trend_intensity &&
+            ds.marketState.technical_analysis["2h"].s.a <= this.short.issuance.technicals_long_short_ratio.ta_2h &&
+            ds.marketState.technical_analysis["4h"].s.a <= this.short.issuance.technicals_long_short_ratio.ta_4h &&
+            ds.marketState.technical_analysis["1d"].s.a <= this.short.issuance.technicals_long_short_ratio.ta_1d &&
+            ds.marketState.long_short_ratio.state <= this.short.issuance.technicals_long_short_ratio.long_short_ratio
+        ) {
+            return -1;
+        }
+
+        // Otherwise, stand neutral
+        else { return 0 }
+    }
+
+
+
+
+
+    /**
+     * Evaluates the trend state & intensity as well as the current
+     * open interest and long short ratio states.
+     * @param ds 
+     * @returns IPredictionResult
+     */
+    private evaluateOpenInterestLongShortRatioIssuance(ds: ISignalDataset): IPredictionResult {
+        // Evaluate if a long signal should be issued
+        if (
+            ds.trendState >= this.long.issuance.open_interest_long_short_ratio.trend_state &&
+            ds.trendStateIntensity >= this.long.issuance.open_interest_long_short_ratio.trend_intensity &&
+            ds.marketState.open_interest.state >= this.long.issuance.open_interest_long_short_ratio.open_interest &&
+            ds.marketState.long_short_ratio.state >= this.long.issuance.open_interest_long_short_ratio.long_short_ratio
+        ) {
+            return 1;
+        }
+
+        // Evaluate if a short signal should be issued
+        else if (
+            ds.trendState <= this.short.issuance.open_interest_long_short_ratio.trend_state &&
+            ds.trendStateIntensity <= this.short.issuance.open_interest_long_short_ratio.trend_intensity &&
+            ds.marketState.open_interest.state <= this.short.issuance.open_interest_long_short_ratio.open_interest && 
+            ds.marketState.long_short_ratio.state <= this.short.issuance.open_interest_long_short_ratio.long_short_ratio
         ) {
             return -1;
         }
@@ -303,12 +526,12 @@ export class SignalService implements ISignalService {
      */
     private evaluateWindowCancellation(current: IPredictionResult, ds: ISignalDataset): IPredictionResult {
         // Evaluate a long signal
-        if (current == 1 && ds.marketState.window.state >= 2) {
+        if (current == 1 && ds.marketState.window.state >= this.long.cancellation.window.window) {
             return 0;
         }
 
         // Evaluate a short signal
-        else if (current == -1 && ds.marketState.window.state <= -2){
+        else if (current == -1 && ds.marketState.window.state <= this.short.cancellation.window.window){
             return 0;
         }
 
@@ -331,11 +554,11 @@ export class SignalService implements ISignalService {
         // Evaluate a long signal
         if (
             current == 1 && 
-            ds.marketState.technical_analysis["30m"].s.a <= -1 &&
-            ds.marketState.technical_analysis["1h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["2h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["4h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["1d"].s.a <= -1
+            ds.marketState.technical_analysis["30m"].s.a <= this.long.cancellation.technicals.ta_30m &&
+            ds.marketState.technical_analysis["1h"].s.a <= this.long.cancellation.technicals.ta_1h &&
+            ds.marketState.technical_analysis["2h"].s.a <= this.long.cancellation.technicals.ta_2h &&
+            ds.marketState.technical_analysis["4h"].s.a <= this.long.cancellation.technicals.ta_4h &&
+            ds.marketState.technical_analysis["1d"].s.a <= this.long.cancellation.technicals.ta_1d
         ) {
             return 0;
         }
@@ -343,11 +566,11 @@ export class SignalService implements ISignalService {
         // Evaluate a short signal
         else if (
             current == -1 && 
-            ds.marketState.technical_analysis["30m"].s.a >= 1 &&
-            ds.marketState.technical_analysis["1h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["2h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["4h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["1d"].s.a >= 1
+            ds.marketState.technical_analysis["30m"].s.a >= this.short.cancellation.technicals.ta_30m &&
+            ds.marketState.technical_analysis["1h"].s.a >= this.short.cancellation.technicals.ta_1h &&
+            ds.marketState.technical_analysis["2h"].s.a >= this.short.cancellation.technicals.ta_2h &&
+            ds.marketState.technical_analysis["4h"].s.a >= this.short.cancellation.technicals.ta_4h &&
+            ds.marketState.technical_analysis["1d"].s.a >= this.short.cancellation.technicals.ta_1d
         ){
             return 0;
         }
@@ -373,10 +596,10 @@ export class SignalService implements ISignalService {
         // Evaluate a long signal
         if (
             current == 1 && 
-            ds.marketState.technical_analysis["2h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["4h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["1d"].s.a <= -1 &&
-            ds.marketState.open_interest.state <= -1
+            ds.marketState.technical_analysis["2h"].s.a <= this.long.cancellation.technicals_open_interest.ta_2h &&
+            ds.marketState.technical_analysis["4h"].s.a <= this.long.cancellation.technicals_open_interest.ta_4h &&
+            ds.marketState.technical_analysis["1d"].s.a <= this.long.cancellation.technicals_open_interest.ta_1d &&
+            ds.marketState.open_interest.state <= this.long.cancellation.technicals_open_interest.open_interest
         ) {
             return 0;
         }
@@ -384,10 +607,10 @@ export class SignalService implements ISignalService {
         // Evaluate a short signal
         else if (
             current == -1 && 
-            ds.marketState.technical_analysis["2h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["4h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["1d"].s.a >= 1 &&
-            ds.marketState.open_interest.state >= 1
+            ds.marketState.technical_analysis["2h"].s.a >= this.short.cancellation.technicals_open_interest.ta_2h &&
+            ds.marketState.technical_analysis["4h"].s.a >= this.short.cancellation.technicals_open_interest.ta_4h &&
+            ds.marketState.technical_analysis["1d"].s.a >= this.short.cancellation.technicals_open_interest.ta_1d &&
+            ds.marketState.open_interest.state >= this.short.cancellation.technicals_open_interest.open_interest
         ){
             return 0;
         }
@@ -413,10 +636,10 @@ export class SignalService implements ISignalService {
         // Evaluate a long signal
         if (
             current == 1 && 
-            ds.marketState.technical_analysis["2h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["4h"].s.a <= -1 &&
-            ds.marketState.technical_analysis["1d"].s.a <= -1 &&
-            ds.marketState.long_short_ratio.state <= -1
+            ds.marketState.technical_analysis["2h"].s.a <= this.long.cancellation.technicals_long_short_ratio.ta_2h &&
+            ds.marketState.technical_analysis["4h"].s.a <= this.long.cancellation.technicals_long_short_ratio.ta_4h &&
+            ds.marketState.technical_analysis["1d"].s.a <= this.long.cancellation.technicals_long_short_ratio.ta_1d &&
+            ds.marketState.long_short_ratio.state <= this.long.cancellation.technicals_long_short_ratio.long_short_ratio
         ) {
             return 0;
         }
@@ -424,10 +647,10 @@ export class SignalService implements ISignalService {
         // Evaluate a short signal
         else if (
             current == -1 && 
-            ds.marketState.technical_analysis["2h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["4h"].s.a >= 1 &&
-            ds.marketState.technical_analysis["1d"].s.a >= 1 &&
-            ds.marketState.long_short_ratio.state >= 1
+            ds.marketState.technical_analysis["2h"].s.a >= this.short.cancellation.technicals_long_short_ratio.ta_2h &&
+            ds.marketState.technical_analysis["4h"].s.a >= this.short.cancellation.technicals_long_short_ratio.ta_4h &&
+            ds.marketState.technical_analysis["1d"].s.a >= this.short.cancellation.technicals_long_short_ratio.ta_1d &&
+            ds.marketState.long_short_ratio.state >= this.short.cancellation.technicals_long_short_ratio.long_short_ratio
         ){
             return 0;
         }
@@ -453,8 +676,8 @@ export class SignalService implements ISignalService {
         // Evaluate a long signal
         if (
             current == 1 && 
-            ds.marketState.open_interest.state <= -1 &&
-            ds.marketState.long_short_ratio.state <= -1
+            ds.marketState.open_interest.state <= this.long.cancellation.open_interest_long_short_ratio.open_interest &&
+            ds.marketState.long_short_ratio.state <= this.long.cancellation.open_interest_long_short_ratio.long_short_ratio
         ) {
             return 0;
         }
@@ -462,8 +685,8 @@ export class SignalService implements ISignalService {
         // Evaluate a short signal
         else if (
             current == -1 && 
-            ds.marketState.open_interest.state >= 1 &&
-            ds.marketState.long_short_ratio.state >= 1
+            ds.marketState.open_interest.state >= this.short.cancellation.open_interest_long_short_ratio.open_interest &&
+            ds.marketState.long_short_ratio.state >= this.short.cancellation.open_interest_long_short_ratio.long_short_ratio
         ){
             return 0;
         }
@@ -471,6 +694,9 @@ export class SignalService implements ISignalService {
         // Otherwise, maintain the signal active
         else { return current }
     }
+
+
+
 
 
 

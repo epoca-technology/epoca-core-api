@@ -85,8 +85,6 @@
 
     // Signal
     SignalService: Symbol.for("SignalService"),
-    SignalValidations: Symbol.for("SignalValidations"),
-    SignalModel: Symbol.for("SignalModel"),
 
     // Utilities
     UtilitiesService: Symbol.for("UtilitiesService"),
@@ -176,8 +174,6 @@ export interface ISymbols {
 
 
     SignalService: symbol,
-    SignalValidations: symbol,
-    SignalModel: symbol,
     
 
     UtilitiesService: symbol,

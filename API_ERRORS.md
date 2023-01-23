@@ -637,9 +637,9 @@
 #
 ## Signal Service (35.000 - 35.999)
 
-35000: `The provided cancellation policies are invalid.`
+35000: `The provided side is invalid. Received: ${side}`
 
-35001: `The provided state for ${itemName} is invalid. Received: ${itemState}`
+35001: ``
 
 35002: ``
 
