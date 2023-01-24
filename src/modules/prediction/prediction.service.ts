@@ -16,6 +16,7 @@ import { IPrediction } from "../epoch-builder";
 import { 
     IPredictionCandlestick, 
     IPredictionModel, 
+    IPredictionRequestBody, 
     IPredictionService, 
     IPredictionState, 
     IPredictionStateIntesity,
@@ -48,8 +49,8 @@ export class PredictionService implements IPredictionService {
      */
     private options: IExternalRequestOptions = {
         host: "prediction-api",
-        path: "",
-        method: "GET",
+        path: "/predict",
+        method: "POST",
         port: 5000,
         headers: {
             "Content-Type": "application/json",
@@ -272,16 +273,12 @@ export class PredictionService implements IPredictionService {
      * @returns Promise<void>
      */
     private async predict(): Promise<void> {
-        // Make sure the epoch is still active
-        if (!this._epoch.active.value) {
-            throw new Error(this._utils.buildApiError(`A prediction cannot be generated if there isn't an active epoch.`, 20000));
-        }
-
-        // Set the path
-        this.options.path = this.buildPredictionAPIPath(this._epoch.active.value.id, this.activeState, this.activeStateIntesity);
-
         // Generate the prediction with a request to the Prediction API
-        const response: IExternalRequestResponse = await this._req.request(this.options, {}, "http");
+        const response: IExternalRequestResponse = await this._req.request(
+            this.options, 
+            this.buildPredictionRequestBody(), 
+            "http"
+        );
 
         // Extract the prediction from the response
         const prediction: IPrediction = this.validations.validateGeneratedPrediction(response);
@@ -304,21 +301,44 @@ export class PredictionService implements IPredictionService {
 
 
 
+
+
     /**
-     * Builds the path in which the Prediction API generates
-     * new predictions.
-     * @param epochID 
-     * @param state 
-     * @param intensity 
-     * @returns string
+     * Builds and validates the body that will be sent to the prediction api
+     * in order to generate new predictions.
+     * @returns IPredictionRequestBody
      */
-    private buildPredictionAPIPath(
-        epochID: string, 
-        state: IPredictionState, 
-        intensity: IPredictionStateIntesity
-    ): string { 
-        return `/predict?epoch_id=${epochID}&trend_state=${state}&trend_state_intensity=${intensity}`;
+    private buildPredictionRequestBody(): IPredictionRequestBody {
+        // Make sure the epoch is active
+        if (!this._epoch.active.value) {
+            throw new Error(this._utils.buildApiError(`A prediction cannot be generated if there isn't an active epoch.`, 20000));
+        }
+
+        // Calculate the number of items required to build the input dataset
+        const listSize: number = (this._epoch.active.value.config.sma_window_size + this._epoch.active.value.config.regression_lookback) - 1;
+        
+        // Ensure the candlesticks lookback has sufficient items
+        if (listSize > this._candlestick.predictionLookback.length) {
+            throw new Error(this._utils.buildApiError(`The candlestick's lookback is not big enough to generate the input dataset in 
+            order for the model to generate predictions. Has ${this._candlestick.predictionLookback.length}. Needs: ${listSize}`, 20001));
+        }
+
+        // Ensure the candlesticks lookback is synced
+        if (!this._candlestick.isStreamInSync(this._candlestick.stream.value)) {
+            throw new Error(this._utils.buildApiError(`New predictions cannot be generated as the candlesticks stream is out of sync.`, 20002));
+        }
+
+        // Finally, return the body
+        return {
+            epoch_id: this._epoch.active.value.id,
+            trend_state: this.activeState,
+            trend_state_intensity: this.activeStateIntesity,
+            close_prices: this._candlestick.predictionLookback.slice(-(listSize)).map((candlestick) => candlestick.c)
+        }
     }
+
+
+
 
 
 

@@ -91,6 +91,25 @@ export interface IPredictionModel {
 
 
 
+/**
+ * Prediction Request Body
+ * The body sent to the Prediction API in order to generate a prediction.
+ */
+export interface IPredictionRequestBody {
+    // The identifier of the Epoch
+    epoch_id: string,
+
+    // The current state of the prediction
+    trend_state: IPredictionState,
+
+    // The intensity of the state
+    trend_state_intensity: IPredictionStateIntesity,
+
+    // The list of up-to-date close prices
+    close_prices: number[]
+}
+
+
 
 
 

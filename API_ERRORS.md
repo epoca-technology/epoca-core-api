@@ -401,9 +401,9 @@
 
 20000: `A prediction cannot be generated if there isn't an active epoch.`
 
-20001: ``
+20001: `The candlestick's lookback is not big enough in order to generate the input dataset in order for the model to generate predictions. Has ${this._candlestick.predictionLookback.length}. Needs: ${listSize}`
 
-20002: ``
+20002: `New predictions cannot be generated as the candlesticks stream is out of sync.`
 
 20003: ``
 
