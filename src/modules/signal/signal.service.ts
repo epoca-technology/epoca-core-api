@@ -3,7 +3,7 @@ import { BehaviorSubject, Subscription } from "rxjs";
 import { SYMBOLS } from "../../ioc";
 import { IBinancePositionSide } from "../binance";
 import { IPrediction, IPredictionResult } from "../epoch-builder";
-import { IMarketStateService } from "../market-state";
+import { IMarketStateService, IStateType } from "../market-state";
 import { IPredictionService } from "../prediction";
 import { IUtilitiesService } from "../utilities";
 import { 
@@ -40,6 +40,7 @@ export class SignalService implements ISignalService {
         // Issuance
         issuance: {
             technicals: {
+                trend_sum: 0,
                 trend_state: 3,
                 trend_intensity: 2,
                 ta_30m: 1,
@@ -49,6 +50,7 @@ export class SignalService implements ISignalService {
                 ta_1d: 1,
             },
             technicals_open_interest: {
+                trend_sum: 0,
                 trend_state: 3,
                 trend_intensity: 2,
                 ta_2h: 1,
@@ -57,6 +59,7 @@ export class SignalService implements ISignalService {
                 open_interest: 1,
             },
             technicals_long_short_ratio: {
+                trend_sum: 0,
                 trend_state: 3,
                 trend_intensity: 2,
                 ta_2h: 1,
@@ -65,6 +68,7 @@ export class SignalService implements ISignalService {
                 long_short_ratio: 1,
             },
             open_interest_long_short_ratio: {
+                trend_sum: 0,
                 trend_state: 3,
                 trend_intensity: 2,
                 open_interest: 1,
@@ -115,6 +119,7 @@ export class SignalService implements ISignalService {
         // Issuance
         issuance: {
             technicals: {
+                trend_sum: 0,
                 trend_state: -3,
                 trend_intensity: -2,
                 ta_30m: -1,
@@ -124,6 +129,7 @@ export class SignalService implements ISignalService {
                 ta_1d: -1,
             },
             technicals_open_interest: {
+                trend_sum: 0,
                 trend_state: -3,
                 trend_intensity: -2,
                 ta_2h: -1,
@@ -132,6 +138,7 @@ export class SignalService implements ISignalService {
                 open_interest: -1
             },
             technicals_long_short_ratio: {
+                trend_sum: 0,
                 trend_state: -3,
                 trend_intensity: -2,
                 ta_2h: -1,
@@ -140,6 +147,7 @@ export class SignalService implements ISignalService {
                 long_short_ratio: -1
             },
             open_interest_long_short_ratio: {
+                trend_sum: 0,
                 trend_state: -3,
                 trend_intensity: -2,
                 open_interest: -1,
@@ -205,6 +213,7 @@ export class SignalService implements ISignalService {
      * @returns Promise<void>
      */
     public async initialize(): Promise<void> {
+        // Subscribe to the prediction stream
         this.predictionSub = this._prediction.active.subscribe((p: IPrediction|undefined) => {
             if (p) this.onNewPrediction(p);
         });
@@ -355,6 +364,7 @@ export class SignalService implements ISignalService {
     private evaluateTechnicalsIssuance(ds: ISignalDataset): IPredictionResult {
         // Evaluate if a long signal should be issued
         if (
+            this.isTrendSumCompliying("LONG", this.long.issuance.technicals.trend_sum, ds.trendSum) &&
             ds.trendState >= this.long.issuance.technicals.trend_state &&
             ds.trendStateIntensity >= this.long.issuance.technicals.trend_intensity &&
             ds.marketState.technical_analysis["30m"].s.a >= this.long.issuance.technicals.ta_30m &&
@@ -368,6 +378,7 @@ export class SignalService implements ISignalService {
 
         // Evaluate if a short signal should be issued
         else if (
+            this.isTrendSumCompliying("SHORT", this.short.issuance.technicals.trend_sum, ds.trendSum) &&
             ds.trendState <= this.short.issuance.technicals.trend_state &&
             ds.trendStateIntensity <= this.short.issuance.technicals.trend_intensity &&
             ds.marketState.technical_analysis["30m"].s.a <= this.short.issuance.technicals.ta_30m &&
@@ -396,6 +407,7 @@ export class SignalService implements ISignalService {
     private evaluateTechnicalsOpenInterestIssuance(ds: ISignalDataset): IPredictionResult {
         // Evaluate if a long signal should be issued
         if (
+            this.isTrendSumCompliying("LONG", this.long.issuance.technicals_open_interest.trend_sum, ds.trendSum) &&
             ds.trendState >= this.long.issuance.technicals_open_interest.trend_state &&
             ds.trendStateIntensity >= this.long.issuance.technicals_open_interest.trend_intensity &&
             ds.marketState.technical_analysis["2h"].s.a >= this.long.issuance.technicals_open_interest.ta_2h &&
@@ -408,6 +420,7 @@ export class SignalService implements ISignalService {
 
         // Evaluate if a short signal should be issued
         else if (
+            this.isTrendSumCompliying("SHORT", this.short.issuance.technicals_open_interest.trend_sum, ds.trendSum) &&
             ds.trendState <= this.short.issuance.technicals_open_interest.trend_state &&
             ds.trendStateIntensity <= this.short.issuance.technicals_open_interest.trend_intensity &&
             ds.marketState.technical_analysis["2h"].s.a <= this.short.issuance.technicals_open_interest.ta_2h &&
@@ -436,6 +449,7 @@ export class SignalService implements ISignalService {
     private evaluateTechnicalsLongShortRatioIssuance(ds: ISignalDataset): IPredictionResult {
         // Evaluate if a long signal should be issued
         if (
+            this.isTrendSumCompliying("LONG", this.long.issuance.technicals_long_short_ratio.trend_sum, ds.trendSum) &&
             ds.trendState >= this.long.issuance.technicals_long_short_ratio.trend_state &&
             ds.trendStateIntensity >= this.long.issuance.technicals_long_short_ratio.trend_intensity &&
             ds.marketState.technical_analysis["2h"].s.a >= this.long.issuance.technicals_long_short_ratio.ta_2h &&
@@ -448,6 +462,7 @@ export class SignalService implements ISignalService {
 
         // Evaluate if a short signal should be issued
         else if (
+            this.isTrendSumCompliying("SHORT", this.short.issuance.technicals_long_short_ratio.trend_sum, ds.trendSum) &&
             ds.trendState <= this.short.issuance.technicals_long_short_ratio.trend_state &&
             ds.trendStateIntensity <= this.short.issuance.technicals_long_short_ratio.trend_intensity &&
             ds.marketState.technical_analysis["2h"].s.a <= this.short.issuance.technicals_long_short_ratio.ta_2h &&
@@ -475,6 +490,7 @@ export class SignalService implements ISignalService {
     private evaluateOpenInterestLongShortRatioIssuance(ds: ISignalDataset): IPredictionResult {
         // Evaluate if a long signal should be issued
         if (
+            this.isTrendSumCompliying("LONG", this.long.issuance.open_interest_long_short_ratio.trend_sum, ds.trendSum) &&
             ds.trendState >= this.long.issuance.open_interest_long_short_ratio.trend_state &&
             ds.trendStateIntensity >= this.long.issuance.open_interest_long_short_ratio.trend_intensity &&
             ds.marketState.open_interest.state >= this.long.issuance.open_interest_long_short_ratio.open_interest &&
@@ -485,6 +501,7 @@ export class SignalService implements ISignalService {
 
         // Evaluate if a short signal should be issued
         else if (
+            this.isTrendSumCompliying("SHORT", this.short.issuance.open_interest_long_short_ratio.trend_sum, ds.trendSum) &&
             ds.trendState <= this.short.issuance.open_interest_long_short_ratio.trend_state &&
             ds.trendStateIntensity <= this.short.issuance.open_interest_long_short_ratio.trend_intensity &&
             ds.marketState.open_interest.state <= this.short.issuance.open_interest_long_short_ratio.open_interest && 
@@ -496,6 +513,43 @@ export class SignalService implements ISignalService {
         // Otherwise, stand neutral
         else { return 0 }
     }
+
+
+
+
+
+
+
+
+    /* Issuance Policy Helpers */
+
+
+
+
+
+    /**
+     * Verifies if the current trend sum is complying with the policy.
+     * @param side 
+     * @param policyTrendSum 
+     * @param currentTrendSum 
+     * @returns boolean
+     */
+    private isTrendSumCompliying(
+        side: IBinancePositionSide, 
+        policyTrendSum: IStateType,
+        currentTrendSum: number
+    ): boolean {
+        // Evaluate a long policy
+        if (side == "LONG" && policyTrendSum != 0)       { return currentTrendSum > 0 }
+
+        // Evaluate a short policy
+        else if (side == "SHORT" && policyTrendSum != 0) { return currentTrendSum < 0 }
+
+        // Otherwise, the trend sum is compliying as it is not required
+        else { return true }
+    }
+
+
 
 
 
@@ -725,6 +779,7 @@ export class SignalService implements ISignalService {
     private makeDataset(pred: IPrediction): ISignalDataset {
         return {
             result: pred.r,
+            trendSum: pred.s,
             trendState: this._prediction.activeState,
             trendStateIntensity: this._prediction.activeStateIntesity,
             marketState: this._marketState.active.value

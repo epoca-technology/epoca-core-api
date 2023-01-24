@@ -43,7 +43,7 @@ export class NetworkFeeStateService implements INetworkFeeStateService {
      * Every intervalSeconds, the network fee state will be calculated and stored temporarily.
      */
     private stateInterval: any;
-    private readonly intervalSeconds: number = 60 * 10; // ~10 minutes
+    private readonly intervalSeconds: number = 60 * 60; // ~60 minutes
 
 
     /**

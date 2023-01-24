@@ -35,7 +35,14 @@ export interface ISignalService {
  * can only generate non-neutral signals.                                           *
  ************************************************************************************/
 export interface IIssuancePolicy {
-    // The trend state and intensity required for it to trigger
+    /**
+     * The trend sum, state and intensity required for it to trigger.
+     * The sum is represented as follows:
+     * -1: < 0
+     *  0: Any Trend Sum
+     *  1: > 0
+     */
+    trend_sum: -1|0|1,
     trend_state: IPredictionState,
     trend_intensity: IPredictionStateIntesity
 }
@@ -240,7 +247,8 @@ export interface ISignalDataset {
     // The result of the latest prediction
     result: IPredictionResult,
 
-    // The current trend state and intensity
+    // The current trend sum, state and intensity
+    trendSum: number,
     trendState: IPredictionState,
     trendStateIntensity: IPredictionStateIntesity,
 
