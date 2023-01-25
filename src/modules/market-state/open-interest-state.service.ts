@@ -42,7 +42,7 @@ export class OpenInterestStateService implements IOpenInterestStateService {
      * Every intervalSeconds, the open interest state will be calculated and stored temporarily.
      */
     private stateInterval: any;
-    private readonly intervalSeconds: number = 20;
+    private readonly intervalSeconds: number = 15;
 
 
     /**

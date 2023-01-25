@@ -63,10 +63,15 @@ export class PositionValidations implements IPositionValidations {
         }
 
         // Ensure there is enough balance to cover the position size
-        if (positionSize > availableBalance) {
+        /**
+         * IMPORTANT: This validation has been silenced as the balance is not updated frequently enough. 
+         * Moreover, Binance sometimes takes some time to provided the updated balance. If there is a 
+         * balance issue, it will be described in the API error.
+         */
+        /*if (positionSize > availableBalance) {
             throw new Error(this._utils.buildApiError(`There isnt enough available balance to cover the ${side} position size. 
             Has: ${availableBalance}. Needs: ${positionSize}`, 30013));
-        }
+        }*/
     }
 
 
@@ -186,55 +191,66 @@ export class PositionValidations implements IPositionValidations {
         if (
             typeof newStrategy.take_profit_1 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_1.price_change_requirement, 0.4, 10) ||
-            !this._validations.numberValid(newStrategy.take_profit_1.max_hp_drawdown, -70, 0)
+            !this._validations.numberValid(newStrategy.take_profit_1.max_hp_drawdown, -70, 0) ||
+            !this._validations.numberValid(newStrategy.take_profit_1.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_1);
             throw new Error(this._utils.buildApiError(`The take profit 1 must be a valid object containing the price change 
-            requirement and the max hp drawdown.`, 30008));
+            requirement, the max hp drawdown & the max gain drawdown.`, 30008));
         }
 
         // Validate the take profit 2
         if (
             typeof newStrategy.take_profit_2 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_2.price_change_requirement, 0.4, 10) ||
-            !this._validations.numberValid(newStrategy.take_profit_2.max_hp_drawdown, -70, 0)
+            !this._validations.numberValid(newStrategy.take_profit_2.max_hp_drawdown, -70, 0) ||
+            !this._validations.numberValid(newStrategy.take_profit_2.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_2);
             throw new Error(this._utils.buildApiError(`The take profit 2 must be a valid object containing the price change 
-            requirement and the max hp drawdown.`, 30008));
+            requirement, the max hp drawdown & the max gain drawdown.`, 30008));
         }
 
         // Validate the take profit 3
         if (
             typeof newStrategy.take_profit_3 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_3.price_change_requirement, 0.4, 10) ||
-            !this._validations.numberValid(newStrategy.take_profit_3.max_hp_drawdown, -70, 0)
+            !this._validations.numberValid(newStrategy.take_profit_3.max_hp_drawdown, -70, 0) ||
+            !this._validations.numberValid(newStrategy.take_profit_3.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_3);
             throw new Error(this._utils.buildApiError(`The take profit 3 must be a valid object containing the price change 
-            requirement and the max hp drawdown.`, 30008));
+            requirement, the max hp drawdown & the max gain drawdown.`, 30008));
         }
 
         // Validate the take profit 4
         if (
             typeof newStrategy.take_profit_4 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_4.price_change_requirement, 0.4, 10) ||
-            !this._validations.numberValid(newStrategy.take_profit_4.max_hp_drawdown, -70, 0)
+            !this._validations.numberValid(newStrategy.take_profit_4.max_hp_drawdown, -70, 0) ||
+            !this._validations.numberValid(newStrategy.take_profit_4.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_4);
             throw new Error(this._utils.buildApiError(`The take profit 4 must be a valid object containing the price change 
-            requirement and the max hp drawdown.`, 30008));
+            requirement, the max hp drawdown & the max gain drawdown.`, 30008));
         }
 
         // Validate the take profit 5
         if (
             typeof newStrategy.take_profit_5 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_5.price_change_requirement, 0.4, 10) ||
-            !this._validations.numberValid(newStrategy.take_profit_5.max_hp_drawdown, -70, 0)
+            !this._validations.numberValid(newStrategy.take_profit_5.max_hp_drawdown, -70, 0) ||
+            !this._validations.numberValid(newStrategy.take_profit_5.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_5);
             throw new Error(this._utils.buildApiError(`The take profit 5 must be a valid object containing the price change 
-            requirement and the max hp drawdown.`, 30008));
+            requirement, the max hp drawdown & the max gain drawdown.`, 30008));
+        }
+
+        // Validate the Max HP Drawdown in profit
+        if (!this._validations.numberValid(newStrategy.max_hp_drawdown_in_profit, -99, -10)) {
+            throw new Error(this._utils.buildApiError(`The max_hp_drawdown_in_profit must be a valid number ranging -99 - -10. 
+            Received: ${newStrategy.max_hp_drawdown_in_profit}`, 30022));
         }
 
         // Ensure the take profit levels are in ascending order
@@ -254,12 +270,8 @@ export class PositionValidations implements IPositionValidations {
             throw new Error(this._utils.buildApiError(`The stop loss must be a valid number ranging 0.5-10. 
             Received: ${newStrategy.stop_loss}`, 30002));
         }
-        if (!this._validations.numberValid(newStrategy.max_hp_drawdown_in_profit, -99, -20)) {
-            throw new Error(this._utils.buildApiError(`The max_hp_drawdown_in_profit must be a valid number ranging -99 - -20. 
-            Received: ${newStrategy.max_hp_drawdown_in_profit}`, 30022));
-        }
-        if (!this._validations.numberValid(newStrategy.max_hp_drawdown_in_loss, -99, -30)) {
-            throw new Error(this._utils.buildApiError(`The max_hp_drawdown_in_loss must be a valid number ranging -99 - -30. 
+        if (!this._validations.numberValid(newStrategy.max_hp_drawdown_in_loss, -99, -10)) {
+            throw new Error(this._utils.buildApiError(`The max_hp_drawdown_in_loss must be a valid number ranging -99 - -10. 
             Received: ${newStrategy.max_hp_drawdown_in_loss}`, 30023));
         }
 

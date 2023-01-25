@@ -62,13 +62,15 @@ export interface IPositionHealth {
     stop(): void,
 
     // Health Calculator
-    onPositionRefresh(
+    refreshHealth(
         long: IActivePosition|undefined,
-        short: IActivePosition|undefined
+        short: IActivePosition|undefined,
+        spotPrice: number,
+        minGain: number
     ): Promise<void>,
 
     // Health Candlesticks
-    getPositionHealthCandlesticks(side: IBinancePositionSide): Promise<IPositionHealthCandlesticks>
+    getPositionHealthCandlesticks(side: IBinancePositionSide): Promise<IPositionHealthCandlestickRecord[]>
 }
 
 
@@ -88,13 +90,9 @@ export interface IPositionModel {
     updateHealth(health: IPositionHealthState): Promise<void>,
 
     // Position Health Candlesticks
-    getPositionHealthCandlesticks(side: IBinancePositionSide): Promise<IPositionHealthCandlesticks>,
+    getPositionHealthCandlesticks(side: IBinancePositionSide): Promise<IPositionHealthCandlestickRecord[]>,
     cleanPositionHealthCandlesticks(side: IBinancePositionSide): Promise<void>,
-    savePositionHealthCandlesticks(
-        side: IBinancePositionSide,
-        hp: IPositionHealthCandlestick, 
-        dd: IPositionHealthCandlestick
-    ): Promise<void>,
+    savePositionHealthCandlestick(side: IBinancePositionSide, record: IPositionHealthCandlestickRecord): Promise<void>,
 
     // Position Trades
     listTrades(startAt: number, endAt: number): Promise<IPositionTrade[]>,
@@ -196,10 +194,16 @@ export interface ITakeProfitLevel {
     price_change_requirement: number,
 
     /**
-     * The maximum HP Drawdown% allowed in the level. Is this requirement is not met, 
+     * The maximum HP Drawdown% allowed in the level. If this requirement is not met, 
      * the position is closed.
      */
-    max_hp_drawdown: number
+    max_hp_drawdown: number,
+
+    /**
+     * The maximum Gain Drawdown% allowed in the level. If this requirement is not met, 
+     * the position is closed.
+     */
+    max_gain_drawdown: number
 }
 
 
@@ -241,21 +245,23 @@ export interface IPositionStrategy {
      * When a position is opened, a take profit grid is generated. Each level
      * activates when hit by the spot price. The position is maintained active
      * until the HP experiences a drawdown that goes past the level's tolerance.
+     * Additionally, a global max hp drawdown can be assigned to be triggered
+     * when the position is at break-even or small profits.
      */
     take_profit_1: ITakeProfitLevel,
     take_profit_2: ITakeProfitLevel,
     take_profit_3: ITakeProfitLevel,
     take_profit_4: ITakeProfitLevel,
     take_profit_5: ITakeProfitLevel,
+    max_hp_drawdown_in_profit: number,
 
     /**
      * Loss Optimization Strategy
      * Each position has a fixed price in which it will be closed no matter what.
-     * Additionally, 2 HP Drawdown limits are set which can close the position at
-     * any time based on the status of the position.
+     * Furthermore, when a position is at loss, it has a max hp drawdown% limit 
+     * which can trigger before the market hits the stop loss price.
      */
     stop_loss: number,
-    max_hp_drawdown_in_profit: number,
     max_hp_drawdown_in_loss: number,
 
     /**
@@ -329,6 +335,9 @@ export interface IPositionHealthState {
  * active position on a specific side.
  */
 export interface IPositionSideHealth {
+    // Timestamp: the date in which the position was opened (Inexact)
+    ts: number,
+
     // Open Sum: the prediction sum when the position was opened
     os: number,
 
@@ -351,8 +360,12 @@ export interface IPositionSideHealth {
      */
     dd: number,
 
-    // Timestamp: the date in which the position was opened (Inexact)
-    ts: number
+    /**
+     * The max gain% and the max gain drawdown% calculated only when a position
+     * is profitable. Otherwise it is 0.
+     */
+    mg: number,
+    mgdd: number
 }
 
 
@@ -397,48 +410,88 @@ export interface IPositionHealthWeights {
 
 
 /**
- * Position Health Candlesticks
- * When a position is opened, the HP is constantly calculated and the 
- * history is stored in order for users to analyze the behaviour and
- * improve the trading strategy.
- */
-export interface IPositionHealthCandlesticks {
-    hp: IPositionHealthCandlestick[],
-    dd: IPositionHealthCandlestick[]
-}
-
-
-/**
  * Position Health Candlestick
- * The object used to interact and display the position health candlesticks.
+ * The final object used to display the position health candlesticks.
  */
 export interface IPositionHealthCandlestick {
     // Open Timestamp: the time in which the candlestick was first built
     ot: number,
 
-    // Open: the HP|Drawdown when the candlestick was first built
+    // Open: the HP|HP Drawdown%|Gain Drawdown% when the candlestick was first built
     o: number,
 
-    // High: the highest HP|Drawdown in the candlestick
+    // High: the highest HP|HP Drawdown%|Gain Drawdown% in the candlestick
     h: number,
 
-    // Low: the lowest HP|Drawdown in the candlestick
+    // Low: the lowest HP|HP Drawdown%|Gain Drawdown% in the candlestick
     l: number,
 
-    // Close: the last HP|Drawdown in the candlestick 
+    // Close: the last HP|HP Drawdown%|Gain Drawdown% in the candlestick 
     c: number
 }
 
 
+
+
+
 /**
- * Active Candlesticks
- * The position health class builds the candlesticks in RAM. Moreover,
- * it can handle one or both sides at a time.
+ * Active Candlestick
+ * The position health builds the candlesticks in RAM and stores them
+ * once they are closed based on the interval. 
+ * The system builds the following:
+ * 1) HP History Candlesticks
+ * 2) HP Max Drawdown% History Candlesticks
+ * 3) Max Gain Drawdown% History Candlesticks
+ * In order to facilitate the interaction with this data, when active,
+ * the data is handled separately and is only combined when stored.
  */
-export interface IPositionHealthActiveCandlesticks {
-    hp: IPositionHealthCandlestick|undefined,
-    dd: IPositionHealthCandlestick|undefined
+export interface IPositionHealthActiveCandlestick {
+    // The time at which the candlestick first came into existance
+    ot: number|undefined,
+
+    // The HP Candlestick
+    hp: Partial<IPositionHealthCandlestick>|undefined,
+
+    // The HP Drawdown% Candlestick
+    dd: Partial<IPositionHealthCandlestick>|undefined,
+
+    // The Gain Drawdown% Candlestick
+    mgdd: Partial<IPositionHealthCandlestick>|undefined
 }
+
+
+
+
+
+/**
+ * Position Health Candlestick Record
+ * The record in which the candlesticks are stored in the database.
+ * The lists must follow the indexes:
+ * 0 = HP
+ * 1 = HP Drawdown%
+ * 2 = Gain Drawdown%
+ */
+export interface IPositionHealthCandlestickRecord {
+    // The time at which the candlestick first came into existance
+    ot: number,
+
+    // The candlesticks' data
+    d: {
+        // Open Value: HP, HP Drawdown%, Gain Drawdown%
+        o: [number, number, number],
+
+        // High Value: HP, HP Drawdown%, Gain Drawdown%
+        h: [number, number, number],
+
+        // Low Value: HP, HP Drawdown%, Gain Drawdown%
+        l: [number, number, number],
+
+        // Close Value: HP, HP Drawdown%, Gain Drawdown%
+        c: [number, number, number]
+    }
+}
+
+
 
 
 

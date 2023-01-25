@@ -101,7 +101,7 @@ export class PositionService implements IPositionService {
      * Balance Syncing
      */
     private balanceSyncInterval: any;
-    private readonly balanceIntervalSeconds: number = 60 * 10; // Every ~10 minutes
+    private readonly balanceIntervalSeconds: number = 60 * 15; // Every ~15 minutes
 
 
 
@@ -365,9 +365,6 @@ export class PositionService implements IPositionService {
         this.long = this.processActivePosition(rawLong);
         this.short = this.processActivePosition(rawShort);
 
-        // Calculate the position health by side
-        await this._health.onPositionRefresh(this.long, this.short);
-
         // Verify if an event should be broadcasted
         await this._notification.onActivePositionRefresh(this.long, this.short);
     }
@@ -628,6 +625,9 @@ export class PositionService implements IPositionService {
             // Init the current price
             const spotPrice: number = stream.candlesticks.at(-1).c;
 
+            // Refresh the Positions HP
+            await this._health.refreshHealth(this.long, this.short, spotPrice, this.strategy.take_profit_1.price_change_requirement);
+
             // Init the error list
             let errors: string[] = [];
 
@@ -654,6 +654,9 @@ export class PositionService implements IPositionService {
             // Finally, rethrow the errors if any
             if (errors.length > 0) throw new Error(errors.join(", "));
         }
+
+        // If there are no active positions, ensure the health module is refreshed
+        else { await this._health.refreshHealth(undefined, undefined, 0, 0) }
     }
 
 
@@ -684,11 +687,20 @@ export class PositionService implements IPositionService {
 
         // Otherwise, check if it is in a profitable level
         else if (spotPrice >= this.long.take_profit_price_1) {
-            // Retrieve the max hp drawdown based on the current level
-            const max_hp_drawdown: number = this.calculateMaxHPDrawdown("LONG", spotPrice);
+            // Retrieve the drawdown limits based on the current level
+            const { max_hp_drawdown, max_gain_drawdown } = this.getDrawdownLimitsForProfitablePosition("LONG", spotPrice);
 
-            // Check if the position should be closed
-            if (max_hp_drawdown == 0 || this._health.long.dd <= max_hp_drawdown) {
+            /**
+             * Evaluate if a position should be closed based on:
+             * 1) If the take profit level's max hp drawdown is 0
+             * 2) If the take profit level's hp drawdown limit has been exceeded
+             * 3) If the take profit level's gain drawdown limit has been exceeded
+             */
+            if (
+                max_hp_drawdown == 0 || 
+                this._health.long.dd <= max_hp_drawdown ||
+                this._health.long.mgdd <= max_gain_drawdown
+            ) {
                 await this.closePosition("LONG", 1);
             }
         }
@@ -722,11 +734,20 @@ export class PositionService implements IPositionService {
 
         // Otherwise, check if it is in a profitable level
         else if (spotPrice <= this.short.take_profit_price_1) {
-            // Retrieve the max hp drawdown based on the current level
-            const max_hp_drawdown: number = this.calculateMaxHPDrawdown("SHORT", spotPrice);
+            // Retrieve the drawdown limits based on the current level
+            const { max_hp_drawdown, max_gain_drawdown } = this.getDrawdownLimitsForProfitablePosition("SHORT", spotPrice);
 
-            // Check if the position should be closed
-            if (max_hp_drawdown == 0 || this._health.short.dd <= max_hp_drawdown) {
+            /**
+             * Evaluate if a position should be closed based on:
+             * 1) If the take profit level's max hp drawdown is 0
+             * 2) If the take profit level's hp drawdown limit has been exceeded
+             * 3) If the take profit level's gain drawdown limit has been exceeded
+             */
+            if (
+                max_hp_drawdown == 0 || 
+                this._health.short.dd <= max_hp_drawdown ||
+                this._health.short.mgdd <= max_gain_drawdown
+            ) {
                 await this.closePosition("SHORT", 1);
             }
         }
@@ -743,34 +764,67 @@ export class PositionService implements IPositionService {
      * @param spotPrice 
      * @returns number
      */
-    private calculateMaxHPDrawdown(side: IBinancePositionSide, spotPrice: number): number {
-        // Calculate the current level's max hp drawdown for a long position
+    private getDrawdownLimitsForProfitablePosition(
+        side: IBinancePositionSide, 
+        spotPrice: number
+    ): {max_hp_drawdown: number, max_gain_drawdown: number} {
+        // Calculate the current level's drawdown limits for a long position
         if (side == "LONG") {
             if (spotPrice >= this.long.take_profit_price_1 && spotPrice < this.long.take_profit_price_2) {
-                return this.strategy.take_profit_1.max_hp_drawdown;
+                return {
+                    max_hp_drawdown: this.strategy.take_profit_1.max_hp_drawdown, 
+                    max_gain_drawdown: this.strategy.take_profit_1.max_gain_drawdown
+                };
             } else if (spotPrice >= this.long.take_profit_price_2 && spotPrice < this.long.take_profit_price_3) {
-                return this.strategy.take_profit_2.max_hp_drawdown;
+                return {
+                    max_hp_drawdown: this.strategy.take_profit_2.max_hp_drawdown, 
+                    max_gain_drawdown: this.strategy.take_profit_2.max_gain_drawdown
+                };
             } else if (spotPrice >= this.long.take_profit_price_3 && spotPrice < this.long.take_profit_price_4) {
-                return this.strategy.take_profit_3.max_hp_drawdown;
+                return {
+                    max_hp_drawdown: this.strategy.take_profit_3.max_hp_drawdown, 
+                    max_gain_drawdown: this.strategy.take_profit_3.max_gain_drawdown
+                };
             } else if (spotPrice >= this.long.take_profit_price_4 && spotPrice < this.long.take_profit_price_5) {
-                return this.strategy.take_profit_4.max_hp_drawdown;
+                return {
+                    max_hp_drawdown: this.strategy.take_profit_4.max_hp_drawdown, 
+                    max_gain_drawdown: this.strategy.take_profit_4.max_gain_drawdown
+                };
             } else if (spotPrice >= this.long.take_profit_price_5) {
-                return this.strategy.take_profit_5.max_hp_drawdown;
+                return {
+                    max_hp_drawdown: this.strategy.take_profit_5.max_hp_drawdown, 
+                    max_gain_drawdown: this.strategy.take_profit_5.max_gain_drawdown
+                };
             }
         } 
         
-        // Calculate the current level's max hp drawdown for a short position
+        // Calculate the current level's drawdown limits for a short position
         else {
             if (spotPrice > this.short.take_profit_price_2 && spotPrice <= this.short.take_profit_price_1) {
-                return this.strategy.take_profit_1.max_hp_drawdown;
+                return {
+                    max_hp_drawdown: this.strategy.take_profit_1.max_hp_drawdown, 
+                    max_gain_drawdown: this.strategy.take_profit_1.max_gain_drawdown
+                };
             } else if (spotPrice > this.short.take_profit_price_3 && spotPrice <= this.short.take_profit_price_2) {
-                return this.strategy.take_profit_2.max_hp_drawdown;
+                return {
+                    max_hp_drawdown: this.strategy.take_profit_2.max_hp_drawdown, 
+                    max_gain_drawdown: this.strategy.take_profit_2.max_gain_drawdown
+                };
             } else if (spotPrice > this.short.take_profit_price_4 && spotPrice <= this.short.take_profit_price_3) {
-                return this.strategy.take_profit_3.max_hp_drawdown;
+                return {
+                    max_hp_drawdown: this.strategy.take_profit_3.max_hp_drawdown, 
+                    max_gain_drawdown: this.strategy.take_profit_3.max_gain_drawdown
+                };
             } else if (spotPrice > this.short.take_profit_price_5 && spotPrice <= this.short.take_profit_price_4) {
-                return this.strategy.take_profit_4.max_hp_drawdown;
+                return {
+                    max_hp_drawdown: this.strategy.take_profit_4.max_hp_drawdown, 
+                    max_gain_drawdown: this.strategy.take_profit_4.max_gain_drawdown
+                };
             } else if (spotPrice <= this.short.take_profit_price_5) {
-                return this.strategy.take_profit_5.max_hp_drawdown;
+                return {
+                    max_hp_drawdown: this.strategy.take_profit_5.max_hp_drawdown, 
+                    max_gain_drawdown: this.strategy.take_profit_5.max_gain_drawdown
+                };
             }
         }
     }
@@ -822,7 +876,11 @@ export class PositionService implements IPositionService {
         this._notification.onNewPosition(side, this.strategy.position_size, positionAmount);
 
         // Trigger the refresh event
-        await this.refreshData(true, 2);
+        try {
+            await this.refreshActivePositions();
+        } catch(e) {
+            this._apiError.log("PositionService.openPosition.refreshActivePositions", e);
+        }
     }
 
 
@@ -862,7 +920,11 @@ export class PositionService implements IPositionService {
         this._notification.onPositionClose(side == "LONG" ? this.long: this.short, chunkSize);
 
         // Trigger the refresh event
-        await this.refreshData(true, 2);
+        try {
+            await this.refreshActivePositions();
+        } catch(e) {
+            this._apiError.log("PositionService.closePosition.refreshActivePositions", e);
+        }
 
         // Trigger a trades update safely
         try {
@@ -1010,18 +1072,18 @@ export class PositionService implements IPositionService {
             hedge_mode: false,
             leverage: 5,
             position_size: 150,
-            long_idle_minutes: 90,
-            long_idle_until: currentTS,
-            short_idle_minutes: 90,
-            short_idle_until: currentTS,
-            take_profit_1: { price_change_requirement: 0.75, max_hp_drawdown: -20 },
-            take_profit_2: { price_change_requirement: 1.5,  max_hp_drawdown: -10 },
-            take_profit_3: { price_change_requirement: 2.25, max_hp_drawdown: -5 },
-            take_profit_4: { price_change_requirement: 3,    max_hp_drawdown: -2.5 },
-            take_profit_5: { price_change_requirement: 5,    max_hp_drawdown: 0 },
+            take_profit_1: { price_change_requirement: 0.75, max_hp_drawdown: -20, max_gain_drawdown: -70 },
+            take_profit_2: { price_change_requirement: 1.5,  max_hp_drawdown: -10, max_gain_drawdown: -60 },
+            take_profit_3: { price_change_requirement: 2.25, max_hp_drawdown: -6,  max_gain_drawdown: -30 },
+            take_profit_4: { price_change_requirement: 3,    max_hp_drawdown: -3,  max_gain_drawdown: -15 },
+            take_profit_5: { price_change_requirement: 5,    max_hp_drawdown: -1,  max_gain_drawdown: -5 },
+            max_hp_drawdown_in_profit: -30,
             stop_loss: 3,
-            max_hp_drawdown_in_profit: -60,
-            max_hp_drawdown_in_loss: -95,
+            max_hp_drawdown_in_loss: -40,
+            long_idle_minutes: 120,
+            long_idle_until: currentTS,
+            short_idle_minutes: 120,
+            short_idle_until: currentTS,
             ts: currentTS
         }
     }

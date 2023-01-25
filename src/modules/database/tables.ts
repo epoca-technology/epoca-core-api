@@ -279,7 +279,7 @@ export const TABLES: IRawTable[] = [
 
     
     /**
-     * Position Health Points Candlesticks
+     * Position Health Candlesticks
      * 
      */
     {
@@ -288,30 +288,7 @@ export const TABLES: IRawTable[] = [
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 side  VARCHAR(10) NOT NULL,
                 ot    BIGINT NOT NULL,
-                o     NUMERIC(20,2) NOT NULL,
-                h     NUMERIC(20,2) NOT NULL,
-                l     NUMERIC(20,2) NOT NULL,
-                c     NUMERIC(20,2) NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ${tableName}_side ON ${tableName}(side);`
-        }
-    },
-
-
-    /**
-     * Position Health Points Drawdown Candlesticks
-     * 
-     */
-    {
-        name: "position_dd_candlesticks",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                side  VARCHAR(10) NOT NULL,
-                ot    BIGINT NOT NULL,
-                o     NUMERIC(20,2) NOT NULL,
-                h     NUMERIC(20,2) NOT NULL,
-                l     NUMERIC(20,2) NOT NULL,
-                c     NUMERIC(20,2) NOT NULL
+                d     JSONB NOT NULL
             );
             CREATE INDEX IF NOT EXISTS ${tableName}_side ON ${tableName}(side);`
         }

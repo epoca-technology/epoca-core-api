@@ -14,9 +14,8 @@ import {
     IPositionHealthState,
     IPositionHealthWeights,
     IActivePosition,
-    IPositionHealthCandlestick,
-    IPositionHealthCandlesticks,
-    IPositionHealthActiveCandlesticks
+    IPositionHealthCandlestickRecord,
+    IPositionHealthActiveCandlestick
 } from "./interfaces";
 
 
@@ -37,15 +36,15 @@ export class PositionHealth implements IPositionHealth {
      * position's health points.
      */
     private readonly weights: IPositionHealthWeights = {
-        trend_sum: 50,
-        trend_state: 7.5,
-        ta_30m: 3.5,
+        trend_sum: 48,
+        trend_state: 8,
+        ta_30m: 4,
         ta_1h: 4,
         ta_2h: 5,
-        ta_4h: 6,
-        ta_1d: 7,
-        open_interest: 7.5,
-        long_short_ratio: 7.5,
+        ta_4h: 5,
+        ta_1d: 6,
+        open_interest: 10,
+        long_short_ratio: 10,
         volume_direction: 2
     }
 
@@ -82,21 +81,25 @@ export class PositionHealth implements IPositionHealth {
 
 
     /**
-     * Position Health Candlesticks
+     * Position Health Active Candlesticks
      * The candlesticks are initially built in RAM and only stored in disk
      * once the candlestick ends.
      * When retrieving candlesticks, the active one is appended to the 
      * list stored in the disk.
      */
-    private longCandlesticks: IPositionHealthActiveCandlesticks = {
+    private longCandlestick: IPositionHealthActiveCandlestick = {
+        ot: undefined,
         hp: undefined,
-        dd: undefined
+        dd: undefined,
+        mgdd: undefined
     }
-    private shortCandlesticks: IPositionHealthActiveCandlesticks = {
+    private shortCandlestick: IPositionHealthActiveCandlestick = {
+        ot: undefined,
         hp: undefined,
-        dd: undefined
+        dd: undefined,
+        mgdd: undefined
     }
-    private readonly candlestickIntervalMinutes: number = 30;
+    private readonly candlestickIntervalMinutes: number = 15;
 
 
 
@@ -190,11 +193,15 @@ export class PositionHealth implements IPositionHealth {
      * Calculates the health for all active positions.
      * @param long 
      * @param short 
+     * @param spotPrice 
+     * @param minGain 
      * @returns Promise<void>
      */
-    public async onPositionRefresh(
+    public async refreshHealth(
         long: IActivePosition|undefined,
-        short: IActivePosition|undefined
+        short: IActivePosition|undefined,
+        spotPrice: number,
+        minGain: number
     ): Promise<void> {
         // Make sure the prediction and the market state are properly set
         if (!this.pred) {
@@ -208,21 +215,33 @@ export class PositionHealth implements IPositionHealth {
             market state is not currently active.`, 32001));
         }
 
-        // Evaluate the long position (if any)
+        /**
+         * Evaluate the Long Position's Health. If there isn't an active one 
+         * but there was in the previous check, clean the candlesticks.
+         */
         if (long) {
-            this.long = this.calculateHealth("LONG");
-        } else { this.long = null }
+            this.long = this.calculateHealth("LONG", long.entry_price, spotPrice, minGain);
+        } else { 
+            if (this.long) await this.cleanCandlesticks("LONG");
+            this.long = null;
+        }
 
-        // Evaluate the short position (if any)
+        /**
+         * Evaluate the Short Position's Health. If there isn't an active one 
+         * but there was in the previous check, clean the candlesticks.
+         */
         if (short) {
-            this.short = this.calculateHealth("SHORT");
-        } else { this.short = null }
+            this.short = this.calculateHealth("SHORT", short.entry_price, spotPrice, minGain);
+        } else { 
+            if (this.short) await this.cleanCandlesticks("SHORT");
+            this.short = null;
+        }
 
         // Update the state on the db
         await this._model.updateHealth({long: this.long, short: this.short});
 
-        // Finally, process the candlesticks
-        await this.processCandlesticks();
+        // Finally, process the candlesticks if a side is active
+        if (this.long || this.short) await this.processCandlesticks();
     }
 
 
@@ -234,9 +253,12 @@ export class PositionHealth implements IPositionHealth {
     /**
      * Creates or updates the health for a position side.
      * @param side 
+     * @param entryPrice
+     * @param spotPrice
+     * @param minGain
      * @returns IPositionSideHealth
      */
-    private calculateHealth(side: IBinancePositionSide): IPositionSideHealth {
+    private calculateHealth(side: IBinancePositionSide, entryPrice: number, spotPrice: number, minGain: number): IPositionSideHealth {
         // Firstly, initialize the side's health in case it hasn't been
         let health: IPositionSideHealth|null = side == "LONG" ? this.long: this.short;
         if (!health) {
@@ -247,6 +269,8 @@ export class PositionHealth implements IPositionHealth {
                 lhp: 0,
                 chp: 0,
                 dd: 0,
+                mg: 0,
+                mgdd: 0,
                 ts: Date.now()
             }
         }
@@ -295,18 +319,95 @@ export class PositionHealth implements IPositionHealth {
         }
 
         /**
-         * For there to be a drawdown, the current health must be less than the highest.
+         * For there to be a hp drawdown, the current health must be less than the highest.
          * Otherwise, the drawdown is equals to 0.
          */
         if (health.hhp > health.chp) {
             health.dd = <number>this._utils.calculatePercentageChange(health.hhp, health.chp);
         } else { health.dd = 0 }
 
+        // Calculate the max gain & current drawdown%
+        const { max_gain, max_gain_drawdown } = this.calculateGain(side, health.mg, entryPrice, spotPrice, minGain);
+        health.mg = max_gain;
+        health.mgdd = max_gain_drawdown;
+
         // Finally, return the current health
         return health;
     }
 
 
+
+
+    /**
+     * Calculates the max gain and the max gain drawdown% for a position side.
+     * If the position is not profitable, both values are 0.
+     * @param side 
+     * @param currentMaxGain 
+     * @param entryPrice 
+     * @param spotPrice 
+     * @param minGain 
+     * @returns {max_gain: number, max_gain_drawdown: number}
+     */
+    private calculateGain(
+        side: IBinancePositionSide,
+        currentMaxGain: number,
+        entryPrice: number,
+        spotPrice: number,
+        minGain: number
+    ): {max_gain: number, max_gain_drawdown: number} {
+        // Init values
+        let maxGain: number = 0;
+        let maxGainDrawdown: number = 0;
+
+        // Calculate the gain values for a long position (if profitable)
+        if (side == "LONG" && spotPrice > entryPrice) {
+            // Calculate the current gain
+            const currentGain: number = <number>this._utils.calculatePercentageChange(entryPrice, spotPrice);
+
+            // Ensure the gain is greater than or equals to the requirement
+            if (currentGain >= minGain) {
+                // If the max gain is equals or greater than the current, there is no drawdown
+                if (currentGain >= currentMaxGain) { maxGain = currentGain }
+
+                // Otherwise, calculate the drawdown%
+                else {
+                    maxGain = currentMaxGain;
+                    maxGainDrawdown = <number>this._utils.calculatePercentageChange(maxGain, currentGain);
+                }
+            }
+        }
+
+        // Calculate the gain values for a short position (if profitable)
+        else if (side == "SHORT" && spotPrice < entryPrice) {
+            // Calculate the current absolute gain
+            const currentGain: number = Math.abs(<number>this._utils.calculatePercentageChange(entryPrice, spotPrice));
+
+            // Ensure the gain is greater than or equals to the requirement
+            if (currentGain >= minGain) {
+                // If the max gain is equals or greater than the current, there is no drawdown
+                if (currentGain >= currentMaxGain) { maxGain = currentGain }
+
+                // Otherwise, calculate the drawdown%
+                else {
+                    maxGain = currentMaxGain;
+                    maxGainDrawdown = <number>this._utils.calculatePercentageChange(maxGain, currentGain);
+                }
+            }
+        }
+
+        // Finally, return the gain details
+        return { max_gain: maxGain, max_gain_drawdown: maxGainDrawdown }
+    }
+
+
+
+
+
+
+
+
+
+    /* Health Point Evaluations */
 
 
 
@@ -756,6 +857,12 @@ export class PositionHealth implements IPositionHealth {
 
 
 
+
+
+
+
+
+
     /********************************
      * Position Health Candlesticks *
      ********************************/
@@ -768,36 +875,34 @@ export class PositionHealth implements IPositionHealth {
 
 
     /**
-     * Retrieves the Position HP & Drawdown candlesticks for a 
+     * Retrieves the Position HP Candlesticks for a 
      * given side. The active candlestick is also appended to
      * the list if possible.
      * @param side 
-     * @returns Promise<IPositionHealthCandlesticks>
+     * @returns Promise<IPositionHealthCandlestickRecord[]>
      */
-    public async getPositionHealthCandlesticks(side: IBinancePositionSide): Promise<IPositionHealthCandlesticks> {
+    public async getPositionHealthCandlesticks(side: IBinancePositionSide): Promise<IPositionHealthCandlestickRecord[]> {
         // Make sure the provided side is valid
         if (side != "LONG" && side != "SHORT") {
             throw new Error(this._utils.buildApiError(`The position health candlesticks cannot be retrieved because 
             the provided side is invalid. Received: ${side}`, 32002));
         }
 
-        // Retrieve the candlesticks from the db
-        let { hp, dd } = await this._model.getPositionHealthCandlesticks(side);
+        // Retrieve the candlestick records from the db
+        let candlesticks: IPositionHealthCandlestickRecord[] = await this._model.getPositionHealthCandlesticks(side);
 
         // Append the active long if applies
-        if (side == "LONG" && this.longCandlesticks.hp && this.longCandlesticks.dd) {
-            hp.push(this.longCandlesticks.hp);
-            dd.push(this.longCandlesticks.dd);
+        if (side == "LONG" && this.longCandlestick.ot) {
+            candlesticks.push(this.buildCandlestickRecord(this.longCandlestick));
         }
 
         // Append the active short if applies
-        if (side == "SHORT" && this.shortCandlesticks.hp && this.shortCandlesticks.dd) {
-            hp.push(this.shortCandlesticks.hp);
-            dd.push(this.shortCandlesticks.dd);
+        if (side == "SHORT" && this.shortCandlestick.ot) {
+            candlesticks.push(this.buildCandlestickRecord(this.shortCandlestick));
         }
 
-        // Finally, pack and return the candlesticks
-        return { hp: hp, dd: dd };
+        // Finally, return the records
+        return candlesticks;
     }
 
 
@@ -807,44 +912,48 @@ export class PositionHealth implements IPositionHealth {
 
 
     /**
-     * Whenever the positions are refreshed and the health is 
+     * Whenever the position health is refreshed and the health is 
      * recalculated, the candlesticks are also refreshed and 
      * stored if applies.
      * @returns Promise<void>
      */
     private async processCandlesticks(): Promise<void> {
-        // Firstly, clean the candlesticks for the sides that are not active
-        await this.cleanCandlesticks();
-
         // Init the time
         const ts: number = Date.now();
 
         // Update the long candlesticks (if any)
         if (this.long) {
-            // If there aren't any candlesticks, build the initial one
-            if (!this.longCandlesticks.hp && !this.longCandlesticks.dd) {
-                this.longCandlesticks = {
-                    hp: this.buildNewCandlestick(ts, this.long.chp),
-                    dd: this.buildNewCandlestick(ts, this.long.dd)
+            // If there isn't an active candlestick, build the initial one
+            if (!this.longCandlestick.ot) {
+                this.longCandlestick = {
+                    ot: ts,
+                    hp: { o: this.long.chp, h: this.long.chp, l: this.long.chp, c: this.long.chp },
+                    dd: { o: this.long.dd, h: this.long.dd, l: this.long.dd, c: this.long.dd },
+                    mgdd: { o: this.long.mgdd, h: this.long.mgdd, l: this.long.mgdd, c: this.long.mgdd },
                 }
             }
 
             // Otherwise, update the active candlestick
             else {
-                this.longCandlesticks = {
+                this.longCandlestick = {
+                    ot: this.longCandlestick.ot,
                     hp: {
-                        ot: this.longCandlesticks.hp.ot,
-                        o: this.longCandlesticks.hp.o,
-                        h: this.long.chp > this.longCandlesticks.hp.h ? this.long.chp: this.longCandlesticks.hp.h,
-                        l: this.long.chp < this.longCandlesticks.hp.l ? this.long.chp: this.longCandlesticks.hp.l,
+                        o: this.longCandlestick.hp.o,
+                        h: this.long.chp > this.longCandlestick.hp.h ? this.long.chp: this.longCandlestick.hp.h,
+                        l: this.long.chp < this.longCandlestick.hp.l ? this.long.chp: this.longCandlestick.hp.l,
                         c: this.long.chp
                     },
                     dd: {
-                        ot: this.longCandlesticks.dd.ot,
-                        o: this.longCandlesticks.dd.o,
-                        h: this.long.dd > this.longCandlesticks.dd.h ? this.long.dd: this.longCandlesticks.dd.h,
-                        l: this.long.dd < this.longCandlesticks.dd.l ? this.long.dd: this.longCandlesticks.dd.l,
+                        o: this.longCandlestick.dd.o,
+                        h: this.long.dd > this.longCandlestick.dd.h ? this.long.dd: this.longCandlestick.dd.h,
+                        l: this.long.dd < this.longCandlestick.dd.l ? this.long.dd: this.longCandlestick.dd.l,
                         c: this.long.dd
+                    },
+                    mgdd: {
+                        o: this.longCandlestick.mgdd.o,
+                        h: this.long.mgdd > this.longCandlestick.mgdd.h ? this.long.mgdd: this.longCandlestick.mgdd.h,
+                        l: this.long.mgdd < this.longCandlestick.mgdd.l ? this.long.mgdd: this.longCandlestick.mgdd.l,
+                        c: this.long.mgdd
                     }
                 }
 
@@ -852,16 +961,14 @@ export class PositionHealth implements IPositionHealth {
                  * If the candlestick's close time has been reached, store it and 
                  * build the next one.
                  */
-                const closeTime: number = this.calculateCandlestickCloseTime(this.longCandlesticks.hp.ot);
+                const closeTime: number = this.calculateCandlestickCloseTime(this.longCandlestick.ot);
                 if (ts >= closeTime) {
-                    await this._model.savePositionHealthCandlesticks(
-                        "LONG",
-                        this.longCandlesticks.hp,
-                        this.longCandlesticks.dd
-                    );
-                    this.longCandlesticks = {
-                        hp: this.buildNewCandlestick(ts, this.long.chp),
-                        dd: this.buildNewCandlestick(ts, this.long.dd)
+                    await this._model.savePositionHealthCandlestick("LONG", this.buildCandlestickRecord(this.longCandlestick));
+                    this.longCandlestick = {
+                        ot: ts,
+                        hp: { o: this.long.chp, h: this.long.chp, l: this.long.chp, c: this.long.chp },
+                        dd: { o: this.long.dd, h: this.long.dd, l: this.long.dd, c: this.long.dd },
+                        mgdd: { o: this.long.mgdd, h: this.long.mgdd, l: this.long.mgdd, c: this.long.mgdd },
                     }
                 }
             }
@@ -869,30 +976,37 @@ export class PositionHealth implements IPositionHealth {
 
         // Update the short candlesticks (if any)
         if (this.short) {
-            // If there aren't any candlesticks, build the initial one
-            if (!this.shortCandlesticks.hp && !this.shortCandlesticks.dd) {
-                this.shortCandlesticks = {
-                    hp: this.buildNewCandlestick(ts, this.short.chp),
-                    dd: this.buildNewCandlestick(ts, this.short.dd)
+            // If there isn't an active candlestick, build the initial one
+            if (!this.shortCandlestick.ot) {
+                this.shortCandlestick = {
+                    ot: ts,
+                    hp: { o: this.short.chp, h: this.short.chp, l: this.short.chp, c: this.short.chp },
+                    dd: { o: this.short.dd, h: this.short.dd, l: this.short.dd, c: this.short.dd },
+                    mgdd: { o: this.short.mgdd, h: this.short.mgdd, l: this.short.mgdd, c: this.short.mgdd },
                 }
             }
 
             // Otherwise, update the active candlestick
             else {
-                this.shortCandlesticks = {
+                this.shortCandlestick = {
+                    ot: this.shortCandlestick.ot,
                     hp: {
-                        ot: this.shortCandlesticks.hp.ot,
-                        o: this.shortCandlesticks.hp.o,
-                        h: this.short.chp > this.shortCandlesticks.hp.h ? this.short.chp: this.shortCandlesticks.hp.h,
-                        l: this.short.chp < this.shortCandlesticks.hp.l ? this.short.chp: this.shortCandlesticks.hp.l,
+                        o: this.shortCandlestick.hp.o,
+                        h: this.short.chp > this.shortCandlestick.hp.h ? this.short.chp: this.shortCandlestick.hp.h,
+                        l: this.short.chp < this.shortCandlestick.hp.l ? this.short.chp: this.shortCandlestick.hp.l,
                         c: this.short.chp
                     },
                     dd: {
-                        ot: this.shortCandlesticks.dd.ot,
-                        o: this.shortCandlesticks.dd.o,
-                        h: this.short.dd > this.shortCandlesticks.dd.h ? this.short.dd: this.shortCandlesticks.dd.h,
-                        l: this.short.dd < this.shortCandlesticks.dd.l ? this.short.dd: this.shortCandlesticks.dd.l,
+                        o: this.shortCandlestick.dd.o,
+                        h: this.short.dd > this.shortCandlestick.dd.h ? this.short.dd: this.shortCandlestick.dd.h,
+                        l: this.short.dd < this.shortCandlestick.dd.l ? this.short.dd: this.shortCandlestick.dd.l,
                         c: this.short.dd
+                    },
+                    mgdd: {
+                        o: this.shortCandlestick.mgdd.o,
+                        h: this.short.mgdd > this.shortCandlestick.mgdd.h ? this.short.mgdd: this.shortCandlestick.mgdd.h,
+                        l: this.short.mgdd < this.shortCandlestick.mgdd.l ? this.short.mgdd: this.shortCandlestick.mgdd.l,
+                        c: this.short.mgdd
                     }
                 }
 
@@ -900,16 +1014,14 @@ export class PositionHealth implements IPositionHealth {
                  * If the candlestick's close time has been reached, store it and 
                  * build the next one.
                  */
-                const closeTime: number = this.calculateCandlestickCloseTime(this.shortCandlesticks.hp.ot);
+                const closeTime: number = this.calculateCandlestickCloseTime(this.shortCandlestick.ot);
                 if (ts >= closeTime) {
-                    await this._model.savePositionHealthCandlesticks(
-                        "SHORT",
-                        this.shortCandlesticks.hp,
-                        this.shortCandlesticks.dd
-                    );
-                    this.shortCandlesticks = {
-                        hp: this.buildNewCandlestick(ts, this.short.chp),
-                        dd: this.buildNewCandlestick(ts, this.short.dd)
+                    await this._model.savePositionHealthCandlestick("SHORT", this.buildCandlestickRecord(this.shortCandlestick));
+                    this.shortCandlestick = {
+                        ot: ts,
+                        hp: { o: this.short.chp, h: this.short.chp, l: this.short.chp, c: this.short.chp },
+                        dd: { o: this.short.dd, h: this.short.dd, l: this.short.dd, c: this.short.dd },
+                        mgdd: { o: this.short.mgdd, h: this.short.mgdd, l: this.short.mgdd, c: this.short.mgdd },
                     }
                 }
             }
@@ -925,14 +1037,29 @@ export class PositionHealth implements IPositionHealth {
 
 
     /**
-     * Builds a new candlestick based on the current value.
-     * @param currentTime
-     * @param value
-     * @returns IPositionHealthCandlestick
+     * Cleans the position candlesticks in case a position
+     * is no longer active.
+     * @returns Promise<void>
      */
-    private buildNewCandlestick(currentTime: number, value: number): IPositionHealthCandlestick {
-        return { ot: currentTime, o: value, h: value, l: value, c: value }
+    private async cleanCandlesticks(side: IBinancePositionSide): Promise<void> {
+        // Delete the candlesticks from the db
+        await this._model.cleanPositionHealthCandlesticks(side);
+
+        // Delete the candlesticks from the local property
+        if (side == "LONG") {
+            this.longCandlestick = { ot: undefined, hp: undefined, dd: undefined, mgdd: undefined };
+        } else {
+            this.shortCandlestick = { ot: undefined, hp: undefined, dd: undefined, mgdd: undefined };
+        }
     }
+
+
+
+
+
+
+
+    /* Misc HP Candlestick Helpers */
 
 
 
@@ -954,22 +1081,21 @@ export class PositionHealth implements IPositionHealth {
 
 
 
-    /**
-     * Cleans the position candlesticks in case a position
-     * is no longer active.
-     * @returns cleanCandlesticks(): Promise<void>
-     */
-    private async cleanCandlesticks(): Promise<void> {
-        // Clean the long position candlesticks if applies
-        if (!this.long) {
-            await this._model.cleanPositionHealthCandlesticks("LONG");
-            this.longCandlesticks = { hp: undefined, dd: undefined };
-        }
 
-        // Clean the short position candlesticks if applies
-        if (!this.short) {
-            await this._model.cleanPositionHealthCandlesticks("SHORT");
-            this.shortCandlesticks = { hp: undefined, dd: undefined };
+    /**
+     * Converts an active candlestick into a record.
+     * @param active 
+     * @returns IPositionHealthCandlestickRecord
+     */
+    private buildCandlestickRecord(active: IPositionHealthActiveCandlestick): IPositionHealthCandlestickRecord {
+        return {
+            ot: active.ot,
+            d: {
+                o: [active.hp.o, active.dd.o, active.mgdd.o ],
+                h: [active.hp.h, active.dd.h, active.mgdd.h ],
+                l: [active.hp.l, active.dd.l, active.mgdd.l ],
+                c: [active.hp.c, active.dd.c, active.mgdd.c ],
+            }
         }
     }
 }

@@ -17,7 +17,7 @@ import {IUtilitiesService} from "../utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Position Service
-import {IPositionService, IPositionHealth, IPositionTrade, IPositionHealthCandlesticks} from "../position";
+import {IPositionService, IPositionHealth, IPositionTrade, IPositionHealthCandlestickRecord} from "../position";
 import { IBinancePositionSide } from "../binance";
 const _position: IPositionService = appContainer.get<IPositionService>(SYMBOLS.PositionService);
 const _positionHealth: IPositionHealth = appContainer.get<IPositionHealth>(SYMBOLS.PositionHealth);
@@ -195,7 +195,7 @@ PositionRoute.route("/updateStrategy").post(ultraHighRiskLimit, async (req: expr
  * @requires api-secret
  * @requires authority: 1
  * @param side
- * @returns IAPIResponse<IPositionHealthCandlesticks>
+ * @returns IAPIResponse<IPositionHealthCandlestickRecord[]>
 */
 PositionRoute.route("/getPositionHealthCandlesticks").get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
@@ -209,7 +209,7 @@ PositionRoute.route("/getPositionHealthCandlesticks").get(mediumRiskLimit, async
         reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["side"], req.query);
 
         // Retrieve the data
-        const data: IPositionHealthCandlesticks = await _positionHealth.getPositionHealthCandlesticks(
+        const data: IPositionHealthCandlestickRecord[] = await _positionHealth.getPositionHealthCandlesticks(
             <IBinancePositionSide>req.query.side
         );
 

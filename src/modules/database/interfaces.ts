@@ -80,7 +80,6 @@ export interface ITableNames {
     position_strategy: string,
     position_health: string,
     position_hp_candlesticks: string,
-    position_dd_candlesticks: string,
     position_trades: string,
 }
 

@@ -8,8 +8,7 @@ import {
     IPositionStrategy, 
     IPositionTrade,
     IPositionHealthState,
-    IPositionHealthCandlesticks,
-    IPositionHealthCandlestick,
+    IPositionHealthCandlestickRecord,
 } from "./interfaces";
 
 
@@ -189,29 +188,20 @@ export class PositionModel implements IPositionModel {
      * Retrieves the candlesticks for a given side. If there are no candlesticks
      * on the side, it will return empty lists.
      * @param side 
-     * @returns Promise<IPositionHealthCandlesticks>
+     * @returns Promise<IPositionHealthCandlestickRecord[]>
      */
-    public async getPositionHealthCandlesticks(side: IBinancePositionSide): Promise<IPositionHealthCandlesticks> {
-        // Retrieve the HP & Drawdown candlesticks
-        const queryResults: [IQueryResult, IQueryResult] = await Promise.all([
-            this._db.query({
-                text: `
-                    SELECT ot, o, h, l, c FROM ${this._db.tn.position_hp_candlesticks} 
-                    WHERE side = $1
-                    ORDER BY ot ASC`,
-                values: [ side ]
-            }),
-            this._db.query({
-                text: `
-                    SELECT ot, o, h, l, c FROM ${this._db.tn.position_dd_candlesticks} 
-                    WHERE side = $1
-                    ORDER BY ot ASC`,
-                values: [ side ]
-            })
-        ]);
-        
-        // Finally, pack the results and return them
-        return { hp: queryResults[0].rows, dd: queryResults[1].rows }
+    public async getPositionHealthCandlesticks(side: IBinancePositionSide): Promise<IPositionHealthCandlestickRecord[]> {
+        // Retrieve the candlesticks
+        const { rows } = await this._db.query({
+            text: `
+                SELECT ot, d FROM ${this._db.tn.position_hp_candlesticks} 
+                WHERE side = $1
+                ORDER BY ot ASC`,
+            values: [ side ]
+        });
+
+        // Return them
+        return rows;
     }
 
 
@@ -228,33 +218,10 @@ export class PositionModel implements IPositionModel {
      * @returns Promise<void>
      */
     public async cleanPositionHealthCandlesticks(side: IBinancePositionSide): Promise<void> {
-        // Initialize the client
-        const client: IPoolClient = await this._db.pool.connect();
-        try {
-            // Begin the transaction
-            await client.query({text: "BEGIN"});
-
-            // Delete the HP Candlesticks
-            await client.query({
-                text: `DELETE FROM ${this._db.tn.position_hp_candlesticks} WHERE side = $1`,
-                values: [ side ]
-            });
-
-            // Delete the Drawdown Candlesticks
-            await client.query({
-                text: `DELETE FROM ${this._db.tn.position_dd_candlesticks} WHERE side = $1`,
-                values: [ side ]
-            });
-
-            // Finally, commit the writes
-            await client.query({text: "COMMIT"});
-        } catch (e) {
-            // Rollback and rethrow the error
-            await client.query("ROLLBACK");
-            throw e;
-        } finally {
-            client.release();
-        }
+        await this._db.query({
+            text: `DELETE FROM ${this._db.tn.position_hp_candlesticks} WHERE side = $1`,
+            values: [ side ]
+        });
     }
 
 
@@ -266,49 +233,20 @@ export class PositionModel implements IPositionModel {
     /**
      * When the time reaches the candlestick's close time, it is 
      * stored and the new one is built.
-     * @param hpCandlestick 
-     * @param ddCandlestick 
+     * @param side
+     * @param record
      * @returns Promise<void>
      */
-    public async savePositionHealthCandlesticks(
-        side: IBinancePositionSide,
-        hp: IPositionHealthCandlestick, 
-        dd: IPositionHealthCandlestick
-    ): Promise<void> {
-        // Initialize the client
-        const client: IPoolClient = await this._db.pool.connect();
-        try {
-            // Begin the transaction
-            await client.query({text: "BEGIN"});
-
-            // Save the HP Candlestick
-            await client.query({
-                text: `
-                    INSERT INTO ${this._db.tn.position_hp_candlesticks}(side, ot, o, h, l, c)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                `,
-                values: [ side, hp.ot, hp.o, hp.h, hp.l, hp.c ]
-            });
-
-            // Save the Drawdown Candlestick
-            await client.query({
-                text: `
-                    INSERT INTO ${this._db.tn.position_dd_candlesticks}(side, ot, o, h, l, c)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                `,
-                values: [ side, dd.ot, dd.o, dd.h, dd.l, dd.c ]
-            });
-
-            // Finally, commit the writes
-            await client.query({text: "COMMIT"});
-        } catch (e) {
-            // Rollback and rethrow the error
-            await client.query("ROLLBACK");
-            throw e;
-        } finally {
-            client.release();
-        }
+    public async savePositionHealthCandlestick(side: IBinancePositionSide, record: IPositionHealthCandlestickRecord): Promise<void> {
+        await this._db.query({
+            text: `
+                INSERT INTO ${this._db.tn.position_hp_candlesticks}(side, ot, d)
+                VALUES ($1, $2, $3)
+            `,
+            values: [ side, record.ot, record.d ]
+        });
     }
+
 
 
 
