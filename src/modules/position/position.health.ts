@@ -36,13 +36,13 @@ export class PositionHealth implements IPositionHealth {
      * position's health points.
      */
     private readonly weights: IPositionHealthWeights = {
-        trend_sum: 48,
+        trend_sum: 47,
         trend_state: 8,
         ta_30m: 4,
         ta_1h: 4,
-        ta_2h: 5,
+        ta_2h: 4.5,
         ta_4h: 5,
-        ta_1d: 6,
+        ta_1d: 5.5,
         open_interest: 10,
         long_short_ratio: 10,
         volume_direction: 2
@@ -99,7 +99,7 @@ export class PositionHealth implements IPositionHealth {
         dd: undefined,
         mgdd: undefined
     }
-    private readonly candlestickIntervalMinutes: number = 15;
+    private readonly candlestickIntervalMinutes: number = 30;
 
 
 

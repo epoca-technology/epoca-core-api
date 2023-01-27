@@ -637,18 +637,50 @@
 #
 ## Signal Service (35.000 - 35.999)
 
-35000: `The provided side is invalid. Received: ${side}`
+35000: ``
 
 35001: ``
 
 35002: ``
 
-35003: ``
 
-35004: ``
+#
+## Signal Validations (36.000 - 36.999)
 
-35005: ``
+36000: `The provided side is invalid. Received: ${side}`
 
-35006: ``
+36001: `The provided new signal policies for ${side} are invalid.`
 
-35007: ``
+36002: `The enabled property is invalid.`
+
+36003: `The trend_sum property is invalid.`
+
+36004: `The trend_state property is invalid.`
+
+36005: `The trend_intensity property is invalid.`
+
+36006: `The ta_30m property is invalid.`
+
+36007: `The ta_1h property is invalid.`
+
+36008: `The ta_2h property is invalid.`
+
+36009: `The ta_4h property is invalid.`
+
+36010: `The ta_1dh property is invalid.`
+
+36011: `At least 1 of the technical analysis properties must be different to 0 in each policy that makes use of them.`
+
+36012: `The open_interest property is invalid.`
+
+36013: `The long_short_ratio property is invalid.`
+
+36014: `The window provided for the WindowCancellation is invalid. Received: ${policy.window}`
+
+36015: ``
+
+36016: ``
+
+36017: ``
+
+36018: ``

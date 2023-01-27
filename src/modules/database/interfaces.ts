@@ -77,6 +77,7 @@ export interface ITableNames {
     epoch_prediction_candlesticks: string,
     prediction_model_certificates: string,
     regression_certificates: string,
+    signal_policies: string,
     position_strategy: string,
     position_health: string,
     position_hp_candlesticks: string,

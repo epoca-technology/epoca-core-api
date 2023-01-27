@@ -249,6 +249,21 @@ export const TABLES: IRawTable[] = [
 
     
     /**
+     * Signal Policies
+     * 
+     */
+    {
+        name: "signal_policies",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id              SMALLINT NOT NULL PRIMARY KEY,
+                policies        JSONB NOT NULL
+            );`
+        }
+    },
+
+    
+    /**
      * Position Strategy
      * 
      */
