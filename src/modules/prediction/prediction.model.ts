@@ -68,6 +68,36 @@ export class PredictionModel implements IPredictionModel {
 
 
 
+    /**
+     * Queries the predictions based on the provided params and returns
+     * them ordered by date ascending in a minified format.
+     * @param epochID 
+     * @param startAt 
+     * @param endAt
+     * @returns Promise<Partial<IPrediction>[]>
+     */
+    public async listMinifiedPredictions(
+        epochID: string, 
+        startAt: number, 
+        endAt: number
+    ): Promise<Partial<IPrediction>[]> {
+        // Execute the query
+        const { rows } = await this._db.query({ 
+            text: `
+                SELECT t, s FROM ${this._db.tn.predictions} WHERE epoch_id = $1 
+                AND t BETWEEN $2 AND $3 ORDER BY t ASC;
+            `, 
+            values: [epochID, startAt, endAt]
+        });
+
+        // Finally, return the result of the query
+        return rows;
+    }
+
+
+
+
+
 
 
 
@@ -258,7 +288,7 @@ export class PredictionModel implements IPredictionModel {
      * @param preds 
      * @returns IPredictionCandlestick
      */
-    public buildCandlestick(preds: IPrediction[]): IPredictionCandlestick {
+    public buildCandlestick(preds: Partial<IPrediction>[]): IPredictionCandlestick {
         // Init the candlestick
         let final: IPredictionCandlestick = {
             ot: preds[0].t,

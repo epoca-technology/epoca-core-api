@@ -322,7 +322,11 @@ export class EpochService implements IEpochService {
 
             // Delete the local files
             this.uninstallTask.logProgress(50, `Deleting Epoch Files.`);
-            await this.file.cleanLocalFiles();
+            try {
+                await this.file.cleanLocalFiles();
+            } catch (e) { 
+                await this._apiError.log("EpochService._uninstall.cleanLocalFiles", e, undefined, undefined);
+            }
 
             // Deactivate the epoch
             this.uninstallTask.logProgress(85, `Deactivating ${this.active.value.id}.`);

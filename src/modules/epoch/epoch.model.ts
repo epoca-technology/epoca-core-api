@@ -209,9 +209,18 @@ export class EpochModel implements IEpochModel {
      * @returns Promise<void>
      */
     public async uninstall(epochID: string): Promise<void> {
+        // Firstly, set the uninstall date
         await this._db.query({
             text: `UPDATE ${this._db.tn.epochs} SET uninstalled=$1 WHERE id=$2`,
             values: [Date.now(), epochID]
+        });
+
+        /* Uninstall Clean Up Actions */
+
+        // Clean the individual prediction records
+        await this._db.query({
+            text: `DELETE FROM ${this._db.tn.predictions}`,
+            values: []
         });
     }
     

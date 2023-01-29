@@ -65,7 +65,7 @@ export class PredictionService implements IPredictionService {
      * and stored if there is an active epoch.
      */
     private predictionInterval: any;
-    private readonly intervalSeconds: number = 15;
+    private readonly intervalSeconds: number = 10;
 
 
     /**
@@ -407,8 +407,8 @@ export class PredictionService implements IPredictionService {
                 );
                 closeTime = this.model.getPredictionCandlestickCloseTime(openTime);
 
-                // Retrieve all the predictions within the period
-                const preds: IPrediction[] = await this.model.listPredictions(
+                // Retrieve all the minified predictions within the period
+                const preds: Partial<IPrediction>[] = await this.model.listMinifiedPredictions(
                     this._epoch.active.value.id, 
                     openTime, 
                     closeTime

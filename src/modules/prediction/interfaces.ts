@@ -64,6 +64,11 @@ export interface IPredictionModel {
         startAt: number|undefined, 
         endAt: number|undefined
     ): Promise<IPrediction[]>,
+    listMinifiedPredictions(
+        epochID: string, 
+        startAt: number, 
+        endAt: number
+    ): Promise<Partial<IPrediction>[]>,
 
     // Prediction Saving
     savePrediction(epochID: string, pred: IPrediction): Promise<void>,
@@ -84,7 +89,7 @@ export interface IPredictionModel {
     savePredictionCandlesticks(epochID: string, candlesticks: IPredictionCandlestick[]): Promise<void>,
 
     // Candlesticks Misc Helpers
-    buildCandlestick(preds: IPrediction[]): IPredictionCandlestick,
+    buildCandlestick(preds: Partial<IPrediction>[]): IPredictionCandlestick,
     getPredictionCandlestickCloseTime(ot: number): number,
 }
 
