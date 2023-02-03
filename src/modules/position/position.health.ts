@@ -36,16 +36,18 @@ export class PositionHealth implements IPositionHealth {
      * position's health points.
      */
     private readonly weights: IPositionHealthWeights = {
-        trend_sum: 47,
-        trend_state: 8,
-        ta_30m: 4,
+        trend_sum: 40,
+        trend_state: 10,
+        ta_30m: 3.5,
         ta_1h: 4,
         ta_2h: 4.5,
-        ta_4h: 5,
-        ta_1d: 5.5,
-        open_interest: 10,
-        long_short_ratio: 10,
-        volume_direction: 2
+        ta_4h: 4.5,
+        ta_1d: 4.5,
+        open_interest: 5,
+        open_interest_state: 8,
+        long_short_ratio: 5,
+        long_short_ratio_state: 8,
+        volume_direction: 3
     }
 
 
@@ -264,6 +266,8 @@ export class PositionHealth implements IPositionHealth {
         if (!health) {
             health = {
                 os: this.pred.s,
+                ooi: this.ms.open_interest.interest.at(-1),
+                olsr: this.ms.long_short_ratio.ratio.at(-1),
                 ohp: 0,
                 hhp: 0,
                 lhp: 0,
@@ -289,13 +293,19 @@ export class PositionHealth implements IPositionHealth {
         hp += this.evaluateTechnicalAnalysis(side, "1h"); 
         hp += this.evaluateTechnicalAnalysis(side, "2h"); 
         hp += this.evaluateTechnicalAnalysis(side, "4h"); 
-        hp += this.evaluateTechnicalAnalysis(side, "1d"); 
+        hp += this.evaluateTechnicalAnalysis(side, "1d");
 
         // Evaluate the open interest
-        hp += this.evaluateOpenInterest(side);
+        hp += this.evaluateOpenInterest(side, health.ooi);
+
+        // Evaluate the open interest state
+        hp += this.evaluateOpenInterestState(side);
 
         // Evaluate the long/short ratio
-        hp += this.evaluateLongShortRatio(side);
+        hp += this.evaluateLongShortRatio(side, health.olsr);
+
+        // Evaluate the long/short ratio state
+        hp += this.evaluateLongShortRatioState(side);
 
         // Evaluate the volume direction
         hp += this.evaluateVolumeDirection(side);
@@ -745,21 +755,125 @@ export class PositionHealth implements IPositionHealth {
         let score: number = 0.5;
 
         // Evaluate the current state score based on the side
-        if (this.ms.technical_analysis[taInterval].s.a == -2) {
-            score = side == "SHORT" ? 1: 0
-        } else if (this.ms.technical_analysis[taInterval].s.a == -1) {
-            score = side == "SHORT" ? 0.75: 0.25
-        } else if (this.ms.technical_analysis[taInterval].s.a == 1) {
-            score = side == "LONG" ? 0.75: 0.25
-        } else if (this.ms.technical_analysis[taInterval].s.a == 2) {
-            score = side == "LONG" ? 1: 0
-        }
+        if      (this.ms.technical_analysis[taInterval].s.a == -2) { score = side == "SHORT" ? 1: 0 } 
+        else if (this.ms.technical_analysis[taInterval].s.a == -1) { score = side == "SHORT" ? 0.75: 0.25 } 
+        else if (this.ms.technical_analysis[taInterval].s.a == 1)  { score = side == "LONG"  ? 0.75: 0.25 } 
+        else if (this.ms.technical_analysis[taInterval].s.a == 2)  { score = side == "LONG"  ? 1: 0 }
 
         // Finally, return the score
         return this.weights[`ta_${taInterval}`] * score;
     }
 
 
+
+
+    /**
+     * Calculates the open interest HP based on the difference between
+     * the initial value and the current one.
+     * @param side 
+     * @param initialValue 
+     * @returns number
+     */
+    private evaluateOpenInterest(side: IBinancePositionSide, initialValue: number): number {
+        // Init the score
+        let score: number = 0.5;
+
+        // Initialize the current open interest value
+        const current: number = this.ms.open_interest.interest.at(-1);
+
+        // Evaluate an open interest that is increasing
+        if (current > initialValue) {
+            if        (current >= this._utils.alterNumberByPercentage(initialValue, 10)) {
+                score = side == "LONG" ? 1: 0;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 9.5)) {
+                score = side == "LONG" ? 0.97: 0.03;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 9)) {
+                score = side == "LONG" ? 0.94: 0.06;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 8.5)) {
+                score = side == "LONG" ? 0.91: 0.09;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 8)) {
+                score = side == "LONG" ? 0.88: 0.12;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 7.5)) {
+                score = side == "LONG" ? 0.85: 0.15;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 7)) {
+                score = side == "LONG" ? 0.82: 0.18;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 6.5)) {
+                score = side == "LONG" ? 0.79: 0.21;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 6)) {
+                score = side == "LONG" ? 0.76: 0.24;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 5.5)) {
+                score = side == "LONG" ? 0.73: 0.27;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 5)) {
+                score = side == "LONG" ? 0.70: 0.30;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 4.5)) {
+                score = side == "LONG" ? 0.67: 0.33;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 4)) {
+                score = side == "LONG" ? 0.64: 0.36;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 3.5)) {
+                score = side == "LONG" ? 0.61: 0.39;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 3)) {
+                score = side == "LONG" ? 0.60: 0.40;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 2.5)) {
+                score = side == "LONG" ? 0.58: 0.42;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 2)) {
+                score = side == "LONG" ? 0.56: 0.44;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 1.5)) {
+                score = side == "LONG" ? 0.55: 0.45;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 1)) {
+                score = side == "LONG" ? 0.54: 0.46;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 0.5)) {
+                score = side == "LONG" ? 0.53: 0.47;
+            }
+        }
+
+        // Evaluate an open interest that is decreasing
+        else if (current < initialValue) {
+            if        (current <= this._utils.alterNumberByPercentage(initialValue, -10)) {
+                score = side == "SHORT" ? 1: 0;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -9.5)) {
+                score = side == "SHORT" ? 0.97: 0.03;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -9)) {
+                score = side == "SHORT" ? 0.94: 0.06;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -8.5)) {
+                score = side == "SHORT" ? 0.91: 0.09;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -8)) {
+                score = side == "SHORT" ? 0.88: 0.12;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -7.5)) {
+                score = side == "SHORT" ? 0.85: 0.15;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -7)) {
+                score = side == "SHORT" ? 0.82: 0.18;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -6.5)) {
+                score = side == "SHORT" ? 0.79: 0.21;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -6)) {
+                score = side == "SHORT" ? 0.76: 0.24;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -5.5)) {
+                score = side == "SHORT" ? 0.73: 0.27;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -5)) {
+                score = side == "SHORT" ? 0.70: 0.30;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -4.5)) {
+                score = side == "SHORT" ? 0.67: 0.33;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -4)) {
+                score = side == "SHORT" ? 0.64: 0.36;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -3.5)) {
+                score = side == "SHORT" ? 0.61: 0.39;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -3)) {
+                score = side == "SHORT" ? 0.60: 0.40;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -2.5)) {
+                score = side == "SHORT" ? 0.58: 0.42;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -2)) {
+                score = side == "SHORT" ? 0.56: 0.44;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -1.5)) {
+                score = side == "SHORT" ? 0.55: 0.45;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -1)) {
+                score = side == "SHORT" ? 0.54: 0.46;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -0.5)) {
+                score = side == "SHORT" ? 0.53: 0.47;
+            }
+        }
+
+        // Finally, return the score
+        return this.weights.open_interest * score;
+    }
 
 
 
@@ -769,25 +883,132 @@ export class PositionHealth implements IPositionHealth {
      * @param side 
      * @returns number
      */
-    private evaluateOpenInterest(side: IBinancePositionSide): number {
+    private evaluateOpenInterestState(side: IBinancePositionSide): number {
         // Init the score
         let score: number = 0.5;
 
         // Evaluate the current state score based on the side
-        if (this.ms.open_interest.state == 2) {
-            score = side == "LONG" ? 1: 0
-        } else if (this.ms.open_interest.state == 1) {
-            score = side == "LONG" ? 0.75: 0.25
-        } else if (this.ms.open_interest.state == -1) {
-            score = side == "SHORT" ? 0.75: 0.25
-        } else if (this.ms.open_interest.state == -2) {
-            score = side == "SHORT" ? 1: 0
+        if      (this.ms.open_interest.state == 2)  { score = side == "LONG"  ? 1: 0 } 
+        else if (this.ms.open_interest.state == 1)  { score = side == "LONG"  ? 0.75: 0.25 } 
+        else if (this.ms.open_interest.state == -1) { score = side == "SHORT" ? 0.75: 0.25 } 
+        else if (this.ms.open_interest.state == -2) { score = side == "SHORT" ? 1: 0 }
+
+        // Finally, return the score
+        return this.weights.open_interest_state * score;
+    }
+    
+
+
+
+
+    /**
+     * Calculates the long/short ratio HP based on the difference between
+     * the initial value and the current one.
+     * @param side 
+     * @param initialValue 
+     * @returns number
+     */
+    private evaluateLongShortRatio(side: IBinancePositionSide, initialValue: number): number {
+        // Init the score
+        let score: number = 0.5;
+
+        // Initialize the current long/short ratio value
+        const current: number = this.ms.long_short_ratio.ratio.at(-1);
+
+        // Evaluate a long/short ratio that is increasing
+        if (current > initialValue) {
+            if        (current >= this._utils.alterNumberByPercentage(initialValue, 20)) {
+                score = side == "LONG" ? 1: 0;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 19)) {
+                score = side == "LONG" ? 0.97: 0.03;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 18)) {
+                score = side == "LONG" ? 0.94: 0.06;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 17)) {
+                score = side == "LONG" ? 0.91: 0.09;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 16)) {
+                score = side == "LONG" ? 0.88: 0.12;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 15)) {
+                score = side == "LONG" ? 0.85: 0.15;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 14)) {
+                score = side == "LONG" ? 0.82: 0.18;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 13)) {
+                score = side == "LONG" ? 0.79: 0.21;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 12)) {
+                score = side == "LONG" ? 0.76: 0.24;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 11)) {
+                score = side == "LONG" ? 0.73: 0.27;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 10)) {
+                score = side == "LONG" ? 0.70: 0.30;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 9)) {
+                score = side == "LONG" ? 0.67: 0.33;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 8)) {
+                score = side == "LONG" ? 0.64: 0.36;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 7)) {
+                score = side == "LONG" ? 0.61: 0.39;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 6)) {
+                score = side == "LONG" ? 0.60: 0.40;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 5)) {
+                score = side == "LONG" ? 0.58: 0.42;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 4)) {
+                score = side == "LONG" ? 0.56: 0.44;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 3)) {
+                score = side == "LONG" ? 0.55: 0.45;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 2)) {
+                score = side == "LONG" ? 0.54: 0.46;
+            } else if (current >= this._utils.alterNumberByPercentage(initialValue, 1)) {
+                score = side == "LONG" ? 0.53: 0.47;
+            }
+        }
+
+        // Evaluate a long/short ratio that is decreasing
+        else if (current < initialValue) {
+            if        (current <= this._utils.alterNumberByPercentage(initialValue, -20)) {
+                score = side == "SHORT" ? 1: 0;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -19)) {
+                score = side == "SHORT" ? 0.97: 0.03;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -18)) {
+                score = side == "SHORT" ? 0.94: 0.06;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -17)) {
+                score = side == "SHORT" ? 0.91: 0.09;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -16)) {
+                score = side == "SHORT" ? 0.88: 0.12;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -15)) {
+                score = side == "SHORT" ? 0.85: 0.15;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -14)) {
+                score = side == "SHORT" ? 0.82: 0.18;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -13)) {
+                score = side == "SHORT" ? 0.79: 0.21;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -12)) {
+                score = side == "SHORT" ? 0.76: 0.24;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -11)) {
+                score = side == "SHORT" ? 0.73: 0.27;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -10)) {
+                score = side == "SHORT" ? 0.70: 0.30;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -9)) {
+                score = side == "SHORT" ? 0.67: 0.33;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -8)) {
+                score = side == "SHORT" ? 0.64: 0.36;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -7)) {
+                score = side == "SHORT" ? 0.61: 0.39;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -6)) {
+                score = side == "SHORT" ? 0.60: 0.40;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -5)) {
+                score = side == "SHORT" ? 0.58: 0.42;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -4)) {
+                score = side == "SHORT" ? 0.56: 0.44;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -3)) {
+                score = side == "SHORT" ? 0.55: 0.45;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -2)) {
+                score = side == "SHORT" ? 0.54: 0.46;
+            } else if (current <= this._utils.alterNumberByPercentage(initialValue, -1)) {
+                score = side == "SHORT" ? 0.53: 0.47;
+            }
         }
 
         // Finally, return the score
-        return this.weights.open_interest * score;
+        return this.weights.long_short_ratio * score;
     }
-    
+
 
 
 
@@ -796,23 +1017,18 @@ export class PositionHealth implements IPositionHealth {
      * @param side 
      * @returns number
      */
-    private evaluateLongShortRatio(side: IBinancePositionSide): number {
+    private evaluateLongShortRatioState(side: IBinancePositionSide): number {
         // Init the score
         let score: number = 0.5;
 
         // Evaluate the current state score based on the side
-        if (this.ms.long_short_ratio.state == 2) {
-            score = side == "LONG" ? 1: 0
-        } else if (this.ms.long_short_ratio.state == 1) {
-            score = side == "LONG" ? 0.75: 0.25
-        } else if (this.ms.long_short_ratio.state == -1) {
-            score = side == "SHORT" ? 0.75: 0.25
-        } else if (this.ms.long_short_ratio.state == -2) {
-            score = side == "SHORT" ? 1: 0
-        }
+        if      (this.ms.long_short_ratio.state == 2)  { score = side == "LONG"  ? 1: 0 } 
+        else if (this.ms.long_short_ratio.state == 1)  { score = side == "LONG"  ? 0.75: 0.25 } 
+        else if (this.ms.long_short_ratio.state == -1) { score = side == "SHORT" ? 0.75: 0.25 } 
+        else if (this.ms.long_short_ratio.state == -2) { score = side == "SHORT" ? 1: 0 }
 
         // Finally, return the score
-        return this.weights.long_short_ratio * score;
+        return this.weights.long_short_ratio_state * score;
     }
 
 
@@ -832,15 +1048,22 @@ export class PositionHealth implements IPositionHealth {
         // Init the score
         let score: number = 0.5;
 
-        // Evaluate the current state score based on the side
-        if (this.ms.volume.direction == 2) {
-            score = side == "LONG" ? 1: 0
-        } else if (this.ms.volume.direction == 1) {
-            score = side == "LONG" ? 0.75: 0.25
-        } else if (this.ms.volume.direction == -1) {
-            score = side == "SHORT" ? 0.75: 0.25
-        } else if (this.ms.volume.direction == -2) {
-            score = side == "SHORT" ? 1: 0
+        // Evaluate the direction based on the current volume state
+        if (this.ms.volume.state == 2) {
+            if      (this.ms.volume.direction == 2)  { score = side == "LONG"  ? 1: 0 } 
+            else if (this.ms.volume.direction == 1)  { score = side == "LONG"  ? 0.75: 0.25 } 
+            else if (this.ms.volume.direction == -1) { score = side == "SHORT" ? 0.75: 0.25 } 
+            else if (this.ms.volume.direction == -2) { score = side == "SHORT" ? 1: 0 }
+        } else if (this.ms.volume.state == 1) {
+            if      (this.ms.volume.direction == 2)  { score = side == "LONG"  ? 0.85: 0.15 } 
+            else if (this.ms.volume.direction == 1)  { score = side == "LONG"  ? 0.65: 0.35 } 
+            else if (this.ms.volume.direction == -1) { score = side == "SHORT" ? 0.65: 0.35 } 
+            else if (this.ms.volume.direction == -2) { score = side == "SHORT" ? 0.85: 0.15 }
+        } else {
+            if      (this.ms.volume.direction == 2)  { score = side == "LONG"  ? 0.75: 0.25 } 
+            else if (this.ms.volume.direction == 1)  { score = side == "LONG"  ? 0.60: 0.40 } 
+            else if (this.ms.volume.direction == -1) { score = side == "SHORT" ? 0.60: 0.40 } 
+            else if (this.ms.volume.direction == -2) { score = side == "SHORT" ? 0.75: 0.25 }
         }
 
         // Finally, return the score

@@ -607,13 +607,13 @@ export class PredictionService implements IPredictionService {
 
 
     /**
-     * The intensity of the trend state is hard to calculate because the sum
-     * can be a positive or negative number. Moreover, it can get very close
-     * to 0 (6 decimals precision) and it can also go all the way to 8.
-     * Moreover, when calculating the trend state and intensity, there can be
-     * up to 10 candlesticks (~5 hours).
-     * The best approach that comes to mind is to handle dynamic requirements
-     * based on the 
+     * The intensity of the trend state is tricky to calculate because the sum
+     * can be a positive or negative number, it can get very close to 0 (6 decimals precision) 
+     * and it can also go all the way to 8. 
+     * In order to calculate the intensity, the requirements are adjusted based on the sum as
+     * the scale changes based on the distance to 0. The smaller the sum, the more volatile.
+     * It is also important to note that when calculating the trend state and intensity, there 
+     * can be up to 10 candlesticks (~5 hours).
      * @param initialSum 
      * @returns {requirement: number, strongRequirement: number}
      */

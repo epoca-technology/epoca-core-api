@@ -926,13 +926,14 @@ export class PositionService implements IPositionService {
             this._apiError.log("PositionService.closePosition.refreshActivePositions", e);
         }
 
+        // @DEPRECATED: Binance takes a few minutes to update trades on position close.
         // Trigger a trades update safely
-        try {
+        /*try {
             await this.updateTrades();
         } catch (e) {
             console.error(e);
             this._apiError.log("PositionService.closePosition.updateTrades", e);
-        }
+        }*/
     }
 
 
