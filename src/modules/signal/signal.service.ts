@@ -1005,7 +1005,7 @@ export class SignalService implements ISignalService {
                 technicals_open_interest: {
                     enabled: true,
                     trend_sum: 0,
-                    trend_state: 5,
+                    trend_state: 3,
                     trend_intensity: 1,
                     ta_30m: 0,
                     ta_1h: 0,
@@ -1017,7 +1017,7 @@ export class SignalService implements ISignalService {
                 technicals_long_short_ratio: {
                     enabled: true,
                     trend_sum: 0,
-                    trend_state: 5,
+                    trend_state: 3,
                     trend_intensity: 1,
                     ta_30m: 0,
                     ta_1h: 0,
@@ -1029,7 +1029,7 @@ export class SignalService implements ISignalService {
                 open_interest_long_short_ratio: {
                     enabled: true,
                     trend_sum: 0,
-                    trend_state: 5,
+                    trend_state: 3,
                     trend_intensity: 1,
                     open_interest: 1,
                     long_short_ratio: 1,
@@ -1126,7 +1126,7 @@ export class SignalService implements ISignalService {
                 technicals_open_interest: {
                     enabled: true,
                     trend_sum: 0,
-                    trend_state: -5,
+                    trend_state: -3,
                     trend_intensity: -1,
                     ta_30m: 0,
                     ta_1h: 0,
@@ -1138,7 +1138,7 @@ export class SignalService implements ISignalService {
                 technicals_long_short_ratio: {
                     enabled: true,
                     trend_sum: 0,
-                    trend_state: -5,
+                    trend_state: -3,
                     trend_intensity: -1,
                     ta_30m: 0,
                     ta_1h: 0,
@@ -1150,7 +1150,7 @@ export class SignalService implements ISignalService {
                 open_interest_long_short_ratio: {
                     enabled: true,
                     trend_sum: 0,
-                    trend_state: -5,
+                    trend_state: -3,
                     trend_intensity: -1,
                     open_interest: -1,
                     long_short_ratio: -1
