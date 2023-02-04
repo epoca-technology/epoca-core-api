@@ -69,13 +69,27 @@ export class VolumeStateService implements IVolumeStateService {
         );
 
         // Calculate the state
-        const { state, state_value } = this._stateUtils.calculateState(
+        let { state, state_value } = this._stateUtils.calculateState(
             volumes[0],
             volumes.at(-1),
             bands,
             this.minChange,
             this.strongChange
         );
+
+        /**
+         * When a new candlestick comes into existance, it is possible for the volume state
+         * to become -1 or -2 since the data is brand new and not enough trades have been
+         * recorded. Therefore, in order for the volume to have a decreasing state (-1 or -2),
+         * the last 4 records must be forming a declining line. Otherwise, the decreasing state
+         * will be neutralized (set to 0).
+         */
+        if (
+            state < 0 &&
+            (volumes.at(-1) > volumes.at(-2) || volumes.at(-2) > volumes.at(-3) || volumes.at(-3) > volumes.at(-4))
+        ) {
+            state = 0;
+        }
 
         // Calculate the direction
         const { direction, direction_value } = this.calculateDirection(window);
