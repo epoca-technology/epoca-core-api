@@ -540,19 +540,19 @@ export class PositionHealth implements IPositionHealth {
             if        (this.pred.s <= this._utils.alterNumberByPercentage(openSum, 95*alterMultiplier)) {
                 score = side == "SHORT" ? 1: 0;
             } else if (this.pred.s <= this._utils.alterNumberByPercentage(openSum, 93*alterMultiplier)) {
-                score = side == "SHORT" ? 0.98: 2;
+                score = side == "SHORT" ? 0.98: 0.02;
             } else if (this.pred.s <= this._utils.alterNumberByPercentage(openSum, 91*alterMultiplier)) {
-                score = side == "SHORT" ? 0.96: 4;
+                score = side == "SHORT" ? 0.96: 0.04;
             } else if (this.pred.s <= this._utils.alterNumberByPercentage(openSum, 89*alterMultiplier)) {
-                score = side == "SHORT" ? 0.95: 5;
+                score = side == "SHORT" ? 0.95: 0.05;
             } else if (this.pred.s <= this._utils.alterNumberByPercentage(openSum, 87*alterMultiplier)) {
-                score = side == "SHORT" ? 0.94: 6;
+                score = side == "SHORT" ? 0.94: 0.06;
             } else if (this.pred.s <= this._utils.alterNumberByPercentage(openSum, 85*alterMultiplier)) {
-                score = side == "SHORT" ? 0.93: 7;
+                score = side == "SHORT" ? 0.93: 0.07;
             } else if (this.pred.s <= this._utils.alterNumberByPercentage(openSum, 83*alterMultiplier)) {
-                score = side == "SHORT" ? 0.92: 8;
+                score = side == "SHORT" ? 0.92: 0.08;
             } else if (this.pred.s <= this._utils.alterNumberByPercentage(openSum, 81*alterMultiplier)) {
-                score = side == "SHORT" ? 0.91: 9;
+                score = side == "SHORT" ? 0.91: 0.09;
             } else if (this.pred.s <= this._utils.alterNumberByPercentage(openSum, 79*alterMultiplier)) {
                 score = side == "SHORT" ? 0.90: 0.10;
             } else if (this.pred.s <= this._utils.alterNumberByPercentage(openSum, 77*alterMultiplier)) {
