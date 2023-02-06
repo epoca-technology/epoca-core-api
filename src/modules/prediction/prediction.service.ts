@@ -623,16 +623,17 @@ export class PredictionService implements IPredictionService {
 
         // Return the requirements based on the current absolute sum
         if      (sum < 0.1)                { return { requirement: 45,    strongRequirement: 90 } }
+        else if (sum >= 0.1 && sum < 0.2)  { return { requirement: 40,    strongRequirement: 80 } }
         else if (sum >= 0.2 && sum < 0.3)  { return { requirement: 35,    strongRequirement: 70 } }
         else if (sum >= 0.3 && sum < 0.4)  { return { requirement: 30,    strongRequirement: 60 } }
         else if (sum >= 0.4 && sum < 0.5)  { return { requirement: 25,    strongRequirement: 50 } }
         else if (sum >= 0.5 && sum < 1)    { return { requirement: 20,    strongRequirement: 40 } }
-        else if (sum >= 1 && sum < 2)      { return { requirement: 10,    strongRequirement: 20 } }
-        else if (sum >= 2 && sum < 3)      { return { requirement: 7.5,   strongRequirement: 15 } }
-        else if (sum >= 3 && sum < 4)      { return { requirement: 5.5,   strongRequirement: 11 } }
-        else if (sum >= 4 && sum < 5)      { return { requirement: 4,     strongRequirement: 8 } }
-        else if (sum >= 5 && sum < 6)      { return { requirement: 3,     strongRequirement: 6 } }
-        else if (sum >= 6 && sum < 7)      { return { requirement: 2.5,   strongRequirement: 5 } }
+        else if (sum >= 1   && sum < 2)    { return { requirement: 10,    strongRequirement: 20 } }
+        else if (sum >= 2   && sum < 3)    { return { requirement: 7.5,   strongRequirement: 15 } }
+        else if (sum >= 3   && sum < 4)    { return { requirement: 5.5,   strongRequirement: 11 } }
+        else if (sum >= 4   && sum < 5)    { return { requirement: 4,     strongRequirement: 8 } }
+        else if (sum >= 5   && sum < 6)    { return { requirement: 3,     strongRequirement: 6 } }
+        else if (sum >= 6   && sum < 7)    { return { requirement: 2.5,   strongRequirement: 5 } }
         else                               { return { requirement: 2,     strongRequirement: 4 } }
     }
 }
