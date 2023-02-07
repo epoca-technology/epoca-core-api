@@ -81,12 +81,12 @@ export class VolumeStateService implements IVolumeStateService {
          * When a new candlestick comes into existance, it is possible for the volume state
          * to become -1 or -2 since the data is brand new and not enough trades have been
          * recorded. Therefore, in order for the volume to have a decreasing state (-1 or -2),
-         * the last 3 records must be forming a declining line. Otherwise, the decreasing state
+         * the last 2 records must be forming a declining line. Otherwise, the decreasing state
          * will be neutralized (set to 0).
          */
         if (
             state < 0 &&
-            (volumes.at(-1) > volumes.at(-2) || volumes.at(-2) > volumes.at(-3) || volumes.at(-3) > volumes.at(-4))
+            (volumes.at(-1) > volumes.at(-2) || volumes.at(-2) > volumes.at(-3))
         ) {
             state = 0;
         }

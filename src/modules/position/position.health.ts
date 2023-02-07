@@ -15,7 +15,8 @@ import {
     IPositionHealthWeights,
     IActivePosition,
     IPositionHealthCandlestickRecord,
-    IPositionHealthActiveCandlestick
+    IPositionHealthActiveCandlestick,
+    IPositionValidations
 } from "./interfaces";
 
 
@@ -27,6 +28,7 @@ export class PositionHealth implements IPositionHealth {
     @inject(SYMBOLS.PredictionService)          private _prediction: IPredictionService;
     @inject(SYMBOLS.MarketStateService)         private _marketState: IMarketStateService;
     @inject(SYMBOLS.PositionModel)              private _model: IPositionModel;
+    @inject(SYMBOLS.PositionValidations)        private _validations: IPositionValidations;
     @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
 
 
@@ -35,20 +37,7 @@ export class PositionHealth implements IPositionHealth {
      * The weights used by each module in order to calculate the 
      * position's health points.
      */
-    private readonly weights: IPositionHealthWeights = {
-        trend_sum: 40,
-        trend_state: 10,
-        ta_30m: 3.5,
-        ta_1h: 4,
-        ta_2h: 4.5,
-        ta_4h: 4.5,
-        ta_1d: 4.5,
-        open_interest: 5,
-        open_interest_state: 8,
-        long_short_ratio: 5,
-        long_short_ratio_state: 8,
-        volume_direction: 3
-    }
+    public weights: IPositionHealthWeights;
 
 
     /**
@@ -139,6 +128,9 @@ export class PositionHealth implements IPositionHealth {
         this.msSub = this._marketState.active.subscribe((ms: IMarketState) => {
             this.ms = ms;
         });
+
+        // Initialize the health weights
+        await this.initializeWeights();
 
         // Initialize the stored health
         const health: IPositionHealthState|undefined = await this._model.getHealth();
@@ -748,6 +740,7 @@ export class PositionHealth implements IPositionHealth {
     /**
      * Calculates the technical analysis HP based on the current state.
      * @param side 
+     * @param taInterval 
      * @returns number
      */
     private evaluateTechnicalAnalysis(side: IBinancePositionSide, taInterval: ITAIntervalID): number {
@@ -1085,6 +1078,93 @@ export class PositionHealth implements IPositionHealth {
 
 
 
+    /***************************
+     * Position Health Weights *
+     ***************************/
+
+
+
+
+
+
+    /**
+     * Loads the weights from the database into the local property.
+     * In case the module has not been initialized, it stores and 
+     * activates the default weights.
+     */
+    private async initializeWeights(): Promise<void> {
+        this.weights = await this._model.getHealthWeights();
+        if (!this.weights) {
+            this.weights = this.buildDefaultWeights();
+            await this._model.createHealthWeights(this.weights);
+        }
+    }
+
+
+
+
+
+
+    /**
+     * Builds the default position health weights to be stored
+     * in case the module had not yet been initialized.
+     * @returns IPositionHealthWeights
+     */
+    private buildDefaultWeights(): IPositionHealthWeights {
+        return {
+            trend_sum: 40,
+            trend_state: 10,
+            ta_30m: 3.5,
+            ta_1h: 4,
+            ta_2h: 4.5,
+            ta_4h: 4.5,
+            ta_1d: 4.5,
+            open_interest: 5,
+            open_interest_state: 8,
+            long_short_ratio: 5,
+            long_short_ratio_state: 8,
+            volume_direction: 3
+        }
+    }
+
+
+
+
+
+
+    /**
+     * Updates the current weights on the database and the local
+     * property.
+     * @param newWeights 
+     * @returns Promise<void> 
+     */
+    public async updateWeights(newWeights: IPositionHealthWeights): Promise<void> {
+        // Validate the request
+        this._validations.canPositionHealthWeightsBeUpdated(newWeights);
+
+        // Update the weights in the db and the local property
+        await this._model.updateHealthWeights(newWeights);
+        this.weights = newWeights;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /********************************
      * Position Health Candlesticks *
@@ -1106,10 +1186,7 @@ export class PositionHealth implements IPositionHealth {
      */
     public async getPositionHealthCandlesticks(side: IBinancePositionSide): Promise<IPositionHealthCandlestickRecord[]> {
         // Make sure the provided side is valid
-        if (side != "LONG" && side != "SHORT") {
-            throw new Error(this._utils.buildApiError(`The position health candlesticks cannot be retrieved because 
-            the provided side is invalid. Received: ${side}`, 32002));
-        }
+        this._validations.validatePositionSide(side);
 
         // Retrieve the candlestick records from the db
         let candlesticks: IPositionHealthCandlestickRecord[] = await this._model.getPositionHealthCandlesticks(side);

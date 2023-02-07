@@ -9,6 +9,7 @@ import {
     IPositionTrade,
     IPositionHealthState,
     IPositionHealthCandlestickRecord,
+    IPositionHealthWeights,
 } from "./interfaces";
 
 
@@ -105,6 +106,9 @@ export class PositionModel implements IPositionModel {
 
 
 
+
+
+
     /*******************
      * Position Health *
      *******************/
@@ -160,6 +164,71 @@ export class PositionModel implements IPositionModel {
             values: [health]
         });
     }
+
+
+
+
+
+
+
+
+    /***************************
+     * Position Health Weights *
+     ***************************/
+
+
+
+
+    /**
+     * Retrieves current position health weights. If none has been set,
+     * it returns undefined
+     * @returns Promise<IPositionHealthWeights|undefined>
+     */
+    public async getHealthWeights(): Promise<IPositionHealthWeights|undefined> {
+        // Retrieve the user
+        const { rows } = await this._db.query({
+            text: `SELECT weights FROM  ${this._db.tn.position_health_weights} WHERE id = 1`,
+            values: []
+        });
+
+        // Return the result
+        return rows.length ? rows[0].weights: undefined;
+    }
+
+
+
+
+    /**
+     * Stores the health weights record.
+     * @param weights 
+     * @returns Promise<void>
+     */
+    public async createHealthWeights(weights: IPositionHealthWeights): Promise<void> {
+        await this._db.query({
+            text: `INSERT INTO ${this._db.tn.position_health_weights}(id, weights) VALUES(1, $1)`,
+            values: [weights]
+        });
+    }
+
+
+
+
+
+
+    /**
+     * Updates the current health weights.
+     * @param health 
+     * @returns Promise<void>
+     */
+     public async updateHealthWeights(weights: IPositionHealthWeights): Promise<void> {
+        await this._db.query({
+            text: `UPDATE ${this._db.tn.position_health_weights} SET weights=$1 WHERE id=1`,
+            values: [weights]
+        });
+    }
+
+
+
 
 
 
@@ -246,6 +315,13 @@ export class PositionModel implements IPositionModel {
             values: [ side, record.ot, record.d ]
         });
     }
+
+
+
+
+
+
+
 
 
 

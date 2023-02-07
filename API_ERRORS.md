@@ -601,7 +601,19 @@
 
 30023: `The max_hp_drawdown_in_loss must be a valid number ranging -99 - -30. Received: ${newStrategy.max_hp_drawdown_in_loss}`
 
-30024: ``
+30024: `The provided position health weights is not a valid object.`
+
+30025: `There is a property in the position health weights that has an invalid format or a value that exceeds the limits.`
+
+30026: `The sum of all the position health weight properties must result in 100. Received: ${sum}`
+
+30027: ``
+
+30028: ``
+
+30029: ``
+
+30030: ``
 
 
 
@@ -622,7 +634,7 @@
 
 32001: `The position health could not be calculated because the market state is not currently active.`
 
-32002: `The position health candlesticks cannot be retrieved because the provided side is invalid. Received: ${side}`
+32002: ``
 
 32003: ``
 

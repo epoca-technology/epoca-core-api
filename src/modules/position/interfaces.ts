@@ -40,9 +40,13 @@ export interface IPositionValidations {
         position: IActivePosition|undefined, 
         chunkSize: number
     ): void,
+    validatePositionSide(side: IBinancePositionSide): void,
 
     // Position Strategy
     canStrategyBeUpdated(currentStrategy: IPositionStrategy, newStrategy: IPositionStrategy): void,
+
+    // Position Health
+    canPositionHealthWeightsBeUpdated(weights: IPositionHealthWeights): void,
 
     // Position Trades
     canTradesBeListed(startAt: number, endAt: number): void
@@ -54,6 +58,7 @@ export interface IPositionValidations {
 // Health
 export interface IPositionHealth {
     // Properties
+    weights: IPositionHealthWeights,
     long: IPositionSideHealth|null,
     short: IPositionSideHealth|null,
 
@@ -68,6 +73,9 @@ export interface IPositionHealth {
         spotPrice: number,
         minGain: number
     ): Promise<void>,
+
+    // Health Weights Management
+    updateWeights(newWeights: IPositionHealthWeights): Promise<void>,
 
     // Health Candlesticks
     getPositionHealthCandlesticks(side: IBinancePositionSide): Promise<IPositionHealthCandlestickRecord[]>
@@ -88,6 +96,11 @@ export interface IPositionModel {
     getHealth(): Promise<IPositionHealthState|undefined>,
     createHealth(health: IPositionHealthState): Promise<void>,
     updateHealth(health: IPositionHealthState): Promise<void>,
+
+    // Position Health Weights
+    getHealthWeights(): Promise<IPositionHealthWeights|undefined>,
+    createHealthWeights(weights: IPositionHealthWeights): Promise<void>,
+    updateHealthWeights(weights: IPositionHealthWeights): Promise<void>,
 
     // Position Health Candlesticks
     getPositionHealthCandlesticks(side: IBinancePositionSide): Promise<IPositionHealthCandlestickRecord[]>,

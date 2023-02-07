@@ -294,6 +294,21 @@ export const TABLES: IRawTable[] = [
 
     
     /**
+     * Position Health Weights
+     * 
+     */
+    {
+        name: "position_health_weights",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id            SMALLINT NOT NULL PRIMARY KEY,
+                weights       JSONB NOT NULL
+            );`
+        }
+    },
+
+    
+    /**
      * Position Health Candlesticks
      * 
      */

@@ -127,6 +127,11 @@ PositionRoute.route("/close").post(mediumRiskLimit, async (req: express.Request,
 
 
 
+
+
+
+
+
 /********************************
  * Position Strategy Management *
  ********************************/
@@ -180,9 +185,85 @@ PositionRoute.route("/updateStrategy").post(ultraHighRiskLimit, async (req: expr
 
 
 
-/********************************
- * Position Health Candlesticks *
- ********************************/
+
+
+
+
+
+/********************
+ * Position Health *
+ *******************/
+
+
+
+
+
+/**
+ * Retrieves the position health candlesticks for a side.
+ * @requires id-token
+ * @requires api-secret
+ * @requires authority: 1
+ * @returns IAPIResponse<IPositionHealthWeights>
+*/
+PositionRoute.route("/getPositionHealthWeights").get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+
+        // Return the response
+        res.send(_utils.apiResponse(_positionHealth.weights));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("PositionRoute.getPositionHealthWeights", e, reqUid, ip, req.query);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+/**
+ * Updates the Position Health Weights.
+ * @requires id-token
+ * @requires api-secret
+ * @requires otp
+ * @requires authority: 4
+ * @param newWeights
+ * @returns IAPIResponse<void>
+*/
+PositionRoute.route("/updatePositionHealthWeights").post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["newWeights"], req.body, otp || "");
+
+        // Perform Action
+        await _positionHealth.updateWeights(req.body.newWeights);
+
+        // Return the response
+        res.send(_utils.apiResponse());
+    } catch (e) {
+		console.log(e);
+        _apiError.log("PositionRoute.updatePositionHealthWeights", e, reqUid, ip, req.body);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
 
 
 
@@ -221,6 +302,10 @@ PositionRoute.route("/getPositionHealthCandlesticks").get(mediumRiskLimit, async
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
+
+
 
 
 

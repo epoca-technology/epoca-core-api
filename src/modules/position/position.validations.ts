@@ -5,6 +5,7 @@ import { IEpochService } from "../epoch";
 import { IUtilitiesService, IValidationsService } from "../utilities";
 import { 
     IActivePosition,
+    IPositionHealthWeights,
     IPositionStrategy,
     IPositionValidations
 } from "./interfaces";
@@ -122,15 +123,35 @@ export class PositionValidations implements IPositionValidations {
      */
     private canInteractWithPositions(side: IBinancePositionSide): void {
         // Make sure the provided side is valid
-        if (side != "LONG" && side != "SHORT") {
-            throw new Error(this._utils.buildApiError(`The provided side (${side}) is invalid.`, 30000));
-        }
+        this.validatePositionSide(side);
 
         // Make sure there is an active epoch
         if (!this._epoch.active.value) {
             throw new Error(this._utils.buildApiError(`Positions cannot be interacted with as there isnt an active Epoch.`, 30001));
         }
     }
+
+
+
+
+
+
+
+    /**
+     * Validates a given side and throws an error if invalid.
+     * @param side 
+     */
+    public validatePositionSide(side: IBinancePositionSide): void {
+        if (side != "LONG" && side != "SHORT") {
+            throw new Error(this._utils.buildApiError(`The provided side (${side}) is invalid.`, 30000));
+        }
+    }
+
+
+
+
+
+
 
 
 
@@ -305,7 +326,77 @@ export class PositionValidations implements IPositionValidations {
 
 
 
+
+
+
+    /*******************
+     * Position Health *
+     *******************/
+
+
+
+
+
+
+
+    /**
+     * Ensures the position weights are valid and can be updated.
+     * @param weights 
+     */
+    public canPositionHealthWeightsBeUpdated(weights: IPositionHealthWeights): void {
+        // Ensure the provided weights are a valid object
+        if (!weights || typeof weights != "object") {
+            console.log(weights);
+            throw new Error(this._utils.buildApiError(`The provided position health weights is not a valid object.`, 30024));
+        }
+
+        // Ensure all the properties are valid
+        if (
+            !this._validations.numberValid(weights.trend_sum, 0.1, 100) ||
+            !this._validations.numberValid(weights.trend_state, 0.1, 100) ||
+            !this._validations.numberValid(weights.ta_30m, 0.1, 100) ||
+            !this._validations.numberValid(weights.ta_1h, 0.1, 100) ||
+            !this._validations.numberValid(weights.ta_2h, 0.1, 100) ||
+            !this._validations.numberValid(weights.ta_4h, 0.1, 100) ||
+            !this._validations.numberValid(weights.ta_1d, 0.1, 100) ||
+            !this._validations.numberValid(weights.open_interest, 0.1, 100) ||
+            !this._validations.numberValid(weights.open_interest_state, 0.1, 100) ||
+            !this._validations.numberValid(weights.long_short_ratio, 0.1, 100) ||
+            !this._validations.numberValid(weights.long_short_ratio_state, 0.1, 100) ||
+            !this._validations.numberValid(weights.volume_direction, 0.1, 100)
+        ) {
+            console.log(weights);
+            throw new Error(this._utils.buildApiError(`There is a property in the position health weights that has an invalid format 
+            or a value that exceeds the limits.`, 30025));
+        }
+
+        // Ensure the sum is valid
+        const sum: number = Object.values(weights).reduce((a, b) => a + b, 0);
+        if (sum != 100) {
+            throw new Error(this._utils.buildApiError(`The sum of all the position health weight properties must result in 100. Received: ${sum}`, 30026));
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
     
+
+
+
+
+
+
+
+
 
 
     /*******************
