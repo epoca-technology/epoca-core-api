@@ -3,7 +3,7 @@ import { BehaviorSubject, Subscription } from "rxjs";
 import { SYMBOLS } from "../../ioc";
 import { IBinancePositionSide } from "../binance";
 import { IPrediction, IPredictionResult } from "../epoch-builder";
-import { IMarketStateService, IStateType } from "../market-state";
+import { IMarketStateService } from "../market-state";
 import { IPredictionService } from "../prediction";
 import { IUtilitiesService } from "../utilities";
 import { 
@@ -16,7 +16,9 @@ import {
     IIssuancePolicy,
     ITechnicalsBasedIssuancePolicy,
     ITechnicalsBasedCancellationPolicy,
-    ITrendSumState
+    ITrendSumState,
+    IVolumeBasedIssuancePolicy,
+    IVolumeBasedCancellationPolicy
 } from "./interfaces";
 
 
@@ -89,7 +91,7 @@ export class SignalService implements ISignalService {
         
         // Subscribe to the prediction stream
         this.predictionSub = this._prediction.active.subscribe((p: IPrediction|undefined) => {
-            if (p) this.onNewPrediction(p);
+            try { if (p) this.onNewPrediction(p) } catch (e) { console.log(e)}
         });
     }
 
@@ -145,14 +147,26 @@ export class SignalService implements ISignalService {
          * generated based on a combination of indicators.
          */
         if (result == 0) {
+            // Evalute Volume Policies
+            result = this.evaluateVolumeIssuance(ds);
+
             // Evaluate Technicals Policies
-            result = this.evaluateTechnicalsIssuance(ds);
+            if (result == 0) result = this.evaluateTechnicalsIssuance(ds);
 
             // Evaluate Open Interest Policies
             if (result == 0) result = this.evaluateOpenInterestIssuance(ds);
 
             // Evaluate Long/Short Ratio Policies
             if (result == 0) result = this.evaluateLongShortRatioIssuance(ds);
+
+            // Evaluate Volume Technicals Policies
+            if (result == 0) result = this.evaluateVolumeTechnicalsIssuance(ds);
+
+            // Evaluate Volume Open Interest Policies
+            if (result == 0) result = this.evaluateVolumeOpenInterestIssuance(ds);
+
+            // Evaluate Volume Long/Short Ratio Policies
+            if (result == 0) result = this.evaluateVolumeLongShortRatioIssuance(ds);
 
             // Evaluate Technicals Open Interest Policies
             if (result == 0) result = this.evaluateTechnicalsOpenInterestIssuance(ds);
@@ -174,6 +188,9 @@ export class SignalService implements ISignalService {
             // Evaluate the Window Policies
             result = this.evaluateWindowCancellation(result, ds);
 
+            // Evaluate the Volume Policies
+            if (result != 0) result = this.evaluateVolumeCancellation(result, ds); 
+
             // Evaluate the Technicals Policies
             if (result != 0) result = this.evaluateTechnicalsCancellation(result, ds); 
 
@@ -182,6 +199,15 @@ export class SignalService implements ISignalService {
 
             // Evaluate Long/Short Ratio Policies
             if (result != 0) result = this.evaluateLongShortRatioCancellation(result, ds); 
+
+            // Evaluate the Volume Technicals Policies
+            if (result != 0) result = this.evaluateVolumeTechnicalsCancellation(result, ds); 
+
+            // Evaluate the Volume Open Interest Policies
+            if (result != 0) result = this.evaluateVolumeOpenInterestCancellation(result, ds); 
+
+            // Evaluate the Volume Long Short Ratio Policies
+            if (result != 0) result = this.evaluateVolumeLongShortRatioCancellation(result, ds); 
 
             // Evaluate Technicals Open Interest Policies
             if (result != 0) result = this.evaluateTechnicalsOpenInterestCancellation(result, ds); 
@@ -211,6 +237,40 @@ export class SignalService implements ISignalService {
     /****************************
      * Signal Issuance Policies *
      ****************************/
+
+
+
+
+    /**
+     * Evaluates the trend state & intensity as well as the volume state & direction.
+     * @param ds 
+     * @returns IPredictionResult
+     */
+    private evaluateVolumeIssuance(ds: ISignalDataset): IPredictionResult {
+        // Evaluate if a long signal should be issued
+        if (
+            this.long.issuance.volume.enabled &&
+            this.isTrendSumCompliying("LONG", this.long.issuance.volume.trend_sum, ds.trendSum) &&
+            this.isTrendStateCompliying("LONG", this.long.issuance.volume, ds) &&
+            this.isVolumeCompliying("LONG", this.long.issuance.volume, ds)
+        ) {
+            return 1;
+        }
+
+        // Evaluate if a short signal should be issued
+        else if (
+            this.short.issuance.volume.enabled &&
+            this.isTrendSumCompliying("SHORT", this.short.issuance.volume.trend_sum, ds.trendSum) &&
+            this.isTrendStateCompliying("SHORT", this.short.issuance.volume, ds) &&
+            this.isVolumeCompliying("SHORT", this.short.issuance.volume, ds)
+        ) {
+            return -1;
+        }
+
+        // Otherwise, stand neutral
+        else { return 0 }
+    }
+
 
 
 
@@ -315,6 +375,123 @@ export class SignalService implements ISignalService {
         // Otherwise, stand neutral
         else { return 0 }
     }
+
+
+
+
+
+
+    /**
+     * Evaluates the trend state & intensity as well as the current
+     * volume and technical analysis.
+     * @param ds 
+     * @returns IPredictionResult
+     */
+    private evaluateVolumeTechnicalsIssuance(ds: ISignalDataset): IPredictionResult {
+        // Evaluate if a long signal should be issued
+        if (
+            this.long.issuance.volume_technicals.enabled &&
+            this.isTrendSumCompliying("LONG", this.long.issuance.volume_technicals.trend_sum, ds.trendSum) &&
+            this.isTrendStateCompliying("LONG", this.long.issuance.volume_technicals, ds) &&
+            this.isVolumeCompliying("LONG", this.long.issuance.volume_technicals, ds) &&
+            this.isTACompliying("LONG", this.long.issuance.volume_technicals, ds)
+        ) {
+            return 1;
+        }
+
+        // Evaluate if a short signal should be issued
+        else if (
+            this.short.issuance.volume_technicals.enabled &&
+            this.isTrendSumCompliying("SHORT", this.short.issuance.volume_technicals.trend_sum, ds.trendSum) &&
+            this.isTrendStateCompliying("SHORT", this.short.issuance.volume_technicals, ds) &&
+            this.isVolumeCompliying("SHORT", this.short.issuance.volume_technicals, ds) &&
+            this.isTACompliying("SHORT", this.short.issuance.volume_technicals, ds)
+        ) {
+            return -1;
+        }
+
+        // Otherwise, stand neutral
+        else { return 0 }
+    }
+
+
+
+
+
+
+    /**
+     * Evaluates the trend state & intensity as well as the current
+     * volume and open interest states.
+     * @param ds 
+     * @returns IPredictionResult
+     */
+    private evaluateVolumeOpenInterestIssuance(ds: ISignalDataset): IPredictionResult {
+        // Evaluate if a long signal should be issued
+        if (
+            this.long.issuance.volume_open_interest.enabled &&
+            this.isTrendSumCompliying("LONG", this.long.issuance.volume_open_interest.trend_sum, ds.trendSum) &&
+            this.isTrendStateCompliying("LONG", this.long.issuance.volume_open_interest, ds) &&
+            this.isVolumeCompliying("LONG", this.long.issuance.volume_open_interest, ds) &&
+            ds.marketState.open_interest.state >= this.long.issuance.volume_open_interest.open_interest
+        ) {
+            return 1;
+        }
+
+        // Evaluate if a short signal should be issued
+        else if (
+            this.short.issuance.volume_open_interest.enabled &&
+            this.isTrendSumCompliying("SHORT", this.short.issuance.volume_open_interest.trend_sum, ds.trendSum) &&
+            this.isTrendStateCompliying("SHORT", this.short.issuance.volume_open_interest, ds) &&
+            this.isVolumeCompliying("SHORT", this.short.issuance.volume_open_interest, ds) &&
+            ds.marketState.open_interest.state <= this.short.issuance.volume_open_interest.open_interest
+        ) {
+            return -1;
+        }
+
+        // Otherwise, stand neutral
+        else { return 0 }
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Evaluates the trend state & intensity as well as the current
+     * volume and long/short ratio  states.
+     * @param ds 
+     * @returns IPredictionResult
+     */
+    private evaluateVolumeLongShortRatioIssuance(ds: ISignalDataset): IPredictionResult {
+        // Evaluate if a long signal should be issued
+        if (
+            this.long.issuance.volume_long_short_ratio.enabled &&
+            this.isTrendSumCompliying("LONG", this.long.issuance.volume_long_short_ratio.trend_sum, ds.trendSum) &&
+            this.isTrendStateCompliying("LONG", this.long.issuance.volume_long_short_ratio, ds) &&
+            this.isVolumeCompliying("LONG", this.long.issuance.volume_long_short_ratio, ds) &&
+            ds.marketState.long_short_ratio.state >= this.long.issuance.volume_long_short_ratio.long_short_ratio
+        ) {
+            return 1;
+        }
+
+        // Evaluate if a short signal should be issued
+        else if (
+            this.short.issuance.volume_long_short_ratio.enabled &&
+            this.isTrendSumCompliying("SHORT", this.short.issuance.volume_long_short_ratio.trend_sum, ds.trendSum) &&
+            this.isTrendStateCompliying("SHORT", this.short.issuance.volume_long_short_ratio, ds) &&
+            this.isVolumeCompliying("SHORT", this.short.issuance.volume_long_short_ratio, ds) &&
+            ds.marketState.long_short_ratio.state <= this.short.issuance.volume_long_short_ratio.long_short_ratio
+        ) {
+            return -1;
+        }
+
+        // Otherwise, stand neutral
+        else { return 0 }
+    }
+
 
 
 
@@ -491,6 +668,29 @@ export class SignalService implements ISignalService {
 
 
 
+    /**
+     * Verifies if the current volume state and direction are complying with the policy.
+     * @param side 
+     * @param policy
+     * @param ds 
+     * @returns boolean
+     */
+    private isVolumeCompliying(side: IBinancePositionSide, policy: IVolumeBasedIssuancePolicy, ds: ISignalDataset): boolean {
+        // Evaluate a long policy
+        if (side == "LONG") { 
+            return  policy.volume == 0 || policy.volume_direction == 0 || 
+                    (ds.marketState.volume.state >= policy.volume && ds.marketState.volume.direction >= policy.volume_direction);
+        }
+
+        // Evaluate a short policy
+        else { 
+            return  policy.volume == 0 || policy.volume_direction == 0 ||
+                    (ds.marketState.volume.state >= policy.volume && ds.marketState.volume.direction <= policy.volume_direction);
+        }
+    }
+
+
+
 
     /**
      * Verifies if the current TA state is compliying with the policy.
@@ -569,6 +769,44 @@ export class SignalService implements ISignalService {
         // Otherwise, maintain the signal active
         else { return current }
     }
+
+
+
+
+
+
+
+    /**
+     * Evaluates if a non-neutral signal should be cancelled based
+     * on the volume state & direction.
+     * @param current 
+     * @param ds 
+     * @returns IPredictionResult
+     */
+    private evaluateVolumeCancellation(current: IPredictionResult, ds: ISignalDataset): IPredictionResult {
+        // Evaluate a long signal
+        if (
+            current == 1 && 
+            this.long.cancellation.volume.enabled &&
+            this.isVolumeCancelling("LONG", this.long.cancellation.volume, ds)
+        ) {
+            return 0;
+        }
+
+        // Evaluate a short signal
+        else if (
+            current == -1 && 
+            this.short.cancellation.volume.enabled &&
+            this.isVolumeCancelling("SHORT", this.short.cancellation.volume, ds)
+        ){
+            return 0;
+        }
+
+        // Otherwise, maintain the signal active
+        else { return current }
+    }
+
+
 
 
 
@@ -667,6 +905,120 @@ export class SignalService implements ISignalService {
             current == -1 && 
             this.short.cancellation.long_short_ratio.enabled &&
             ds.marketState.long_short_ratio.state >= this.short.cancellation.long_short_ratio.long_short_ratio
+        ){
+            return 0;
+        }
+
+        // Otherwise, maintain the signal active
+        else { return current }
+    }
+
+
+
+
+
+
+
+    /**
+     * Evaluates if a non-neutral signal should be cancelled based
+     * on the volume state & direction and technical analysis state.
+     * @param current 
+     * @param ds 
+     * @returns IPredictionResult
+     */
+    private evaluateVolumeTechnicalsCancellation(current: IPredictionResult, ds: ISignalDataset): IPredictionResult {
+        // Evaluate a long signal
+        if (
+            current == 1 && 
+            this.long.cancellation.volume_technicals.enabled &&
+            this.isVolumeCancelling("LONG", this.long.cancellation.volume_technicals, ds) &&
+            this.isTACancelling("LONG", this.long.cancellation.volume_technicals, ds)
+        ) {
+            return 0;
+        }
+
+        // Evaluate a short signal
+        else if (
+            current == -1 && 
+            this.short.cancellation.volume_technicals.enabled &&
+            this.isVolumeCancelling("SHORT", this.short.cancellation.volume_technicals, ds) &&
+            this.isTACancelling("SHORT", this.short.cancellation.volume_technicals, ds)
+        ){
+            return 0;
+        }
+
+        // Otherwise, maintain the signal active
+        else { return current }
+    }
+
+
+
+
+
+
+
+    /**
+     * Evaluates if a non-neutral signal should be cancelled based
+     * on the volume and open interest states.
+     * @param current 
+     * @param ds 
+     * @returns IPredictionResult
+     */
+    private evaluateVolumeOpenInterestCancellation(current: IPredictionResult, ds: ISignalDataset): IPredictionResult {
+        // Evaluate a long signal
+        if (
+            current == 1 && 
+            this.long.cancellation.volume_open_interest.enabled &&
+            this.isVolumeCancelling("LONG", this.long.cancellation.volume_open_interest, ds) &&
+            ds.marketState.open_interest.state <= this.long.cancellation.volume_open_interest.open_interest
+        ) {
+            return 0;
+        }
+
+        // Evaluate a short signal
+        else if (
+            current == -1 && 
+            this.short.cancellation.volume_open_interest.enabled &&
+            this.isVolumeCancelling("SHORT", this.short.cancellation.volume_open_interest, ds) &&
+            ds.marketState.open_interest.state >= this.short.cancellation.volume_open_interest.open_interest
+        ){
+            return 0;
+        }
+
+        // Otherwise, maintain the signal active
+        else { return current }
+    }
+
+
+
+
+
+
+
+    /**
+     * Evaluates if a non-neutral signal should be cancelled based
+     * on the volume and long short ratio states.
+     * @param current 
+     * @param ds 
+     * @returns IPredictionResult
+     */
+    private evaluateVolumeLongShortRatioCancellation(current: IPredictionResult, ds: ISignalDataset): IPredictionResult {
+        // Evaluate a long signal
+        if (
+            current == 1 && 
+            this.long.cancellation.volume_long_short_ratio.enabled &&
+            this.isVolumeCancelling("LONG", this.long.cancellation.volume_long_short_ratio, ds) &&
+            ds.marketState.long_short_ratio.state <= this.long.cancellation.volume_long_short_ratio.long_short_ratio
+        ) {
+            return 0;
+        }
+
+        // Evaluate a short signal
+        else if (
+            current == -1 && 
+            this.short.cancellation.volume_long_short_ratio.enabled &&
+            this.isVolumeCancelling("SHORT", this.short.cancellation.volume_long_short_ratio, ds) &&
+            ds.marketState.long_short_ratio.state >= this.short.cancellation.volume_long_short_ratio.long_short_ratio
         ){
             return 0;
         }
@@ -797,6 +1149,30 @@ export class SignalService implements ISignalService {
 
     /* Cancellation Policy Helpers */
 
+
+
+
+
+   /**
+     * Verifies if the current volume state and direction are cancelling a signal based on the policy.
+     * @param side 
+     * @param policy 
+     * @param ds 
+     * @returns boolean
+     */
+   private isVolumeCancelling(side: IBinancePositionSide, policy: IVolumeBasedCancellationPolicy, ds: ISignalDataset): boolean {
+    // Evaluate a long policy
+    if (side == "LONG") { 
+        return policy.volume == 0 || policy.volume_direction == 0 ||
+            (ds.marketState.volume.state >= policy.volume && ds.marketState.volume.direction <= policy.volume_direction);
+    }
+
+    // Evaluate a short policy
+    else { 
+        return policy.volume == 0 || policy.volume_direction == 0 ||
+            (ds.marketState.volume.state >= policy.volume && ds.marketState.volume.direction >= policy.volume_direction);
+    }
+}
 
 
 
@@ -977,6 +1353,14 @@ export class SignalService implements ISignalService {
         return {
             // Issuance
             issuance: {
+                volume: {
+                    enabled: true,
+                    trend_sum: 0,
+                    trend_state: 5,
+                    trend_intensity: 2,
+                    volume: 2,
+                    volume_direction: 2
+                },
                 technicals: {
                     enabled: true,
                     trend_sum: 0,
@@ -1001,6 +1385,37 @@ export class SignalService implements ISignalService {
                     trend_state: 5,
                     trend_intensity: 2,
                     long_short_ratio: 2
+                },
+                volume_technicals: {
+                    enabled: true,
+                    trend_sum: 0,
+                    trend_state: 3,
+                    trend_intensity: 1,
+                    volume: 1,
+                    volume_direction: 2,
+                    ta_30m: 0,
+                    ta_1h: 0,
+                    ta_2h: 1,
+                    ta_4h: 1,
+                    ta_1d: 1,
+                },
+                volume_open_interest: {
+                    enabled: true,
+                    trend_sum: 0,
+                    trend_state: 3,
+                    trend_intensity: 1,
+                    volume: 1,
+                    volume_direction: 2,
+                    open_interest: 1,
+                },
+                volume_long_short_ratio: {
+                    enabled: true,
+                    trend_sum: 0,
+                    trend_state: 3,
+                    trend_intensity: 1,
+                    volume: 1,
+                    volume_direction: 2,
+                    long_short_ratio: 1,
                 },
                 technicals_open_interest: {
                     enabled: true,
@@ -1042,6 +1457,11 @@ export class SignalService implements ISignalService {
                     enabled: true,
                     window: 2
                 },
+                volume: {
+                    enabled: true,
+                    volume: 2,
+                    volume_direction: -2,
+                },
                 technicals: {
                     enabled: true,
                     ta_30m: 0,
@@ -1057,6 +1477,28 @@ export class SignalService implements ISignalService {
                 long_short_ratio: {
                     enabled: true,
                     long_short_ratio: -2
+                },
+                volume_technicals: {
+                    enabled: true,
+                    volume: 1,
+                    volume_direction: -2,
+                    ta_30m: 0,
+                    ta_1h: 0,
+                    ta_2h: -1,
+                    ta_4h: -1,
+                    ta_1d: -1,
+                },
+                volume_open_interest: {
+                    enabled: true,
+                    volume: 1,
+                    volume_direction: -2,
+                    open_interest: -1,
+                },
+                volume_long_short_ratio: {
+                    enabled: true,
+                    volume: 1,
+                    volume_direction: -2,
+                    long_short_ratio: -1,
                 },
                 technicals_open_interest: {
                     enabled: true,
@@ -1098,6 +1540,14 @@ export class SignalService implements ISignalService {
         return {
             // Issuance
             issuance: {
+                volume: {
+                    enabled: true,
+                    trend_sum: 0,
+                    trend_state: -5,
+                    trend_intensity: -2,
+                    volume: 2,
+                    volume_direction: -2
+                },
                 technicals: {
                     enabled: true,
                     trend_sum: 0,
@@ -1122,6 +1572,37 @@ export class SignalService implements ISignalService {
                     trend_state: -5,
                     trend_intensity: -2,
                     long_short_ratio: -2
+                },
+                volume_technicals: {
+                    enabled: true,
+                    trend_sum: 0,
+                    trend_state: -3,
+                    trend_intensity: -1,
+                    volume: 1,
+                    volume_direction: -2,
+                    ta_30m: 0,
+                    ta_1h: 0,
+                    ta_2h: -1,
+                    ta_4h: -1,
+                    ta_1d: -1,
+                },
+                volume_open_interest: {
+                    enabled: true,
+                    trend_sum: 0,
+                    trend_state: -3,
+                    trend_intensity: -1,
+                    volume: 1,
+                    volume_direction: -2,
+                    open_interest: -1,
+                },
+                volume_long_short_ratio: {
+                    enabled: true,
+                    trend_sum: 0,
+                    trend_state: -3,
+                    trend_intensity: -1,
+                    volume: 1,
+                    volume_direction: -2,
+                    long_short_ratio: -1,
                 },
                 technicals_open_interest: {
                     enabled: true,
@@ -1163,6 +1644,11 @@ export class SignalService implements ISignalService {
                     enabled: true,
                     window: -2
                 },
+                volume: {
+                    enabled: true,
+                    volume: 2,
+                    volume_direction: 2
+                },
                 technicals: {
                     enabled: true,
                     ta_30m: 0,
@@ -1178,6 +1664,28 @@ export class SignalService implements ISignalService {
                 long_short_ratio: {
                     enabled: true,
                     long_short_ratio: 2
+                },
+                volume_technicals: {
+                    enabled: true,
+                    volume: 1,
+                    volume_direction: 2,
+                    ta_30m: 0,
+                    ta_1h: 0,
+                    ta_2h: 1,
+                    ta_4h: 1,
+                    ta_1d: 1,
+                },
+                volume_open_interest: {
+                    enabled: true,
+                    volume: 1,
+                    volume_direction: 2,
+                    open_interest: 1,
+                },
+                volume_long_short_ratio: {
+                    enabled: true,
+                    volume: 1,
+                    volume_direction: 2,
+                    long_short_ratio: 1,
                 },
                 technicals_open_interest: {
                     enabled: true,

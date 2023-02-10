@@ -24,7 +24,7 @@ export class WindowStateService implements IWindowStateService {
      * it to have a state.
      */
     private readonly minChange: number = 1.5;
-    private readonly strongChange: number = 7.5;
+    private readonly strongChange: number = 5;
 
 
 

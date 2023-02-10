@@ -17,6 +17,14 @@ import {
     ITechnicalsLongShortRatioIssuance,
     ITechnicalsOpenInterestCancellation,
     ITechnicalsOpenInterestIssuance,
+    IVolumeCancellation,
+    IVolumeIssuance,
+    IVolumeLongShortRatioCancellation,
+    IVolumeLongShortRatioIssuance,
+    IVolumeOpenInterestCancellation,
+    IVolumeOpenInterestIssuance,
+    IVolumeTechnicalsCancellation,
+    IVolumeTechnicalsIssuance,
     IWindowCancellation,
 } from "./interfaces";
 
@@ -60,17 +68,25 @@ export class SignalValidations implements ISignalValidations {
         if (
             !newPolicies || typeof newPolicies != "object" ||
             !newPolicies.issuance || typeof newPolicies.issuance != "object" ||
+            !newPolicies.issuance.volume || typeof newPolicies.issuance.volume != "object" ||
             !newPolicies.issuance.technicals || typeof newPolicies.issuance.technicals != "object" ||
             !newPolicies.issuance.open_interest || typeof newPolicies.issuance.open_interest != "object" ||
             !newPolicies.issuance.long_short_ratio || typeof newPolicies.issuance.long_short_ratio != "object" ||
+            !newPolicies.issuance.volume_technicals || typeof newPolicies.issuance.volume_technicals != "object" ||
+            !newPolicies.issuance.volume_open_interest || typeof newPolicies.issuance.volume_open_interest != "object" ||
+            !newPolicies.issuance.volume_long_short_ratio || typeof newPolicies.issuance.volume_long_short_ratio != "object" ||
             !newPolicies.issuance.technicals_open_interest || typeof newPolicies.issuance.technicals_open_interest != "object" ||
             !newPolicies.issuance.technicals_long_short_ratio || typeof newPolicies.issuance.technicals_long_short_ratio != "object" ||
             !newPolicies.issuance.open_interest_long_short_ratio || typeof newPolicies.issuance.open_interest_long_short_ratio != "object" ||
             !newPolicies.cancellation || typeof newPolicies.cancellation != "object" ||
             !newPolicies.cancellation.window || typeof newPolicies.cancellation.window != "object" ||
+            !newPolicies.cancellation.volume || typeof newPolicies.cancellation.volume != "object" ||
             !newPolicies.cancellation.technicals || typeof newPolicies.cancellation.technicals != "object" ||
             !newPolicies.cancellation.open_interest || typeof newPolicies.cancellation.open_interest != "object" ||
             !newPolicies.cancellation.long_short_ratio || typeof newPolicies.cancellation.long_short_ratio != "object" ||
+            !newPolicies.cancellation.volume_technicals || typeof newPolicies.cancellation.volume_technicals != "object" ||
+            !newPolicies.cancellation.volume_open_interest || typeof newPolicies.cancellation.volume_open_interest != "object" ||
+            !newPolicies.cancellation.volume_long_short_ratio || typeof newPolicies.cancellation.volume_long_short_ratio != "object" ||
             !newPolicies.cancellation.technicals_open_interest || typeof newPolicies.cancellation.technicals_open_interest != "object" ||
             !newPolicies.cancellation.technicals_long_short_ratio || typeof newPolicies.cancellation.technicals_long_short_ratio != "object" ||
             !newPolicies.cancellation.open_interest_long_short_ratio || typeof newPolicies.cancellation.open_interest_long_short_ratio != "object"
@@ -80,18 +96,26 @@ export class SignalValidations implements ISignalValidations {
         }
 
         // Validate the issuance policies
+        this.validateVolumeIssuance(side, newPolicies.issuance.volume);
         this.validateTechnicalsIssuance(side, newPolicies.issuance.technicals);
         this.validateOpenInterestIssuance(side, newPolicies.issuance.open_interest);
         this.validateLongShortRatioIssuance(side, newPolicies.issuance.long_short_ratio);
+        this.validateVolumeTechnicalsIssuance(side, newPolicies.issuance.volume_technicals);
+        this.validateVolumeOpenInterestIssuance(side, newPolicies.issuance.volume_open_interest);
+        this.validateVolumeLongShortRatioIssuance(side, newPolicies.issuance.volume_long_short_ratio);
         this.validateTechnicalsOpenInterestIssuance(side, newPolicies.issuance.technicals_open_interest);
         this.validateTechnicalsLongShortRatioIssuance(side, newPolicies.issuance.technicals_long_short_ratio);
         this.validateOpenInterestLongShortRatioIssuance(side, newPolicies.issuance.open_interest_long_short_ratio);
 
         // Validate the cancellation policies
         this.validateWindowCancellation(side, newPolicies.cancellation.window);
+        this.validateVolumeCancellation(side, newPolicies.cancellation.volume);
         this.validateTechnicalsCancellation(side, newPolicies.cancellation.technicals);
         this.validateOpenInterestCancellation(side, newPolicies.cancellation.open_interest);
         this.validateLongShortRatioCancellation(side, newPolicies.cancellation.long_short_ratio);
+        this.validateVolumeTechnicalsCancellation(side, newPolicies.cancellation.volume_technicals);
+        this.validateVolumeOpenInterestCancellation(side, newPolicies.cancellation.volume_open_interest);
+        this.validateVolumeLongShortRatioCancellation(side, newPolicies.cancellation.volume_long_short_ratio);
         this.validateTechnicalsOpenInterestCancellation(side, newPolicies.cancellation.technicals_open_interest);
         this.validateTechnicalsLongShortRatioCancellation(side, newPolicies.cancellation.technicals_long_short_ratio);
         this.validateOpenInterestLongShortRatioCancellation(side, newPolicies.cancellation.open_interest_long_short_ratio);
@@ -109,6 +133,37 @@ export class SignalValidations implements ISignalValidations {
     /*******************************
      * Issuance Policy Validations *
      *******************************/
+
+
+
+
+    /**
+     * Validates the volume issuance policies for a side.
+     * @param side 
+     * @param policy 
+     */
+    private validateVolumeIssuance(side: IBinancePositionSide, policy: IVolumeIssuance): void {
+        // Init the origin
+        const origin: string = "VolumeIssuance";
+
+        // Validate the status
+        if (typeof policy.enabled != "boolean") { this.error("enabled", policy.enabled, origin, 36002) }
+
+        // Validate the rest according to the side
+        if (side == "LONG") {
+            if (!this._v.numberValid(policy.trend_sum, 0, 1)) this.error("trend_sum", policy.trend_sum, origin, 36003);
+            if (!this._v.numberValid(policy.trend_state, 0, 9)) this.error("trend_state", policy.trend_state, origin, 36004);
+            if (!this._v.numberValid(policy.trend_intensity, 0, 2)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
+            if (policy.volume != 2) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != 2) this.error("volume_direction", policy.volume_direction, origin, 36016);
+        } else {
+            if (!this._v.numberValid(policy.trend_sum, -1, 0)) this.error("trend_sum", policy.trend_sum, origin, 36003);
+            if (!this._v.numberValid(policy.trend_state, -9, 0)) this.error("trend_state", policy.trend_state, origin, 36004);
+            if (!this._v.numberValid(policy.trend_intensity, -2, 0)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
+            if (policy.volume != 2) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != -2) this.error("volume_direction", policy.volume_direction, origin, 36016);
+        }
+    }
 
 
 
@@ -207,6 +262,120 @@ export class SignalValidations implements ISignalValidations {
             if (!this._v.numberValid(policy.trend_state, -9, 0)) this.error("trend_state", policy.trend_state, origin, 36004);
             if (!this._v.numberValid(policy.trend_intensity, -2, 0)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
             if (policy.long_short_ratio != -2) this.error("long_short_ratio", policy.long_short_ratio, origin, 36013);
+        }
+    }
+
+
+
+
+    /**
+     * Validates the volume technicals issuance policies for a side.
+     * @param side 
+     * @param policy 
+     */
+    private validateVolumeTechnicalsIssuance(side: IBinancePositionSide, policy: IVolumeTechnicalsIssuance): void {
+        // Init the origin
+        const origin: string = "VolumeTechnicalsIssuance";
+
+        // Validate the status
+        if (typeof policy.enabled != "boolean") { this.error("enabled", policy.enabled, origin, 36002) }
+
+        // Validate the rest according to the side
+        if (side == "LONG") {
+            if (!this._v.numberValid(policy.trend_sum, 0, 1)) this.error("trend_sum", policy.trend_sum, origin, 36003);
+            if (!this._v.numberValid(policy.trend_state, 0, 9)) this.error("trend_state", policy.trend_state, origin, 36004);
+            if (!this._v.numberValid(policy.trend_intensity, 0, 2)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
+            if (!this._v.numberValid(policy.ta_30m, 0, 2)) this.error("ta_30m", policy.ta_30m, origin, 36006);
+            if (!this._v.numberValid(policy.ta_1h, 0, 2)) this.error("ta_1h", policy.ta_1h, origin, 36007);
+            if (!this._v.numberValid(policy.ta_2h, 0, 2)) this.error("ta_2h", policy.ta_2h, origin, 36008);
+            if (!this._v.numberValid(policy.ta_4h, 0, 2)) this.error("ta_4h", policy.ta_4h, origin, 36009);
+            if (!this._v.numberValid(policy.ta_1d, 0, 2)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != 2) this.error("volume_direction", policy.volume_direction, origin, 36016);
+        } else {
+            if (!this._v.numberValid(policy.trend_sum, -1, 0)) this.error("trend_sum", policy.trend_sum, origin, 36003);
+            if (!this._v.numberValid(policy.trend_state, -9, 0)) this.error("trend_state", policy.trend_state, origin, 36004);
+            if (!this._v.numberValid(policy.trend_intensity, -2, 0)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
+            if (!this._v.numberValid(policy.ta_30m, -2, 0)) this.error("ta_30m", policy.ta_30m, origin, 36006);
+            if (!this._v.numberValid(policy.ta_1h, -2, 0)) this.error("ta_1h", policy.ta_1h, origin, 36007);
+            if (!this._v.numberValid(policy.ta_2h, -2, 0)) this.error("ta_2h", policy.ta_2h, origin, 36008);
+            if (!this._v.numberValid(policy.ta_4h, -2, 0)) this.error("ta_4h", policy.ta_4h, origin, 36009);
+            if (!this._v.numberValid(policy.ta_1d, -2, 0)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != -2) this.error("volume_direction", policy.volume_direction, origin, 36016);
+        }
+
+        // Validate the technicals
+        this.technicalsValid(policy, origin);
+    }
+
+
+
+
+
+    /**
+     * Validates the volume open interest issuance policies for a side.
+     * @param side 
+     * @param policy 
+     */
+    private validateVolumeOpenInterestIssuance(side: IBinancePositionSide, policy: IVolumeOpenInterestIssuance): void {
+        // Init the origin
+        const origin: string = "VolumeOpenInterestIssuance";
+
+        // Validate the status
+        if (typeof policy.enabled != "boolean") { this.error("enabled", policy.enabled, origin, 36002) }
+
+        // Validate the rest according to the side
+        if (side == "LONG") {
+            if (!this._v.numberValid(policy.trend_sum, 0, 1)) this.error("trend_sum", policy.trend_sum, origin, 36003);
+            if (!this._v.numberValid(policy.trend_state, 0, 9)) this.error("trend_state", policy.trend_state, origin, 36004);
+            if (!this._v.numberValid(policy.trend_intensity, 0, 2)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != 2) this.error("volume_direction", policy.volume_direction, origin, 36016);
+            if (!this._v.numberValid(policy.open_interest, 1, 2)) this.error("open_interest", policy.open_interest, origin, 36012);
+        } else {
+            if (!this._v.numberValid(policy.trend_sum, -1, 0)) this.error("trend_sum", policy.trend_sum, origin, 36003);
+            if (!this._v.numberValid(policy.trend_state, -9, 0)) this.error("trend_state", policy.trend_state, origin, 36004);
+            if (!this._v.numberValid(policy.trend_intensity, -2, 0)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != -2) this.error("volume_direction", policy.volume_direction, origin, 36016);
+            if (!this._v.numberValid(policy.open_interest, -2, -1)) this.error("open_interest", policy.open_interest, origin, 36012);
+        }
+    }
+
+
+
+
+
+
+
+    /**
+     * Validates the volume long/short ratio issuance policies for a side.
+     * @param side 
+     * @param policy 
+     */
+    private validateVolumeLongShortRatioIssuance(side: IBinancePositionSide, policy: IVolumeLongShortRatioIssuance): void {
+        // Init the origin
+        const origin: string = "VolumeLongShortRatioIssuance";
+
+        // Validate the status
+        if (typeof policy.enabled != "boolean") { this.error("enabled", policy.enabled, origin, 36002) }
+
+        // Validate the rest according to the side
+        if (side == "LONG") {
+            if (!this._v.numberValid(policy.trend_sum, 0, 1)) this.error("trend_sum", policy.trend_sum, origin, 36003);
+            if (!this._v.numberValid(policy.trend_state, 0, 9)) this.error("trend_state", policy.trend_state, origin, 36004);
+            if (!this._v.numberValid(policy.trend_intensity, 0, 2)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != 2) this.error("volume_direction", policy.volume_direction, origin, 36016);
+            if (!this._v.numberValid(policy.long_short_ratio, 1, 2)) this.error("long_short_ratio", policy.long_short_ratio, origin, 36013);
+        } else {
+            if (!this._v.numberValid(policy.trend_sum, -1, 0)) this.error("trend_sum", policy.trend_sum, origin, 36003);
+            if (!this._v.numberValid(policy.trend_state, -9, 0)) this.error("trend_state", policy.trend_state, origin, 36004);
+            if (!this._v.numberValid(policy.trend_intensity, -2, 0)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != -2) this.error("volume_direction", policy.volume_direction, origin, 36016);
+            if (!this._v.numberValid(policy.long_short_ratio, -2, -1)) this.error("long_short_ratio", policy.long_short_ratio, origin, 36013);
         }
     }
 
@@ -365,6 +534,30 @@ export class SignalValidations implements ISignalValidations {
 
 
 
+
+
+    /**
+     * Validates the volume cancellation policy for a side.
+     * @param side 
+     * @param policy 
+     */
+    private validateVolumeCancellation(side: IBinancePositionSide, policy: IVolumeCancellation): void {
+        // Validate the status
+        if (typeof policy.enabled != "boolean") { this.error("enabled", policy.enabled, "VolumeCancellation", 36002) }
+
+        // Validate the rest according to the side
+        if (side == "LONG") {
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, "VolumeCancellation", 36015);
+            if (policy.volume_direction != -2) this.error("volume_direction", policy.volume, "VolumeCancellation", 36016);
+        } else {
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, "VolumeCancellation", 36015);
+            if (policy.volume_direction != 2) this.error("volume_direction", policy.volume, "VolumeCancellation", 36016);
+        }
+    }
+
+
+
+
     /**
      * Validates the technical analysis cancellation policies for a side.
      * @param side 
@@ -436,6 +629,102 @@ export class SignalValidations implements ISignalValidations {
             if (policy.long_short_ratio != 2) this.error("long_short_ratio", policy.long_short_ratio, "LongShortRatioCancellation", 36013);
         }
     }
+
+
+
+
+
+    /**
+     * Validates the volume technicals cancellation policies for a side.
+     * @param side 
+     * @param policy 
+     */
+    private validateVolumeTechnicalsCancellation(side: IBinancePositionSide, policy: IVolumeTechnicalsCancellation): void {
+        // Init the origin
+        const origin: string = "VolumeTechnicalsCancellation";
+
+        // Validate the status
+        if (typeof policy.enabled != "boolean") { this.error("enabled", policy.enabled, origin, 36002) }
+
+        // Validate the rest according to the side
+        if (side == "LONG") {
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != -2) this.error("volume_direction", policy.volume, origin, 36016);
+            if (!this._v.numberValid(policy.ta_30m, -2, 0)) this.error("ta_30m", policy.ta_30m, origin, 36006);
+            if (!this._v.numberValid(policy.ta_1h, -2, 0)) this.error("ta_1h", policy.ta_1h, origin, 36007);
+            if (!this._v.numberValid(policy.ta_2h, -2, 0)) this.error("ta_2h", policy.ta_2h, origin, 36008);
+            if (!this._v.numberValid(policy.ta_4h, -2, 0)) this.error("ta_4h", policy.ta_4h, origin, 36009);
+            if (!this._v.numberValid(policy.ta_1d, -2, 0)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+        } else {
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != 2) this.error("volume_direction", policy.volume, origin, 36016);
+            if (!this._v.numberValid(policy.ta_30m, 0, 2)) this.error("ta_30m", policy.ta_30m, origin, 36006);
+            if (!this._v.numberValid(policy.ta_1h, 0, 2)) this.error("ta_1h", policy.ta_1h, origin, 36007);
+            if (!this._v.numberValid(policy.ta_2h, 0, 2)) this.error("ta_2h", policy.ta_2h, origin, 36008);
+            if (!this._v.numberValid(policy.ta_4h, 0, 2)) this.error("ta_4h", policy.ta_4h, origin, 36009);
+            if (!this._v.numberValid(policy.ta_1d, 0, 2)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+        }
+
+        // Validate the technicals
+        this.technicalsValid(policy, origin);
+    }
+
+
+
+
+    /**
+     * Validates the volume open interest cancellation policies for a side.
+     * @param side 
+     * @param policy 
+     */
+    private validateVolumeOpenInterestCancellation(side: IBinancePositionSide, policy: IVolumeOpenInterestCancellation): void {
+        // Init the origin
+        const origin: string = "VolumeOpenInterestCancellation";
+
+        // Validate the status
+        if (typeof policy.enabled != "boolean") { this.error("enabled", policy.enabled, origin, 36002) }
+
+        // Validate the rest according to the side
+        if (side == "LONG") {
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != -2) this.error("volume_direction", policy.volume, origin, 36016);
+            if (!this._v.numberValid(policy.open_interest, -2, -1)) this.error("open_interest", policy.open_interest, origin, 36012);
+        } else {
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != 2) this.error("volume_direction", policy.volume, origin, 36016);
+            if (!this._v.numberValid(policy.open_interest, 1, 2)) this.error("open_interest", policy.open_interest, origin, 36012);
+        }
+    }
+
+
+
+
+    /**
+     * Validates the volume long/short ratio cancellation policies for a side.
+     * @param side 
+     * @param policy 
+     */
+    private validateVolumeLongShortRatioCancellation(side: IBinancePositionSide, policy: IVolumeLongShortRatioCancellation): void {
+        // Init the origin
+        const origin: string = "VolumeLongShortRatioCancellation";
+
+        // Validate the status
+        if (typeof policy.enabled != "boolean") { this.error("enabled", policy.enabled, origin, 36002) }
+
+        // Validate the rest according to the side
+        if (side == "LONG") {
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != -2) this.error("volume_direction", policy.volume, origin, 36016);
+            if (!this._v.numberValid(policy.long_short_ratio, -2, -1)) this.error("long_short_ratio", policy.long_short_ratio, origin, 36013);
+        } else {
+            if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
+            if (policy.volume_direction != 2) this.error("volume_direction", policy.volume, origin, 36016);
+            if (!this._v.numberValid(policy.long_short_ratio, 1, 2)) this.error("long_short_ratio", policy.long_short_ratio, origin, 36013);
+        }
+    }
+
+
+
 
 
 

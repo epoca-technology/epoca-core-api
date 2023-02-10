@@ -689,9 +689,9 @@
 
 36014: `The window provided for the WindowCancellation is invalid. Received: ${policy.window}`
 
-36015: ``
+36015: `The volume property is invalid.`
 
-36016: ``
+36016: `The volume direction property is invalid.`
 
 36017: ``
 
