@@ -42,8 +42,9 @@ export class VolumeStateService implements IVolumeStateService {
      * The percent a side (bull/bear) must represent in order for the volume to
      * have a direction.
      */
+    private readonly windowDirectionSplit: number = 0.8;
     private readonly directionRequirement: number = 51;
-    private readonly strongDirectionRequirement: number = 53;
+    private readonly strongDirectionRequirement: number = 55;
 
 
     constructor() {}
@@ -117,6 +118,9 @@ export class VolumeStateService implements IVolumeStateService {
      * @returns { direction: IStateType, direction_value: number}
      */
     private calculateDirection(window: ICandlestick[]): { direction: IStateType, direction_value: number} {
+        // Adjust the window according to the split
+        const adjWindow: ICandlestick[] = window.slice(Math.ceil(window.length * this.windowDirectionSplit));
+
         // Init the volume accumulators
         let bullVol: number = 0;
         let bearVol: number = 0;
@@ -128,7 +132,7 @@ export class VolumeStateService implements IVolumeStateService {
          * open < close = Bull
          * open > close = Bear
          */
-        for (let candlestick of window) {
+        for (let candlestick of adjWindow) {
             if      (candlestick.o < candlestick.c) { bullVol += candlestick.v }
             else if (candlestick.o > candlestick.c) { bearVol += candlestick.v }
             vol += candlestick.v;
