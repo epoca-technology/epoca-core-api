@@ -536,7 +536,7 @@ export class PredictionService implements IPredictionService {
         else {
             // Initialize the initial and the current sums
             const initial: number = candlesticks[candlesticks.length - Math.abs(state)].sm;
-            const current: number = candlesticks.at(-1).sm;
+            const current: number = candlesticks.at(-1).c;
 
             // Calculate the intensity requirements
             const { requirement, strongRequirement } = this.calculateIntensityRequirement(initial);
@@ -622,7 +622,7 @@ export class PredictionService implements IPredictionService {
         const sum: number = Math.abs(initialSum);
 
         // Return the requirements based on the current absolute sum
-        if      (sum < 0.1)                { return { requirement: 45,    strongRequirement: 90 } }
+        if      (sum < 0.1)                { return { requirement: 50,    strongRequirement: 99 } }
         else if (sum >= 0.1 && sum < 0.2)  { return { requirement: 40,    strongRequirement: 80 } }
         else if (sum >= 0.2 && sum < 0.3)  { return { requirement: 35,    strongRequirement: 70 } }
         else if (sum >= 0.3 && sum < 0.4)  { return { requirement: 30,    strongRequirement: 60 } }

@@ -1112,18 +1112,18 @@ export class PositionHealth implements IPositionHealth {
      */
     private buildDefaultWeights(): IPositionHealthWeights {
         return {
-            trend_sum: 40,
-            trend_state: 10,
+            trend_sum: 25,
+            trend_state: 20,
             ta_30m: 3.5,
             ta_1h: 4,
             ta_2h: 4.5,
             ta_4h: 4.5,
             ta_1d: 4.5,
-            open_interest: 5,
-            open_interest_state: 8,
-            long_short_ratio: 5,
-            long_short_ratio_state: 8,
-            volume_direction: 3
+            open_interest: 7.5,
+            open_interest_state: 6.5,
+            long_short_ratio: 7.5,
+            long_short_ratio_state: 6.5,
+            volume_direction: 6
         }
     }
 

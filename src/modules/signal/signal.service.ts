@@ -1464,7 +1464,7 @@ export class SignalService implements ISignalService {
                 },
                 technicals: {
                     enabled: true,
-                    ta_30m: 0,
+                    ta_30m: -1,
                     ta_1h: -2,
                     ta_2h: -2,
                     ta_4h: -2,
@@ -1651,7 +1651,7 @@ export class SignalService implements ISignalService {
                 },
                 technicals: {
                     enabled: true,
-                    ta_30m: 0,
+                    ta_30m: 1,
                     ta_1h: 2,
                     ta_2h: 2,
                     ta_4h: 2,
