@@ -471,10 +471,10 @@ export class PredictionService implements IPredictionService {
             let i: number = candlesticks.length - 1;
             let sequenceType: 1|0|-1 = 0;
             let sequenceCount: number = 0;
-            let sequenceEnded: boolean = candlesticks.at(-1).sm == candlesticks.at(-2).sm;
+            let sequenceEnded: boolean = candlesticks.at(-1).c == candlesticks.at(-2).c;
             while (i > 0 && sequenceEnded == false) {
                 // Check if the current value is greater than the previous one (Potential uptrend sequence)
-                if (candlesticks[i].sm > candlesticks[i - 1].sm) {
+                if (candlesticks[i].c > candlesticks[i - 1].c) {
                     // If there was a downtrend sequence, end the loop
                     if (sequenceType == -1) { sequenceEnded = true }
 
@@ -486,7 +486,7 @@ export class PredictionService implements IPredictionService {
                 }
 
                 // Check if the current value is less than the previous one (Potential downtrend sequence)
-                else if (candlesticks[i].sm < candlesticks[i - 1].sm) {
+                else if (candlesticks[i].c < candlesticks[i - 1].c) {
                     // If there was an uptrend sequence, end the loop
                     if (sequenceType == 1) { sequenceEnded = true }
 
