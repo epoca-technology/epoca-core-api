@@ -281,6 +281,7 @@ export class PositionHealth implements IPositionHealth {
         hp += this.evaluateTrendState(side);
 
         // Evaluate the TA
+        hp += this.evaluateTechnicalAnalysis(side, "15m"); 
         hp += this.evaluateTechnicalAnalysis(side, "30m"); 
         hp += this.evaluateTechnicalAnalysis(side, "1h"); 
         hp += this.evaluateTechnicalAnalysis(side, "2h"); 
@@ -1112,18 +1113,19 @@ export class PositionHealth implements IPositionHealth {
      */
     private buildDefaultWeights(): IPositionHealthWeights {
         return {
-            trend_sum: 25,
-            trend_state: 20,
-            ta_30m: 3.5,
+            trend_sum: 35,
+            trend_state: 10,
+            ta_15m: 4,
+            ta_30m: 4,
             ta_1h: 4,
-            ta_2h: 4.5,
-            ta_4h: 4.5,
-            ta_1d: 4.5,
-            open_interest: 7.5,
-            open_interest_state: 6.5,
-            long_short_ratio: 7.5,
-            long_short_ratio_state: 6.5,
-            volume_direction: 6
+            ta_2h: 4,
+            ta_4h: 4,
+            ta_1d: 4,
+            open_interest: 7,
+            open_interest_state: 6,
+            long_short_ratio: 7,
+            long_short_ratio_state: 6,
+            volume_direction: 5
         }
     }
 

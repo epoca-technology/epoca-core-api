@@ -378,6 +378,7 @@ export interface ITADataset {
     volume: number[]
 }
 export interface ITADatasets {
+    "15m": ITADataset,
     "30m": ITADataset,
     "1h": ITADataset,
     "2h": ITADataset,
@@ -394,7 +395,7 @@ export interface ITADatasets {
  * In order to be able to identify what most traders are seeing, 
  * the indicators are calculated for all popular intervals.
  */
-export type ITAIntervalID = "30m"|"1h"|"2h"|"4h"|"1d";
+export type ITAIntervalID = "15m"|"30m"|"1h"|"2h"|"4h"|"1d";
 
 
 
@@ -576,6 +577,7 @@ export interface ITAIntervalState {
  */
 export interface ITAState {
     // States by Interval
+    "15m": ITAIntervalState,
     "30m": ITAIntervalState,
     "1h": ITAIntervalState,
     "2h": ITAIntervalState,
@@ -620,6 +622,7 @@ export interface IMinifiedIntervalState {
  */
 export interface IMinifiedTAState {
     // States by Interval
+    "15m": IMinifiedIntervalState,
     "30m": IMinifiedIntervalState,
     "1h": IMinifiedIntervalState,
     "2h": IMinifiedIntervalState,

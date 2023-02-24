@@ -457,7 +457,7 @@ export class BinanceService implements IBinanceService {
         // Build options
         const options: IExternalRequestOptions = {
             host: "fapi.binance.com",
-            path: `/futures/data/openInterestHist?symbol=BTCUSDT&period=30m&limit=64`,
+            path: `/futures/data/openInterestHist?symbol=BTCUSDT&period=15m&limit=128`,
             method: "GET",
             headers: {
                 "Content-Type": "application/json"
@@ -505,7 +505,7 @@ export class BinanceService implements IBinanceService {
         // Build options
         const options: IExternalRequestOptions = {
             host: "fapi.binance.com",
-            path: `/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=30m&limit=64`,
+            path: `/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=15m&limit=128`,
             method: "GET",
             headers: {
                 "Content-Type": "application/json"

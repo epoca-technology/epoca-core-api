@@ -25,8 +25,8 @@ export class CandlestickModel implements ICandlestickModel {
 
     // Prediction Candlestick Configuration
     public readonly predictionConfig: ICandlestickConfig = {
-        intervalMinutes: 30,
-        alias: '30m'
+        intervalMinutes: 15,
+        alias: '15m'
     };
 
 

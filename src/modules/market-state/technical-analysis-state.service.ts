@@ -124,7 +124,7 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
      */
     public getIntervalState(intervalID: ITAIntervalID): ITAIntervalState {
         // Validate the request
-        if (intervalID != "30m" && intervalID != "1h" && intervalID != "2h" && intervalID != "4h" && intervalID != "1d") {
+        if (intervalID != "15m" && intervalID != "30m" && intervalID != "1h" && intervalID != "2h" && intervalID != "4h" && intervalID != "1d") {
             throw new Error(this._utils.buildApiError(`The provided TA interval is invalid. Received: ${intervalID}`, 28501));
         }
 
@@ -160,6 +160,7 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
 
             // Build and update the state for all intervals
             this.state = {
+                "15m": await this.buildIntervalState(ds["15m"]),
                 "30m": await this.buildIntervalState(ds["30m"]),
                 "1h": await this.buildIntervalState(ds["1h"]),
                 "2h": await this.buildIntervalState(ds["2h"]),
@@ -433,15 +434,18 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
 
         // Build the datasets by merging the raw candlesticks accordingly
         return {
-            "30m": this.makeDataset(candlesticks.slice(-this.windowSize)),
+            "15m": this.makeDataset(candlesticks.slice(-this.windowSize)),
+            "30m": this.makeDataset(this.mergeCandlesticks(
+                candlesticks.slice(-((30 / this._candlestickModel.predictionConfig.intervalMinutes) * this.windowSize))
+            )),
             "1h": this.makeDataset(this.mergeCandlesticks(
-                candlesticks.slice((60 / this._candlestickModel.predictionConfig.intervalMinutes) * this.windowSize)
+                candlesticks.slice(-((60 / this._candlestickModel.predictionConfig.intervalMinutes) * this.windowSize))
             )),
             "2h": this.makeDataset(this.mergeCandlesticks(
-                candlesticks.slice((120 / this._candlestickModel.predictionConfig.intervalMinutes) * this.windowSize)
+                candlesticks.slice(-((120 / this._candlestickModel.predictionConfig.intervalMinutes) * this.windowSize))
             )),
             "4h": this.makeDataset(this.mergeCandlesticks(
-                candlesticks.slice((240 / this._candlestickModel.predictionConfig.intervalMinutes) * this.windowSize)
+                candlesticks.slice(-((240 / this._candlestickModel.predictionConfig.intervalMinutes) * this.windowSize))
             )),
             "1d": this.makeDataset(this.mergeCandlesticks(candlesticks)),
         };
@@ -1062,6 +1066,7 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
      */
     public getDefaultState(): ITAState {
         return {
+            "15m": this.getDefaultIntervalState(),
             "30m": this.getDefaultIntervalState(),
             "1h": this.getDefaultIntervalState(),
             "2h": this.getDefaultIntervalState(),
@@ -1136,6 +1141,7 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
      */
     private minifyState(state: ITAState): IMinifiedTAState {
         return {
+            "15m": { s: state["15m"].s, o: state["15m"].o, m: state["15m"].m },
             "30m": { s: state["30m"].s, o: state["30m"].o, m: state["30m"].m },
             "1h": { s: state["1h"].s, o: state["1h"].o, m: state["1h"].m },
             "2h": { s: state["2h"].s, o: state["2h"].o, m: state["2h"].m },

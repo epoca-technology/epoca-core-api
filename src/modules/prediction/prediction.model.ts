@@ -19,7 +19,7 @@ export class PredictionModel implements IPredictionModel {
 
 
     // The interval in which the candlesticks are built
-    public readonly candlesticksIntervalMinutes: number = 30; // 30 Minutes
+    public readonly candlesticksIntervalMinutes: number = 15; // 15 Minutes
 
 
 

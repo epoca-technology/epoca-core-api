@@ -461,7 +461,7 @@ export class PredictionService implements IPredictionService {
         // Retrieve the candlesticks
         const candlesticks: IPredictionCandlestick[] = await this.model.listPredictionCandlesticks(
             this._epoch.active.value.id,
-            moment(pred.t).subtract(5, "hours").valueOf(),
+            moment(pred.t).subtract(3, "hours").valueOf(),
             pred.t
         );
 

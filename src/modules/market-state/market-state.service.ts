@@ -41,7 +41,7 @@ export class MarketStateService implements IMarketStateService {
      * Window Size
      * The number of prediction candlesticks that comprise the window.
      */
-    private readonly windowSize: number = 64;
+    private readonly windowSize: number = 128;
 
 
     /**
@@ -64,7 +64,7 @@ export class MarketStateService implements IMarketStateService {
     * Whenever a price state (increasing|decreasing) is detected, it will notify the
     * users in a throttled manner.
     */
-    private readonly priceStateThrottleMinutes: number = 60;
+    private readonly priceStateThrottleMinutes: number = 90;
     private priceStateLastNotification: number|undefined = undefined;
 
 

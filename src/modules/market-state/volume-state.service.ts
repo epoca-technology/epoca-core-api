@@ -42,7 +42,7 @@ export class VolumeStateService implements IVolumeStateService {
      * The percent a side (bull/bear) must represent in order for the volume to
      * have a direction.
      */
-    private readonly windowDirectionWidth: number = 10;
+    private readonly windowDirectionWidth: number = 20;
     private readonly directionRequirement: number = 51;
     private readonly strongDirectionRequirement: number = 55;
 

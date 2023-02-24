@@ -403,6 +403,7 @@ export interface IPositionHealthWeights {
     trend_state: number,
 
     // The state of the technical analysis indicators
+    ta_15m: number,
     ta_30m: number,
     ta_1h: number,
     ta_2h: number,

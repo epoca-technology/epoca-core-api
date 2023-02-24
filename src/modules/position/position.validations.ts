@@ -354,6 +354,7 @@ export class PositionValidations implements IPositionValidations {
         if (
             !this._validations.numberValid(weights.trend_sum, 0.1, 100) ||
             !this._validations.numberValid(weights.trend_state, 0.1, 100) ||
+            !this._validations.numberValid(weights.ta_15m, 0.1, 100) ||
             !this._validations.numberValid(weights.ta_30m, 0.1, 100) ||
             !this._validations.numberValid(weights.ta_1h, 0.1, 100) ||
             !this._validations.numberValid(weights.ta_2h, 0.1, 100) ||

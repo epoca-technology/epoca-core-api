@@ -693,6 +693,6 @@
 
 36016: `The volume direction property is invalid.`
 
-36017: ``
+36017: `The ta_15m property is invalid.`
 
 36018: ``
