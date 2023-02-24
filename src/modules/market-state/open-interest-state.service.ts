@@ -25,7 +25,7 @@ export class OpenInterestStateService implements IOpenInterestStateService {
      * Groups
      * The number of groups that will be built.
      */
-    private readonly groups: number = 10;
+    private readonly groups: number = 32;
     
 
     /**
