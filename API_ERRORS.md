@@ -429,7 +429,7 @@
 
 21006: `The predictions query is larger than the permitted data limit. Limit: ${dataLimit}, Received: ${difference}`
 
-21007: ``
+21007: `The provided prediction state intensity config is invalid.`
 
 21008: ``
 

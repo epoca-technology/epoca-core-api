@@ -5,7 +5,7 @@ import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
 import { IPrediction } from "../epoch-builder";
-import { IPredictionCandlestick, IPredictionModel } from "./interfaces";
+import { IPredictionCandlestick, IPredictionModel, IPredictionStateIntensityConfig } from "./interfaces";
 
 
 
@@ -27,6 +27,21 @@ export class PredictionModel implements IPredictionModel {
     constructor() {}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+    /*********************************
+     * Prediction Records Management *
+     *********************************/
 
 
 
@@ -136,15 +151,24 @@ export class PredictionModel implements IPredictionModel {
 
 
 
-    /* Prediction Candlesticks */
 
 
 
 
 
 
-    /* Retrievers */
 
+
+
+
+
+
+
+
+
+    /**************************************
+     * Prediction Candlesticks Management *
+     **************************************/
 
 
 
@@ -325,5 +349,80 @@ export class PredictionModel implements IPredictionModel {
      */
     public getPredictionCandlestickCloseTime(ot: number): number {
         return moment(ot).add(this.candlesticksIntervalMinutes, "minutes").subtract(1, "millisecond").valueOf();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /********************************************
+     * Prediction State Intensity Configuration *
+     ********************************************/
+
+
+
+
+
+    /**
+     * Retrieves current intensity config. If none has been set,
+     * it returns undefined
+     * @returns Promise<IPredictionStateIntensityConfig|undefined>
+     */
+    public async getStateIntensityConfig(): Promise<IPredictionStateIntensityConfig|undefined> {
+        // Retrieve the user
+        const { rows } = await this._db.query({
+            text: `SELECT config FROM  ${this._db.tn.prediction_state_intensity} WHERE id = 1`,
+            values: []
+        });
+
+        // Return the result
+        return rows.length ? rows[0].config: undefined;
+    }
+
+
+
+
+
+    /**
+     * Stores the default intensity configuration.
+     * @param strategy 
+     * @returns Promise<void>
+     */
+    public async createStateIntensityConfig(config: IPredictionStateIntensityConfig): Promise<void> {
+        await this._db.query({
+            text: `INSERT INTO ${this._db.tn.prediction_state_intensity}(id, config) VALUES(1, $1)`,
+            values: [config]
+        });
+    }
+
+
+
+
+
+
+    /**
+     * Updates the current intensity configuration.
+     * @param config 
+     * @returns Promise<void>
+     */
+     public async updateStateIntensityConfig(config: IPredictionStateIntensityConfig): Promise<void> {
+        await this._db.query({
+            text: `UPDATE ${this._db.tn.prediction_state_intensity} SET config=$1 WHERE id=1`,
+            values: [config]
+        });
     }
 }

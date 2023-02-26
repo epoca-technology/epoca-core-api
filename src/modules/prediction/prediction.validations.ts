@@ -4,7 +4,7 @@ import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService, IValidationsService } from "../utilities";
 import { IExternalRequestResponse } from "../external-request";
 import { IPrediction } from "../epoch-builder";
-import { IPredictionValidations } from "./interfaces";
+import { IPredictionStateIntensityConfig, IPredictionValidations } from "./interfaces";
 
 
 
@@ -42,10 +42,11 @@ export class PredictionValidations implements IPredictionValidations {
 
 
 
-    /* Retrievers */
 
 
-
+    /**************
+     * Retrievers *
+     **************/
 
 
 
@@ -120,7 +121,12 @@ export class PredictionValidations implements IPredictionValidations {
 
 
 
-    /* Prediction Generator */
+
+
+
+    /************************
+     * Prediction Generator *
+     ************************/
 
 
 
@@ -145,5 +151,39 @@ export class PredictionValidations implements IPredictionValidations {
 
         // Finally, return the prediction
         return <IPrediction>response.data.data;
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /*************************************
+     * Prediction State Intensity Config *
+     *************************************/
+
+
+
+
+    /**
+     * Given a new configuration, it will ensure all provided values
+     * are correct.
+     * @param config 
+     */
+    public validateStateIntensityConfig(config: IPredictionStateIntensityConfig): void {
+        if (
+            !config || 
+            typeof config != "object" ||
+            !this._validations.numberValid(config.requirement, 0.01, 5) ||
+            !this._validations.numberValid(config.strongRequirement, 0.01, 5)
+        ) {
+            console.log(config);
+            throw new Error(this._utils.buildApiError("The provided prediction state intensity config is invalid.", 21007));
+        }
     }
 }

@@ -19,6 +19,7 @@ import {
     IPredictionRequestBody, 
     IPredictionService, 
     IPredictionState, 
+    IPredictionStateIntensityConfig, 
     IPredictionStateIntesity,
     IPredictionStateResult,
     IPredictionValidations,
@@ -93,6 +94,7 @@ export class PredictionService implements IPredictionService {
      * Active Prediction State Intensity
      * The intensity of the direction the trend is taking.
      */
+    public stateIntensityConfig: IPredictionStateIntensityConfig;
     public activeStateIntesity: IPredictionStateIntesity = 0;
 
 
@@ -190,6 +192,9 @@ export class PredictionService implements IPredictionService {
      * @returns Promise<void>
      */
     public async initialize(): Promise<void> {
+        // Initialize the state intensity config
+        await this.initializeStateIntensityConfig();
+
         /**
          * If there is an active epoch and the candlesticks are in sync, 
          * generate a prediction right away. Otherwise, let the interval
@@ -249,6 +254,9 @@ export class PredictionService implements IPredictionService {
         this.activeState = 0;
         this.activeStateIntesity = 0;
     }
+
+
+
 
 
 
@@ -336,6 +344,11 @@ export class PredictionService implements IPredictionService {
             close_prices: this._candlestick.predictionLookback.slice(-(listSize)).map((candlestick) => candlestick.c)
         }
     }
+
+
+
+
+
 
 
 
@@ -433,6 +446,12 @@ export class PredictionService implements IPredictionService {
             }
         } catch (e) { console.error(e) }
     }
+
+
+
+
+
+
 
 
 
@@ -538,67 +557,23 @@ export class PredictionService implements IPredictionService {
             const initial: number = candlesticks[candlesticks.length - Math.abs(state)].sm;
             const current: number = candlesticks.at(-1).c;
 
-            // Calculate the intensity requirements
-            const { requirement, strongRequirement } = this.calculateIntensityRequirement(initial);
+            // Calculate the absolute difference
+            const absDiff: number = this.calculateAbsoluteTrendSumDifference(initial, current);
 
-            // Handle a positive initial sum
-            if (initial > 0) {
-                // Check if there has been an increase
-                if (initial < current) {
-                    if (current >= this._utils.alterNumberByPercentage(initial, strongRequirement)) {
-                        return 2;
-                    } else if (current >= this._utils.alterNumberByPercentage(initial, requirement)) {
-                        return 1;
-                    } else {
-                        return 0;
-                    }
-                }
-
-                // Check if there has been a decrease
-                else if (initial > current) {
-                    if (current <= this._utils.alterNumberByPercentage(initial, -(strongRequirement))) {
-                        return -2;
-                    } else if (current <= this._utils.alterNumberByPercentage(initial, -(requirement))) {
-                        return -1;
-                    } else {
-                        return 0;
-                    }
-                }
-
-                // If the initial sum is equals to the current one, there is no intensity
-                else { return 0 }
+            // Check if the intensity is strong
+            if (absDiff >= this.stateIntensityConfig.strongRequirement) {
+                return state > 0 ? 2: -2;
             }
 
-            // Handle a negative initial sum
-            else if (initial < 0) {
-                // Check if there has been a decrease
-                if (initial > current) {
-                    if (current <= this._utils.alterNumberByPercentage(initial, strongRequirement)) {
-                        return -2;
-                    } else if (current <= this._utils.alterNumberByPercentage(initial, requirement)) {
-                        return -1;
-                    } else {
-                        return 0;
-                    }
-                }
-
-                // Check if there has been an increase
-                else if (initial < current) {
-                    if (current >= this._utils.alterNumberByPercentage(initial, -(strongRequirement))) {
-                        return 2;
-                    } else if (current >= this._utils.alterNumberByPercentage(initial, -(requirement))) {
-                        return 1;
-                    } else {
-                        return 0;
-                    }
-                }
-
-                // If the initial sum is equals to the current one, there is no intensity
-                else { return 0 }
+            // Check if there is intensity
+            else if (absDiff >= this.stateIntensityConfig.requirement) {
+                return state > 0 ? 1: -1;
             }
 
             // Otherwise, there is no intensity
-            else { return 0 }
+            else { 
+                return 0;
+            }
         }
     }
 
@@ -607,33 +582,73 @@ export class PredictionService implements IPredictionService {
 
 
     /**
-     * The intensity of the trend state is tricky to calculate because the sum
-     * can be a positive or negative number, it can get very close to 0 (6 decimals precision) 
-     * and it can also go all the way to 8. 
-     * In order to calculate the intensity, the requirements are adjusted based on the sum as
-     * the scale changes based on the distance to 0. The smaller the sum, the more volatile.
-     * It is also important to note that when calculating the trend state and intensity, there 
-     * can be up to 10 candlesticks (~5 hours).
+     * Calculates the absolute trend sum difference based on an initial and a current trend sum.
      * @param initialSum 
-     * @returns {requirement: number, strongRequirement: number}
+     * @param currentSum 
+     * @returns number
      */
-    private calculateIntensityRequirement(initialSum: number): {requirement: number, strongRequirement: number} {
-        // Initialize the absolute sum
-        const sum: number = Math.abs(initialSum);
+    public calculateAbsoluteTrendSumDifference(initialSum: number, currentSum: number): number {
+        // Handle an increased trend sum
+        if (currentSum > initialSum) {
+            return Math.abs(currentSum - initialSum);
+        }
 
-        // Return the requirements based on the current absolute sum
-        if      (sum < 0.1)                { return { requirement: 50,    strongRequirement: 99 } }
-        else if (sum >= 0.1 && sum < 0.2)  { return { requirement: 40,    strongRequirement: 80 } }
-        else if (sum >= 0.2 && sum < 0.3)  { return { requirement: 35,    strongRequirement: 70 } }
-        else if (sum >= 0.3 && sum < 0.4)  { return { requirement: 30,    strongRequirement: 60 } }
-        else if (sum >= 0.4 && sum < 0.5)  { return { requirement: 25,    strongRequirement: 50 } }
-        else if (sum >= 0.5 && sum < 1)    { return { requirement: 20,    strongRequirement: 40 } }
-        else if (sum >= 1   && sum < 2)    { return { requirement: 10,    strongRequirement: 20 } }
-        else if (sum >= 2   && sum < 3)    { return { requirement: 7.5,   strongRequirement: 15 } }
-        else if (sum >= 3   && sum < 4)    { return { requirement: 5.5,   strongRequirement: 11 } }
-        else if (sum >= 4   && sum < 5)    { return { requirement: 4,     strongRequirement: 8 } }
-        else if (sum >= 5   && sum < 6)    { return { requirement: 3,     strongRequirement: 6 } }
-        else if (sum >= 6   && sum < 7)    { return { requirement: 2.5,   strongRequirement: 5 } }
-        else                               { return { requirement: 2,     strongRequirement: 4 } }
+        // Handle a decreased trend sum
+        else if (initialSum > currentSum) {
+            return Math.abs(initialSum - currentSum);
+        }
+
+        // Otherwise, there is no difference
+        else {
+            return 0;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /************************************************
+     * Prediction State Intensity Config Management *
+     ************************************************/
+
+
+
+
+
+    /**
+     * Initializes the state intensity config. In case it hadn't been,
+     * it will create it.
+     */
+    private async initializeStateIntensityConfig(): Promise<void> {
+        this.stateIntensityConfig = await this.model.getStateIntensityConfig();
+        if (!this.stateIntensityConfig) {
+            this.stateIntensityConfig = { requirement: 0.25, strongRequirement: 0.5 };
+            await this.model.createStateIntensityConfig(this.stateIntensityConfig);
+        }
+    }
+
+
+
+
+    /**
+     * Updates the current state intensity configuration.
+     * @param newConfig 
+     * @returns Promise<void>
+     */
+    public async updateStateIntensityConfig(newConfig: IPredictionStateIntensityConfig): Promise<void> {
+        // Make sure it can be updated
+        this.validations.validateStateIntensityConfig(newConfig);
+
+        // Update the record
+        await this.model.updateStateIntensityConfig(newConfig);
+
+        // Update the local strategy
+        this.stateIntensityConfig = newConfig;
     }
 }

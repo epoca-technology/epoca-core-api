@@ -12,6 +12,7 @@ export interface IPredictionService {
     // Properties
     active: BehaviorSubject<IPrediction|undefined>,
     activeState: IPredictionState,
+    stateIntensityConfig: IPredictionStateIntensityConfig,
     activeStateIntesity: IPredictionStateIntesity,
 
     // Retrievers
@@ -32,6 +33,12 @@ export interface IPredictionService {
         startAt: number, 
         endAt: number
     ): Promise<IPredictionCandlestick[]>,
+
+    // Prediction State
+    calculateAbsoluteTrendSumDifference(initialSum: number, currentSum: number): number,
+
+    // Prediction State Intensity Config Management
+    updateStateIntensityConfig(newConfig: IPredictionStateIntensityConfig): Promise<void>,
 }
 
 
@@ -49,14 +56,17 @@ export interface IPredictionValidations {
     ): void,
 
     // Prediction Generator
-    validateGeneratedPrediction(response: IExternalRequestResponse): IPrediction
+    validateGeneratedPrediction(response: IExternalRequestResponse): IPrediction,
+
+    // Prediction State Intensity Config
+    validateStateIntensityConfig(config: IPredictionStateIntensityConfig): void,
 }
 
 
 
 // Model
 export interface IPredictionModel {
-    /* Predictions Management */
+    /* Prediction Records Management */
 
     // Retrievers
     listPredictions(
@@ -91,6 +101,11 @@ export interface IPredictionModel {
     // Candlesticks Misc Helpers
     buildCandlestick(preds: Partial<IPrediction>[]): IPredictionCandlestick,
     getPredictionCandlestickCloseTime(ot: number): number,
+
+    /* Prediction State Intensity Configuration */
+    getStateIntensityConfig(): Promise<IPredictionStateIntensityConfig|undefined>,
+    createStateIntensityConfig(config: IPredictionStateIntensityConfig): Promise<void>,
+    updateStateIntensityConfig(config: IPredictionStateIntensityConfig): Promise<void>
 }
 
 
@@ -151,6 +166,18 @@ export type IPredictionState = 12|11|10|9|8|7|6|5|4|3|2|1|0|-1|-2|-3|-4|-5|-6|-7
  * The intensity of the direction the trend sum is taking.
  */
 export type IPredictionStateIntesity = -2|-1|0|1|2;
+
+
+
+/**
+ * Prediction State Intensity Configuration
+ * The requirements for the state to have a normal or strong intensity.
+ */
+export interface IPredictionStateIntensityConfig {
+    requirement: number,
+    strongRequirement: number
+}
+
 
 
 

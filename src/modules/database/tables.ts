@@ -249,6 +249,21 @@ export const TABLES: IRawTable[] = [
 
     
     /**
+     * Prediction State Intensity Configuration
+     * 
+     */
+    {
+        name: "prediction_state_intensity",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id              SMALLINT NOT NULL PRIMARY KEY,
+                config          JSONB NOT NULL
+            );`
+        }
+    },
+
+    
+    /**
      * Signal Policies
      * 
      */
