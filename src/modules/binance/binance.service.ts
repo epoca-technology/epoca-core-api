@@ -20,7 +20,8 @@ import {
     IBinanceTradeExecutionPayload,
     IBinancePositionActionSide,
     IBinancePositionSide,
-    IBinanceTradePayload
+    IBinanceTradePayload,
+    IBinanceLongShortRatioKind
 } from "./interfaces";
 
 
@@ -499,13 +500,14 @@ export class BinanceService implements IBinanceService {
     /**
      * Retrieves the last 32 hours worth of long/short ratio from
      * Binance's API.
+     * @param kind
      * @returns Promise<IBinanceLongShortRatio[]>
      */
-     public async getLongShortRatio(): Promise<IBinanceLongShortRatio[]> {
+     public async getLongShortRatio(kind: IBinanceLongShortRatioKind): Promise<IBinanceLongShortRatio[]> {
         // Build options
         const options: IExternalRequestOptions = {
             host: "fapi.binance.com",
-            path: `/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=15m&limit=128`,
+            path: `/futures/data/${kind}?symbol=BTCUSDT&period=15m&limit=128`,
             method: "GET",
             headers: {
                 "Content-Type": "application/json"
@@ -519,13 +521,13 @@ export class BinanceService implements IBinanceService {
         if (!response || typeof response != "object" || response.statusCode != 200) {
             console.log(response);
             throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
-            when retrieving the long short ratio: ${this.extractErrorMessage(response)}`, 7));
+            when retrieving the long short ratio ${kind}: ${this.extractErrorMessage(response)}`, 7));
         }
 
         // Validate the response's data
         if (!response.data || !Array.isArray(response.data) || !response.data.length) {
             console.log(response);
-            throw new Error(this._utils.buildApiError("Binance returned an invalid long short ratio list.", 8));
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid long short ratio ${kind} list.`, 8));
         }
 
         // Return the series

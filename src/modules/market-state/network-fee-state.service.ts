@@ -26,7 +26,7 @@ export class NetworkFeeStateService implements INetworkFeeStateService {
      * Groups
      * The number of groups that will be built.
      */
-    private readonly groups: number = 32;
+    private readonly groups: number = 16;
     
 
     /**

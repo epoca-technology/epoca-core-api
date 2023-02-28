@@ -33,7 +33,7 @@ export interface IBinanceService {
     ): Promise<IBinanceCandlestick[]>,
     getOrderBook(limit?:number): Promise<IBinanceOrderBook>,
     getOpenInterest(): Promise<IBinanceOpenInterest[]>,
-    getLongShortRatio(): Promise<IBinanceLongShortRatio[]>,
+    getLongShortRatio(kind: IBinanceLongShortRatioKind): Promise<IBinanceLongShortRatio[]>,
 }
 
 
@@ -323,6 +323,7 @@ export interface IBinanceOpenInterest {
 
 
 // Long/Short Ratio
+export type IBinanceLongShortRatioKind = "topLongShortAccountRatio"|"topLongShortPositionRatio"|"globalLongShortAccountRatio";
 export interface IBinanceLongShortRatio {
     // The market's symbol.
     symbol: string,

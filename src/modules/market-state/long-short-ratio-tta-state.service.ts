@@ -5,7 +5,7 @@ import { IBinanceLongShortRatio, IBinanceService } from "../binance";
 import { IUtilitiesService } from "../utilities";
 import { 
     ILongShortRatioState,
-    ILongShortRatioStateService,
+    ILongShortRatioTTAStateService,
     IStateBandsResult,
     IStateUtilitiesService,
 } from "./interfaces";
@@ -14,7 +14,7 @@ import {
 
 
 @injectable()
-export class LongShortRatioStateService implements ILongShortRatioStateService {
+export class LongShortRatioTTAStateService implements ILongShortRatioTTAStateService {
     // Inject dependencies
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
     @inject(SYMBOLS.StateUtilitiesService)              private _stateUtils: IStateUtilitiesService;
@@ -122,7 +122,7 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
     private async updateState(): Promise<void> {
         try {
             // Retrieve the list from binance
-            const records: IBinanceLongShortRatio[] = await this._binance.getLongShortRatio("globalLongShortAccountRatio");
+            const records: IBinanceLongShortRatio[] = await this._binance.getLongShortRatio("topLongShortAccountRatio");
 
             // Build the averaged list of values
             const values: number[] = this._stateUtils.buildAveragedGroups(
@@ -155,8 +155,8 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
                 ratio: values
             };
         } catch (e) {
-            console.error("The long short ratio state could not be updated due to an error in Binance API.", e);
-            this._apiError.log("LongShortRatioState.updateState", e);
+            console.error("The long short ratio top trader account state could not be updated due to an error in Binance API.", e);
+            this._apiError.log("LongShortRatioTTAState.updateState", e);
             this.state = this.getDefaultState();
         }
     }

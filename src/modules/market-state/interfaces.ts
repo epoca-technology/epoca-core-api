@@ -62,6 +62,9 @@ export interface IOpenInterestStateService {
     // Retrievers
     getDefaultState(): IOpenInterestState,
 }
+export interface IOpenInterestByBitStateService extends IOpenInterestStateService { }
+export interface IOpenInterestOKXStateService extends IOpenInterestStateService { }
+export interface IOpenInterestHuobiStateService extends IOpenInterestStateService { }
 
 
 
@@ -77,6 +80,8 @@ export interface ILongShortRatioStateService {
     // Retrievers
     getDefaultState(): ILongShortRatioState,
 }
+export interface ILongShortRatioTTAStateService extends ILongShortRatioStateService { }
+export interface ILongShortRatioTTPStateService extends ILongShortRatioStateService { }
 
 
 
@@ -176,7 +181,7 @@ export interface IStateBand {
  */
 export interface IStateBandsResult {
     // The middle of the window
-    middle: number,
+    //middle: number,
 
     // The upper and lower bands
     upper_band: IStateBand, 
@@ -653,6 +658,11 @@ export interface IMarketState {
     volume: IVolumeState,
     network_fee: INetworkFeeState,
     open_interest: IOpenInterestState,
+    open_interest_bybit: IOpenInterestState,
+    open_interest_okx: IOpenInterestState,
+    open_interest_huobi: IOpenInterestState,
     long_short_ratio: ILongShortRatioState,
+    long_short_ratio_tta: ILongShortRatioState,
+    long_short_ratio_ttp: ILongShortRatioState,
     technical_analysis: IMinifiedTAState
 }

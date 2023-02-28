@@ -17,6 +17,11 @@ import {
     IOpenInterestStateService,
     ILongShortRatioStateService,
     ITechnicalAnalysisStateService,
+    IOpenInterestByBitStateService,
+    IOpenInterestOKXStateService,
+    IOpenInterestHuobiStateService,
+    ILongShortRatioTTAStateService,
+    ILongShortRatioTTPStateService,
 } from "./interfaces";
 
 
@@ -30,7 +35,12 @@ export class MarketStateService implements IMarketStateService {
     @inject(SYMBOLS.VolumeStateService)                 private _volumeState: IVolumeStateService;
     @inject(SYMBOLS.NetworkFeeStateService)             private _networkFeeState: INetworkFeeStateService;
     @inject(SYMBOLS.OpenInterestStateService)           private _openInterest: IOpenInterestStateService;
+    @inject(SYMBOLS.OpenInterestByBitStateService)      private _openInterestByBit: IOpenInterestByBitStateService;
+    @inject(SYMBOLS.OpenInterestOKXStateService)        private _openInterestOKX: IOpenInterestOKXStateService;
+    @inject(SYMBOLS.OpenInterestHuobiStateService)      private _openInterestHuobi: IOpenInterestHuobiStateService;
     @inject(SYMBOLS.LongShortRatioStateService)         private _longShortRatio: ILongShortRatioStateService;
+    @inject(SYMBOLS.LongShortRatioTTAStateService)      private _longShortRatioTTA: ILongShortRatioTTAStateService;
+    @inject(SYMBOLS.LongShortRatioTTPStateService)      private _longShortRatioTTP: ILongShortRatioTTPStateService;
     @inject(SYMBOLS.TechnicalAnalysisStateService)      private _ta: ITechnicalAnalysisStateService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
@@ -101,10 +111,15 @@ export class MarketStateService implements IMarketStateService {
         // Initialize the open interest module after a small delay
         await this._utils.asyncDelay(10);
         await this._openInterest.initialize();
+        await this._openInterestByBit.initialize();
+        await this._openInterestOKX.initialize();
+        await this._openInterestHuobi.initialize();
 
         // Initialize the long/short ratio module after a small delay
         await this._utils.asyncDelay(10);
         await this._longShortRatio.initialize();
+        await this._longShortRatioTTA.initialize();
+        await this._longShortRatioTTP.initialize();
 
         // Initialize the Technical Analysis Module
         await this._ta.initialize();
@@ -130,7 +145,12 @@ export class MarketStateService implements IMarketStateService {
     public stop(): void {
         if (this.candlestickStreamSub) this.candlestickStreamSub.unsubscribe();
         this._openInterest.stop();
+        this._openInterestByBit.stop();
+        this._openInterestOKX.stop();
+        this._openInterestHuobi.stop();
         this._longShortRatio.stop();
+        this._longShortRatioTTA.stop();
+        this._longShortRatioTTP.stop();
         this._networkFeeState.stop();
         this._ta.stop();
     }
@@ -172,7 +192,12 @@ export class MarketStateService implements IMarketStateService {
                 volume: volumeState,
                 network_fee: this._networkFeeState.state,
                 open_interest: this._openInterest.state,
+                open_interest_bybit: this._openInterestByBit.state,
+                open_interest_okx: this._openInterestOKX.state,
+                open_interest_huobi: this._openInterestHuobi.state,
                 long_short_ratio: this._longShortRatio.state,
+                long_short_ratio_tta: this._longShortRatioTTA.state,
+                long_short_ratio_ttp: this._longShortRatioTTP.state,
                 technical_analysis: this._ta.minState
             });
 
@@ -214,7 +239,12 @@ export class MarketStateService implements IMarketStateService {
             volume: this._volumeState.getDefaultState(),
             network_fee: this._networkFeeState.getDefaultState(),
             open_interest: this._openInterest.getDefaultState(),
+            open_interest_bybit: this._openInterestByBit.getDefaultState(),
+            open_interest_okx: this._openInterestOKX.getDefaultState(),
+            open_interest_huobi: this._openInterestHuobi.getDefaultState(),
             long_short_ratio: this._longShortRatio.getDefaultState(),
+            long_short_ratio_tta: this._longShortRatioTTA.getDefaultState(),
+            long_short_ratio_ttp: this._longShortRatioTTP.getDefaultState(),
             technical_analysis: this._ta.getDefaultMinifiedState()
         }
     }

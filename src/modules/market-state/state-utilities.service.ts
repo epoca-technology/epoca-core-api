@@ -71,7 +71,7 @@ export class StateUtilitiesService implements IStateUtilitiesService {
 
         // Finally, pack the bands and return then
         return { 
-            middle: windowMiddle,
+            //middle: windowMiddle,
             upper_band: {start: upperBandStart, end: upperBandEnd}, 
             lower_band: {start: lowerBandStart, end: lowerBandEnd} 
         }
@@ -107,7 +107,7 @@ export class StateUtilitiesService implements IStateUtilitiesService {
         // Check if it is an increasing state
         if (
             stateValue >= minChange && 
-            initialValue <= bands.middle && 
+            initialValue <= bands.upper_band.start && 
             lastValue >= bands.upper_band.start
         ) { 
             state = stateValue >= strongChange ? 2: 1;
@@ -116,7 +116,7 @@ export class StateUtilitiesService implements IStateUtilitiesService {
         // Check if it is a decreasing state
         else if (
             stateValue <= -(minChange) && 
-            initialValue >= bands.middle &&
+            initialValue >= bands.lower_band.start &&
             lastValue <= bands.lower_band.start
         ) { 
             state = stateValue <= -(strongChange) ? -2: -1;
