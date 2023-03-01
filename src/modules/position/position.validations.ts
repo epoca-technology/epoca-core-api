@@ -203,8 +203,8 @@ export class PositionValidations implements IPositionValidations {
         }
 
         // Validate the position size
-        if (typeof newStrategy.position_size != "number" || !this._validations.numberValid(newStrategy.position_size, 150, 100000)) {
-            throw new Error(this._utils.buildApiError(`The position size must be a valid number ranging 150-100,000. 
+        if (typeof newStrategy.position_size != "number" || !this._validations.numberValid(newStrategy.position_size, 50, 100000)) {
+            throw new Error(this._utils.buildApiError(`The position size must be a valid number ranging 50-100,000. 
             Received: ${newStrategy.position_size}`, 30006));
         }
 
@@ -212,7 +212,7 @@ export class PositionValidations implements IPositionValidations {
         if (
             typeof newStrategy.take_profit_1 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_1.price_change_requirement, 0.4, 10) ||
-            !this._validations.numberValid(newStrategy.take_profit_1.max_hp_drawdown, -70, 0) ||
+            !this._validations.numberValid(newStrategy.take_profit_1.max_hp_drawdown, -90, 0) ||
             !this._validations.numberValid(newStrategy.take_profit_1.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_1);
@@ -224,7 +224,7 @@ export class PositionValidations implements IPositionValidations {
         if (
             typeof newStrategy.take_profit_2 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_2.price_change_requirement, 0.4, 10) ||
-            !this._validations.numberValid(newStrategy.take_profit_2.max_hp_drawdown, -70, 0) ||
+            !this._validations.numberValid(newStrategy.take_profit_2.max_hp_drawdown, -90, 0) ||
             !this._validations.numberValid(newStrategy.take_profit_2.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_2);
@@ -236,7 +236,7 @@ export class PositionValidations implements IPositionValidations {
         if (
             typeof newStrategy.take_profit_3 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_3.price_change_requirement, 0.4, 10) ||
-            !this._validations.numberValid(newStrategy.take_profit_3.max_hp_drawdown, -70, 0) ||
+            !this._validations.numberValid(newStrategy.take_profit_3.max_hp_drawdown, -90, 0) ||
             !this._validations.numberValid(newStrategy.take_profit_3.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_3);
@@ -248,7 +248,7 @@ export class PositionValidations implements IPositionValidations {
         if (
             typeof newStrategy.take_profit_4 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_4.price_change_requirement, 0.4, 10) ||
-            !this._validations.numberValid(newStrategy.take_profit_4.max_hp_drawdown, -70, 0) ||
+            !this._validations.numberValid(newStrategy.take_profit_4.max_hp_drawdown, -90, 0) ||
             !this._validations.numberValid(newStrategy.take_profit_4.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_4);
@@ -260,7 +260,7 @@ export class PositionValidations implements IPositionValidations {
         if (
             typeof newStrategy.take_profit_5 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_5.price_change_requirement, 0.4, 10) ||
-            !this._validations.numberValid(newStrategy.take_profit_5.max_hp_drawdown, -70, 0) ||
+            !this._validations.numberValid(newStrategy.take_profit_5.max_hp_drawdown, -90, 0) ||
             !this._validations.numberValid(newStrategy.take_profit_5.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_5);
@@ -287,8 +287,8 @@ export class PositionValidations implements IPositionValidations {
         }
 
         // Validate the stop loss
-        if (typeof newStrategy.stop_loss != "number" || !this._validations.numberValid(newStrategy.stop_loss, 0.5, 10)) {
-            throw new Error(this._utils.buildApiError(`The stop loss must be a valid number ranging 0.5-10. 
+        if (typeof newStrategy.stop_loss != "number" || !this._validations.numberValid(newStrategy.stop_loss, 0.1, 20)) {
+            throw new Error(this._utils.buildApiError(`The stop loss must be a valid number ranging 0.1-20. 
             Received: ${newStrategy.stop_loss}`, 30002));
         }
         if (!this._validations.numberValid(newStrategy.max_hp_drawdown_in_loss, -99, -10)) {

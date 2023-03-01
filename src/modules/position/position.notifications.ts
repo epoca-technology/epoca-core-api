@@ -25,7 +25,7 @@ export class PositionNotifications implements IPositionNotifications {
      * Whenever the mark price approaches the liquidation price users
      * are notified as positions are not suposed to get to this point.
      */
-    private readonly liquidationAcceptableDistance: number = 15;
+    private readonly liquidationAcceptableDistance: number = 5;
     private readonly liquidationThrottleMinutes: number = 3;
     private longLiquidationLastNotification: number|undefined = undefined;
     private shortLiquidationLastNotification: number|undefined = undefined;
