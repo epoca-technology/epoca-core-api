@@ -671,17 +671,17 @@
 
 36005: `The trend_intensity property is invalid.`
 
-36006: `The ta_30m property is invalid.`
+36006: `The technicals property is invalid.`
 
-36007: `The ta_1h property is invalid.`
+36007: ``
 
-36008: `The ta_2h property is invalid.`
+36008: ``
 
-36009: `The ta_4h property is invalid.`
+36009: ``
 
-36010: `The ta_1dh property is invalid.`
+36010: ``
 
-36011: `At least 1 of the technical analysis properties must be different to 0 in each policy that makes use of them.`
+36011: ``
 
 36012: `The open_interest property is invalid.`
 
@@ -693,7 +693,7 @@
 
 36016: `The volume direction property is invalid.`
 
-36017: `The ta_15m property is invalid.`
+36017: ``
 
 36018: ``
 

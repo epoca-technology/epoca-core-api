@@ -125,10 +125,11 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
             const records: IBinanceLongShortRatio[] = await this._binance.getLongShortRatio("globalLongShortAccountRatio");
 
             // Build the averaged list of values
-            const values: number[] = this._stateUtils.buildAveragedGroups(
+            /*const values: number[] = this._stateUtils.buildAveragedGroups(
                 records.map(f => Number(f.longShortRatio)), 
                 this.groups
-            );
+            );*/
+            const values: number[] = records.map(f => Number(f.longShortRatio));
 
             // Calculate the window bands
             const bands: IStateBandsResult = this._stateUtils.calculateBands(

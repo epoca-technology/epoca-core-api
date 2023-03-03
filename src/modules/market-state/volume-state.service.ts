@@ -61,7 +61,8 @@ export class VolumeStateService implements IVolumeStateService {
      */
     public calculateState(window: ICandlestick[]): IVolumeState {
         // Build the averaged list of volumes
-        const volumes: number[] = this._stateUtils.buildAveragedGroups(window.map(c => c.v), this.groups);
+        //const volumes: number[] = this._stateUtils.buildAveragedGroups(window.map(c => c.v), this.groups);
+        const volumes: number[] = window.map(c => c.v);
 
         // Calculate the window bands
         const bands: IStateBandsResult = this._stateUtils.calculateBands(

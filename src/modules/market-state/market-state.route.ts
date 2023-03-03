@@ -18,8 +18,9 @@ const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.A
 
 
 // Technical Analysis Service
-import {ITAIntervalID, ITechnicalAnalysisStateService} from "./interfaces";
+import {ITAIntervalID, ITechnicalAnalysisStateService, IKeyZonesStateService, IKeyZoneFullState} from "./interfaces";
 const _ta: ITechnicalAnalysisStateService = appContainer.get<ITechnicalAnalysisStateService>(SYMBOLS.TechnicalAnalysisStateService);
+const _keyZones: IKeyZonesStateService = appContainer.get<IKeyZonesStateService>(SYMBOLS.KeyZonesStateService);
 
 
 // Init Route
@@ -39,7 +40,7 @@ const MarketStateRoute = express.Router();
 * @requires id-token
 * @requires api-secret
 * @requires authority: 1
-* @param epochID 
+* @param intervalID 
 * @returns IAPIResponse<ITAIntervalState>
 */
 MarketStateRoute.route("/getTAIntervalState").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
@@ -65,6 +66,40 @@ MarketStateRoute.route("/getTAIntervalState").get(ultraLowRiskLimit, async (req:
 
 
 
+
+
+
+/* KeyZone Full State */
+
+
+
+
+/**
+* Retrieves the full keyzone state.
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @returns IAPIResponse<IKeyZoneFullState>
+*/
+MarketStateRoute.route("/calculateKeyZoneState").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+
+        // Return the response
+        res.send(_utils.apiResponse(_keyZones.calculateState(true)));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.calculateKeyZoneState", e, reqUid, ip);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
 
 
 

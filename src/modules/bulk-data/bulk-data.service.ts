@@ -42,7 +42,7 @@ export class BulkDataService implements IBulkDataService {
      * Every intervalSeconds, the app bulk will be updated on the firebase rtdb.
      */
     private streamInterval: any;
-    private readonly streamIntervalSeconds: number = 7.5; // ~7.5 seconds
+    private readonly streamIntervalSeconds: number = 5;
 
 
 
@@ -146,13 +146,9 @@ export class BulkDataService implements IBulkDataService {
                     window: this.compressWindowState(),
                     volume: this._marketState.active.value.volume,
                     open_interest: this._marketState.active.value.open_interest,
-                    open_interest_bybit: this._marketState.active.value.open_interest_bybit,
-                    open_interest_okx: this._marketState.active.value.open_interest_okx,
-                    open_interest_huobi: this._marketState.active.value.open_interest_huobi,
                     long_short_ratio: this._marketState.active.value.long_short_ratio,
-                    long_short_ratio_tta: this._marketState.active.value.long_short_ratio_tta,
-                    long_short_ratio_ttp: this._marketState.active.value.long_short_ratio_ttp,
                     technical_analysis: this._marketState.active.value.technical_analysis,
+                    keyzones: this._marketState.active.value.keyzones,
                 },
                 apiErrors: this._apiError.count
             });

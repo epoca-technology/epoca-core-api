@@ -197,8 +197,8 @@ export class PositionValidations implements IPositionValidations {
         }
 
         // Validate the leverage
-        if (typeof newStrategy.leverage != "number" || !this._validations.numberValid(newStrategy.leverage, 2, 15)) {
-            throw new Error(this._utils.buildApiError(`The leverage must be a valid number ranging 2-15. 
+        if (typeof newStrategy.leverage != "number" || !this._validations.numberValid(newStrategy.leverage, 2, 75)) {
+            throw new Error(this._utils.buildApiError(`The leverage must be a valid number ranging 2-75. 
             Received: ${newStrategy.leverage}`, 30005));
         }
 
@@ -211,7 +211,7 @@ export class PositionValidations implements IPositionValidations {
         // Validate the take profit 1
         if (
             typeof newStrategy.take_profit_1 != "object" || 
-            !this._validations.numberValid(newStrategy.take_profit_1.price_change_requirement, 0.4, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_1.price_change_requirement, 0.05, 10) ||
             !this._validations.numberValid(newStrategy.take_profit_1.max_hp_drawdown, -90, 0) ||
             !this._validations.numberValid(newStrategy.take_profit_1.max_gain_drawdown, -100, -0.01)
         ) {
@@ -223,7 +223,7 @@ export class PositionValidations implements IPositionValidations {
         // Validate the take profit 2
         if (
             typeof newStrategy.take_profit_2 != "object" || 
-            !this._validations.numberValid(newStrategy.take_profit_2.price_change_requirement, 0.4, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_2.price_change_requirement, 0.05, 10) ||
             !this._validations.numberValid(newStrategy.take_profit_2.max_hp_drawdown, -90, 0) ||
             !this._validations.numberValid(newStrategy.take_profit_2.max_gain_drawdown, -100, -0.01)
         ) {
@@ -235,7 +235,7 @@ export class PositionValidations implements IPositionValidations {
         // Validate the take profit 3
         if (
             typeof newStrategy.take_profit_3 != "object" || 
-            !this._validations.numberValid(newStrategy.take_profit_3.price_change_requirement, 0.4, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_3.price_change_requirement, 0.05, 10) ||
             !this._validations.numberValid(newStrategy.take_profit_3.max_hp_drawdown, -90, 0) ||
             !this._validations.numberValid(newStrategy.take_profit_3.max_gain_drawdown, -100, -0.01)
         ) {
@@ -247,7 +247,7 @@ export class PositionValidations implements IPositionValidations {
         // Validate the take profit 4
         if (
             typeof newStrategy.take_profit_4 != "object" || 
-            !this._validations.numberValid(newStrategy.take_profit_4.price_change_requirement, 0.4, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_4.price_change_requirement, 0.05, 10) ||
             !this._validations.numberValid(newStrategy.take_profit_4.max_hp_drawdown, -90, 0) ||
             !this._validations.numberValid(newStrategy.take_profit_4.max_gain_drawdown, -100, -0.01)
         ) {
@@ -259,7 +259,7 @@ export class PositionValidations implements IPositionValidations {
         // Validate the take profit 5
         if (
             typeof newStrategy.take_profit_5 != "object" || 
-            !this._validations.numberValid(newStrategy.take_profit_5.price_change_requirement, 0.4, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_5.price_change_requirement, 0.05, 10) ||
             !this._validations.numberValid(newStrategy.take_profit_5.max_hp_drawdown, -90, 0) ||
             !this._validations.numberValid(newStrategy.take_profit_5.max_gain_drawdown, -100, -0.01)
         ) {

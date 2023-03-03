@@ -185,26 +185,13 @@ export class SignalValidations implements ISignalValidations {
             if (!this._v.numberValid(policy.trend_sum, 0, 1)) this.error("trend_sum", policy.trend_sum, origin, 36003);
             if (!this._v.numberValid(policy.trend_state, 0, 9)) this.error("trend_state", policy.trend_state, origin, 36004);
             if (!this._v.numberValid(policy.trend_intensity, 0, 2)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
-            if (!this._v.numberValid(policy.ta_15m, 0, 2)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, 0, 2)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, 0, 2)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, 0, 2)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, 0, 2)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, 0, 2)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, 1, 2)) this.error("technicals", policy.technicals, origin, 36006);
         } else {
             if (!this._v.numberValid(policy.trend_sum, -1, 0)) this.error("trend_sum", policy.trend_sum, origin, 36003);
             if (!this._v.numberValid(policy.trend_state, -9, 0)) this.error("trend_state", policy.trend_state, origin, 36004);
             if (!this._v.numberValid(policy.trend_intensity, -2, 0)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
-            if (!this._v.numberValid(policy.ta_15m, -2, 0)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, -2, 0)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, -2, 0)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, -2, 0)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, -2, 0)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, -2, 0)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, -2, -1)) this.error("technicals", policy.technicals, origin, 36006);
         }
-
-        // Validate the technicals
-        this.technicalsValid(policy, origin);
     }
 
 
@@ -287,30 +274,17 @@ export class SignalValidations implements ISignalValidations {
             if (!this._v.numberValid(policy.trend_sum, 0, 1)) this.error("trend_sum", policy.trend_sum, origin, 36003);
             if (!this._v.numberValid(policy.trend_state, 0, 9)) this.error("trend_state", policy.trend_state, origin, 36004);
             if (!this._v.numberValid(policy.trend_intensity, 0, 2)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
-            if (!this._v.numberValid(policy.ta_15m, 0, 2)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, 0, 2)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, 0, 2)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, 0, 2)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, 0, 2)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, 0, 2)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, 1, 2)) this.error("technicals", policy.technicals, origin, 36006);
             if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
             if (policy.volume_direction != 2) this.error("volume_direction", policy.volume_direction, origin, 36016);
         } else {
             if (!this._v.numberValid(policy.trend_sum, -1, 0)) this.error("trend_sum", policy.trend_sum, origin, 36003);
             if (!this._v.numberValid(policy.trend_state, -9, 0)) this.error("trend_state", policy.trend_state, origin, 36004);
             if (!this._v.numberValid(policy.trend_intensity, -2, 0)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
-            if (!this._v.numberValid(policy.ta_15m, -2, 0)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, -2, 0)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, -2, 0)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, -2, 0)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, -2, 0)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, -2, 0)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, -2, -1)) this.error("technicals", policy.technicals, origin, 36006);
             if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
             if (policy.volume_direction != -2) this.error("volume_direction", policy.volume_direction, origin, 36016);
         }
-
-        // Validate the technicals
-        this.technicalsValid(policy, origin);
     }
 
 
@@ -403,28 +377,15 @@ export class SignalValidations implements ISignalValidations {
             if (!this._v.numberValid(policy.trend_sum, 0, 1)) this.error("trend_sum", policy.trend_sum, origin, 36003);
             if (!this._v.numberValid(policy.trend_state, 0, 9)) this.error("trend_state", policy.trend_state, origin, 36004);
             if (!this._v.numberValid(policy.trend_intensity, 0, 2)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
-            if (!this._v.numberValid(policy.ta_15m, 0, 2)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, 0, 2)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, 0, 2)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, 0, 2)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, 0, 2)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, 0, 2)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, 1, 2)) this.error("technicals", policy.technicals, origin, 36006);
             if (!this._v.numberValid(policy.open_interest, 1, 2)) this.error("open_interest", policy.open_interest, origin, 36012);
         } else {
             if (!this._v.numberValid(policy.trend_sum, -1, 0)) this.error("trend_sum", policy.trend_sum, origin, 36003);
             if (!this._v.numberValid(policy.trend_state, -9, 0)) this.error("trend_state", policy.trend_state, origin, 36004);
             if (!this._v.numberValid(policy.trend_intensity, -2, 0)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
-            if (!this._v.numberValid(policy.ta_15m, -2, 0)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, -2, 0)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, -2, 0)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, -2, 0)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, -2, 0)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, -2, 0)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, -2, -1)) this.error("technicals", policy.technicals, origin, 36006);
             if (!this._v.numberValid(policy.open_interest, -2, -1)) this.error("open_interest", policy.open_interest, origin, 36012);
         }
-
-        // Validate the technicals
-        this.technicalsValid(policy, origin);
     }
 
 
@@ -447,28 +408,15 @@ export class SignalValidations implements ISignalValidations {
             if (!this._v.numberValid(policy.trend_sum, 0, 1)) this.error("trend_sum", policy.trend_sum, origin, 36003);
             if (!this._v.numberValid(policy.trend_state, 0, 9)) this.error("trend_state", policy.trend_state, origin, 36004);
             if (!this._v.numberValid(policy.trend_intensity, 0, 2)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
-            if (!this._v.numberValid(policy.ta_15m, 0, 2)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, 0, 2)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, 0, 2)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, 0, 2)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, 0, 2)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, 0, 2)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, 1, 2)) this.error("technicals", policy.technicals, origin, 36006);
             if (!this._v.numberValid(policy.long_short_ratio, 1, 2)) this.error("long_short_ratio", policy.long_short_ratio, origin, 36013);
         } else {
             if (!this._v.numberValid(policy.trend_sum, -1, 0)) this.error("trend_sum", policy.trend_sum, origin, 36003);
             if (!this._v.numberValid(policy.trend_state, -9, 0)) this.error("trend_state", policy.trend_state, origin, 36004);
             if (!this._v.numberValid(policy.trend_intensity, -2, 0)) this.error("trend_intensity", policy.trend_intensity, origin, 36005);
-            if (!this._v.numberValid(policy.ta_15m, -2, 0)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, -2, 0)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, -2, 0)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, -2, 0)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, -2, 0)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, -2, 0)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, -2, -1)) this.error("technicals", policy.technicals, origin, 36006);
             if (!this._v.numberValid(policy.long_short_ratio, -2, -1)) this.error("long_short_ratio", policy.long_short_ratio, origin, 36013);
         }
-
-        // Validate the technicals
-        this.technicalsValid(policy, origin);
     }
 
 
@@ -580,23 +528,10 @@ export class SignalValidations implements ISignalValidations {
 
         // Validate the rest according to the side
         if (side == "LONG") {
-            if (!this._v.numberValid(policy.ta_15m, -2, 0)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, -2, 0)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, -2, 0)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, -2, 0)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, -2, 0)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, -2, 0)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, -2, -1)) this.error("technicals", policy.technicals, origin, 36006);
         } else {
-            if (!this._v.numberValid(policy.ta_15m, 0, 2)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, 0, 2)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, 0, 2)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, 0, 2)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, 0, 2)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, 0, 2)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, 1, 2)) this.error("technicals", policy.technicals, origin, 36006);
         }
-
-        // Validate the technicals
-        this.technicalsValid(policy, origin);
     }
 
 
@@ -660,25 +595,12 @@ export class SignalValidations implements ISignalValidations {
         if (side == "LONG") {
             if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
             if (policy.volume_direction != -2) this.error("volume_direction", policy.volume, origin, 36016);
-            if (!this._v.numberValid(policy.ta_15m, -2, 0)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, -2, 0)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, -2, 0)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, -2, 0)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, -2, 0)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, -2, 0)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, -2, -1)) this.error("technicals", policy.technicals, origin, 36006);
         } else {
             if (!this._v.numberValid(policy.volume, 1, 2)) this.error("volume", policy.volume, origin, 36015);
             if (policy.volume_direction != 2) this.error("volume_direction", policy.volume, origin, 36016);
-            if (!this._v.numberValid(policy.ta_15m, 0, 2)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, 0, 2)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, 0, 2)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, 0, 2)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, 0, 2)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, 0, 2)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, 1, 2)) this.error("technicals", policy.technicals, origin, 36006);
         }
-
-        // Validate the technicals
-        this.technicalsValid(policy, origin);
     }
 
 
@@ -755,25 +677,12 @@ export class SignalValidations implements ISignalValidations {
 
         // Validate the rest according to the side
         if (side == "LONG") {
-            if (!this._v.numberValid(policy.ta_15m, -2, 0)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, -2, 0)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, -2, 0)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, -2, 0)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, -2, 0)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, -2, 0)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, -2, -1)) this.error("technicals", policy.technicals, origin, 36006);
             if (!this._v.numberValid(policy.open_interest, -2, -1)) this.error("open_interest", policy.open_interest, origin, 36012);
         } else {
-            if (!this._v.numberValid(policy.ta_15m, 0, 2)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, 0, 2)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, 0, 2)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, 0, 2)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, 0, 2)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, 0, 2)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, 1, 2)) this.error("technicals", policy.technicals, origin, 36006);
             if (!this._v.numberValid(policy.open_interest, 1, 2)) this.error("open_interest", policy.open_interest, origin, 36012);
         }
-
-        // Validate the technicals
-        this.technicalsValid(policy, origin);
     }
 
 
@@ -797,25 +706,12 @@ export class SignalValidations implements ISignalValidations {
 
         // Validate the rest according to the side
         if (side == "LONG") {
-            if (!this._v.numberValid(policy.ta_15m, -2, 0)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, -2, 0)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, -2, 0)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, -2, 0)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, -2, 0)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, -2, 0)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, -2, -1)) this.error("technicals", policy.technicals, origin, 36006);
             if (!this._v.numberValid(policy.long_short_ratio, -2, -1)) this.error("long_short_ratio", policy.long_short_ratio, origin, 36013);
         } else {
-            if (!this._v.numberValid(policy.ta_15m, 0, 2)) this.error("ta_15m", policy.ta_15m, origin, 36017);
-            if (!this._v.numberValid(policy.ta_30m, 0, 2)) this.error("ta_30m", policy.ta_30m, origin, 36006);
-            if (!this._v.numberValid(policy.ta_1h, 0, 2)) this.error("ta_1h", policy.ta_1h, origin, 36007);
-            if (!this._v.numberValid(policy.ta_2h, 0, 2)) this.error("ta_2h", policy.ta_2h, origin, 36008);
-            if (!this._v.numberValid(policy.ta_4h, 0, 2)) this.error("ta_4h", policy.ta_4h, origin, 36009);
-            if (!this._v.numberValid(policy.ta_1d, 0, 2)) this.error("ta_1d", policy.ta_1d, origin, 36010);
+            if (!this._v.numberValid(policy.technicals, 1, 2)) this.error("technicals", policy.technicals, origin, 36006);
             if (!this._v.numberValid(policy.long_short_ratio, 1, 2)) this.error("long_short_ratio", policy.long_short_ratio, origin, 36013);
         }
-
-        // Validate the technicals
-        this.technicalsValid(policy, origin);
     }
 
 
@@ -867,21 +763,6 @@ export class SignalValidations implements ISignalValidations {
 
 
 
-
-    /**
-     * Ensures that at least 1 ta policy different to 0 has been provided.
-     * @param policy 
-     * @param origin 
-     */
-    private technicalsValid(
-        policy: ITechnicalsIssuance|ITechnicalsOpenInterestIssuance|ITechnicalsLongShortRatioIssuance|ITechnicalsCancellation|
-        ITechnicalsOpenInterestCancellation|ITechnicalsLongShortRatioCancellation, 
-        origin: string
-    ): void {
-        if (policy.ta_15m == 0 && policy.ta_30m == 0 && policy.ta_1h == 0 && policy.ta_2h == 0 && policy.ta_4h == 0 && policy.ta_1d == 0) {
-            throw new Error(this._utils.buildApiError(`At least 1 of the technical analysis properties must be different to 0 in the ${origin} Policy.`, 36011));
-        }
-    }
 
 
 

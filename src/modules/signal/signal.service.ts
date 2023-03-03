@@ -702,22 +702,12 @@ export class SignalService implements ISignalService {
     private isTACompliying(side: IBinancePositionSide, policy: ITechnicalsBasedIssuancePolicy, ds: ISignalDataset): boolean {
         // Evaluate a long policy
         if (side == "LONG") { 
-            return  (policy.ta_15m == 0 || ds.marketState.technical_analysis["15m"].s.a >= policy.ta_15m) &&
-                    (policy.ta_30m == 0 || ds.marketState.technical_analysis["30m"].s.a >= policy.ta_30m) &&
-                    (policy.ta_1h == 0 || ds.marketState.technical_analysis["1h"].s.a >= policy.ta_1h) &&
-                    (policy.ta_2h == 0 || ds.marketState.technical_analysis["2h"].s.a >= policy.ta_2h) &&
-                    (policy.ta_4h == 0 || ds.marketState.technical_analysis["4h"].s.a >= policy.ta_4h) &&
-                    (policy.ta_1d == 0 || ds.marketState.technical_analysis["1d"].s.a >= policy.ta_1d);
+            return  (policy.technicals == 0 || ds.marketState.technical_analysis.r >= policy.technicals);
         }
 
         // Evaluate a short policy
         else { 
-            return  (policy.ta_15m == 0 || ds.marketState.technical_analysis["15m"].s.a <= policy.ta_15m) &&
-                    (policy.ta_30m == 0 || ds.marketState.technical_analysis["30m"].s.a <= policy.ta_30m) &&
-                    (policy.ta_1h == 0 || ds.marketState.technical_analysis["1h"].s.a <= policy.ta_1h) &&
-                    (policy.ta_2h == 0 || ds.marketState.technical_analysis["2h"].s.a <= policy.ta_2h) &&
-                    (policy.ta_4h == 0 || ds.marketState.technical_analysis["4h"].s.a <= policy.ta_4h) &&
-                    (policy.ta_1d == 0 || ds.marketState.technical_analysis["1d"].s.a <= policy.ta_1d);
+            return  (policy.technicals == 0 || ds.marketState.technical_analysis.r <= policy.technicals)
         }
     }
 
@@ -1189,22 +1179,12 @@ export class SignalService implements ISignalService {
    private isTACancelling(side: IBinancePositionSide, policy: ITechnicalsBasedCancellationPolicy, ds: ISignalDataset): boolean {
         // Evaluate a long policy
         if (side == "LONG") { 
-            return  (policy.ta_15m == 0 || ds.marketState.technical_analysis["15m"].s.a <= policy.ta_15m) &&
-                    (policy.ta_30m == 0 || ds.marketState.technical_analysis["30m"].s.a <= policy.ta_30m) &&
-                    (policy.ta_1h == 0 || ds.marketState.technical_analysis["1h"].s.a <= policy.ta_1h) &&
-                    (policy.ta_2h == 0 || ds.marketState.technical_analysis["2h"].s.a <= policy.ta_2h) &&
-                    (policy.ta_4h == 0 || ds.marketState.technical_analysis["4h"].s.a <= policy.ta_4h) &&
-                    (policy.ta_1d == 0 || ds.marketState.technical_analysis["1d"].s.a <= policy.ta_1d);
+            return  (policy.technicals == 0 || ds.marketState.technical_analysis.r <= policy.technicals);
         }
 
         // Evaluate a short policy
         else { 
-            return  (policy.ta_15m == 0 || ds.marketState.technical_analysis["15m"].s.a >= policy.ta_15m) &&
-                    (policy.ta_30m == 0 || ds.marketState.technical_analysis["30m"].s.a >= policy.ta_30m) &&
-                    (policy.ta_1h == 0 || ds.marketState.technical_analysis["1h"].s.a >= policy.ta_1h) &&
-                    (policy.ta_2h == 0 || ds.marketState.technical_analysis["2h"].s.a >= policy.ta_2h) &&
-                    (policy.ta_4h == 0 || ds.marketState.technical_analysis["4h"].s.a >= policy.ta_4h) &&
-                    (policy.ta_1d == 0 || ds.marketState.technical_analysis["1d"].s.a >= policy.ta_1d);
+            return  (policy.technicals == 0 || ds.marketState.technical_analysis.r >= policy.technicals);
         }
     }
 
@@ -1370,12 +1350,7 @@ export class SignalService implements ISignalService {
                     trend_sum: 0,
                     trend_state: 5,
                     trend_intensity: 2,
-                    ta_15m: 2,
-                    ta_30m: 2,
-                    ta_1h: 2,
-                    ta_2h: 2,
-                    ta_4h: 2,
-                    ta_1d: 0,
+                    technicals: 2,
                 },
                 open_interest: {
                     enabled: true,
@@ -1398,12 +1373,7 @@ export class SignalService implements ISignalService {
                     trend_intensity: 1,
                     volume: 1,
                     volume_direction: 2,
-                    ta_15m: 1,
-                    ta_30m: 1,
-                    ta_1h: 1,
-                    ta_2h: 1,
-                    ta_4h: 0,
-                    ta_1d: 0,
+                    technicals: 1
                 },
                 volume_open_interest: {
                     enabled: true,
@@ -1428,12 +1398,7 @@ export class SignalService implements ISignalService {
                     trend_sum: 0,
                     trend_state: 3,
                     trend_intensity: 1,
-                    ta_15m: 1,
-                    ta_30m: 1,
-                    ta_1h: 1,
-                    ta_2h: 1,
-                    ta_4h: 0,
-                    ta_1d: 0,
+                    technicals: 1,
                     open_interest: 1,
                 },
                 technicals_long_short_ratio: {
@@ -1441,12 +1406,7 @@ export class SignalService implements ISignalService {
                     trend_sum: 0,
                     trend_state: 3,
                     trend_intensity: 1,
-                    ta_15m: 1,
-                    ta_30m: 1,
-                    ta_1h: 1,
-                    ta_2h: 1,
-                    ta_4h: 0,
-                    ta_1d: 0,
+                    technicals: 1,
                     long_short_ratio: 1,
                 },
                 open_interest_long_short_ratio: {
@@ -1472,12 +1432,7 @@ export class SignalService implements ISignalService {
                 },
                 technicals: {
                     enabled: true,
-                    ta_15m: -1,
-                    ta_30m: -1,
-                    ta_1h: -1,
-                    ta_2h: -1,
-                    ta_4h: -1,
-                    ta_1d: 0,
+                    technicals: -2
                 },
                 open_interest: {
                     enabled: true,
@@ -1491,12 +1446,7 @@ export class SignalService implements ISignalService {
                     enabled: true,
                     volume: 1,
                     volume_direction: -2,
-                    ta_15m: -1,
-                    ta_30m: -1,
-                    ta_1h: -1,
-                    ta_2h: -1,
-                    ta_4h: 0,
-                    ta_1d: 0,
+                    technicals: -1
                 },
                 volume_open_interest: {
                     enabled: true,
@@ -1512,22 +1462,12 @@ export class SignalService implements ISignalService {
                 },
                 technicals_open_interest: {
                     enabled: true,
-                    ta_15m: -1,
-                    ta_30m: -1,
-                    ta_1h: -1,
-                    ta_2h: -1,
-                    ta_4h: 0,
-                    ta_1d: 0,
+                    technicals: -1,
                     open_interest: -1,
                 },
                 technicals_long_short_ratio: {
                     enabled: true,
-                    ta_15m: -1,
-                    ta_30m: -1,
-                    ta_1h: -1,
-                    ta_2h: -1,
-                    ta_4h: 0,
-                    ta_1d: 0,
+                    technicals: -1,
                     long_short_ratio: -1,
                 },
                 open_interest_long_short_ratio: {
@@ -1565,12 +1505,7 @@ export class SignalService implements ISignalService {
                     trend_sum: 0,
                     trend_state: -5,
                     trend_intensity: -2,
-                    ta_15m: -2,
-                    ta_30m: -2,
-                    ta_1h: -2,
-                    ta_2h: -2,
-                    ta_4h: -2,
-                    ta_1d: 0,
+                    technicals: -2
                 },
                 open_interest: {
                     enabled: true,
@@ -1593,12 +1528,7 @@ export class SignalService implements ISignalService {
                     trend_intensity: -1,
                     volume: 1,
                     volume_direction: -2,
-                    ta_15m: -1,
-                    ta_30m: -1,
-                    ta_1h: -1,
-                    ta_2h: -1,
-                    ta_4h: 0,
-                    ta_1d: 0,
+                    technicals: -1
                 },
                 volume_open_interest: {
                     enabled: true,
@@ -1623,12 +1553,7 @@ export class SignalService implements ISignalService {
                     trend_sum: 0,
                     trend_state: -3,
                     trend_intensity: -1,
-                    ta_15m: -1,
-                    ta_30m: -1,
-                    ta_1h: -1,
-                    ta_2h: -1,
-                    ta_4h: 0,
-                    ta_1d: 0,
+                    technicals: -1,
                     open_interest: -1
                 },
                 technicals_long_short_ratio: {
@@ -1636,12 +1561,7 @@ export class SignalService implements ISignalService {
                     trend_sum: 0,
                     trend_state: -3,
                     trend_intensity: -1,
-                    ta_15m: -1,
-                    ta_30m: -1,
-                    ta_1h: -1,
-                    ta_2h: -1,
-                    ta_4h: 0,
-                    ta_1d: 0,
+                    technicals: -1,
                     long_short_ratio: -1
                 },
                 open_interest_long_short_ratio: {
@@ -1667,12 +1587,7 @@ export class SignalService implements ISignalService {
                 },
                 technicals: {
                     enabled: true,
-                    ta_15m: 1,
-                    ta_30m: 1,
-                    ta_1h: 1,
-                    ta_2h: 1,
-                    ta_4h: 1,
-                    ta_1d: 0,
+                    technicals: 2
                 },
                 open_interest: {
                     enabled: true,
@@ -1686,12 +1601,7 @@ export class SignalService implements ISignalService {
                     enabled: true,
                     volume: 1,
                     volume_direction: 2,
-                    ta_15m: 1,
-                    ta_30m: 1,
-                    ta_1h: 1,
-                    ta_2h: 1,
-                    ta_4h: 0,
-                    ta_1d: 0,
+                    technicals: 1,
                 },
                 volume_open_interest: {
                     enabled: true,
@@ -1707,22 +1617,12 @@ export class SignalService implements ISignalService {
                 },
                 technicals_open_interest: {
                     enabled: true,
-                    ta_15m: 1,
-                    ta_30m: 1,
-                    ta_1h: 1,
-                    ta_2h: 1,
-                    ta_4h: 0,
-                    ta_1d: 0,
+                    technicals: 1,
                     open_interest: 1
                 },
                 technicals_long_short_ratio: {
                     enabled: true,
-                    ta_15m: 1,
-                    ta_30m: 1,
-                    ta_1h: 1,
-                    ta_2h: 1,
-                    ta_4h: 0,
-                    ta_1d: 0,
+                    technicals: 1,
                     long_short_ratio: 1
                 },
                 open_interest_long_short_ratio: {

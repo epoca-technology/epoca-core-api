@@ -11,17 +11,12 @@ import {
     IMarketState,
     IWindowStateService,
     IVolumeStateService,
-    INetworkFeeStateService,
     IWindowState,
     IVolumeState,
     IOpenInterestStateService,
     ILongShortRatioStateService,
     ITechnicalAnalysisStateService,
-    IOpenInterestByBitStateService,
-    IOpenInterestOKXStateService,
-    IOpenInterestHuobiStateService,
-    ILongShortRatioTTAStateService,
-    ILongShortRatioTTPStateService,
+    IKeyZonesStateService,
 } from "./interfaces";
 
 
@@ -33,15 +28,10 @@ export class MarketStateService implements IMarketStateService {
     @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
     @inject(SYMBOLS.WindowStateService)                 private _windowState: IWindowStateService;
     @inject(SYMBOLS.VolumeStateService)                 private _volumeState: IVolumeStateService;
-    @inject(SYMBOLS.NetworkFeeStateService)             private _networkFeeState: INetworkFeeStateService;
     @inject(SYMBOLS.OpenInterestStateService)           private _openInterest: IOpenInterestStateService;
-    @inject(SYMBOLS.OpenInterestByBitStateService)      private _openInterestByBit: IOpenInterestByBitStateService;
-    @inject(SYMBOLS.OpenInterestOKXStateService)        private _openInterestOKX: IOpenInterestOKXStateService;
-    @inject(SYMBOLS.OpenInterestHuobiStateService)      private _openInterestHuobi: IOpenInterestHuobiStateService;
     @inject(SYMBOLS.LongShortRatioStateService)         private _longShortRatio: ILongShortRatioStateService;
-    @inject(SYMBOLS.LongShortRatioTTAStateService)      private _longShortRatioTTA: ILongShortRatioTTAStateService;
-    @inject(SYMBOLS.LongShortRatioTTPStateService)      private _longShortRatioTTP: ILongShortRatioTTPStateService;
     @inject(SYMBOLS.TechnicalAnalysisStateService)      private _ta: ITechnicalAnalysisStateService;
+    @inject(SYMBOLS.KeyZonesStateService)               private _keyZones: IKeyZonesStateService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
@@ -105,24 +95,19 @@ export class MarketStateService implements IMarketStateService {
      * @returns Promise<void>
      */
     public async initialize(): Promise<void> {
-        // Initialize the network fee module
-        await this._networkFeeState.initialize();
-
         // Initialize the open interest module after a small delay
         await this._utils.asyncDelay(10);
         await this._openInterest.initialize();
-        await this._openInterestByBit.initialize();
-        await this._openInterestOKX.initialize();
-        await this._openInterestHuobi.initialize();
 
         // Initialize the long/short ratio module after a small delay
         await this._utils.asyncDelay(10);
         await this._longShortRatio.initialize();
-        await this._longShortRatioTTA.initialize();
-        await this._longShortRatioTTP.initialize();
 
         // Initialize the Technical Analysis Module
         await this._ta.initialize();
+
+        // Initialize the KeyZones
+        await this._keyZones.initialize();
 
         // Calculate the state and initialize the interval
         await this.calculateState();
@@ -145,13 +130,7 @@ export class MarketStateService implements IMarketStateService {
     public stop(): void {
         if (this.candlestickStreamSub) this.candlestickStreamSub.unsubscribe();
         this._openInterest.stop();
-        this._openInterestByBit.stop();
-        this._openInterestOKX.stop();
-        this._openInterestHuobi.stop();
         this._longShortRatio.stop();
-        this._longShortRatioTTA.stop();
-        this._longShortRatioTTP.stop();
-        this._networkFeeState.stop();
         this._ta.stop();
     }
 
@@ -190,15 +169,10 @@ export class MarketStateService implements IMarketStateService {
             this.active.next({
                 window: windowState,
                 volume: volumeState,
-                network_fee: this._networkFeeState.state,
                 open_interest: this._openInterest.state,
-                open_interest_bybit: this._openInterestByBit.state,
-                open_interest_okx: this._openInterestOKX.state,
-                open_interest_huobi: this._openInterestHuobi.state,
                 long_short_ratio: this._longShortRatio.state,
-                long_short_ratio_tta: this._longShortRatioTTA.state,
-                long_short_ratio_ttp: this._longShortRatioTTP.state,
-                technical_analysis: this._ta.minState
+                technical_analysis: this._ta.minState,
+                keyzones: this._keyZones.calculateState()
             });
 
             // Check if there is a window state and if can be broadcasted
@@ -237,15 +211,10 @@ export class MarketStateService implements IMarketStateService {
         return {
             window: this._windowState.getDefaultState(),
             volume: this._volumeState.getDefaultState(),
-            network_fee: this._networkFeeState.getDefaultState(),
             open_interest: this._openInterest.getDefaultState(),
-            open_interest_bybit: this._openInterestByBit.getDefaultState(),
-            open_interest_okx: this._openInterestOKX.getDefaultState(),
-            open_interest_huobi: this._openInterestHuobi.getDefaultState(),
             long_short_ratio: this._longShortRatio.getDefaultState(),
-            long_short_ratio_tta: this._longShortRatioTTA.getDefaultState(),
-            long_short_ratio_ttp: this._longShortRatioTTP.getDefaultState(),
-            technical_analysis: this._ta.getDefaultMinifiedState()
+            technical_analysis: this._ta.getDefaultMinifiedState(),
+            keyzones: this._keyZones.getDefaultState(),
         }
     }
 }

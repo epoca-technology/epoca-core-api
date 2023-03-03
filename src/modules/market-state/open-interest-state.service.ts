@@ -125,10 +125,11 @@ export class OpenInterestStateService implements IOpenInterestStateService {
             const records: IBinanceOpenInterest[] = await this._binance.getOpenInterest();
 
             // Build the averaged list of values
-            const values: number[] = this._stateUtils.buildAveragedGroups(
+            /*const values: number[] = this._stateUtils.buildAveragedGroups(
                 records.map(f => Number(f.sumOpenInterestValue)), 
                 this.groups
-            );
+            );*/
+            const values: number[] = records.map(f => <number>this._utils.outputNumber(f.sumOpenInterestValue, {dp: 0}));
 
             // Calculate the window bands
             const bands: IStateBandsResult = this._stateUtils.calculateBands(
