@@ -256,22 +256,6 @@ export interface IVolumeState extends IState {
 }
 
 
-/**
- * Mempool Block Fee Record
- * When interacting with Mempool's API, a list of records will be retrieved.
- * For this module, make use of the avgFee_50 property.
- */
-export interface IMempoolBlockFeeRecord {
-    avgHeight: number,
-    timestamp: number,
-    avgFee_0: number,
-    avgFee_10: number,
-    avgFee_25: number,
-    avgFee_50: number, // <- Use this property
-    avgFee_75: number,
-    avgFee_90: number,
-    avgFee_100: number
-}
 
 
 

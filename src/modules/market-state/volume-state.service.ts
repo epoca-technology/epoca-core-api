@@ -42,7 +42,7 @@ export class VolumeStateService implements IVolumeStateService {
      * The percent a side (bull/bear) must represent in order for the volume to
      * have a direction.
      */
-    private readonly windowDirectionWidth: number = 20;
+    private readonly windowDirectionWidth: number = 16;
     private readonly directionRequirement: number = 51;
     private readonly strongDirectionRequirement: number = 55;
 
@@ -61,8 +61,8 @@ export class VolumeStateService implements IVolumeStateService {
      */
     public calculateState(window: ICandlestick[]): IVolumeState {
         // Build the averaged list of volumes
-        //const volumes: number[] = this._stateUtils.buildAveragedGroups(window.map(c => c.v), this.groups);
-        const volumes: number[] = window.map(c => c.v);
+        const volumes: number[] = this._stateUtils.buildAveragedGroups(window.map(c => c.v), this.groups);
+        //const volumes: number[] = window.map(c => c.v);
 
         // Calculate the window bands
         const bands: IStateBandsResult = this._stateUtils.calculateBands(

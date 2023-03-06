@@ -90,9 +90,9 @@ export class SignalService implements ISignalService {
         await this.initializePolicies();
         
         // Subscribe to the prediction stream
-        this.predictionSub = this._prediction.active.subscribe((p: IPrediction|undefined) => {
+        /*this.predictionSub = this._prediction.active.subscribe((p: IPrediction|undefined) => {
             try { if (p) this.onNewPrediction(p) } catch (e) { console.log(e)}
-        });
+        });*/
     }
 
 

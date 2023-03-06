@@ -67,7 +67,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * Limits the number of zones returned from the current price. For example, 
      * if 2 is provided, it retrieves 4 zones in total (2 above and 2 below)
      */
-    private readonly stateLimit: number = 3;
+    private readonly stateLimit: number = 5;
 
 
     /**
@@ -75,7 +75,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * Every intervalSeconds, the keyzones will be built based on the latest data.
      */
     private buildInterval: any;
-    private readonly intervalSeconds: number = 60 * 120; // ~2 hours
+    private readonly intervalSeconds: number = 60 * 180; // ~3 hours
     private buildTS: number = 0;
 
 

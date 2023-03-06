@@ -42,7 +42,7 @@ export class BulkDataService implements IBulkDataService {
      * Every intervalSeconds, the app bulk will be updated on the firebase rtdb.
      */
     private streamInterval: any;
-    private readonly streamIntervalSeconds: number = 5;
+    private readonly streamIntervalSeconds: number = 7.5;
 
 
 
