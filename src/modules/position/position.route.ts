@@ -17,10 +17,8 @@ import {IUtilitiesService} from "../utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Position Service
-import {IPositionService, IPositionHealth, IPositionTrade, IPositionHealthCandlestickRecord} from "../position";
-import { IBinancePositionSide } from "../binance";
+import {IPositionService} from "../position";
 const _position: IPositionService = appContainer.get<IPositionService>(SYMBOLS.PositionService);
-const _positionHealth: IPositionHealth = appContainer.get<IPositionHealth>(SYMBOLS.PositionHealth);
 
 
 
@@ -40,81 +38,7 @@ const PositionRoute = express.Router();
  ***********************/
 
 
-
-/**
- * Opens a brand new position on a given side.
- * @requires id-token
- * @requires api-secret
- * @requires otp
- * @requires authority: 4
- * @param side
- * @returns IAPIResponse<void>
-*/
-PositionRoute.route("/open").post(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Init values
-    const idToken: string = req.get("id-token");
-    const apiSecret: string = req.get("api-secret");
-    const otp: string = req.get("otp");
-    const ip: string = req.clientIp;
-    let reqUid: string;
-
-    try {
-        // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["side"], req.body, otp || "");
-
-        // Perform Action
-        await _position.openPosition(req.body.side);
-
-        // Return the response
-        res.send(_utils.apiResponse());
-    } catch (e) {
-		console.log(e);
-        _apiError.log("PositionRoute.open", e, reqUid, ip, req.body);
-        res.send(_utils.apiResponse(undefined, e));
-    }
-});
-
-
-
-
-
-
-
-
-/**
- * Closes an existing position based on a given side.
- * @requires id-token
- * @requires api-secret
- * @requires otp
- * @requires authority: 4
- * @param side
- * @param chunkSize
- * @returns IAPIResponse<void>
-*/
-PositionRoute.route("/close").post(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Init values
-    const idToken: string = req.get("id-token");
-    const apiSecret: string = req.get("api-secret");
-    const otp: string = req.get("otp");
-    const ip: string = req.clientIp;
-    let reqUid: string;
-
-    try {
-        // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["side", "chunkSize"], req.body, otp || "");
-
-        // Perform Action
-        await _position.closePosition(req.body.side, req.body.chunkSize);
-
-        // Return the response
-        res.send(_utils.apiResponse());
-    } catch (e) {
-		console.log(e);
-        _apiError.log("PositionRoute.close", e, reqUid, ip, req.body);
-        res.send(_utils.apiResponse(undefined, e));
-    }
-});
-
+// ...
 
 
 
@@ -135,6 +59,40 @@ PositionRoute.route("/close").post(mediumRiskLimit, async (req: express.Request,
 /********************************
  * Position Strategy Management *
  ********************************/
+
+
+
+
+
+/**
+ * Retrieves the current position strategy
+ * @requires id-token
+ * @requires api-secret
+ * @requires authority: 1
+ * @returns IAPIResponse<IPositionStrategy>
+*/
+PositionRoute.route("/getStrategy").get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+
+        // Return the response
+        res.send(_utils.apiResponse(_position.strategy));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("PositionRoute.getStrategy", e, reqUid, ip);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
 
 
 
@@ -190,22 +148,25 @@ PositionRoute.route("/updateStrategy").post(ultraHighRiskLimit, async (req: expr
 
 
 
-/********************
- * Position Health *
- *******************/
+
+
+
+/***************************
+ * Futures Account Balance *
+ ***************************/
 
 
 
 
 
 /**
- * Retrieves the position health candlesticks for a side.
+ * Retrieves the account's balance in the futures wallet.
  * @requires id-token
  * @requires api-secret
  * @requires authority: 1
- * @returns IAPIResponse<IPositionHealthWeights>
+ * @returns IAPIResponse<IAccountBalance>
 */
-PositionRoute.route("/getPositionHealthWeights").get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
+PositionRoute.route("/getBalance").get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -217,88 +178,10 @@ PositionRoute.route("/getPositionHealthWeights").get(mediumRiskLimit, async (req
         reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
 
         // Return the response
-        res.send(_utils.apiResponse(_positionHealth.weights));
+        res.send(_utils.apiResponse(_position.balance));
     } catch (e) {
 		console.log(e);
-        _apiError.log("PositionRoute.getPositionHealthWeights", e, reqUid, ip, req.query);
-        res.send(_utils.apiResponse(undefined, e));
-    }
-});
-
-
-
-
-
-/**
- * Updates the Position Health Weights.
- * @requires id-token
- * @requires api-secret
- * @requires otp
- * @requires authority: 4
- * @param newWeights
- * @returns IAPIResponse<void>
-*/
-PositionRoute.route("/updatePositionHealthWeights").post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Init values
-    const idToken: string = req.get("id-token");
-    const apiSecret: string = req.get("api-secret");
-    const otp: string = req.get("otp");
-    const ip: string = req.clientIp;
-    let reqUid: string;
-
-    try {
-        // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["newWeights"], req.body, otp || "");
-
-        // Perform Action
-        await _positionHealth.updateWeights(req.body.newWeights);
-
-        // Return the response
-        res.send(_utils.apiResponse());
-    } catch (e) {
-		console.log(e);
-        _apiError.log("PositionRoute.updatePositionHealthWeights", e, reqUid, ip, req.body);
-        res.send(_utils.apiResponse(undefined, e));
-    }
-});
-
-
-
-
-
-
-
-
-
-/**
- * Retrieves the position health candlesticks for a side.
- * @requires id-token
- * @requires api-secret
- * @requires authority: 1
- * @param side
- * @returns IAPIResponse<IPositionHealthCandlestickRecord[]>
-*/
-PositionRoute.route("/getPositionHealthCandlesticks").get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Init values
-    const idToken: string = req.get("id-token");
-    const apiSecret: string = req.get("api-secret");
-    const ip: string = req.clientIp;
-    let reqUid: string;
-
-    try {
-        // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["side"], req.query);
-
-        // Retrieve the data
-        const data: IPositionHealthCandlestickRecord[] = await _positionHealth.getPositionHealthCandlesticks(
-            <IBinancePositionSide>req.query.side
-        );
-
-        // Return the response
-        res.send(_utils.apiResponse(data));
-    } catch (e) {
-		console.log(e);
-        _apiError.log("PositionRoute.getPositionHealthCandlesticks", e, reqUid, ip, req.query);
+        _apiError.log("PositionRoute.getBalance", e, reqUid, ip, req.query);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -314,54 +197,6 @@ PositionRoute.route("/getPositionHealthCandlesticks").get(mediumRiskLimit, async
 
 
 
-
-
-
-
-
-
-
-
-
-/********************
- * Position History *
- ********************/
-
-
-
-
-
-/**
- * Retrieves the position trades for a given date range.
- * @requires id-token
- * @requires api-secret
- * @requires authority: 1
- * @param startAt 
- * @param endAt 
- * @returns IAPIResponse<IPositionTrade[]>
-*/
-PositionRoute.route("/listTrades").get(mediumRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Init values
-    const idToken: string = req.get("id-token");
-    const apiSecret: string = req.get("api-secret");
-    const ip: string = req.clientIp;
-    let reqUid: string;
-
-    try {
-        // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["startAt", "endAt"], req.query);
-
-        // Retrieve the data
-        const data: IPositionTrade[] = await _position.listTrades(Number(req.query.startAt), Number(req.query.endAt));
-
-        // Return the response
-        res.send(_utils.apiResponse(data));
-    } catch (e) {
-		console.log(e);
-        _apiError.log("PositionRoute.listTrades", e, reqUid, ip, req.query);
-        res.send(_utils.apiResponse(undefined, e));
-    }
-});
 
 
 

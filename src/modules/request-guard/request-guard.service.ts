@@ -113,7 +113,7 @@ export class RequestGuardService implements IRequestGuardService {
         requiredParams = requiredParams || [];
         params = params || {};
         for (let paramKey of requiredParams) {
-            if (params[paramKey] === undefined || params[paramKey] === null || params[paramKey] === '' || params[paramKey] === NaN) {
+            if (params[paramKey] === undefined || params[paramKey] === null || params[paramKey] === '' || Number.isNaN(params[paramKey])) {
                 throw new Error(this._utils.buildApiError(`The param (${paramKey}) is required but was not provided.`, 12002));
             }
         }

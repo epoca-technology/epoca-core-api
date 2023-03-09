@@ -1,6 +1,4 @@
-import { IBinancePositionSide } from "../binance";
 import { IStateType } from "../market-state";
-import { IActivePosition } from "../position";
 
 
 // Service
@@ -28,23 +26,12 @@ export interface INotificationService {
 
     // Prediction Notifications
     predictionGenerationIssue(error: any): Promise<void>,
-    
-    // Order Book Notifications
-    orderBookIssue(error: any): Promise<void>,
 
     // Market State Notifications
-    windowState(state: IStateType, stateValue: number, currentPrice: number): Promise<void>,
+    windowState(state: IStateType, change: number, price: number): Promise<void>,
 
     // Position Notifications
-    onNewPosition(side: IBinancePositionSide, margin: number, amount: number): Promise<void>,
-    onPositionClose(
-        side: IBinancePositionSide, 
-        chunkSize: number, 
-        closePrice: number,
-        pnl: number
-    ): Promise<void>,
-    liquidationPriceIsWarning(position: IActivePosition, distance: number): Promise<void>,
-    positionError(source: string, error: any): Promise<void>
+
 }
 
 

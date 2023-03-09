@@ -19,11 +19,9 @@ import { guiVersionModule } from "../modules/gui-version";
 import { ipBlacklistModule } from "../modules/ip-blacklist";
 import { marketStateModule } from "../modules/market-state";
 import { notificationModule } from "../modules/notification";
-import { orderBookModule } from "../modules/order-book";
 import { positionModule } from "../modules/position";
 import { requestGuardModule } from "../modules/request-guard";
 import { serverModule } from "../modules/server";
-import { signalModule } from "../modules/signal";
 import { utilitiesModule } from "../modules/utilities";
 
 
@@ -85,9 +83,6 @@ appContainer.load(
     // Notification
     notificationModule,
 
-    // Order Book
-    orderBookModule,
-
     // Position
     positionModule,
 
@@ -96,9 +91,6 @@ appContainer.load(
 
     // Server
     serverModule,
-
-    // Signal
-    signalModule,
 
     // Utilities
     utilitiesModule,

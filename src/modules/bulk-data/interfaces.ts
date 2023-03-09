@@ -1,18 +1,19 @@
 import { IEpochRecord } from "../epoch";
 import { IServerData, IServerResources } from "../server";
 import { IApiError } from "../api-error";
-import { IPrediction, IPredictionResult } from "../epoch-builder";
+import { IPrediction } from "../epoch-builder";
 import { IPredictionState, IPredictionStateIntesity } from "../prediction";
 import { 
     IKeyZoneState,
     ILongShortRatioState, 
     IMarketState, 
     IMinifiedTAState, 
+    IMinifiedVolumeState, 
     IOpenInterestState, 
-    IState, 
-    IVolumeState 
+    ISplitStates, 
+    IStateType, 
 } from "../market-state";
-import { IPositionSummary } from "../position";
+import { IActivePosition } from "../position";
 
 
 
@@ -35,6 +36,15 @@ export interface IBulkDataService {
 
 
 
+
+
+
+
+
+
+/************
+ * App Bulk *
+ ************/
 
 
 
@@ -68,11 +78,8 @@ export interface IAppBulk {
     // The active prediction state intensity. If there isn't one, or an epoch isn't active, it will be 0
     predictionStateIntesity: IPredictionStateIntesity, 
 
-    // The current signal based on the cancellation policies
-    signal: IPredictionResult,
-
     // The current position summary
-    position: IPositionSummary,
+    position: IActivePosition|null,
 
     // The active market state.
     marketState: IMarketState,
@@ -99,11 +106,8 @@ export interface IAppBulkStream {
     // The active prediction state intensity. If there isn't one, or an epoch isn't active, it will be 0
     predictionStateIntesity: IPredictionStateIntesity, 
 
-    // The current signal based on the cancellation policies
-    signal: IPredictionResult,
-
     // The current position summary
-    position: IPositionSummary,
+    position: IActivePosition|null,
 
     // The active market state.
     marketState: ICompressedMarketState,
@@ -120,16 +124,22 @@ export interface IAppBulkStream {
  */
 export interface ICompressedMarketState {
     window: ICompressedWindowState,
-    volume: IVolumeState,
+    volume: IMinifiedVolumeState,
     open_interest: IOpenInterestState,
     long_short_ratio: ILongShortRatioState,
     technical_analysis: IMinifiedTAState,
     keyzones: IKeyZoneState
 }
 
-export interface ICompressedWindowState extends IState {
+export interface ICompressedWindowState {
+    // The state of the window
+    s: IStateType,
+
+    // The split states payload
+    ss: ISplitStates,
+    
     // The compressed prediction candlesticks that comprise the window
-    window: ICompressedCandlesticks
+    w: ICompressedCandlesticks
 }
 
 export interface ICompressedCandlesticks {
@@ -139,9 +149,24 @@ export interface ICompressedCandlesticks {
     h: number[],                  // High Prices
     l: number[],                  // Low Prices
     c: number[],                  // Close Prices
-    v: number[]                   // Volumes (USDT)
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**********
+ * Server *
+ **********/
 
 
 
@@ -160,6 +185,7 @@ export interface IServerDataBulk {
     // The list of API errors
     apiErrors: IApiError[]
 }
+
 
 
 

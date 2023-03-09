@@ -1,11 +1,15 @@
 import {injectable, inject} from "inversify";
+import { BigNumber } from "bignumber.js";
 import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { 
-    IStateBandsResult,
+    ISplitStateResult,
+    ISplitStates,
+    ISplitStateSeriesItem,
     IStateType,
     IStateUtilitiesService,
 } from "./interfaces";
+import { ICandlestick } from "../candlestick";
 
 
 
@@ -50,31 +54,90 @@ export class StateUtilitiesService implements IStateUtilitiesService {
 
 
 
+
+
+
+
+
     /**
-     * Calculates the upper and lower bands based on the highest and lowest
-     * values within the sequence.
-     * @param minVal 
-     * @param maxVal 
-     * @returns IStateBandsResult
+     * Calculates the current state for each split. Finally, calculates the
+     * average state and returns it as well as the split states.
+     * @param series 
+     * @param requirement 
+     * @param strongRequirement 
+     * @returns { averageState: IStateType, splitStates: ISplitStates }
      */
-    public calculateBands(minVal: number, maxVal: number): IStateBandsResult {
-        // Init the bands' ends
-        const upperBandEnd: number = maxVal;
-        const lowerBandEnd: number = minVal;
-
-        // Calculate the windows middle
-        const windowMiddle: number = <number>this._utils.calculateAverage([upperBandEnd, lowerBandEnd]);
-
-        // Calculate the start of the upper and lower bands
-        const upperBandStart: number = <number>this._utils.calculateAverage([windowMiddle, upperBandEnd]);
-        const lowerBandStart: number = <number>this._utils.calculateAverage([windowMiddle, lowerBandEnd]);
-
-        // Finally, pack the bands and return then
-        return { 
-            //middle: windowMiddle,
-            upper_band: {start: upperBandStart, end: upperBandEnd}, 
-            lower_band: {start: lowerBandStart, end: lowerBandEnd} 
+    public calculateCurrentState(
+        series: ICandlestick[]|ISplitStateSeriesItem[],
+        requirement: number,
+        strongRequirement: number
+    ): { averageState: IStateType, splitStates: ISplitStates } {
+        // Build the split states
+        const states: ISplitStates = {
+            s100: this.calculateSplitStateResult(series, requirement, strongRequirement),
+            s75: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.75)), requirement, strongRequirement),
+            s50: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.5)), requirement, strongRequirement),
+            s25: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.25)), requirement, strongRequirement),
+            s15: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.15)), requirement, strongRequirement),
+            s10: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.10)), requirement, strongRequirement),
+            s5: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.05)), requirement, strongRequirement),
+            s2: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.02)), requirement, strongRequirement),
         }
+
+        // Finally, return the average state and the split results
+        return {
+            averageState: this.calculateAverageState([
+                states.s100.s,
+                states.s75.s,
+                states.s50.s,
+                states.s25.s,
+                states.s15.s,
+                states.s10.s,
+                states.s5.s,
+                states.s2.s
+            ]),
+            splitStates: states
+        }
+    }
+
+
+
+
+    /**
+     * Calculates the state result for a given split.
+     * @param series 
+     * @param requirement 
+     * @param strongRequirement 
+     * @returns ISplitStateResult
+     */
+    private calculateSplitStateResult(
+        series: ICandlestick[]|ISplitStateSeriesItem[]|any[],
+        requirement: number,
+        strongRequirement: number
+    ): ISplitStateResult {
+        // Initialize the first and last values
+        let initial: number;
+        let final: number;
+        if (typeof series[0].y == "number") {
+            initial = series[0].y;
+            final = series.at(-1).y;
+        } else {
+            initial = series[0].c;
+            final = series.at(-1).c;
+        }
+
+        // Calculate the change between the first and last values
+        const change: number = <number>this._utils.calculatePercentageChange(initial, final);
+
+        // Calculate the state
+        let state: IStateType = 0;
+        if      (change >= strongRequirement)       { state = 2 }
+        else if (change >= requirement)             { state = 1 }
+        else if (change <= -(strongRequirement))    { state = -2 }
+        else if (change <= -(requirement))          { state = -1 }
+
+        // Finally, return the result
+        return { s: state, c: change }
     }
 
 
@@ -85,44 +148,20 @@ export class StateUtilitiesService implements IStateUtilitiesService {
 
 
     /**
-     * Calculates the current state of a module based on the provided params.
-     * @param initialValue 
-     * @param lastValue 
-     * @param bands
-     * @param minChange 
-     * @param strongChange 
-     * @returns { state: IStateType, state_value: number }
+     * Given a list of states, it will determine the average and
+     * return an unified result.
+     * @param states
+     * @returns IStateType
      */
-    public calculateState(
-        initialValue: number, 
-        lastValue: number, 
-        bands: IStateBandsResult,
-        minChange: number,
-        strongChange: number
-    ): { state: IStateType, state_value: number } { 
-        // Init values
-        let state: IStateType = 0;
-        const stateValue: number = <number>this._utils.calculatePercentageChange(initialValue, lastValue);
+    public calculateAverageState(states: IStateType[]): IStateType {
+        // Calculate the sum of all the results
+        const mean: BigNumber = <BigNumber>this._utils.calculateAverage(states, { of: "bn"});
 
-        // Check if it is an increasing state
-        if (
-            stateValue >= minChange && 
-            initialValue <= bands.upper_band.start && 
-            lastValue >= bands.upper_band.start
-        ) { 
-            state = stateValue >= strongChange ? 2: 1;
-        }
-
-        // Check if it is a decreasing state
-        else if (
-            stateValue <= -(minChange) && 
-            initialValue >= bands.lower_band.start &&
-            lastValue <= bands.lower_band.start
-        ) { 
-            state = stateValue <= -(strongChange) ? -2: -1;
-        }
-
-        // Finally, pack and return the results
-        return { state: state, state_value: stateValue }
+        // Calculate the state and return it
+        if (mean.isGreaterThanOrEqualTo(1.5))       { return 2 }
+        else if (mean.isGreaterThanOrEqualTo(0.75)) { return 1 }
+        else if (mean.isLessThanOrEqualTo(-1.5))    { return -2 }
+        else if (mean.isLessThanOrEqualTo(-0.75))   { return -1 }
+        else                                        { return 0 }
     }
 }

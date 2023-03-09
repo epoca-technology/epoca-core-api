@@ -381,27 +381,6 @@ export class NotificationService implements INotificationService {
 
 
 
-    
-
-    /* Order Book Notifications */
-
-
-
-
-
-
-    /**
-     * Order book retrieval issue.
-     * @param error 
-     * @returns Promise<void>
-     */
-     public orderBookIssue(error: any): Promise<void> {
-        return this.broadcast({
-            sender: "ORDER_BOOK",
-            title: "Error when updating:",
-            description: this._utils.getErrorMessage(error)
-        });
-    }
 
 
 
@@ -419,16 +398,16 @@ export class NotificationService implements INotificationService {
     /**
      * Increasing or Decreasing Window State.
      * @param state 
-     * @param stateValue 
-     * @param currentPrice 
+     * @param change 
+     * @param price 
      * @returns Promise<void>
      */
-     public windowState(state: IStateType, stateValue: number, currentPrice: number): Promise<void> {
-        const stateName: string = state > 0 ? "increasing": "decreasing";
+     public windowState(state: IStateType, change: number, price: number): Promise<void> {
+        const stateName = state > 0 ? "increasing": "decreasing";
         return this.broadcast({
             sender: "MARKET_STATE",
             title: `Bitcoin is ${stateName}:`,
-            description: `The price has changed ${stateValue > 0 ? '+': ''}${stateValue}% and is currently at $${currentPrice}`
+            description: `The price has changed ${change > 0 ? '+': ''}${change}% in the current window and is currently at $${price}`
         });
     }
 
@@ -448,87 +427,4 @@ export class NotificationService implements INotificationService {
 
 
 
-    /**
-     * Triggers whenever a position is opened.
-     * @param side 
-     * @param margin 
-     * @param amount 
-     * @returns Promise<void>
-     */
-    public onNewPosition(side: IBinancePositionSide, margin: number, amount: number): Promise<void> {
-        let desc: string = `A ${side} position has been opened with a margin of ~$${margin}`;
-        desc += ` and a total amount of ~${amount} BTC.`;
-        return this.broadcast({
-            sender: "POSITION",
-            title: `New ${side} Position:`,
-            description: desc
-        });
-    }
-
-
-
-
-    /**
-     * Triggers whenever a position is closed.
-     * @param position 
-     * @param chunkSize 
-     * @param closePrice 
-     * @param pnl 
-     * @returns Promise<void>
-     */
-    public onPositionClose(
-        side: IBinancePositionSide, 
-        chunkSize: number, 
-        closePrice: number,
-        pnl: number
-    ): Promise<void> {
-        let desc: string = `The ${side} position has been ${chunkSize == 1 ? 'fully': 'partially'} closed`;
-        desc += ` at $${closePrice}. The estimated PNL is: ${pnl > 0 ? '+': ''}${this._utils.outputNumber(pnl * chunkSize)} USDT.`;
-        return this.broadcast({
-            sender: "POSITION",
-            title: `${side} Position Closed (${chunkSize*100}%):`,
-            description: desc
-        });
-    }
-
-
-
-
-
-
-
-    /**
-     * Triggers whenever the mark price is close to the liquidation
-     * price.
-     * @param position
-     * @param distance
-     * @returns Promise<void>
-     */
-    public liquidationPriceIsWarning(position: IActivePosition, distance: number): Promise<void> {
-        let desc: string = `The distance between the current price $${position.mark_price}`;
-        desc += ` and the liquidation price $${position.liquidation_price} is less than ${distance}%.`;
-        desc += ` make sure to increase or close the ${position.side} position ASAP.`;
-        return this.broadcast({
-            sender: "POSITION",
-            title: `${position.side} Liquidation Warning:`,
-            description: desc
-        });
-    }
-
-
-
-
-    /**
-     * Triggers whenever there is an error during a position operation.
-     * @param source
-     * @param error
-     * @returns Promise<void>
-     */
-    public positionError(source: string, error: any): Promise<void> {
-        return this.broadcast({
-            sender: "POSITION",
-            title: `${source} Error:`,
-            description: this._utils.getErrorMessage(error)
-        });
-    }
 }

@@ -78,12 +78,7 @@ export interface ITableNames {
     prediction_model_certificates: string,
     regression_certificates: string,
     prediction_state_intensity: string,
-    signal_policies: string,
     position_strategy: string,
-    position_health: string,
-    position_health_weights: string,
-    position_hp_candlesticks: string,
-    position_trades: string,
 }
 
 

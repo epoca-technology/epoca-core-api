@@ -66,15 +66,10 @@
     // Notifications
     NotificationService: Symbol.for("NotificationService"),
 
-    // Order Book
-    OrderBookService: Symbol.for("OrderBookService"),
-
     // Position
     PositionService: Symbol.for("PositionService"),
     PositionValidations: Symbol.for("PositionValidations"),
-    PositionHealth: Symbol.for("PositionHealth"),
     PositionModel: Symbol.for("PositionModel"),
-    PositionNotifications: Symbol.for("PositionNotifications"),
 
     // Request Guard
     RequestGuardService: Symbol.for("RequestGuardService"),
@@ -82,11 +77,6 @@
     // Server
     ServerService: Symbol.for("ServerService"),
     ServerValidations: Symbol.for("ServerValidations"),
-
-    // Signal
-    SignalService: Symbol.for("SignalService"),
-    SignalValidations: Symbol.for("SignalValidations"),
-    SignalModel: Symbol.for("SignalModel"),
 
     // Utilities
     UtilitiesService: Symbol.for("UtilitiesService"),
@@ -158,14 +148,9 @@ export interface ISymbols {
     NotificationService: symbol,
 
 
-    OrderBookService: symbol,
-
-
     PositionService: symbol,
     PositionValidations: symbol,
-    PositionHealth: symbol,
     PositionModel: symbol,
-    PositionNotifications: symbol,
 
 
     RequestGuardService: symbol,
@@ -173,11 +158,6 @@ export interface ISymbols {
 
     ServerService: symbol,
     ServerValidations: symbol,
-
-
-    SignalService: symbol,
-    SignalValidations: symbol,
-    SignalModel: symbol,
     
 
     UtilitiesService: symbol,

@@ -1,5 +1,6 @@
 import {injectable, inject, postConstruct} from "inversify";
 import * as tulind from "tulind";
+import {BigNumber} from "bignumber.js"
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { ICandlestick, ICandlestickModel, ICandlestickService } from "../candlestick";
@@ -19,8 +20,7 @@ import {
     ITAState,
     IMinifiedTAState,
     ITechnicalAnalysisStateService,
-    ITAIntervalID,
-    IStateUtilitiesService
+    ITAIntervalID
 } from "./interfaces";
 
 
@@ -32,7 +32,6 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
     @inject(SYMBOLS.CandlestickModel)                   private _candlestickModel: ICandlestickModel;
-    @inject(SYMBOLS.StateUtilitiesService)              private _stateUtils: IStateUtilitiesService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
 
@@ -1143,20 +1142,43 @@ export class TechnicalAnalysisStateService implements ITechnicalAnalysisStateSer
      */
     private minifyState(): IMinifiedTAState {
         return {
-            r: this._stateUtils.calculateAverageState([
-                this.state["15m"].s.a,
-                this.state["30m"].s.a,
-                this.state["1h"].s.a,
-                this.state["2h"].s.a,
-                this.state["4h"].s.a,
-                this.state["1d"].s.a
-            ]),
+            r: this.calculateTechnicalAnalysisResult(),
             "15m": { s: this.state["15m"].s, o: this.state["15m"].o, m: this.state["15m"].m },
             "30m": { s: this.state["30m"].s, o: this.state["30m"].o, m: this.state["30m"].m },
             "1h": { s: this.state["1h"].s, o: this.state["1h"].o, m: this.state["1h"].m },
             "2h": { s: this.state["2h"].s, o: this.state["2h"].o, m: this.state["2h"].m },
             "4h": { s: this.state["4h"].s, o: this.state["4h"].o, m: this.state["4h"].m },
-            "1d": { s: this.state["1d"].s, o: this.state["1d"].o, m: this.state["1d"].m }
+            "1d": { s: this.state["1d"].s, o: this.state["1d"].o, m: this.state["1d"].m },
+            ts: this.state.ts
         }
+    }
+
+
+
+
+
+    /**
+     * Calculates the final result of the technicals based on all 
+     * the intervals' results.
+     * @returns IStateType
+     */
+    private calculateTechnicalAnalysisResult(): IStateType {
+        // Calculate the sum of all the results
+        const sum: BigNumber = <BigNumber>this._utils.calculateSum([
+            this.state["15m"].s.a,
+            this.state["30m"].s.a,
+            this.state["1h"].s.a,
+            this.state["2h"].s.a,
+            this.state["4h"].s.a,
+            this.state["1d"].s.a
+        ], { of: "bn"});
+        const mean: BigNumber = sum.dividedBy(6);
+
+        // Calculate the state and return it
+        if (mean.isGreaterThanOrEqualTo(1.5))       { return 2 }
+        else if (mean.isGreaterThanOrEqualTo(0.75)) { return 1 }
+        else if (mean.isLessThanOrEqualTo(-1.5))    { return -2 }
+        else if (mean.isLessThanOrEqualTo(-0.75))   { return -1 }
+        else                                        { return 0 }
     }
 }

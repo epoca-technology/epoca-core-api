@@ -10,9 +10,9 @@
 
 2: `Binance returned an invalid candlesticks series.`
 
-3: ``
+3: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the order book.`
 
-4: ``
+4: `Binance returned an invalid order book.`
 
 5: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the open interest.`
 
@@ -551,55 +551,55 @@
 #
 ## Position Validations (30.000 - 30.999)
 
-30000: ``
+30000: `The provided side (${side}) is invalid.`
 
 30001: ``
 
 30002: `The stop loss must be a valid number ranging 0.5-10. Received: ${newStrategy.stop_loss}`
 
-30003: ``
+30003: `The hedge_mode must be a valid boolean. Received: ${newStrategy.hedge_mode}`
 
 30004: `The provided strategy is not a valid object.`
 
-30005: ``
+30005: `The leverage must be a valid number ranging 2-15. Received: ${newStrategy.leverage}`
 
-30006: ``
+30006: `The position size must be a valid number ranging 150-100.000 Received: ${newStrategy.position_size}`
 
-30007: ``
+30007: `The long and short statuses must be valid booleans. Received: ${newStrategy.long_status}, ${newStrategy.short_status}`
 
-30008: `The take profit 'n' must be a valid object containing the price change requirement & the max gain drawdown.`
+30008: `The take profit 'n' must be a valid object containing the price change requirement and the max hp drawdown.`
 
-30009: ``
+30009: `The long and short idle minutes must be valid numbers ranging 1-1,000 Received: ${newStrategy.long_status}, ${newStrategy.short_status}`
 
-30010: ``
+30010: `The following properties cannot be changed by the user: long_idle_until, short_idle_until and ts.`
 
-30011: ``
+30011: `The ${side} position cannot be closed because it isnt active.`
 
 30012: ``
 
 30013: ``
 
-30014: ``
+30014: `The ${side} position cannot be increased because it isnt active.`
 
-30015: ``
+30015: `The ${side} position cannot be increased because is no next level.`
 
-30016: ``
+30016: `There isnt enough available balance to cover the ${side} position increase. Has: ${availableBalance}. Needs: ${nextLevel.size}`
 
-30017: ``
+30017: `The ${side} position cannot be increased because the mark price doesnt meet the min increase requirement. Has: ${position.mark_price}. Needs: ${position.min_increase_price}`
 
-30017: ``
+30017: `The trade list date range is invalid. Received: ${startAt} - ${endAt}.`
 
-30018: ``
+30018: `The trade list starting point must be less than the end. Received: ${startAt} - ${endAt}.`
 
-30019: ``
+30019: `The trade list query is larger than the permitted data limit. Limit: ${this.tradeListLimit}, Received: ${difference}`
 
-30020: ``
+30020: `A position can only be closed with a valid chunk size. Received ${chunkSize}`
 
 30021: `The price change requirements in the take profits must be provided in ascending order.`
 
-30022: ``
+30022: `The max_hp_drawdown_in_profit must be a valid number ranging -99 - -20. Received: ${newStrategy.max_hp_drawdown_in_profit}`
 
-30023: ``
+30023: `The max_hp_drawdown_in_loss must be a valid number ranging -99 - -30. Received: ${newStrategy.max_hp_drawdown_in_loss}`
 
 30024: ``
 

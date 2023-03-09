@@ -12,6 +12,7 @@ import {
     IBinanceService, 
     IBinanceCandlestickInterval, 
     IBinanceCandlestick, 
+    IBinanceOrderBook, 
     IBinanceOpenInterest,
     IBinanceLongShortRatio,
     IBinanceBalance,
@@ -19,6 +20,7 @@ import {
     IBinanceTradeExecutionPayload,
     IBinancePositionActionSide,
     IBinancePositionSide,
+    IBinanceTradePayload,
     IBinanceLongShortRatioKind
 } from "./interfaces";
 
@@ -126,17 +128,18 @@ export class BinanceService implements IBinanceService {
 
 
 
-
+    
 
 
     /**
-     * Retrieves the current active position. If none is active, returns
-     * undefined
-     * @returns Promise<IBinanceActivePosition|undefined>
+     * Retrieves the list of active positions. The list will
+     * always return 2 items. Make sure to handle position's
+     * that aren't active.
+     * @returns Promise<[IBinanceActivePosition, IBinanceActivePosition]>
      */
-    public async getActivePosition(): Promise<IBinanceActivePosition|undefined> {
+    public async getActivePositions(): Promise<[IBinanceActivePosition, IBinanceActivePosition]> {
         // Build options
-        const params: string = this.buildSignedParamsString();
+        const params: string = this.buildSignedParamsString({symbol: "BTCUSDT"});
         const options: IExternalRequestOptions = {
             host: this.futuresBaseURL,
             path: `/fapi/v2/positionRisk?${params}`,
@@ -158,13 +161,13 @@ export class BinanceService implements IBinanceService {
         }
 
         // Validate the response's data
-        if (!response.data || !Array.isArray(response.data) || !response.data.length) {
+        if (!response.data || !Array.isArray(response.data) || response.data.length != 2) {
             console.log(response);
             throw new Error(this._utils.buildApiError("Binance returned an invalid list of active positions.", 12));
         }
 
-        // Return the the active position (if any)
-        return response.data.filter((p: IBinanceActivePosition) => Number(p.entryPrice) > 0)[0];
+        // Return the series
+        return <[IBinanceActivePosition, IBinanceActivePosition]>response.data;
     }
 
 
@@ -174,6 +177,53 @@ export class BinanceService implements IBinanceService {
 
 
 
+
+    /**
+     * Retrieves the list of account trades based on a provided starting point.
+     * Note: the response may include an empty list.
+     * @param startAt
+     * @param endAt
+     * @returns Promise<IBinanceTradePayload[]>
+     */
+     public async getTradeList(startAt: number, endAt: number): Promise<IBinanceTradePayload[]> {
+        // Build options
+        const params: string = this.buildSignedParamsString({
+            symbol: "BTCUSDT",
+            startTime: startAt,
+            endTime: endAt,
+            limit: 50
+        });
+        const options: IExternalRequestOptions = {
+            host: this.futuresBaseURL,
+            path: `/fapi/v1/userTrades?${params}`,
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json;charset=utf-8",
+                "X-MBX-APIKEY": this.apiKey
+            }
+        };
+
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(params);
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the account trades: ${this.extractErrorMessage(response)}`, 14));
+        }
+
+        // Validate the response's data
+        if (!response.data || !Array.isArray(response.data)) {
+            console.log(params);
+            console.log(response);
+            throw new Error(this._utils.buildApiError("Binance returned an invalid list of account trades.", 15));
+        }
+
+        // Return the series
+        return response.data;
+    }
 
 
 
@@ -288,7 +338,32 @@ export class BinanceService implements IBinanceService {
 
 
 
-    /* SPOT PUBLIC ENDPOINTS */
+
+
+
+
+
+
+
+
+
+    /**
+     * PUBLIC ENDPOINTS
+     * No API Key is required for the following methods.
+     * */
+
+
+
+
+
+
+
+
+
+
+    /* Market Data */
+
+
 
 
 
@@ -359,12 +434,43 @@ export class BinanceService implements IBinanceService {
 
 
 
+    /**
+     * Retrieves the current order book state.
+     * @param limit?  -> Defaults to 50
+     * @returns Promise<IBinanceOrderBook>
+     */
+     public async getOrderBook(limit?: number): Promise<IBinanceOrderBook> {
+        // Build options
+        const options: IExternalRequestOptions = {
+            host: "fapi.binance.com",
+            path: `/fapi/v1/depth?symbol=BTCUSDT&limit=${limit || 50}`,
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        };
+
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the order book: ${this.extractErrorMessage(response)}`, 3));
+        }
+
+        // Validate the response's data
+        if (!response.data || typeof response.data != "object" || !Array.isArray(response.data.bids) || !Array.isArray(response.data.asks)) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError("Binance returned an invalid order book.", 4));
+        }
+
+        // Return the series
+        return response.data;
+    }
 
 
-
-
-
-    /* FUTURES PUBLIC ENDPOINTS */
 
 
 

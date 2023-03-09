@@ -6,9 +6,8 @@ import { IPredictionService } from "../prediction";
 import { IMarketStateService, IWindowState } from "../market-state";
 import { IGuiVersionService } from "../gui-version";
 import { IServerService } from "../server";
-import { IPositionService, IPositionSummary } from "../position";
+import { IPositionService } from "../position";
 import { IDatabaseService } from "../database";
-import { ISignalService } from "../signal";
 import { 
     IAppBulk, 
     IAppBulkStream, 
@@ -29,7 +28,6 @@ export class BulkDataService implements IBulkDataService {
     @inject(SYMBOLS.DatabaseService)                private _db: IDatabaseService;
     @inject(SYMBOLS.EpochService)                   private _epoch: IEpochService;
     @inject(SYMBOLS.PredictionService)              private _prediction: IPredictionService;
-    @inject(SYMBOLS.SignalService)                  private _signal: ISignalService;
     @inject(SYMBOLS.MarketStateService)             private _marketState: IMarketStateService;
     @inject(SYMBOLS.GuiVersionService)              private _guiVersion: IGuiVersionService;
     @inject(SYMBOLS.ServerService)                  private _server: IServerService;
@@ -42,7 +40,7 @@ export class BulkDataService implements IBulkDataService {
      * Every intervalSeconds, the app bulk will be updated on the firebase rtdb.
      */
     private streamInterval: any;
-    private readonly streamIntervalSeconds: number = 7.5;
+    private readonly streamIntervalSeconds: number = 5;
 
 
 
@@ -74,11 +72,10 @@ export class BulkDataService implements IBulkDataService {
             serverTime: Date.now(),
             guiVersion: typeof this._guiVersion.activeVersion == "string" ? this._guiVersion.activeVersion: await this._guiVersion.get(),
             epoch: epoch,
-            position: this._position.getSummary(),
+            position: this._position.active,
             prediction: this._prediction.active.value,
             predictionState: this._prediction.activeState,
             predictionStateIntesity: this._prediction.activeStateIntesity,
-            signal: this._signal.active.value,
             marketState: this._marketState.active.value,
             apiErrors: this._apiError.count
         }
@@ -126,22 +123,11 @@ export class BulkDataService implements IBulkDataService {
      */
     private async updateStream(): Promise<void> {
         try {
-            const positionSummary: IPositionSummary = this._position.getSummary();
             await this._db.appBulkRef.update(<IAppBulkStream> {
                 prediction: this._prediction.active.value && typeof this._prediction.active.value == "object" ? this._prediction.active.value: null,
                 predictionState: this._prediction.activeState,
                 predictionStateIntesity: this._prediction.activeStateIntesity,
-                signal: this._signal.active.value,
-                position: {
-                    balance: positionSummary.balance,
-                    strategy: positionSummary.strategy,
-                    long: positionSummary.long || null,
-                    short: positionSummary.short || null,
-                    health: {
-                        long: positionSummary.health.long,
-                        short: positionSummary.health.short
-                    }
-                },
+                position: this._position.active,
                 marketState: <ICompressedMarketState>{
                     window: this.compressWindowState(),
                     volume: this._marketState.active.value.volume,
@@ -172,25 +158,23 @@ export class BulkDataService implements IBulkDataService {
             h: [],
             l: [],
             c: [],
-            v: [],
         }
 
         // Grab a copy of the current window state
         let state: IWindowState|ICompressedWindowState|any = Object.assign({}, this._marketState.active.value.window);
 
         // Iterate over each candlestick in the window and build the object
-        for (let candlestick of state.window) {
+        for (let candlestick of state.w) {
             compressed.ot.push(candlestick.ot);
             compressed.ct.push(candlestick.ct);
             compressed.o.push(candlestick.o);
             compressed.h.push(candlestick.h);
             compressed.l.push(candlestick.l);
             compressed.c.push(candlestick.c);
-            compressed.v.push(candlestick.v);
         }
 
         // Update the candlesticks
-        state.window = compressed;
+        state.w = compressed;
 
         // Finally, return the compressed object
         return state;

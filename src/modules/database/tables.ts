@@ -264,21 +264,6 @@ export const TABLES: IRawTable[] = [
 
     
     /**
-     * Signal Policies
-     * 
-     */
-    {
-        name: "signal_policies",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id              SMALLINT NOT NULL PRIMARY KEY,
-                policies        JSONB NOT NULL
-            );`
-        }
-    },
-
-    
-    /**
      * Position Strategy
      * 
      */
@@ -289,76 +274,6 @@ export const TABLES: IRawTable[] = [
                 id              SMALLINT NOT NULL PRIMARY KEY,
                 strategy        JSONB NOT NULL
             );`
-        }
-    },
-
-    
-    /**
-     * Position Health
-     * 
-     */
-    {
-        name: "position_health",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id            SMALLINT NOT NULL PRIMARY KEY,
-                health        JSONB NOT NULL
-            );`
-        }
-    },
-
-    
-    /**
-     * Position Health Weights
-     * 
-     */
-    {
-        name: "position_health_weights",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id            SMALLINT NOT NULL PRIMARY KEY,
-                weights       JSONB NOT NULL
-            );`
-        }
-    },
-
-    
-    /**
-     * Position Health Candlesticks
-     * 
-     */
-    {
-        name: "position_hp_candlesticks",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                side  VARCHAR(10) NOT NULL,
-                ot    BIGINT NOT NULL,
-                d     JSONB NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ${tableName}_side ON ${tableName}(side);`
-        }
-    },
-
-    
-    /**
-     * Position Trades
-     * 
-     */
-    {
-        name: "position_trades",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id    VARCHAR(200) NOT NULL,
-                t     BIGINT NOT NULL,
-                s     VARCHAR(20) NOT NULL,
-                ps    VARCHAR(20) NOT NULL,
-                p     NUMERIC(20,2) NOT NULL,
-                qty   NUMERIC(20,3) NOT NULL,
-                qqty  NUMERIC(20,2) NOT NULL,
-                rpnl  NUMERIC(20,2) NOT NULL,
-                c     NUMERIC(20,2) NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ${tableName}_t ON ${tableName}(t);`
         }
     },
 ];

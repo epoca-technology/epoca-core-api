@@ -64,11 +64,9 @@ import {EpochRoute} from "./modules/epoch/epoch.route";
 import {GuiVersionRoute} from "./modules/gui-version/gui-version.route";
 import {IPBlacklistRoute} from "./modules/ip-blacklist/ip-blacklist.route";
 import {MarketStateRoute} from "./modules/market-state/market-state.route";
-import {OrderBookRoute} from "./modules/order-book/order-book.route";
 import {PositionRoute} from "./modules/position/position.route";
 import {PredictionRoute} from "./modules/prediction/prediction.route";
 import {ServerRoute} from "./modules/server/server.route";
-import {SignalRoute} from "./modules/signal/signal.route";
 
 // Register Routes
 app.use("/apiError", ApiErrorRoute);
@@ -80,11 +78,9 @@ app.use("/epoch", EpochRoute);
 app.use("/guiVersion", GuiVersionRoute);
 app.use("/ipBlacklist", IPBlacklistRoute);
 app.use("/marketState", MarketStateRoute);
-app.use("/orderBook", OrderBookRoute);
 app.use("/position", PositionRoute);
 app.use("/prediction", PredictionRoute);
 app.use("/server", ServerRoute);
-app.use("/signal", SignalRoute);
 
 
 

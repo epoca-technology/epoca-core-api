@@ -18,9 +18,21 @@ const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.A
 
 
 // Technical Analysis Service
-import {ITAIntervalID, ITechnicalAnalysisStateService, IKeyZonesStateService, IKeyZoneFullState} from "./interfaces";
+import {
+    ITAIntervalID, 
+    ITechnicalAnalysisStateService, 
+    IKeyZonesStateService, 
+    IVolumeStateService, 
+    IExchangeOpenInterestID,
+    IOpenInterestStateService,
+    ILongShortRatioStateService,
+    IExchangeLongShortRatioID
+} from "./interfaces";
+const _vol: IVolumeStateService = appContainer.get<IVolumeStateService>(SYMBOLS.VolumeStateService);
 const _ta: ITechnicalAnalysisStateService = appContainer.get<ITechnicalAnalysisStateService>(SYMBOLS.TechnicalAnalysisStateService);
 const _keyZones: IKeyZonesStateService = appContainer.get<IKeyZonesStateService>(SYMBOLS.KeyZonesStateService);
+const _openInterest: IOpenInterestStateService = appContainer.get<IOpenInterestStateService>(SYMBOLS.OpenInterestStateService);
+const _longShortRatio: ILongShortRatioStateService = appContainer.get<ILongShortRatioStateService>(SYMBOLS.LongShortRatioStateService);
 
 
 // Init Route
@@ -31,7 +43,56 @@ const MarketStateRoute = express.Router();
 
 
 
-/* Technical Analysis Retrievers */
+/*********************
+ * Volume Retrievers *
+ *********************/
+
+
+
+/**
+* Retrieves the full volume state.
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @returns IAPIResponse<IVolumeState>
+*/
+MarketStateRoute.route("/getFullVolumeState").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+
+        // Return the response
+        res.send(_utils.apiResponse(_vol.state));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.getFullVolumeState", e, reqUid, ip);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*********************************
+ * Technical Analysis Retrievers *
+ *********************************/
 
 
 
@@ -69,7 +130,15 @@ MarketStateRoute.route("/getTAIntervalState").get(ultraLowRiskLimit, async (req:
 
 
 
-/* KeyZone Full State */
+
+
+
+
+
+
+/**********************
+ * KeyZone Retrievers *
+ **********************/
 
 
 
@@ -100,6 +169,99 @@ MarketStateRoute.route("/calculateKeyZoneState").get(ultraLowRiskLimit, async (r
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+/****************************
+ * Open Interest Retrievers *
+ ****************************/
+
+
+
+/**
+* Retrieves the open interest state for a given exchange id.
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @param exchangeID 
+* @returns IAPIResponse<IExchangeOpenInterestState>
+*/
+MarketStateRoute.route("/getOpenInterestStateForExchange").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["exchangeID"], req.query);
+
+        // Return the response
+        res.send(_utils.apiResponse(_openInterest.getExchangeState(<IExchangeOpenInterestID>req.query.exchangeID)));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.getOpenInterestStateForExchange", e, reqUid, ip, {exchangeID: req.query.exchangeID});
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*******************************
+ * Long/Short Ratio Retrievers *
+ *******************************/
+
+
+
+/**
+* Retrieves the long/short ratio state for a given exchange id.
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @param exchangeID 
+* @returns IAPIResponse<IExchangeLongShortRatioState>
+*/
+MarketStateRoute.route("/getLongShortRatioStateForExchange").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["exchangeID"], req.query);
+
+        // Return the response
+        res.send(_utils.apiResponse(_longShortRatio.getExchangeState(<IExchangeLongShortRatioID>req.query.exchangeID)));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.getLongShortRatioStateForExchange", e, reqUid, ip, {exchangeID: req.query.exchangeID});
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
 
 
 

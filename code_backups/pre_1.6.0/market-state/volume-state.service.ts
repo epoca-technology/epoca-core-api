@@ -1,11 +1,11 @@
-import {injectable, inject, postConstruct} from "inversify";
+import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { ICandlestick } from "../candlestick";
 import { IUtilitiesService } from "../utilities";
 import { 
-    IMinifiedVolumeState,
-    ISplitStateSeriesItem,
+    IStateBandsResult,
     IStateType,
+    IStateUtilitiesService,
     IVolumeState,
     IVolumeStateService,
 } from "./interfaces";
@@ -16,13 +16,24 @@ import {
 @injectable()
 export class VolumeStateService implements IVolumeStateService {
     // Inject dependencies
+    @inject(SYMBOLS.StateUtilitiesService)              private _stateUtils: IStateUtilitiesService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
     /**
-     * State
-     * The full volume state. Used to derive the minified state.
+     * Groups
+     * The number of groups that will be built.
      */
-    public state: IVolumeState;
+    private readonly groups: number = 16;
+    
+
+
+    /**
+     * Window Change
+     * The percentage changes that must exist in the window in order for
+     * it to have a state.
+     */
+    private readonly minChange: number = 20;
+    private readonly strongChange: number = 70;
 
 
 
@@ -38,57 +49,64 @@ export class VolumeStateService implements IVolumeStateService {
 
     constructor() {}
 
-    @postConstruct()
-    public onInit(): void {
-        this.state = this.getDefaultFullState();
-    }
-
 
 
 
 
 
     /**
-     * Calculates the volume state for the current window.
+     * Calculates the state for the current window.
      * @param window 
-     * @returns IMinifiedVolumeState
+     * @returns IVolumeState
      */
-    public calculateState(window: ICandlestick[]): IMinifiedVolumeState {
-        // Build the series as well as the volume accumulation
-        let items: ISplitStateSeriesItem[] = [];
-        let accum: number = 0;
-        let highest: number = 0;
-        for (let c of window) {
-            items.push({x: c.ot, y: c.v});
-            accum += c.v;
-            if (c.v > highest) highest = c.v; 
+    public calculateState(window: ICandlestick[]): IVolumeState {
+        // Build the averaged list of volumes
+        const volumes: number[] = this._stateUtils.buildAveragedGroups(window.map(c => c.v), this.groups);
+        //const volumes: number[] = window.map(c => c.v);
+
+        // Calculate the window bands
+        const bands: IStateBandsResult = this._stateUtils.calculateBands(
+            <number>this._utils.calculateMin(volumes), 
+            <number>this._utils.calculateMax(volumes)
+        );
+
+        // Calculate the state
+        let { state, state_value } = this._stateUtils.calculateState(
+            volumes[0],
+            volumes.at(-1),
+            bands,
+            this.minChange,
+            this.strongChange
+        );
+
+        /**
+         * When a new candlestick comes into existance, it is possible for the volume state
+         * to become -1 or -2 since the data is brand new and not enough trades have been
+         * recorded. Therefore, in order for the volume to have a decreasing state (-1 or -2),
+         * the last 2 records must be forming a declining line. Otherwise, the decreasing state
+         * will be neutralized (set to 0).
+         */
+        if (
+            state < 0 &&
+            (volumes.at(-1) > volumes.at(-2) || volumes.at(-2) > volumes.at(-3))
+        ) {
+            state = 0;
         }
-
-        // Calculate the mean and the mean high values
-        const mean: number = accum / window.length;
-        const meanHigh: number = <number>this._utils.calculateAverage([mean, highest]);
-
-        // Calculate the state of the volume
-        let state: IStateType = 0;
-        const currentVolume: number = window.at(-1).v;
-        if (currentVolume >= meanHigh) { state = 2 }
-        else if (currentVolume >= mean) { state = 1 }
 
         // Calculate the direction
         const { direction, direction_value } = this.calculateDirection(window);
 
-        // Update the local state
-        this.state = {
-            s: state,
-            m: mean,
-            mh: meanHigh,
-            d: direction,
-            dv: direction_value,
-            w: items
+        // Finally, return the state
+        return {
+            state: state,
+            state_value: state_value,
+            direction: direction,
+            direction_value: direction_value,
+            upper_band: bands.upper_band,
+            lower_band: bands.lower_band,
+            ts: Date.now(),
+            volumes: volumes
         };
-
-        // Finally, return the minified state
-        return { s: state, d: direction };
     }
 
 
@@ -148,27 +166,16 @@ export class VolumeStateService implements IVolumeStateService {
      * Retrieves the module's default state. This function must overriden.
      * @returns IWindowState
      */
-    private getDefaultFullState(): IVolumeState {
+    public getDefaultState(): IVolumeState {
         return {
-            s: 0,
-            m: 0,
-            mh: 0,
-            d: 0,
-            dv: 0,
-            w: []
+            state: 0,
+            state_value: 0,
+            direction: 0,
+            direction_value: 0,
+            upper_band: { start: 0, end: 0 },
+            lower_band: { start: 0, end: 0 },
+            ts: Date.now(),
+            volumes: []
         }
-    }
-
-
-
-
-
-
-    /**
-     * Retrieves the module's default state. This function must overriden.
-     * @returns IWindowState
-     */
-    public getDefaultState(): IMinifiedVolumeState {
-        return { s: 0, d: 0 }
     }
 }

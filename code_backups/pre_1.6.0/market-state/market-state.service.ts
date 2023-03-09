@@ -12,6 +12,7 @@ import {
     IWindowStateService,
     IVolumeStateService,
     IWindowState,
+    IVolumeState,
     IOpenInterestStateService,
     ILongShortRatioStateService,
     ITechnicalAnalysisStateService,
@@ -131,7 +132,6 @@ export class MarketStateService implements IMarketStateService {
         this._openInterest.stop();
         this._longShortRatio.stop();
         this._ta.stop();
-        this._keyZones.stop();
     }
 
 
@@ -163,11 +163,12 @@ export class MarketStateService implements IMarketStateService {
         if (window.length == this.windowSize) {
             // Calculate the states
             const windowState: IWindowState = this._windowState.calculateState(window);
+            const volumeState: IVolumeState = this._volumeState.calculateState(window);
 
             // Broadcast the states through the observables
             this.active.next({
                 window: windowState,
-                volume: this._volumeState.calculateState(window),
+                volume: volumeState,
                 open_interest: this._openInterest.state,
                 long_short_ratio: this._longShortRatio.state,
                 technical_analysis: this._ta.minState,
@@ -176,14 +177,14 @@ export class MarketStateService implements IMarketStateService {
 
             // Check if there is a window state and if can be broadcasted
             if (
-                (windowState.s == 2 || windowState.s == -2) && 
+                windowState.state != 0 && 
                 (
                     this.priceStateLastNotification == undefined ||
-                    this.priceStateLastNotification < moment().subtract(this.priceStateThrottleMinutes, "minutes").valueOf()
+                    this.priceStateLastNotification < moment(windowState.ts).subtract(this.priceStateThrottleMinutes, "minutes").valueOf()
                 )
             ) {
-                await this._notification.windowState(windowState.s, windowState.ss.s100.c, windowState.w.at(-1).c);
-                this.priceStateLastNotification = Date.now();
+                await this._notification.windowState(windowState.state, windowState.state_value, windowState.window.at(-1).c);
+                this.priceStateLastNotification = windowState.ts;
             }
         } else {
             console.log(`Could not calculate the market state because received an incorrect number of candlesticks: ${window.length}`);
