@@ -330,7 +330,7 @@ export interface ILongShortRatioStateService {
 
 
 // Exchange State
-export type IExchangeLongShortRatioID = "binance"|"binance_tta"|"binance_ttp"|"huobi_tta"|"huobi_ttp";
+export type IExchangeLongShortRatioID = "binance"|"binance_tta"|"binance_ttp"|"huobi_tta"|"huobi_ttp"|"okx";
 export interface IExchangeLongShortRatioState {
     // The state of the long/short ratio
     s: IStateType,
@@ -355,6 +355,7 @@ export interface ILongShortRatioState {
     binance_ttp: IStateType,
     huobi_tta: IStateType,
     huobi_ttp: IStateType,
+    okx: IStateType,
 }
 
 

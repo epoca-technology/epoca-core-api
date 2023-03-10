@@ -1,7 +1,9 @@
 import {injectable, inject, postConstruct} from "inversify";
+import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { IBinanceLongShortRatio, IBinanceLongShortRatioKind, IBinanceService } from "../binance";
+import { IExternalRequestOptions, IExternalRequestResponse, IExternalRequestService } from "../external-request";
 import { IUtilitiesService } from "../utilities";
 import { 
     IExchangeLongShortRatioID,
@@ -20,6 +22,7 @@ import {
 export class LongShortRatioStateService implements ILongShortRatioStateService {
     // Inject dependencies
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
+    @inject(SYMBOLS.ExternalRequestService)             private _er: IExternalRequestService;
     @inject(SYMBOLS.StateUtilitiesService)              private _stateUtils: IStateUtilitiesService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
@@ -51,6 +54,7 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
     private binance_ttp: IExchangeLongShortRatioState;
     private huobi_tta: IExchangeLongShortRatioState;
     private huobi_ttp: IExchangeLongShortRatioState;
+    private okx: IExchangeLongShortRatioState;
 
 
     /**
@@ -71,6 +75,7 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
         this.binance_ttp = this.getDefaultExchangeState();
         this.huobi_tta = this.getDefaultExchangeState();
         this.huobi_ttp = this.getDefaultExchangeState();
+        this.okx = this.getDefaultExchangeState();
     }
 
 
@@ -172,16 +177,32 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
 
         // Build Huobi Top-Trader Account State
         try {
-
+            const series: ISplitStateSeriesItem[] = await this.getHuobiSeries("contract_elite_account_ratio");
+            const { averageState, splitStates } = this._stateUtils.calculateCurrentState(series, this.requirement, this.strongRequirement);
+            this.huobi_tta = { s: averageState, ss: splitStates, w: series };
+            averageStatesByExchange.push(this.huobi_tta.s);
         } catch (e) {
             this.huobi_tta = this.getDefaultExchangeState();
         }
 
         // Build Huobi Top-Trader Position State
         try {
-
+            const series: ISplitStateSeriesItem[] = await this.getHuobiSeries("contract_elite_position_ratio");
+            const { averageState, splitStates } = this._stateUtils.calculateCurrentState(series, this.requirement, this.strongRequirement);
+            this.huobi_ttp = { s: averageState, ss: splitStates, w: series };
+            averageStatesByExchange.push(this.huobi_ttp.s);
         } catch (e) {
             this.huobi_ttp = this.getDefaultExchangeState();
+        }
+
+        // Build OKX State
+        try {
+            const series: ISplitStateSeriesItem[] = await this.getOKXSeries();
+            const { averageState, splitStates } = this._stateUtils.calculateCurrentState(series, this.requirement, this.strongRequirement);
+            this.okx = { s: averageState, ss: splitStates, w: series };
+            averageStatesByExchange.push(this.okx.s);
+        } catch (e) {
+            this.okx = this.getDefaultExchangeState();
         }
 
         // If there are no states, set it to neutral
@@ -195,6 +216,7 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
             binance_ttp: this.binance_ttp.s,
             huobi_tta: this.huobi_tta.s,
             huobi_ttp: this.huobi_ttp.s,
+            okx: this.okx.s,
         }
     }
 
@@ -221,16 +243,158 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
      * @returns Promise<ISplitStateSeriesItem[]>
      */
     private async getBinanceSeries(kind: IBinanceLongShortRatioKind): Promise<ISplitStateSeriesItem[]> {
+        try {
         // Retrieve the list from binance
         const records: IBinanceLongShortRatio[] = await this._binance.getLongShortRatio(kind);
 
         // Return the series
         return records.map(f => { return {x: f.timestamp, y: Number(f.longShortRatio)}});
+        } catch (e) {
+            this._apiError.log("LongShortRatioState.getBinanceSeries", e);
+            throw e;
+        }
     }
 
 
 
 
+
+
+
+
+    /**
+     * Retrieves the long/short ratio from Huobi's API for the current window
+     * based on the kind.
+     * @param kind
+     * @returns Promise<ISplitStateSeriesItem[]>
+     */
+    private async getHuobiSeries(kind: "contract_elite_account_ratio"|"contract_elite_position_ratio"): Promise<ISplitStateSeriesItem[]> {
+        try {
+            // Build options
+            const options: IExternalRequestOptions = {
+                host: "api.hbdm.com",
+                path: `/api/v1/${kind}?symbol=BTC&period=60min`,
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            };
+
+            // Retrieve the order book
+            const response: IExternalRequestResponse = await this._er.request(options);
+
+            // Validate the response
+            if (!response || typeof response != "object" || response.statusCode != 200) {
+                console.log(response);
+                throw new Error(this._utils.buildApiError(`Huobi returned an invalid HTTP response code (${response.statusCode}) 
+                when retrieving the long/short ratio ${kind}.`));
+            }
+
+            // Validate the response's data
+            if (
+                !response.data || 
+                !response.data.data || 
+                !Array.isArray(response.data.data.list) || 
+                !response.data.data.list.length
+            ) {
+                console.log(response);
+                throw new Error(this._utils.buildApiError("Huobi returned an invalid open interest list."));
+            }
+
+            // Build the raw long/short ratio list list
+            let values: ISplitStateSeriesItem[] = response.data.data.list.map((val: {
+                buy_ratio: number, 
+                sell_ratio: number, 
+                locked_ratio: number, 
+                ts: number
+            }) => {
+                return { x: val.ts, y: val.buy_ratio / val.sell_ratio }
+            });
+
+            // Since Huobi only provides the last 30 periods, expand the list so it can be properly analyzed
+            let final: ISplitStateSeriesItem[] = [];
+            for (let i = 0; i < values.length; i++) {
+                // Add the record to the list
+                final.push({x: values[i].x, y: values[i].y});
+
+                // If it isn't the last record, add a middle one
+                if (i < values.length - 1) {
+                    final.push({
+                        x: values[i + 1].x - 1, 
+                        y: <number>this._utils.calculateAverage([values[i].y, values[i + 1].y], {dp: 6})
+                    });
+                }
+            }
+
+            // Return the series
+            return final;
+        } catch (e) {
+            this._apiError.log("LongShortRatioState.getHuobiSeries", e);
+            throw e;
+        }
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Retrieves the long/short ratio from OKX's API for the current window.
+     * @returns Promise<ISplitStateSeriesItem[]>
+     */
+    private async getOKXSeries(): Promise<ISplitStateSeriesItem[]> {
+        try {
+            // Build options
+            const begin: number = moment().subtract(32, "hours").valueOf();
+            const options: IExternalRequestOptions = {
+                host: "www.okx.com",
+                path: `/api/v5/rubik/stat/contracts/long-short-account-ratio?ccy=BTC&period=5m&begin=${begin}`,
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            };
+
+            // Retrieve the order book
+            const response: IExternalRequestResponse = await this._er.request(options);
+
+            // Validate the response
+            if (!response || typeof response != "object" || response.statusCode != 200) {
+                console.log(response);
+                throw new Error(this._utils.buildApiError(`OKX returned an invalid HTTP response code (${response.statusCode}) 
+                when retrieving the long/short ratio.`));
+            }
+
+            // Validate the response's data
+            if (
+                !response.data || 
+                !response.data.data || 
+                !Array.isArray(response.data.data) || 
+                !response.data.data.length
+            ) {
+                console.log(response);
+                throw new Error(this._utils.buildApiError("OKX returned an invalid long/short ratio list."));
+            }
+
+            // Build the open interest list
+            let values: ISplitStateSeriesItem[] = response.data.data.map((val: string[]) => {
+                return { x: Number(val[0]), y: Number(val[1])}
+            });
+
+            // Reverse the values so the oldest value is first
+            values.reverse();
+
+            // Return the series
+            return values;
+        } catch (e) {
+            this._apiError.log("LongShortRatioState.getOKXSeries", e);
+            throw e;
+        }
+    }
 
 
 
@@ -268,7 +432,9 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
             case "huobi_tta":
                 return this.huobi_tta;
             case "huobi_ttp":
-                return this.huobi_tta;
+                return this.huobi_ttp;
+            case "okx":
+                return this.okx;
             default:
                 return this.getDefaultExchangeState();
         }
@@ -306,6 +472,7 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
             binance_ttp: 0,
             huobi_tta: 0,
             huobi_ttp: 0,
+            okx: 0,
         }
     }
 

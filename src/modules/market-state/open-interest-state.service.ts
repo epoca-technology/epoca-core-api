@@ -1,7 +1,9 @@
 import {injectable, inject, postConstruct} from "inversify";
+import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { IBinanceOpenInterest, IBinanceService } from "../binance";
+import { IExternalRequestOptions, IExternalRequestResponse, IExternalRequestService } from "../external-request";
 import { IUtilitiesService } from "../utilities";
 import { 
     IExchangeOpenInterestID,
@@ -20,6 +22,7 @@ import {
 export class OpenInterestStateService implements IOpenInterestStateService {
     // Inject dependencies
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
+    @inject(SYMBOLS.ExternalRequestService)             private _er: IExternalRequestService;
     @inject(SYMBOLS.StateUtilitiesService)              private _stateUtils: IStateUtilitiesService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
@@ -164,21 +167,30 @@ export class OpenInterestStateService implements IOpenInterestStateService {
 
         // Build ByBit State
         try {
-            
+            const series: ISplitStateSeriesItem[] = await this.getByBitSeries();
+            const { averageState, splitStates } = this._stateUtils.calculateCurrentState(series, this.requirement, this.strongRequirement);
+            this.bybit = { s: averageState, ss: splitStates, w: series };
+            averageStatesByExchange.push(this.bybit.s);
         } catch (e) {
             this.bybit = this.getDefaultExchangeState();
         }
 
         // Build Huobi State
         try {
-
+            const series: ISplitStateSeriesItem[] = await this.getHuobiSeries();
+            const { averageState, splitStates } = this._stateUtils.calculateCurrentState(series, this.requirement, this.strongRequirement);
+            this.huobi = { s: averageState, ss: splitStates, w: series };
+            averageStatesByExchange.push(this.huobi.s);
         } catch (e) {
             this.huobi = this.getDefaultExchangeState();
         }
 
         // Build OKX State
         try {
-
+            const series: ISplitStateSeriesItem[] = await this.getOKXSeries();
+            const { averageState, splitStates } = this._stateUtils.calculateCurrentState(series, this.requirement, this.strongRequirement);
+            this.okx = { s: averageState, ss: splitStates, w: series };
+            averageStatesByExchange.push(this.okx.s);
         } catch (e) {
             this.okx = this.getDefaultExchangeState();
         }
@@ -217,16 +229,20 @@ export class OpenInterestStateService implements IOpenInterestStateService {
 
 
     /**
-     * Retrieves the open interest from Binance's API for the current window
-     * and formats it into the required format.
+     * Retrieves the open interest from Binance's API for the current window.
      * @returns Promise<ISplitStateSeriesItem[]>
      */
     private async getBinanceSeries(): Promise<ISplitStateSeriesItem[]> {
-        // Retrieve the list from binance
-        const records: IBinanceOpenInterest[] = await this._binance.getOpenInterest();
+        try {
+            // Retrieve the list from binance
+            const records: IBinanceOpenInterest[] = await this._binance.getOpenInterest();
 
-        // Return the series
-        return records.map(f => { return {x: f.timestamp, y: Number(f.sumOpenInterestValue)}});
+            // Return the series
+            return records.map(f => { return {x: f.timestamp, y: Number(f.sumOpenInterestValue)}});
+        } catch (e) {
+            this._apiError.log("OpenInterestState.getBinanceSeries", e);
+            throw e;
+        }
     }
 
 
@@ -234,6 +250,176 @@ export class OpenInterestStateService implements IOpenInterestStateService {
 
 
 
+    /**
+     * Retrieves the open interest from ByBit's API for the current window.
+     * @returns Promise<ISplitStateSeriesItem[]>
+     */
+    private async getByBitSeries(): Promise<ISplitStateSeriesItem[]> {
+        try {
+            // Build options
+            const startTime: number = moment().subtract(32, "hours").valueOf();
+            const options: IExternalRequestOptions = {
+                host: "api.bybit.com",
+                path: `/v5/market/open-interest?category=inverse&symbol=BTCUSD&intervalTime=15min&startTime=${startTime}&endTime=${Date.now()}&limit=200`,
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            };
+
+            // Retrieve the order book
+            const response: IExternalRequestResponse = await this._er.request(options);
+
+            // Validate the response
+            if (!response || typeof response != "object" || response.statusCode != 200) {
+                console.log(response);
+                throw new Error(this._utils.buildApiError(`ByBit returned an invalid HTTP response code (${response.statusCode}) 
+                when retrieving the open interest.`));
+            }
+
+            // Validate the response's data
+            if (
+                !response.data || 
+                !response.data.result || 
+                !Array.isArray(response.data.result.list) || 
+                !response.data.result.list.length
+            ) {
+                console.log(response);
+                throw new Error(this._utils.buildApiError("ByBit returned an invalid open interest list."));
+            }
+
+            // Build the open interest list
+            let values: ISplitStateSeriesItem[] = response.data.result.list.map((val: {openInterest: string, timestamp: string}) => { 
+                return { x: Number(val.timestamp), y: Number(val.openInterest) }
+            });
+
+            // Reverse the values so the oldest value is first
+            values.reverse();
+
+            // Return the series
+            return values;
+        } catch (e) {
+            this._apiError.log("OpenInterestState.getByBitSeries", e);
+            throw e;
+        }
+    }
+
+
+
+
+
+
+    /**
+     * Retrieves the open interest from Huobi's API for the current window.
+     * @returns Promise<ISplitStateSeriesItem[]>
+     */
+    private async getHuobiSeries(): Promise<ISplitStateSeriesItem[]> {
+        try {
+            // Build options
+            const options: IExternalRequestOptions = {
+                host: "api.hbdm.com",
+                path: `/api/v1/contract_his_open_interest?symbol=BTC&contract_type=this_week&period=15min&size=128&amount_type=1`,
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            };
+
+            // Retrieve the order book
+            const response: IExternalRequestResponse = await this._er.request(options);
+
+            // Validate the response
+            if (!response || typeof response != "object" || response.statusCode != 200) {
+                console.log(response);
+                throw new Error(this._utils.buildApiError(`Huobi returned an invalid HTTP response code (${response.statusCode}) 
+                when retrieving the open interest.`));
+            }
+
+            // Validate the response's data
+            if (
+                !response.data || 
+                !response.data.data || 
+                !Array.isArray(response.data.data.tick) || 
+                !response.data.data.tick.length
+            ) {
+                console.log(response);
+                throw new Error(this._utils.buildApiError("Huobi returned an invalid open interest list."));
+            }
+
+            // Build the open interest list
+            let values: ISplitStateSeriesItem[] = response.data.data.tick.map((val: {volume: string, amount_type: number, ts: number}) => {
+                return { x: val.ts, y: Number(val.volume) }
+            });
+
+            // Reverse the values so the oldest value is first
+            values.reverse();
+
+            // Return the series
+            return values;
+        } catch (e) {
+            this._apiError.log("OpenInterestState.getHuobiSeries", e);
+            throw e;
+        }
+    }
+
+
+
+
+
+
+    /**
+     * Retrieves the open interest from OKX's API for the current window.
+     * @returns Promise<ISplitStateSeriesItem[]>
+     */
+    private async getOKXSeries(): Promise<ISplitStateSeriesItem[]> {
+        try {
+            // Build options
+            const begin: number = moment().subtract(32, "hours").valueOf();
+            const options: IExternalRequestOptions = {
+                host: "www.okx.com",
+                path: `/api/v5/rubik/stat/contracts/open-interest-volume?ccy=BTC&period=5m&begin=${begin}`,
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            };
+
+            // Retrieve the order book
+            const response: IExternalRequestResponse = await this._er.request(options);
+
+            // Validate the response
+            if (!response || typeof response != "object" || response.statusCode != 200) {
+                console.log(response);
+                throw new Error(this._utils.buildApiError(`OKX returned an invalid HTTP response code (${response.statusCode}) 
+                when retrieving the open interest.`));
+            }
+
+            // Validate the response's data
+            if (
+                !response.data || 
+                !response.data.data || 
+                !Array.isArray(response.data.data) || 
+                !response.data.data.length
+            ) {
+                console.log(response);
+                throw new Error(this._utils.buildApiError("OKX returned an invalid open interest list."));
+            }
+
+            // Build the open interest list
+            let values: ISplitStateSeriesItem[] = response.data.data.map((val: string[]) => {
+                return { x: Number(val[0]), y: Number(val[1])}
+            });
+
+            // Reverse the values so the oldest value is first
+            values.reverse();
+
+            // Return the series
+            return values;
+        } catch (e) {
+            this._apiError.log("OpenInterestState.getOKXSeries", e);
+            throw e;
+        }
+    }
 
 
 
