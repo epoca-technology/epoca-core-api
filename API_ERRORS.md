@@ -10,9 +10,9 @@
 
 2: `Binance returned an invalid candlesticks series.`
 
-3: ``
+3: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the order book: ${this.extractErrorMessage(response)}`
 
-4: ``
+4: `Binance returned an invalid order book.`
 
 5: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the open interest.`
 

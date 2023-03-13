@@ -61,6 +61,7 @@
     LongShortRatioStateService: Symbol.for("LongShortRatioStateService"),
     TechnicalAnalysisStateService: Symbol.for("TechnicalAnalysisStateService"),
     KeyZonesStateService: Symbol.for("KeyZonesStateService"),
+    LiquidityService: Symbol.for("LiquidityService"),
     StateUtilitiesService: Symbol.for("StateUtilitiesService"),
 
     // Notifications
@@ -142,6 +143,7 @@ export interface ISymbols {
     LongShortRatioStateService: symbol,
     TechnicalAnalysisStateService: symbol,
     KeyZonesStateService: symbol,
+    LiquidityService: symbol,
     StateUtilitiesService: symbol,
 
 

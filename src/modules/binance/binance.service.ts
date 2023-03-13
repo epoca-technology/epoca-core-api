@@ -19,7 +19,8 @@ import {
     IBinanceTradeExecutionPayload,
     IBinancePositionActionSide,
     IBinancePositionSide,
-    IBinanceLongShortRatioKind
+    IBinanceLongShortRatioKind,
+    IBinanceOrderBook
 } from "./interfaces";
 
 
@@ -350,6 +351,57 @@ export class BinanceService implements IBinanceService {
         // Return the series
         return response.data;
     }
+
+
+
+
+
+    
+
+    /**
+     * Retrieves the current order book state.
+     * @returns Promise<IBinanceOrderBook>
+     */
+    public async getOrderBook(): Promise<IBinanceOrderBook> {
+        // Build options
+        const options: IExternalRequestOptions = {
+            host: "api.binance.com",
+            path: `/api/v3/depth?symbol=BTCUSDT&limit=5000`,
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        };
+
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the order book: ${this.extractErrorMessage(response)}`, 3));
+        }
+
+        // Validate the response's data
+        if (
+            !response.data || 
+            typeof response.data != "object" || 
+            !Array.isArray(response.data.bids) || 
+            !Array.isArray(response.data.asks)
+        ) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError("Binance returned an invalid order book.", 4));
+        }
+
+        // Return the series
+        return response.data;
+    }
+
+
+
+
+
 
 
 

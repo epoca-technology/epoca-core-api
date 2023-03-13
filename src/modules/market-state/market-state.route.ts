@@ -17,7 +17,7 @@ import {IApiErrorService} from "../api-error";
 const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.ApiErrorService);
 
 
-// Technical Analysis Service
+// State Services
 import {
     ITAIntervalID, 
     ITechnicalAnalysisStateService, 
@@ -26,10 +26,12 @@ import {
     IExchangeOpenInterestID,
     IOpenInterestStateService,
     ILongShortRatioStateService,
-    IExchangeLongShortRatioID
+    IExchangeLongShortRatioID,
+    ILiquidityStateService
 } from "./interfaces";
 const _vol: IVolumeStateService = appContainer.get<IVolumeStateService>(SYMBOLS.VolumeStateService);
 const _ta: ITechnicalAnalysisStateService = appContainer.get<ITechnicalAnalysisStateService>(SYMBOLS.TechnicalAnalysisStateService);
+const _liquidity: ILiquidityStateService = appContainer.get<ILiquidityStateService>(SYMBOLS.LiquidityService);
 const _keyZones: IKeyZonesStateService = appContainer.get<IKeyZonesStateService>(SYMBOLS.KeyZonesStateService);
 const _openInterest: IOpenInterestStateService = appContainer.get<IOpenInterestStateService>(SYMBOLS.OpenInterestStateService);
 const _longShortRatio: ILongShortRatioStateService = appContainer.get<ILongShortRatioStateService>(SYMBOLS.LongShortRatioStateService);
@@ -123,6 +125,55 @@ MarketStateRoute.route("/getTAIntervalState").get(ultraLowRiskLimit, async (req:
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+/************************
+ * Liquidity Retrievers *
+ ************************/
+
+
+
+
+/**
+* Retrieves the full liquidity state.
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @returns IAPIResponse<ILiquidityState>
+*/
+MarketStateRoute.route("/getLiquidityState").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+
+        // Return the response
+        res.send(_utils.apiResponse(_liquidity.state));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.getLiquidityState", e, reqUid, ip);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
 
 
 

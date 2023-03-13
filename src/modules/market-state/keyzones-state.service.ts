@@ -12,6 +12,7 @@ import {
     IReversalType,
     IReversal,
     IMinifiedKeyZone,
+    IKeyZoneVolumeIntensity
 } from "./interfaces";
 
 
@@ -69,6 +70,21 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private readonly stateLimit: number = 5;
 
+    /**
+     * Volume Mean
+     * Once the KeyZones are built, the mean of the volumes is calculated and
+     * stored in order to be able to derive the intensity.
+     */
+    private volumeMean: number = 0;
+
+    /**
+     * Volume Intensity Requirements
+     * The intensity is calculated based on the keyzone's volume mean vs the 
+     * global one. The higher the volume within the KeyZone, the higher the
+     * intensity.
+     */
+    private readonly requirementAdjustment: number = 0.9;
+    private readonly strongRequirementAdjustment: number = 1.6;
 
     /**
      * KeyZones Build Interval
@@ -126,7 +142,14 @@ export class KeyZonesStateService implements IKeyZonesStateService {
     public stop(): void {
         if (this.buildInterval) clearInterval(this.buildInterval);
         this.buildInterval = undefined;
+        this.volumeMean = 0;
     }
+
+
+
+
+
+
 
 
 
@@ -161,6 +184,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 active: active[0] || null,
                 above: this.getZonesFromPrice(currentPrice, true),
                 below: this.getZonesFromPrice(currentPrice, false),
+                volume_mean: this.volumeMean,
                 build_ts: this.buildTS
             };
         } else {
@@ -207,7 +231,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * @param zone 
      * @returns IMinifiedKeyZone
      */
-    private minifyKeyZone(zone: IKeyZone): IMinifiedKeyZone { return { s: zone.s, e: zone.e } }
+    private minifyKeyZone(zone: IKeyZone): IMinifiedKeyZone { return { s: zone.s, e: zone.e, vi: zone.vi } }
 
 
 
@@ -226,6 +250,13 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             below: []
         }
     }
+
+
+
+
+
+
+
 
 
 
@@ -285,6 +316,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
         // Merge the nearby zones
         this.mergeNearbyTempZones();
+
+        // Calculate the KeyZone Volumes
+        this.calculateKeyZoneVolumes();
 
         // Finally, update the build time
         this.buildTS = Date.now();
@@ -364,7 +398,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         // If an index was found, update the zone with the new data
         if (typeof zoneIndex == "number") {
             // Add the new reversal
-            this.tempZones[zoneIndex].r.push({ id: candlestick.ot, t: reversalType });
+            this.tempZones[zoneIndex].r.push({ id: candlestick.ot, t: reversalType, v: candlestick.v });
 
             // Update the mutated state
             this.tempZones[zoneIndex].m = this.zoneMutated(this.tempZones[zoneIndex].r);
@@ -376,8 +410,10 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 id: candlestick.ot,
                 s: range.s,
                 e: range.e,
-                r: [ {id: candlestick.ot, t: reversalType } ],
-                m: false
+                r: [ {id: candlestick.ot, t: reversalType, v: candlestick.v } ],
+                m: false,
+                vm: 0,  // Volume Mean to be calculated once keyzones are built
+                vi: 0   // Volume Intensity to be calculated once keyzones are built
             });
         }
     }
@@ -433,7 +469,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             s: <number>this._utils.calculateAverage([z1.s, z2.s], this.numberConfig),
             e: <number>this._utils.calculateAverage([z1.e, z2.e], this.numberConfig),
             r: reversals,
-            m: this.zoneMutated(reversals)
+            m: this.zoneMutated(reversals),
+            vm: 0,  // Volume Mean to be calculated once keyzones are built
+            vi: 0   // Volume Intensity to be calculated once keyzones are built
         }
     }
 
@@ -478,6 +516,50 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             return {
                 s: candlestick.l,
                 e: <number>this._utils.alterNumberByPercentage(candlestick.l, this.zoneSize, this.numberConfig)
+            }
+        }
+    }
+
+
+
+
+
+
+    /**
+     * Once the KeyZones have been built and merged, the mean of the volumes 
+     * are calculated and an intensity (0|1|2) is assigned to each zone.
+     */
+    private calculateKeyZoneVolumes(): void {
+        if (this.zones.length > 0) {
+            // Init the list of means
+            let means: number[] = [];
+
+            // Iterate over each zone
+            for (let i = 0; i < this.zones.length; i++) {
+                // Calculate the mean of all the reversals within
+                const volMean: number = <number>this._utils.calculateAverage(this.zones[i].r.map(r => r.v));
+
+                // Add the mean to the list
+                means.push(volMean);
+
+                // Insert the volume mean into the zone
+                this.zones[i].vm = volMean;
+            }
+
+            // Calculate the global mean and the intensity requirements
+            this.volumeMean = <number>this._utils.calculateAverage(means);
+            const requirement: number = this.volumeMean * this.requirementAdjustment;
+            const strongRequirement: number = this.volumeMean * this.strongRequirementAdjustment;
+
+            // Iterate over the zones once more
+            for (let i = 0; i < this.zones.length; i++) {
+                // Calculate the intensity of the zone
+                let intensity: IKeyZoneVolumeIntensity = 0;
+                if      (this.zones[i].vm >= strongRequirement) { intensity = 2 }
+                else if (this.zones[i].vm >= requirement)       { intensity = 1 }
+
+                // Insert the intensity into the keyzone
+                this.zones[i].vi = intensity;
             }
         }
     }

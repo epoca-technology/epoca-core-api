@@ -722,6 +722,12 @@ export interface IKeyZonesStateService {
 export type IReversalType = "r"|"s"; // r = Resistance | s = Support
 
 
+/**
+ * Volume Intensity
+ * The intensity of the volume within the KeyZone.
+ */
+export type IKeyZoneVolumeIntensity = 0|1|2;
+
 
 /**
  * Reversal
@@ -730,7 +736,8 @@ export type IReversalType = "r"|"s"; // r = Resistance | s = Support
  */
 export interface IReversal {
     id: number, // The open time of the candlestick in which the reversal was detected
-    t: IReversalType
+    t: IReversalType,
+    v: number
 }
 
 
@@ -749,7 +756,9 @@ export interface IKeyZonePriceRange {
  * KeyZone
  * A keyzone is a price range in which the price will likely reverse.
  */
-export interface IMinifiedKeyZone extends IKeyZonePriceRange { }
+export interface IMinifiedKeyZone extends IKeyZonePriceRange { 
+    vi: IKeyZoneVolumeIntensity
+}
 export interface IKeyZone extends IKeyZonePriceRange {
     // The date in which the keyzone was first detected
     id: number,
@@ -758,7 +767,11 @@ export interface IKeyZone extends IKeyZonePriceRange {
     r: IReversal[],
 
     // A KeyZone is considered to have mutated when it has reversed in both ways
-    m: boolean
+    m: boolean,
+
+    // The volume mean and intensity
+    vm: number,
+    vi: IKeyZoneVolumeIntensity
 }
 
 
@@ -796,12 +809,194 @@ export interface IKeyZoneFullState {
     // The list of keyzones below the current price
     below: IKeyZone[],
 
+    // The mean of all the keyzone volumes
+    volume_mean: number,
+
     // The timestamp in which the build was generated
     build_ts: number
 }
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/********************************************************************************
+ * LIQUIDITY STATE                                                              *
+ * The purpose of the liquidity state submodule is to have a deep understanding *
+ * of the order book, identify levels at which there are liquidity peaks and be *
+ * able to determine the market's direction (sentiment?)                        *
+ ********************************************************************************/
+
+// Service
+export interface ILiquidityStateService {
+    // Properties
+    state: ILiquidityState,
+
+    // Initializer
+    initialize(): Promise<void>,
+    stop(): void,
+
+    // Retrievers
+    calculateState(currentPrice: number): IMinifiedLiquidityState,
+    getAsks(currentPrice: number): ILiquidityPriceLevel[],
+    getBids(currentPrice: number): ILiquidityPriceLevel[],
+
+    // Misc Helpers
+    getDefaultState(): IMinifiedLiquidityState,
+}
+
+
+
+
+
+/**
+ * Liquidity Intensity
+ * The intensity of the liquidity within a price level.
+ */
+export type ILiquidityIntensity = 0|1|2|3;
+
+
+/**
+ * Liquidity Side
+ * The order book is comprised by asks (Sell Orders) and bids (Buy Orders).
+ * Asks are ordered by price from low to high while bids from high to low.
+ */
+export type ILiquiditySide = "asks"|"bids";
+
+
+/**
+ * Liquidity Intensity Requirements
+ * For a price level to have intensity, it needs to be greater than or equals than
+ * the requirements. Otherwise, the intensity will be 0.
+ */
+export interface ILiquidityIntensityRequirements {
+    // Low Requirement
+    l: number,
+
+    // Medium Requirement
+    m: number,
+
+    // High Requirement
+    h: number
+}
+
+
+
+
+/**
+ * Liquidity Price Level
+ * The record containing all relevant information regarding a price level.
+ */
+export interface ILiquidityPriceLevel {
+    // The level's price
+    p: number,
+
+    // The BTC liquidity within the level
+    l: number,
+
+    // The intensity of the liquidity within the level
+    li: ILiquidityIntensity
+}
+
+
+
+
+/**
+ * Minified Liquidity Price Level
+ * The minified price level object that is inserted into the App Bulk.
+ */
+export interface IMinifiedLiquidityPriceLevel {
+    // The level's price
+    p: number,
+
+    // The intensity of the liquidity within the level
+    li: ILiquidityIntensity
+}
+
+
+
+/**
+ * Liquidity Side Build
+ * When the order book is retrieved in a raw format, it is processed and
+ * each side is analyzed.
+ */
+export interface ILiquiditySideBuild {
+    // The total liquidity accumulated in all levels
+    total: number,
+
+    // The requirements derived from the highest liquidity recorded in a price level
+    requirements: ILiquidityIntensityRequirements,
+
+    // The list of price levels
+    levels: ILiquidityPriceLevel[]
+}
+
+
+
+
+/**
+ * Liquidity State
+ * The full state of the liquidity. This object can be queried through the endpoint.
+ */
+export interface ILiquidityState {
+    /**
+     * The direction of the liquidity. If there are more bids than asks, the direction
+     * will be 1 or 2. On the contrary, if there are more asks than bids, the direction
+     * will be -1 or -2. Additionally, the direction can be 0 if the difference between
+     * the bids and the asks is insignificant.
+     */
+    d: IStateType,
+
+    // The total liquidity accumulated by the bids and the asks.
+    al: number, // Asks Liquidity
+    bl: number, // Bids Liquidity
+
+    /**
+     * The bid & ask intensity requirements. For a price level to have an intensity,
+     * it must meet at least one of levels.
+     */
+    air: ILiquidityIntensityRequirements, // Ask Intensity Requirements
+    bir: ILiquidityIntensityRequirements, // Bid Intensity Requirements
+
+    // The liquidity price levels for bids and asks ordered accordingly
+    a: ILiquidityPriceLevel[], // Asks
+    b: ILiquidityPriceLevel[], // Bids
+
+    // The timestamp in ms in which the liquidity state was last updated
+    ts: number
+}
+
+
+
+
+/**
+ * Minified Liquidity State
+ * The optimized version of the liquidity state. Keep in mind that only price levels
+ * with intensity are included in this object.
+ */
+export interface IMinifiedLiquidityState {
+    // The direction of the liquidity.
+    d: IStateType,
+
+    // The liquidity price levels for bids and asks ordered accordingly
+    a: IMinifiedLiquidityPriceLevel[], // Asks
+    b: IMinifiedLiquidityPriceLevel[], // Bids
+}
 
 
 
@@ -834,5 +1029,6 @@ export interface IMarketState {
     open_interest: IOpenInterestState,
     long_short_ratio: ILongShortRatioState,
     technical_analysis: IMinifiedTAState,
-    keyzones: IKeyZoneState
+    liquidity: IMinifiedLiquidityState,
+    keyzones: IKeyZoneState,
 }

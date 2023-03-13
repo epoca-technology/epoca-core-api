@@ -134,6 +134,7 @@ export class BulkDataService implements IBulkDataService {
                     open_interest: this._marketState.active.value.open_interest,
                     long_short_ratio: this._marketState.active.value.long_short_ratio,
                     technical_analysis: this._marketState.active.value.technical_analysis,
+                    liquidity: this._marketState.active.value.liquidity,
                     keyzones: this._marketState.active.value.keyzones,
                 },
                 apiErrors: this._apiError.count

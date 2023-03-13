@@ -7,6 +7,7 @@ import {
     IKeyZoneState,
     ILongShortRatioState, 
     IMarketState, 
+    IMinifiedLiquidityState, 
     IMinifiedTAState, 
     IMinifiedVolumeState, 
     IOpenInterestState, 
@@ -128,6 +129,7 @@ export interface ICompressedMarketState {
     open_interest: IOpenInterestState,
     long_short_ratio: ILongShortRatioState,
     technical_analysis: IMinifiedTAState,
+    liquidity: IMinifiedLiquidityState,
     keyzones: IKeyZoneState
 }
 

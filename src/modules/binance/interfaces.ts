@@ -29,6 +29,7 @@ export interface IBinanceService {
         endTime?: number, 
         limit?:number
     ): Promise<IBinanceCandlestick[]>,
+    getOrderBook(): Promise<IBinanceOrderBook>,
 
 
     /* FUTURES PUBLIC ENDPOINTS */
@@ -263,14 +264,18 @@ export type IBinanceCandlestick = [
 export interface IBinanceOrderBook {
     // Binance Internals
     lastUpdateId: number,
-    E: number, // -> Message output time E represents the time a certain data was pushed out from the server
-    T: number, // -> The transaction time T records the time that the data (e.g. account, order related) got updated
-
-    // Order Book Bids - Buy Orders
-    bids: Array<Array<string>>,
 
     // Order Book Asks - Sell Orders
-    asks: Array<Array<string>>,
+    asks: Array<[
+        string, // Price
+        string  // BTC Quantity
+    ]>,
+
+    // Order Book Bids - Buy Orders
+    bids: Array<[
+        string, // Price
+        string  // BTC Quantity
+    ]>
 }
 
 

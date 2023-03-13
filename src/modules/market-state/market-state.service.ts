@@ -16,6 +16,7 @@ import {
     ILongShortRatioStateService,
     ITechnicalAnalysisStateService,
     IKeyZonesStateService,
+    ILiquidityStateService,
 } from "./interfaces";
 
 
@@ -30,6 +31,7 @@ export class MarketStateService implements IMarketStateService {
     @inject(SYMBOLS.OpenInterestStateService)           private _openInterest: IOpenInterestStateService;
     @inject(SYMBOLS.LongShortRatioStateService)         private _longShortRatio: ILongShortRatioStateService;
     @inject(SYMBOLS.TechnicalAnalysisStateService)      private _ta: ITechnicalAnalysisStateService;
+    @inject(SYMBOLS.LiquidityService)                   private _liquidity: ILiquidityStateService;
     @inject(SYMBOLS.KeyZonesStateService)               private _keyZones: IKeyZonesStateService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
@@ -105,6 +107,9 @@ export class MarketStateService implements IMarketStateService {
         // Initialize the Technical Analysis Module
         await this._ta.initialize();
 
+        // Initialize the Liquidity Module
+        await this._liquidity.initialize();
+
         // Initialize the KeyZones
         await this._keyZones.initialize();
 
@@ -131,6 +136,7 @@ export class MarketStateService implements IMarketStateService {
         this._openInterest.stop();
         this._longShortRatio.stop();
         this._ta.stop();
+        this._liquidity.stop();
         this._keyZones.stop();
     }
 
@@ -171,6 +177,7 @@ export class MarketStateService implements IMarketStateService {
                 open_interest: this._openInterest.state,
                 long_short_ratio: this._longShortRatio.state,
                 technical_analysis: this._ta.minState,
+                liquidity: this._liquidity.calculateState(windowState.w.at(-1).c),
                 keyzones: this._keyZones.calculateState()
             });
 
@@ -213,6 +220,7 @@ export class MarketStateService implements IMarketStateService {
             open_interest: this._openInterest.getDefaultState(),
             long_short_ratio: this._longShortRatio.getDefaultState(),
             technical_analysis: this._ta.getDefaultMinifiedState(),
+            liquidity: this._liquidity.getDefaultState(),
             keyzones: this._keyZones.getDefaultState(),
         }
     }
