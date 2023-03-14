@@ -25,32 +25,6 @@ export class StateUtilitiesService implements IStateUtilitiesService {
 
 
 
-    /**
-     * Given a series of values, it will split them into groups and 
-     * calculate the mean.
-     * @param values 
-     * @param groups 
-     * @returns number[]
-     */
-    public buildAveragedGroups(values: number[], groups: number): number[] {
-        // Init the grouped values
-        let finalValues: number[] = [];
-
-        // Calculate the steps in which the values will be grouped and processed
-        const iterStep: number = Math.ceil(values.length / groups);
-
-        // Iterate over the values, group them and then calculate the mean
-        for (let i = 0; i < values.length; i = i + iterStep) {
-            finalValues.push(<number>this._utils.calculateAverage(values.slice(i, i + iterStep)));
-        }
-
-        // Finally, return the values
-        return finalValues;
-    }
-
-
-
-
 
 
 

@@ -8,6 +8,7 @@ import { LongShortRatioStateService } from "./long-short-ratio-state.service";
 import { TechnicalAnalysisStateService } from "./technical-analysis-state.service";
 import { LiquidityStateService } from "./liquidity-state.service";
 import { KeyZonesStateService } from "./keyzones-state.service";
+import { TrendStateService } from "./trend-state.service";
 import { StateUtilitiesService } from "./state-utilities.service";
 import { 
     IMarketStateService, 
@@ -18,7 +19,8 @@ import {
     ITechnicalAnalysisStateService,
     ILiquidityStateService,
     IKeyZonesStateService,
-    IStateUtilitiesService
+    IStateUtilitiesService,
+    ITrendStateService
 } from "./interfaces";
 
 export const marketStateModule: ContainerModule = new ContainerModule((bind: interfaces.Bind, unbind: interfaces.Unbind) => {
@@ -30,6 +32,7 @@ export const marketStateModule: ContainerModule = new ContainerModule((bind: int
     bind<ITechnicalAnalysisStateService>(SYMBOLS.TechnicalAnalysisStateService).to(TechnicalAnalysisStateService);
     bind<ILiquidityStateService>(SYMBOLS.LiquidityService).to(LiquidityStateService);
     bind<IKeyZonesStateService>(SYMBOLS.KeyZonesStateService).to(KeyZonesStateService);
+    bind<ITrendStateService>(SYMBOLS.TrendStateService).to(TrendStateService);
     bind<IStateUtilitiesService>(SYMBOLS.StateUtilitiesService).to(StateUtilitiesService);
 });
 

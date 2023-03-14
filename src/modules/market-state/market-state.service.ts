@@ -17,6 +17,7 @@ import {
     ITechnicalAnalysisStateService,
     IKeyZonesStateService,
     ILiquidityStateService,
+    ITrendStateService,
 } from "./interfaces";
 
 
@@ -33,6 +34,7 @@ export class MarketStateService implements IMarketStateService {
     @inject(SYMBOLS.TechnicalAnalysisStateService)      private _ta: ITechnicalAnalysisStateService;
     @inject(SYMBOLS.LiquidityService)                   private _liquidity: ILiquidityStateService;
     @inject(SYMBOLS.KeyZonesStateService)               private _keyZones: IKeyZonesStateService;
+    @inject(SYMBOLS.TrendStateService)                  private _trend: ITrendStateService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
@@ -113,6 +115,9 @@ export class MarketStateService implements IMarketStateService {
         // Initialize the KeyZones
         await this._keyZones.initialize();
 
+        // Initialize the trend state
+        await this._trend.initialize();
+
         // Calculate the state and initialize the interval
         await this.calculateState();
         this.candlestickStreamSub = this._candlestick.stream.subscribe(async (c) => {
@@ -178,7 +183,8 @@ export class MarketStateService implements IMarketStateService {
                 long_short_ratio: this._longShortRatio.state,
                 technical_analysis: this._ta.minState,
                 liquidity: this._liquidity.calculateState(windowState.w.at(-1).c),
-                keyzones: this._keyZones.calculateState()
+                keyzones: this._keyZones.calculateState(),
+                trend: this._trend.state
             });
 
             // Check if there is a window state and if can be broadcasted
@@ -222,6 +228,7 @@ export class MarketStateService implements IMarketStateService {
             technical_analysis: this._ta.getDefaultMinifiedState(),
             liquidity: this._liquidity.getDefaultState(),
             keyzones: this._keyZones.getDefaultState(),
+            trend: this._trend.getDefaultState()
         }
     }
 }

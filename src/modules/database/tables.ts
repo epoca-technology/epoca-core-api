@@ -196,8 +196,7 @@ export const TABLES: IRawTable[] = [
                 o           NUMERIC(10,6) NOT NULL,
                 h           NUMERIC(10,6) NOT NULL,
                 l           NUMERIC(10,6) NOT NULL,
-                c           NUMERIC(10,6) NOT NULL,
-                sm          NUMERIC(10,6) NOT NULL
+                c           NUMERIC(10,6) NOT NULL
             );
             CREATE INDEX IF NOT EXISTS ${tableName}_epoch_id ON ${tableName}(epoch_id);`
         }
@@ -244,21 +243,6 @@ export const TABLES: IRawTable[] = [
                 certificate     JSONB NOT NULL
             );
             CREATE INDEX IF NOT EXISTS ${tableName}_epoch_id ON ${tableName}(epoch_id);`
-        }
-    },
-
-    
-    /**
-     * Prediction State Intensity Configuration
-     * 
-     */
-    {
-        name: "prediction_state_intensity",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id              SMALLINT NOT NULL PRIMARY KEY,
-                config          JSONB NOT NULL
-            );`
         }
     },
 

@@ -113,7 +113,7 @@ export class OpenInterestStateService implements IOpenInterestStateService {
 
 
     /**
-     * Stops the network fee state interval.
+     * Stops the open interest state interval.
      */
     public stop(): void {
         if (this.stateInterval) clearInterval(this.stateInterval);

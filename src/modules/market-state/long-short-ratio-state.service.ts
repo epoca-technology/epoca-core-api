@@ -112,7 +112,7 @@ export class LongShortRatioStateService implements ILongShortRatioStateService {
 
 
     /**
-     * Stops the network fee state interval.
+     * Stops the long/short ratio state interval.
      */
     public stop(): void {
         if (this.stateInterval) clearInterval(this.stateInterval);

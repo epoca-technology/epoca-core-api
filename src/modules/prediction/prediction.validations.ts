@@ -1,10 +1,9 @@
 import {inject, injectable} from "inversify";
-import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService, IValidationsService } from "../utilities";
 import { IExternalRequestResponse } from "../external-request";
 import { IPrediction } from "../epoch-builder";
-import { IPredictionStateIntensityConfig, IPredictionValidations } from "./interfaces";
+import { IPredictionValidations } from "./interfaces";
 
 
 
@@ -18,12 +17,6 @@ export class PredictionValidations implements IPredictionValidations {
 
 
 
-    /**
-     * Prediction Duration
-     * If a prediction was generated prior to this value, it is considered to be 
-     * expired and should not be traded.
-     */
-    private readonly predictionDurationSeconds: number = 120;
 
 
     /**
@@ -47,27 +40,6 @@ export class PredictionValidations implements IPredictionValidations {
     /**************
      * Retrievers *
      **************/
-
-
-
-    /**
-     * Validates the active prediction and throws an error if a 
-     * condition is not met.
-     * @param pred 
-     */
-    public validateActivePrediction(pred: IPrediction|undefined): void {
-        // Make sure it is a valid object
-        if (!pred || typeof pred != "object") {
-            throw new Error(this._utils.buildApiError(`The active prediction is undefined.`, 21004));
-        }
-
-        // Calculate the minimum acceptable timestamp and make sure it is still active
-        const min: number = moment(Date.now()).subtract(this.predictionDurationSeconds, "seconds").valueOf();
-        if (pred.t < min) {
-            throw new Error(this._utils.buildApiError(`The active prediction's duration has run out. \
-            Needs: ${min}, Has: ${pred.t}.`, 21005));
-        }
-    }
 
 
 
@@ -124,6 +96,9 @@ export class PredictionValidations implements IPredictionValidations {
 
 
 
+
+
+
     /************************
      * Prediction Generator *
      ************************/
@@ -151,39 +126,5 @@ export class PredictionValidations implements IPredictionValidations {
 
         // Finally, return the prediction
         return <IPrediction>response.data.data;
-    }
-
-
-
-
-
-
-
-
-
-
-
-    /*************************************
-     * Prediction State Intensity Config *
-     *************************************/
-
-
-
-
-    /**
-     * Given a new configuration, it will ensure all provided values
-     * are correct.
-     * @param config 
-     */
-    public validateStateIntensityConfig(config: IPredictionStateIntensityConfig): void {
-        if (
-            !config || 
-            typeof config != "object" ||
-            !this._validations.numberValid(config.requirement, 0.01, 5) ||
-            !this._validations.numberValid(config.strongRequirement, 0.01, 5)
-        ) {
-            console.log(config);
-            throw new Error(this._utils.buildApiError("The provided prediction state intensity config is invalid.", 21007));
-        }
     }
 }

@@ -62,6 +62,7 @@
     TechnicalAnalysisStateService: Symbol.for("TechnicalAnalysisStateService"),
     KeyZonesStateService: Symbol.for("KeyZonesStateService"),
     LiquidityService: Symbol.for("LiquidityService"),
+    TrendStateService: Symbol.for("TrendStateService"),
     StateUtilitiesService: Symbol.for("StateUtilitiesService"),
 
     // Notifications
@@ -144,6 +145,7 @@ export interface ISymbols {
     TechnicalAnalysisStateService: symbol,
     KeyZonesStateService: symbol,
     LiquidityService: symbol,
+    TrendStateService: symbol,
     StateUtilitiesService: symbol,
 
 

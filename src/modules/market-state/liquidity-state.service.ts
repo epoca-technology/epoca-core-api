@@ -40,8 +40,8 @@ export class LiquidityStateService implements ILiquidityStateService {
      * The percent a side (asks/bids) must represent in order for the liquidity to
      * have a direction.
      */
-    private readonly directionRequirement: number = 51;
-    private readonly strongDirectionRequirement: number = 60;
+    private readonly directionRequirement: number = 55;
+    private readonly strongDirectionRequirement: number = 65;
 
 
     /**

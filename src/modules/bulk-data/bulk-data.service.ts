@@ -74,8 +74,6 @@ export class BulkDataService implements IBulkDataService {
             epoch: epoch,
             position: this._position.active,
             prediction: this._prediction.active.value,
-            predictionState: this._prediction.activeState,
-            predictionStateIntesity: this._prediction.activeStateIntesity,
             marketState: this._marketState.active.value,
             apiErrors: this._apiError.count
         }
@@ -125,8 +123,6 @@ export class BulkDataService implements IBulkDataService {
         try {
             await this._db.appBulkRef.update(<IAppBulkStream> {
                 prediction: this._prediction.active.value && typeof this._prediction.active.value == "object" ? this._prediction.active.value: null,
-                predictionState: this._prediction.activeState,
-                predictionStateIntesity: this._prediction.activeStateIntesity,
                 position: this._position.active,
                 marketState: <ICompressedMarketState>{
                     window: this.compressWindowState(),
@@ -136,6 +132,7 @@ export class BulkDataService implements IBulkDataService {
                     technical_analysis: this._marketState.active.value.technical_analysis,
                     liquidity: this._marketState.active.value.liquidity,
                     keyzones: this._marketState.active.value.keyzones,
+                    trend: this._marketState.active.value.trend
                 },
                 apiErrors: this._apiError.count
             });

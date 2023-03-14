@@ -423,13 +423,13 @@
 
 21003: `The predictions starting point must be less than the end. Received: ${startAt} - ${endAt}.`
 
-21004: `The active prediction is undefined.`
+21004: ``
 
-21005: `The active prediction's duration has run out. Needs: ${min}, Has: ${pred.t}.`
+21005: ``
 
 21006: `The predictions query is larger than the permitted data limit. Limit: ${dataLimit}, Received: ${difference}`
 
-21007: `The provided prediction state intensity config is invalid.`
+21007: ``
 
 21008: ``
 
@@ -443,7 +443,7 @@
 #
 ## Prediction Model (22.000 - 22.999)
 
-22000: `A valid list of candlesticks is required in order to invoke savePredictionCandlesticks.`
+22000: ``
 
 22001: ``
 
