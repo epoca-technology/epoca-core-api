@@ -68,7 +68,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * Limits the number of zones returned from the current price. For example, 
      * if 2 is provided, it retrieves 4 zones in total (2 above and 2 below)
      */
-    private readonly stateLimit: number = 5;
+    private readonly stateLimit: number = 10;
 
     /**
      * Volume Mean

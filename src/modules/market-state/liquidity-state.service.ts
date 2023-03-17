@@ -29,7 +29,7 @@ export class LiquidityStateService implements ILiquidityStateService {
 
     /**
      * Interval
-     * Every intervalSeconds, the open interest state will be calculated and stored temporarily.
+     * Every intervalSeconds, the liquidity state will be calculated and stored temporarily.
      */
     private stateInterval: any;
     private readonly intervalSeconds: number = 5;

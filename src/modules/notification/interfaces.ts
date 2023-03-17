@@ -30,6 +30,11 @@ export interface INotificationService {
     // Market State Notifications
     windowState(state: IStateType, change: number, price: number): Promise<void>,
 
+    // Coin Notifications
+    coinNoLongerSupported(symbol: string): Promise<void>,
+    coinWebsocketError(error: any): Promise<void>,
+    coinWebsocketConnectionIssue(): Promise<void>,
+
     // Position Notifications
 
 }
@@ -54,6 +59,6 @@ export type INotificationSender =
 "SERVER"|
 "CANDLESTICK"|
 "PREDICTION"|
-"ORDER_BOOK"|
 "MARKET_STATE"|
+"COIN"|
 "POSITION";

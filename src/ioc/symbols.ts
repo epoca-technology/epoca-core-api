@@ -57,12 +57,10 @@
     MarketStateService: Symbol.for("MarketStateService"),
     WindowStateService: Symbol.for("WindowStateService"),
     VolumeStateService: Symbol.for("VolumeStateService"),
-    OpenInterestStateService: Symbol.for("OpenInterestStateService"),
-    LongShortRatioStateService: Symbol.for("LongShortRatioStateService"),
-    TechnicalAnalysisStateService: Symbol.for("TechnicalAnalysisStateService"),
     KeyZonesStateService: Symbol.for("KeyZonesStateService"),
     LiquidityService: Symbol.for("LiquidityService"),
     TrendStateService: Symbol.for("TrendStateService"),
+    CoinsService: Symbol.for("CoinsService"),
     StateUtilitiesService: Symbol.for("StateUtilitiesService"),
 
     // Notifications
@@ -140,12 +138,10 @@ export interface ISymbols {
     MarketStateService: symbol,
     WindowStateService: symbol,
     VolumeStateService: symbol,
-    OpenInterestStateService: symbol,
-    LongShortRatioStateService: symbol,
-    TechnicalAnalysisStateService: symbol,
     KeyZonesStateService: symbol,
     LiquidityService: symbol,
     TrendStateService: symbol,
+    CoinsService: symbol,
     StateUtilitiesService: symbol,
 
 

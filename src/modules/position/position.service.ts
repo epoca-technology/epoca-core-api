@@ -172,7 +172,7 @@ export class PositionService implements IPositionService {
      */
     private async refreshActivePosition(): Promise<void> {
         // Retrieve the position
-        const position: IBinanceActivePosition|undefined = await this._binance.getActivePosition();
+        const position: IBinanceActivePosition[] = await this._binance.getActivePositions();
 
         // ...
         this.active = null;

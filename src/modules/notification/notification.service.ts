@@ -6,9 +6,7 @@ import { IUtilitiesService } from "../utilities";
 import { IAuthService } from "../auth";
 import { IApiErrorService } from "../api-error";
 import { IStateType } from "../market-state";
-import { IActivePosition } from "../position";
 import { INotificationService, INotification, INotificationChannel } from "./interfaces";
-import { IBinancePositionSide } from "../binance";
 
 
 
@@ -412,6 +410,65 @@ export class NotificationService implements INotificationService {
     }
 
 
+
+
+
+
+
+
+    /* Coin Notifications */
+
+
+
+
+
+
+    /**
+     * Triggers when an installed coin is no longer supported by Binance.
+     * @param symbol
+     * @returns Promise<void>
+     */
+    public coinNoLongerSupported(symbol: string): Promise<void> {
+        return this.broadcast({
+            sender: "COIN",
+            title: `${symbol} Warning:`,
+            description: `The coin ${symbol} is no longer supported by Binance and should be uninstalled as soon as possible.`
+        });
+    }
+
+
+
+
+
+
+    /**
+     * Triggers when the websocket broadcasts an error.
+     * @param error
+     * @returns Promise<void>
+     */
+    public coinWebsocketError(error: any): Promise<void> {
+        return this.broadcast({
+            sender: "COIN",
+            title: `Websocket Error:`,
+            description: this._utils.getErrorMessage(error)
+        });
+    }
+
+
+
+
+
+    /**
+     * Triggers when the websocket has not broadcasted data in an irregular period of time.
+     * @returns Promise<void>
+     */
+    public coinWebsocketConnectionIssue(): Promise<void> {
+        return this.broadcast({
+            sender: "COIN",
+            title: `Websocket Connection:`,
+            description: "The websocket has not broadcasted data in an irregular period of time. The system will attempt to restore the connection in a few seconds."
+        });
+    }
 
 
 

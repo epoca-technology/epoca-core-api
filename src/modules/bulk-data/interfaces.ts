@@ -3,13 +3,11 @@ import { IServerData, IServerResources } from "../server";
 import { IApiError } from "../api-error";
 import { IPrediction } from "../epoch-builder";
 import { 
+    ICoinsState,
     IKeyZoneState,
-    ILongShortRatioState, 
     IMarketState, 
     IMinifiedLiquidityState, 
-    IMinifiedTAState, 
     IMinifiedVolumeState, 
-    IOpenInterestState, 
     ISplitStates, 
     IStateType,
     ITrendState, 
@@ -114,12 +112,10 @@ export interface IAppBulkStream {
 export interface ICompressedMarketState {
     window: ICompressedWindowState,
     volume: IMinifiedVolumeState,
-    open_interest: IOpenInterestState,
-    long_short_ratio: ILongShortRatioState,
-    technical_analysis: IMinifiedTAState,
     liquidity: IMinifiedLiquidityState,
     keyzones: IKeyZoneState,
-    trend: ITrendState
+    trend: ITrendState,
+    coins: ICoinsState
 }
 
 export interface ICompressedWindowState {

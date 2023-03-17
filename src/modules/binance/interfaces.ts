@@ -5,12 +5,12 @@ export interface IBinanceService {
     // Properties
     candlestickGenesisTimestamp: number,
 
-    /* SIGNED ENDPOINTS */
+    /* FUTURES SIGNED ENDPOINTS */
 
 
     // Retrievers
     getBalances(): Promise<IBinanceBalance[]>,
-    getActivePosition(): Promise<IBinanceActivePosition|undefined>,
+    getActivePositions(): Promise<IBinanceActivePosition[]>,
 
     // Position Actions
     order(
@@ -19,6 +19,9 @@ export interface IBinanceService {
         quantity: number
     ): Promise<IBinanceTradeExecutionPayload|undefined>,
 
+
+    /* FUTURES PUBLIC ENDPOINTS */
+    getExchangeInformation(): Promise<IBinanceExchangeInformation>,
 
 
 
@@ -30,26 +33,28 @@ export interface IBinanceService {
         limit?:number
     ): Promise<IBinanceCandlestick[]>,
     getOrderBook(): Promise<IBinanceOrderBook>,
-
-
-    /* FUTURES PUBLIC ENDPOINTS */
-    getOpenInterest(): Promise<IBinanceOpenInterest[]>,
-    getLongShortRatio(kind: IBinanceLongShortRatioKind): Promise<IBinanceLongShortRatio[]>,
 }
 
 
 
 
 
-/*******************
- * Binance Futures *
- *******************/
 
 
 
 
 
-/* Balance */
+
+
+/***************************
+ * BINANCE FUTURES ACCOUNT *
+ ***************************/
+
+
+
+
+
+/* BALANCE */
 
 
 /**
@@ -93,7 +98,7 @@ export interface IBinanceBalance {
 
 
 
-/* Positions */
+/* POSITIONS */
 
 
 
@@ -204,6 +209,112 @@ export interface IBinanceTradeExecutionPayload {
 
 
 
+/**************************
+ * BINANCE FUTURES PUBLIC *
+ **************************/
+
+
+
+
+
+
+/**
+ * Binance Exchange Information
+ * Binance offers an endpoint in which exposes general information, 
+ * such as, global configurations, supported symbols, etc.
+ */
+export interface IBinanceExchangeInformation {
+    timezone: string, // "UTC"
+    serverTime: number, // 1678870837278
+    futuresType: string, // "U_MARGINED"
+    rateLimits: Array<{
+        rateLimitType: "REQUEST_WEIGHT"|"ORDERS",
+        interval: "MINUTE"|"SECOND",
+        intervalNum: number,
+        limit: number
+    }>,
+    exchangeFilters: any[],
+    assets: Array<{
+        asset: string, // Base Symbol. F.e: "BTC"|"USDT"|"BNB"...
+        marginAvailable: boolean,
+        autoAssetExchange: string, // "-10000"|"-0.00100000"|"-10"|"-5"...
+    }>,
+    symbols: Array<IBinanceExchangeInformationSymbol>
+}
+export interface IBinanceExchangeInformationSymbol {
+    symbol: string, // "BTCUSDT"
+    pair: string, // "BTCUSDT"
+    contractType: "PERPETUAL"|"CURRENT_QUARTER"|"", // Only PERPETUAL contracts should be supported
+    deliveryDate: number, // 4133404800000
+    onboardDate: number, // 4133404800000
+    status: "TRADING"|"SETTLING"|"PENDING_TRADING", // Only TRADING contracts should be supported
+    maintMarginPercent: string, // "2.5000"
+    requiredMarginPercent: string, // "5.0000"
+    baseAsset: string, // "BTC"|"ETH"|"BCH"
+    quoteAsset: "USDT"|"BUSD", // Only USDT based contracts should be supported
+    marginAsset: "USDT"|"BUSD", // Only USDT based contracts should be supported
+    pricePrecision: number, // 2
+    quantityPrecision: number, // 3
+    baseAssetPrecision: number, // 8
+    quotePrecision: number, // 8
+    underlyingType: "COIN"|"INDEX", // Only COIN based contracts should be supported
+    underlyingSubType: Array<string>, // "Layer-1"|"Layer-2"|"DeFi"|"DEX"|"Meme"...
+    settlePlan: number, // 0
+    triggerProtect: string, // "0.0500"
+    liquidationFee: string, // "0.012500"
+    marketTakeBound: string, // "0.05"
+    filters: Array<IBinanceExchangeInformationSymbolFilter>,
+    orderTypes: Array<IBinanceExchangeInformationSymbolOrderType>,
+    timeInForce: Array<IBinanceExchangeInformationSymbolTimeInForce>
+}
+export interface IBinanceExchangeInformationSymbolFilter {
+    filterType: IBinanceExchangeInformationSymbolFilterType,
+    minPrice?: string,  // 	"39.86"
+    maxPrice?: string,  // 	"306177"
+    tickSize?: string,  // "0.01"
+    stepSize?: string, // "0.001"
+    maxQty?: string, // "10000"
+    minQty?: string, // "10000"
+    limit?: number, // 200
+    notional?: number, // "5"
+    multiplierDown?: string, // "0.9500"
+    multiplierUp?: string, // "1.0500"
+    multiplierDecimal?: string, // "4"
+}
+export type IBinanceExchangeInformationSymbolFilterType = "PRICE_FILTER"|"LOT_SIZE"|"MARKET_LOT_SIZE"|"MAX_NUM_ORDERS"|"MAX_NUM_ALGO_ORDERS"|"MIN_NOTIONAL"|"PERCENT_PRICE";
+export type IBinanceExchangeInformationSymbolOrderType = "LIMIT"|"MARKET"|"STOP"|"STOP_MARKET"|"TAKE_PROFIT"|"TAKE_PROFIT_MARKET"|"TRAILING_STOP_MARKET";
+export type IBinanceExchangeInformationSymbolTimeInForce = "GTC"|"IOC"|"FOK"|"GTX";
+
+
+
+
+
+
+
+
+
+
+/****************************************
+ * BINANCE FUTURES PUBLIC WEBSOCKER API *
+ ****************************************/
+
+
+/**
+ * Mark Price Stream Data Item
+ * The mark price stream broadcasts list of objects following this schema.
+ * Note that the mark price (p) and the current timestamp (E) can be extracted
+ * from each object.
+ */
+export interface IMarkPriceStreamDataItem {
+    e: string, // Event type. E.g: "markPriceUpdate"
+    E: number, // Event timestamp in ms
+    s: string, // Symbol. E.g: "BTCUSDT"
+    p: string, // Mark price. E.g: "24968.00000000"
+    P: string, // Estimated Settle Price, only useful in the last hour before the settlement starts. E.g: "24985.00926676"
+    i: string, // Index price. E.g: "24978.91045170"
+    r: string, // Funding Rate. E.g: "0.00003171"
+    T: number  // Next funding time
+}
 
 
 
@@ -217,9 +328,15 @@ export interface IBinanceTradeExecutionPayload {
 
 
 
-/***************
- * Market Data *
- ***************/
+
+
+
+/********************
+ * SPOT MARKET DATA *
+ ********************/
+
+
+
 
 
 
@@ -257,6 +374,12 @@ export type IBinanceCandlestick = [
 
 
 
+
+
+
+
+
+
 /* Order Book */
 
 
@@ -283,57 +406,3 @@ export interface IBinanceOrderBook {
 
 
 
-
-
-/* Open Interest */
-
-
-// Open Interest Record
-export interface IBinanceOpenInterest {
-    // The interest's symbol.
-    symbol: string,
-
-    // The total interest value in BTC.
-    sumOpenInterest: string,
-
-    // The total interest value in USDT.
-    sumOpenInterestValue: string, // <- Value to be used
-
-    // The time at which the interval started.
-    timestamp: number
-}
-
-
-
-
-
-
-
-/* Long/Short Ratio  */
-
-
-// The kind of long/short ratio to be extracted from the API
-export type IBinanceLongShortRatioKind = "topLongShortAccountRatio"|"topLongShortPositionRatio"|"globalLongShortAccountRatio";
-
-
-// Long/Short Ratio Record
-export interface IBinanceLongShortRatio {
-    // The market's symbol.
-    symbol: string,
-
-    // The % of futures traders who are longing.
-    longAccount: string,
-
-    // The % of futures traders who are shorting.
-    shortAccount: string,
-
-    /**
-     * The ratio of longs vs shorts. If it is higher than 1, means 
-     * there are more traders longing. If it is less than one means there 
-     * are more traders shorting.
-     */
-    longShortRatio: string, // <- Value to be used
-
-    // The time at which the interval started.
-    timestamp: number
-}

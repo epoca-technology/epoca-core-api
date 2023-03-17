@@ -4,7 +4,7 @@ import {appContainer, SYMBOLS} from "../../ioc";
 
 
 // Request Guard
-import {ultraLowRiskLimit, IRequestGuardService} from "../request-guard";
+import {ultraLowRiskLimit, highRiskLimit, IRequestGuardService} from "../request-guard";
 const _guard: IRequestGuardService = appContainer.get<IRequestGuardService>(SYMBOLS.RequestGuardService);
 
 
@@ -19,26 +19,25 @@ const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.A
 
 // State Services
 import {
-    ITAIntervalID, 
-    ITechnicalAnalysisStateService, 
     IKeyZonesStateService, 
     IVolumeStateService, 
-    IExchangeOpenInterestID,
-    IOpenInterestStateService,
-    ILongShortRatioStateService,
-    IExchangeLongShortRatioID,
-    ILiquidityStateService
+    ILiquidityStateService,
+    ICoinsService,
+    ICoinsSummary
 } from "./interfaces";
 const _vol: IVolumeStateService = appContainer.get<IVolumeStateService>(SYMBOLS.VolumeStateService);
-const _ta: ITechnicalAnalysisStateService = appContainer.get<ITechnicalAnalysisStateService>(SYMBOLS.TechnicalAnalysisStateService);
 const _liquidity: ILiquidityStateService = appContainer.get<ILiquidityStateService>(SYMBOLS.LiquidityService);
 const _keyZones: IKeyZonesStateService = appContainer.get<IKeyZonesStateService>(SYMBOLS.KeyZonesStateService);
-const _openInterest: IOpenInterestStateService = appContainer.get<IOpenInterestStateService>(SYMBOLS.OpenInterestStateService);
-const _longShortRatio: ILongShortRatioStateService = appContainer.get<ILongShortRatioStateService>(SYMBOLS.LongShortRatioStateService);
+const _coins: ICoinsService = appContainer.get<ICoinsService>(SYMBOLS.CoinsService);
 
 
 // Init Route
 const MarketStateRoute = express.Router();
+
+
+
+
+
 
 
 
@@ -84,47 +83,6 @@ MarketStateRoute.route("/getFullVolumeState").get(ultraLowRiskLimit, async (req:
 
 
 
-
-
-
-
-
-
-
-
-/*********************************
- * Technical Analysis Retrievers *
- *********************************/
-
-
-
-/**
-* Retrieves the state for a provided technical analysis interval.
-* @requires id-token
-* @requires api-secret
-* @requires authority: 1
-* @param intervalID 
-* @returns IAPIResponse<ITAIntervalState>
-*/
-MarketStateRoute.route("/getTAIntervalState").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Init values
-    const idToken: string = req.get("id-token");
-    const apiSecret: string = req.get("api-secret");
-    const ip: string = req.clientIp;
-    let reqUid: string;
-
-    try {
-        // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["intervalID"], req.query);
-
-        // Return the response
-        res.send(_utils.apiResponse(_ta.getIntervalState(<ITAIntervalID>req.query.intervalID)));
-    } catch (e) {
-		console.log(e);
-        _apiError.log("MarketStateRoute.getTAIntervalState", e, reqUid, ip, {intervalID: req.query.intervalID});
-        res.send(_utils.apiResponse(undefined, e));
-    }
-});
 
 
 
@@ -232,21 +190,27 @@ MarketStateRoute.route("/calculateKeyZoneState").get(ultraLowRiskLimit, async (r
 
 
 
-/****************************
- * Open Interest Retrievers *
- ****************************/
+
+
+
+
+
+/********************
+ * Coins Management *
+ ********************/
+
+
 
 
 
 /**
-* Retrieves the open interest state for a given exchange id.
+* Retrieves Coins Summary including all supported and installed coins
 * @requires id-token
 * @requires api-secret
 * @requires authority: 1
-* @param exchangeID 
-* @returns IAPIResponse<IExchangeOpenInterestState>
+* @returns IAPIResponse<ICoinsSummary>
 */
-MarketStateRoute.route("/getOpenInterestStateForExchange").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+MarketStateRoute.route("/getCoinsSummary").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -255,13 +219,51 @@ MarketStateRoute.route("/getOpenInterestStateForExchange").get(ultraLowRiskLimit
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["exchangeID"], req.query);
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
 
         // Return the response
-        res.send(_utils.apiResponse(_openInterest.getExchangeState(<IExchangeOpenInterestID>req.query.exchangeID)));
+        res.send(_utils.apiResponse(_coins.getCoinsSummary()));
     } catch (e) {
 		console.log(e);
-        _apiError.log("MarketStateRoute.getOpenInterestStateForExchange", e, reqUid, ip, {exchangeID: req.query.exchangeID});
+        _apiError.log("MarketStateRoute.getCoinsSummary", e, reqUid, ip);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+/**
+* Installs a coin into the system by symbol.
+* @requires id-token
+* @requires api-secret
+* @requires otp
+* @requires authority: 4
+* @param symbol
+* @returns IAPIResponse<ICoinsSummary>
+*/
+MarketStateRoute.route("/installCoin").post(highRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["symbol"], req.body, otp || "");
+
+        // Perform Action
+        const data: ICoinsSummary = await _coins.installCoin(req.body.symbol);
+
+        // Return the response
+        res.send(_utils.apiResponse(data));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.installCoin", e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
@@ -273,27 +275,54 @@ MarketStateRoute.route("/getOpenInterestStateForExchange").get(ultraLowRiskLimit
 
 
 
+/**
+* Uninstalls a coin from the system by symbol.
+* @requires id-token
+* @requires api-secret
+* @requires otp
+* @requires authority: 4
+* @param symbol
+* @returns IAPIResponse<ICoinsSummary>
+*/
+MarketStateRoute.route("/uninstallCoin").post(highRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["symbol"], req.body, otp || "");
+
+        // Perform Action
+        const data: ICoinsSummary = await _coins.uninstallCoin(req.body.symbol);
+
+        // Return the response
+        res.send(_utils.apiResponse(data));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.uninstallCoin", e, reqUid, ip, req.body);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
 
 
 
 
-
-
-/*******************************
- * Long/Short Ratio Retrievers *
- *******************************/
 
 
 
 /**
-* Retrieves the long/short ratio state for a given exchange id.
+* Retrieves the full state of a coin by symbol.
 * @requires id-token
 * @requires api-secret
 * @requires authority: 1
-* @param exchangeID 
-* @returns IAPIResponse<IExchangeLongShortRatioState>
+* @param symbol
+* @returns IAPIResponse<ICoinState>
 */
-MarketStateRoute.route("/getLongShortRatioStateForExchange").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+MarketStateRoute.route("/getCoinFullState").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");
@@ -302,16 +331,19 @@ MarketStateRoute.route("/getLongShortRatioStateForExchange").get(ultraLowRiskLim
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["exchangeID"], req.query);
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["symbol"], req.query);
 
         // Return the response
-        res.send(_utils.apiResponse(_longShortRatio.getExchangeState(<IExchangeLongShortRatioID>req.query.exchangeID)));
+        res.send(_utils.apiResponse(_coins.getCoinFullState(<string>req.query.symbol)));
     } catch (e) {
 		console.log(e);
-        _apiError.log("MarketStateRoute.getLongShortRatioStateForExchange", e, reqUid, ip, {exchangeID: req.query.exchangeID});
+        _apiError.log("MarketStateRoute.getCoinFullState", e, reqUid, ip, req.query);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
+
 
 
 

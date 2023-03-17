@@ -14,13 +14,13 @@
 
 4: `Binance returned an invalid order book.`
 
-5: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the open interest.`
+5: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the exchange info`
 
-6: `Binance returned an invalid open interest list.`
+6: `Binance returned an invalid exchange information object.`
 
-7: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the long short ratio.`
+7: ``
 
-8: `Binance returned an invalid long short ratio list.`
+8: ``
 
 9: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the balances.`
 
@@ -630,9 +630,9 @@
 #
 ## Position Health (32.000 - 32.999)
 
-32000: `The position health could not be calculated because the prediction model is not currently active.`
+32000: ``
 
-32001: `The position health could not be calculated because the market state is not currently active.`
+32001: ``
 
 32002: ``
 
@@ -659,43 +659,49 @@
 #
 ## Signal Validations (36.000 - 36.999)
 
-36000: `The provided side is invalid. Received: ${side}`
+36000: ``
 
-36001: `The provided new signal policies for ${side} are invalid.`
+36001: ``
 
-36002: `The enabled property is invalid.`
+36002: ``
 
-36003: `The trend_sum property is invalid.`
+36003: ``
 
-36004: `The trend_state property is invalid.`
+36004: ``
 
-36005: `The trend_intensity property is invalid.`
-
-36006: `The technicals property is invalid.`
-
-36007: ``
-
-36008: ``
-
-36009: ``
-
-36010: ``
-
-36011: ``
-
-36012: `The open_interest property is invalid.`
-
-36013: `The long_short_ratio property is invalid.`
-
-36014: `The window provided for the WindowCancellation is invalid. Received: ${policy.window}`
-
-36015: `The volume property is invalid.`
-
-36016: `The volume direction property is invalid.`
-
-36017: ``
-
-36018: ``
+36005: ``
 
 
 
+
+
+#
+## Signal Validations (36.000 - 36.999)
+
+36000: ``
+
+
+
+
+
+
+#
+## Coins Service (37.000 - 37.999)
+
+37000: `The provided symbol ${symbol} is invalid.`
+
+37001: `The coin ${symbol} cannot be installed because it already is.`
+
+37002: `The coin ${symbol} cannot be installed because it is not supported.`
+
+37003: `The coin ${symbol} cannot be uninstalled because it is not currently installed.`
+
+37004: `The coin ${symbol} could not be retrieved because it wasnt found among the installed coins.`
+
+37005: `The full state of the coin cannot be retrieved because ${symbol} is not installed.`
+
+37006: ``
+
+37007: ``
+
+37008: ``

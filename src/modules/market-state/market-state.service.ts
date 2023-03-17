@@ -12,12 +12,10 @@ import {
     IWindowStateService,
     IVolumeStateService,
     IWindowState,
-    IOpenInterestStateService,
-    ILongShortRatioStateService,
-    ITechnicalAnalysisStateService,
     IKeyZonesStateService,
     ILiquidityStateService,
     ITrendStateService,
+    ICoinsService,
 } from "./interfaces";
 
 
@@ -29,12 +27,10 @@ export class MarketStateService implements IMarketStateService {
     @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
     @inject(SYMBOLS.WindowStateService)                 private _windowState: IWindowStateService;
     @inject(SYMBOLS.VolumeStateService)                 private _volumeState: IVolumeStateService;
-    @inject(SYMBOLS.OpenInterestStateService)           private _openInterest: IOpenInterestStateService;
-    @inject(SYMBOLS.LongShortRatioStateService)         private _longShortRatio: ILongShortRatioStateService;
-    @inject(SYMBOLS.TechnicalAnalysisStateService)      private _ta: ITechnicalAnalysisStateService;
     @inject(SYMBOLS.LiquidityService)                   private _liquidity: ILiquidityStateService;
     @inject(SYMBOLS.KeyZonesStateService)               private _keyZones: IKeyZonesStateService;
     @inject(SYMBOLS.TrendStateService)                  private _trend: ITrendStateService;
+    @inject(SYMBOLS.CoinsService)                       private _coins: ICoinsService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
@@ -98,17 +94,6 @@ export class MarketStateService implements IMarketStateService {
      * @returns Promise<void>
      */
     public async initialize(): Promise<void> {
-        // Initialize the open interest module after a small delay
-        await this._utils.asyncDelay(10);
-        await this._openInterest.initialize();
-
-        // Initialize the long/short ratio module after a small delay
-        await this._utils.asyncDelay(10);
-        await this._longShortRatio.initialize();
-
-        // Initialize the Technical Analysis Module
-        await this._ta.initialize();
-
         // Initialize the Liquidity Module
         await this._liquidity.initialize();
 
@@ -117,6 +102,9 @@ export class MarketStateService implements IMarketStateService {
 
         // Initialize the trend state
         await this._trend.initialize();
+
+        // Initialize the coins state
+        await this._coins.initialize();
 
         // Calculate the state and initialize the interval
         await this.calculateState();
@@ -138,11 +126,10 @@ export class MarketStateService implements IMarketStateService {
      */
     public stop(): void {
         if (this.candlestickStreamSub) this.candlestickStreamSub.unsubscribe();
-        this._openInterest.stop();
-        this._longShortRatio.stop();
-        this._ta.stop();
         this._liquidity.stop();
         this._keyZones.stop();
+        this._trend.stop();
+        this._coins.stop();
     }
 
 
@@ -179,12 +166,10 @@ export class MarketStateService implements IMarketStateService {
             this.active.next({
                 window: windowState,
                 volume: this._volumeState.calculateState(window),
-                open_interest: this._openInterest.state,
-                long_short_ratio: this._longShortRatio.state,
-                technical_analysis: this._ta.minState,
                 liquidity: this._liquidity.calculateState(windowState.w.at(-1).c),
                 keyzones: this._keyZones.calculateState(),
-                trend: this._trend.state
+                trend: this._trend.state,
+                coins: this._coins.calculateState()
             });
 
             // Check if there is a window state and if can be broadcasted
@@ -223,12 +208,10 @@ export class MarketStateService implements IMarketStateService {
         return {
             window: this._windowState.getDefaultState(),
             volume: this._volumeState.getDefaultState(),
-            open_interest: this._openInterest.getDefaultState(),
-            long_short_ratio: this._longShortRatio.getDefaultState(),
-            technical_analysis: this._ta.getDefaultMinifiedState(),
             liquidity: this._liquidity.getDefaultState(),
             keyzones: this._keyZones.getDefaultState(),
-            trend: this._trend.getDefaultState()
+            trend: this._trend.getDefaultState(),
+            coins: this._coins.getDefaultState()
         }
     }
 }

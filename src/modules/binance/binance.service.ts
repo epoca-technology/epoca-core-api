@@ -12,15 +12,13 @@ import {
     IBinanceService, 
     IBinanceCandlestickInterval, 
     IBinanceCandlestick, 
-    IBinanceOpenInterest,
-    IBinanceLongShortRatio,
     IBinanceBalance,
     IBinanceActivePosition,
     IBinanceTradeExecutionPayload,
     IBinancePositionActionSide,
     IBinancePositionSide,
-    IBinanceLongShortRatioKind,
-    IBinanceOrderBook
+    IBinanceOrderBook,
+    IBinanceExchangeInformation
 } from "./interfaces";
 
 
@@ -68,10 +66,18 @@ export class BinanceService implements IBinanceService {
 
 
 
-    /**
-     * SIGNED ENDPOINTS
-     * Each request as well as its params must be signed prior to dispatching.
-     */
+
+
+
+
+
+
+    /*****************************************************************************
+     * FUTURES SIGNED ENDPOINTS                                                  *
+     * Each request as well as its params must be signed prior to dispatching.   *
+     *****************************************************************************/
+
+
 
 
 
@@ -133,9 +139,9 @@ export class BinanceService implements IBinanceService {
     /**
      * Retrieves the current active position. If none is active, returns
      * undefined
-     * @returns Promise<IBinanceActivePosition|undefined>
+     * @returns Promise<IBinanceActivePosition[]>
      */
-    public async getActivePosition(): Promise<IBinanceActivePosition|undefined> {
+    public async getActivePositions(): Promise<IBinanceActivePosition[]> {
         // Build options
         const params: string = this.buildSignedParamsString();
         const options: IExternalRequestOptions = {
@@ -165,12 +171,8 @@ export class BinanceService implements IBinanceService {
         }
 
         // Return the the active position (if any)
-        return response.data.filter((p: IBinanceActivePosition) => Number(p.entryPrice) > 0)[0];
+        return response.data.filter((p: IBinanceActivePosition) => Number(p.entryPrice) > 0);
     }
-
-
-
-
 
 
 
@@ -245,7 +247,11 @@ export class BinanceService implements IBinanceService {
 
 
 
-    /* Request Signer */
+
+
+
+
+    /* REQUEST SIGNER */
 
 
     /**
@@ -285,11 +291,80 @@ export class BinanceService implements IBinanceService {
 
 
 
+    /****************************
+     * FUTURES PUBLIC ENDPOINTS *
+     ****************************/
 
 
 
 
-    /* SPOT PUBLIC ENDPOINTS */
+
+
+
+
+    /**
+     * Retrieves the full info object that contains all relevant data
+     * for trading in Binance Futures.
+     * @returns Promise<IBinanceExchangeInformation>
+     */
+    public async getExchangeInformation(): Promise<IBinanceExchangeInformation> {
+        // Build options
+        const options: IExternalRequestOptions = {
+            host: "fapi.binance.com",
+            path: `/fapi/v1/exchangeInfo`,
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        };
+
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the exchange info: ${this.extractErrorMessage(response)}`, 5));
+        }
+
+        // Validate the response's data
+        if (
+            !response.data || 
+            typeof response.data != "object" || 
+            !Array.isArray(response.data.symbols) || 
+            !response.data.symbols.length
+        ){
+            console.log(response);
+            throw new Error(this._utils.buildApiError("Binance returned an invalid exchange information object.", 6));
+        }
+
+        // Return the series
+        return response.data;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*************************
+     * SPOT PUBLIC ENDPOINTS * 
+     *************************/
+
+
 
 
 
@@ -416,108 +491,12 @@ export class BinanceService implements IBinanceService {
 
 
 
-    /* FUTURES PUBLIC ENDPOINTS */
 
 
+    /****************
+     * Misc Helpers *
+     ****************/
 
-
-
-    /**
-     * Retrieves the last 32 hours worth of open interest from
-     * Binance's API.
-     * @returns Promise<IBinanceOpenInterest[]>
-     */
-     public async getOpenInterest(): Promise<IBinanceOpenInterest[]> {
-        // Build options
-        const options: IExternalRequestOptions = {
-            host: "fapi.binance.com",
-            path: `/futures/data/openInterestHist?symbol=BTCUSDT&period=15m&limit=128`,
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json"
-            }
-        };
-
-        // Retrieve the order book
-        const response: IExternalRequestResponse = await this._er.request(options);
-
-        // Validate the response
-        if (!response || typeof response != "object" || response.statusCode != 200) {
-            console.log(response);
-            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
-            when retrieving the open interest: ${this.extractErrorMessage(response)}`, 5));
-        }
-
-        // Validate the response's data
-        if (!response.data || !Array.isArray(response.data) || !response.data.length) {
-            console.log(response);
-            throw new Error(this._utils.buildApiError("Binance returned an invalid open interest list.", 6));
-        }
-
-        // Return the series
-        return response.data;
-    }
-
-
-
-
-
-
-
-
-    /* Long/Short Ratio */
-
-
-
-
-    /**
-     * Retrieves the last 32 hours worth of long/short ratio from
-     * Binance's API.
-     * @param kind
-     * @returns Promise<IBinanceLongShortRatio[]>
-     */
-     public async getLongShortRatio(kind: IBinanceLongShortRatioKind): Promise<IBinanceLongShortRatio[]> {
-        // Build options
-        const options: IExternalRequestOptions = {
-            host: "fapi.binance.com",
-            path: `/futures/data/${kind}?symbol=BTCUSDT&period=15m&limit=128`,
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json"
-            }
-        };
-
-        // Retrieve the order book
-        const response: IExternalRequestResponse = await this._er.request(options);
-
-        // Validate the response
-        if (!response || typeof response != "object" || response.statusCode != 200) {
-            console.log(response);
-            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
-            when retrieving the long short ratio ${kind}: ${this.extractErrorMessage(response)}`, 7));
-        }
-
-        // Validate the response's data
-        if (!response.data || !Array.isArray(response.data) || !response.data.length) {
-            console.log(response);
-            throw new Error(this._utils.buildApiError(`Binance returned an invalid long short ratio ${kind} list.`, 8));
-        }
-
-        // Return the series
-        return response.data;
-    }
-
-
-
-
-
-
-
-
-
-
-
-    /* Misc Helpers */
 
 
 

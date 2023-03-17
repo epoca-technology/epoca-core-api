@@ -1,6 +1,6 @@
 {
   "name": "api-development",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Epoca is a pattern finding technology designed to trade Futures Contracts through Bitcoin Exchanges.",
   "main": "index.js",
   "scripts": {
@@ -48,8 +48,8 @@
     "rxjs": "7.5.2",
     "systeminformation": "5.10.5",
     "telegraf": "4.6.0",
-    "tulind": "0.8.20",
-    "uuid": "8.3.2"
+    "uuid": "8.3.2",
+    "ws": "8.13.0"
   },
   "devDependencies": {
     "@types/adm-zip": "0.5.0",
@@ -64,6 +64,7 @@
     "@types/request-ip": "0.0.37",
     "@types/systeminformation": "3.54.1",
     "@types/uuid": "8.3.4",
+    "@types/ws": "8.5.4",
     "gulp": "4.0.2",
     "gulp-clean": "0.4.0",
     "gulp-minify": "3.1.0",
