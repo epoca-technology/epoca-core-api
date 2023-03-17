@@ -156,7 +156,7 @@ export class CoinsService implements ICoinsService {
         this.supportedCoinsInterval = undefined;
         if (this.wsInterval) clearInterval(this.wsInterval);
         this.wsInterval = undefined;
-        // Deactivate the price feed websocket subscription
+        this.stopWebsocketSubscription();
     }
 
 
@@ -552,15 +552,29 @@ export class CoinsService implements ICoinsService {
          * If the state has been set and there are enough items in the window, 
          * calculate the state.
          */
-        if (this.states[symbol] && this.states[symbol].w.length >= 60) {
+        if (this.states[symbol] && this.states[symbol].w.length == this.priceWindowSize) {
             // Calculate the state
             const { averageState, splitStates } = 
                 this._stateUtils.calculateCurrentState(this.states[symbol].w, this.requirement, this.strongRequirement);
 
+            /**
+             * State Event
+             * This event has the power to open positions. Therefore, if there is one, 
+             * the integrity must be verified by validating the last price update.
+             * If the coin's price window is not perfectly synced, the state is replaced
+             * with "n".
+             */
+            let stateEvent: ICoinStateEvent = this.getStateEvent(splitStates);
+            if (stateEvent != "n") {
+                if (this.states[symbol].w.at(-1).x <= moment().subtract(this.priceIntervalSeconds + 10).valueOf()) {
+                    stateEvent = "n";
+                }
+            }
+
             // Update the coin's state
             this.states[symbol].s = averageState;
             this.states[symbol].ss = splitStates;
-            this.states[symbol].e = this.getStateEvent(splitStates);
+            this.states[symbol].e = stateEvent;
         }
 
         // If the state is not in the object, initialize it
@@ -716,15 +730,11 @@ export class CoinsService implements ICoinsService {
                                     }
 
                                     // Otherwise, update the current price
-                                    else {
-                                        this.states[item.s].w.at(-1).y = markPrice;
-                                    }
+                                    else { this.states[item.s].w.at(-1).y = markPrice }
                                 }
 
                                 // Otherwise, initialize the list with the current values
-                                else {
-                                    this.states[item.s].w.push({ x: item.E, y: markPrice})
-                                }
+                                else { this.states[item.s].w.push({ x: item.E, y: markPrice}) }
                             }
                         });
 
