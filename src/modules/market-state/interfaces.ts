@@ -289,7 +289,7 @@ export type IReversalType = "r"|"s"; // r = Resistance | s = Support
  * Volume Intensity
  * The intensity of the volume within the KeyZone.
  */
-export type IKeyZoneVolumeIntensity = 0|1|2;
+export type IKeyZoneVolumeIntensity = 0|1|2|3|4;
 
 
 /**
@@ -372,8 +372,14 @@ export interface IKeyZoneFullState {
     // The list of keyzones below the current price
     below: IKeyZone[],
 
-    // The mean of all the keyzone volumes
+    /**
+     * The mean of all the keyzone volumes used as requirements in order to calculate 
+     * the intensities
+     */
     volume_mean: number,
+    volume_mean_low: number,
+    volume_mean_medium: number,
+    volume_mean_high: number,
 
     // The timestamp in which the build was generated
     build_ts: number

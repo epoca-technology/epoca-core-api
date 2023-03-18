@@ -53,7 +53,7 @@ export class VolumeStateService implements IVolumeStateService {
         }
 
         // Calculate the mean and the mean high values
-        const mean: number = accum / window.length;
+        const mean: number = <number>this._utils.outputNumber(accum / window.length);
         const meanHigh: number = <number>this._utils.calculateAverage([mean, highest]);
 
         // Calculate the state of the volume

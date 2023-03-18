@@ -30,6 +30,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private readonly numberConfig: INumberConfig = { dp: 0, ru: true };
 
+
+
     /**
      * Build Lookback Size
      * The number of 15-minute-interval candlesticks that will be used to build
@@ -37,11 +39,15 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private readonly buildLookbackSize: number = 2880; // ~30 days
 
+
+
     /**
      * KeyZones
      * The list of KeyZones detected in the retrieved candlesticks.
      */
     private zones: IKeyZone[] = [];
+
+
 
     /**
      * Temporary KeyZones
@@ -50,11 +56,15 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private tempZones: IKeyZone[] = [];
 
+
+
     /**
      * Zone Size
      * The zone's size percentage. The start and end prices are based on this value.
      */
     private readonly zoneSize: number = 0.1;
+
+
 
     /**
      * Merge Distance
@@ -63,6 +73,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private readonly zoneMergeDistanceLimit: number = 0.05;
 
+
+
+
     /**
      * State Limit
      * Limits the number of zones returned from the current price. For example, 
@@ -70,21 +83,21 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private readonly stateLimit: number = 10;
 
+
+
+
     /**
      * Volume Mean
      * Once the KeyZones are built, the mean of the volumes is calculated and
      * stored in order to be able to derive the intensity.
      */
     private volumeMean: number = 0;
+    private volumeMeanLow: number = 0;
+    private volumeMeanMedium: number = 0;
+    private volumeMeanHigh: number = 0;
 
-    /**
-     * Volume Intensity Requirements
-     * The intensity is calculated based on the keyzone's volume mean vs the 
-     * global one. The higher the volume within the KeyZone, the higher the
-     * intensity.
-     */
-    private readonly requirementAdjustment: number = 0.9;
-    private readonly strongRequirementAdjustment: number = 1.6;
+
+
 
     /**
      * KeyZones Build Interval
@@ -185,6 +198,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 above: this.getZonesFromPrice(currentPrice, true),
                 below: this.getZonesFromPrice(currentPrice, false),
                 volume_mean: this.volumeMean,
+                volume_mean_low: this.volumeMeanLow,
+                volume_mean_medium: this.volumeMeanMedium,
+                volume_mean_high: this.volumeMeanHigh,
                 build_ts: this.buildTS
             };
         } else {
@@ -531,32 +547,43 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private calculateKeyZoneVolumes(): void {
         if (this.zones.length > 0) {
-            // Init the list of means
-            let means: number[] = [];
+            // Init values
+            let volMeanAccum: number = 0;
+            let volMeanLowest: number = 0;
+            let volMeanHighest: number = 0;
 
             // Iterate over each zone
             for (let i = 0; i < this.zones.length; i++) {
                 // Calculate the mean of all the reversals within
                 const volMean: number = <number>this._utils.calculateAverage(this.zones[i].r.map(r => r.v));
 
-                // Add the mean to the list
-                means.push(volMean);
+                // Add the mean to the accumulator
+                volMeanAccum += volMean;
+
+                // Check if it is the lowest mean so far
+                volMeanLowest = volMeanLowest == 0 || volMean < volMeanLowest ? volMean: volMeanLowest;
+
+                // Check if it is the highest mean so far
+                volMeanHighest = volMean > volMeanHighest ? volMean: volMeanHighest;
 
                 // Insert the volume mean into the zone
                 this.zones[i].vm = volMean;
             }
 
             // Calculate the global mean and the intensity requirements
-            this.volumeMean = <number>this._utils.calculateAverage(means);
-            const requirement: number = this.volumeMean * this.requirementAdjustment;
-            const strongRequirement: number = this.volumeMean * this.strongRequirementAdjustment;
+            this.volumeMean = <number>this._utils.outputNumber(volMeanAccum / this.zones.length);
+            this.volumeMeanLow = <number>this._utils.calculateAverage([this.volumeMean, volMeanLowest]);
+            this.volumeMeanHigh = <number>this._utils.calculateAverage([this.volumeMean, volMeanHighest]);
+            this.volumeMeanMedium = <number>this._utils.calculateAverage([this.volumeMean, this.volumeMeanHigh]);
 
             // Iterate over the zones once more
             for (let i = 0; i < this.zones.length; i++) {
                 // Calculate the intensity of the zone
                 let intensity: IKeyZoneVolumeIntensity = 0;
-                if      (this.zones[i].vm >= strongRequirement) { intensity = 2 }
-                else if (this.zones[i].vm >= requirement)       { intensity = 1 }
+                if      (this.zones[i].vm >= this.volumeMeanHigh)   { intensity = 4 }
+                else if (this.zones[i].vm >= this.volumeMeanMedium) { intensity = 3 }
+                else if (this.zones[i].vm >= this.volumeMean)       { intensity = 2 }
+                else if (this.zones[i].vm >= this.volumeMeanLow)    { intensity = 1 }
 
                 // Insert the intensity into the keyzone
                 this.zones[i].vi = intensity;
