@@ -566,7 +566,7 @@ export class CoinsService implements ICoinsService {
              */
             let stateEvent: ICoinStateEvent = this.getStateEvent(splitStates);
             if (stateEvent != "n") {
-                if (this.states[symbol].w.at(-1).x <= moment().subtract(this.priceIntervalSeconds + 10).valueOf()) {
+                if (this.states[symbol].w.at(-1).x <= moment().subtract(this.priceIntervalSeconds + 10, "seconds").valueOf()) {
                     stateEvent = "n";
                 }
             }

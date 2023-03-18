@@ -65,7 +65,7 @@ export interface IPositionModel {
 
 /**
  * Take Profit Level
- * The trading strategy makes use of 5 take profit levels that have different
+ * The trading strategy makes use of 3 take profit levels that have different
  * characteristics.
  */
 export interface ITakeProfitLevel {
@@ -87,9 +87,40 @@ export interface ITakeProfitLevel {
  */
 export interface IPositionStrategy {
     /**
+     * Position Status
+     * Each side has its own status. If enabled when a trading signal is generated,
+     * it will open a position.
+     */
+    long_status: boolean,
+    short_status: boolean,
+
+    /**
+     * Leverage
+     * The leverage that will be used to calculate the position amount whenever a
+     * position is opened. The leverage has to be set manually per installed coin,
+     * otherwise, the position opening may behave unexpectedly.
+     */
+    leverage: number,
+
+    /**
+     * Position Size
+     * The amount of money allocated to the position as collateral will always be 
+     * the same, no matter the side. If there isn't enough balance to cover the size, 
+     * the position cannot be opened.
+     */
+    position_size: number,
+
+    /**
+     * Positions Limit
+     * The system can handle up to 9 simultaneous positions. However, this limit can
+     * be changed by the user at any time.
+     */
+    positions_limit: number,
+
+    /**
      * Profit Optimization Strategy
      * When a position is opened, a take profit grid is generated. Each level
-     * activates when hit by the spot price. The position is maintained active
+     * activates when hit by the mark price. The position is maintained active
      * until the gain experiences a drawdown that goes past the level's tolerance.
      */
     take_profit_1: ITakeProfitLevel,
@@ -98,9 +129,10 @@ export interface IPositionStrategy {
 
     /**
      * Loss Optimization Strategy
-     * Each position has a fixed price in which it will be closed no matter what.
-     * Furthermore, when a position is at loss, it has a max hp drawdown% limit 
-     * which can trigger before the market hits the stop loss price.
+     * When a position is opened, a stop-loss-market order is created which will be
+     * triggered the moment it is hit by the Mark Price. Additionally, the system 
+     * also monitors the stop loss at a native level and closes it if for any
+     * reason it hasn't been.
      */
     stop_loss: number
 }
@@ -108,7 +140,7 @@ export interface IPositionStrategy {
 
 /**
  * Position Exit Strategy
- * The exit prices calculated every time a position is refreshed based on the strategy.
+ * The exit prices calculated when a new position is detected.
  */
 export interface IPositionExitStrategy {
     // Take Profits by Level

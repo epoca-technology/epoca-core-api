@@ -551,17 +551,17 @@
 #
 ## Position Validations (30.000 - 30.999)
 
-30000: ``
+30000: `The long and short statuses must be valid booleans. Received: ${newStrategy.long_status}, ${newStrategy.short_status}`
 
-30001: ``
+30001: `The leverage must be a valid number ranging 2-20. Received: ${newStrategy.leverage}`
 
 30002: `The stop loss must be a valid number ranging 0.5-10. Received: ${newStrategy.stop_loss}`
 
-30003: ``
+30003: `The position size must be a valid number ranging 25-10,000. Received: ${newStrategy.position_size}`
 
 30004: `The provided strategy is not a valid object.`
 
-30005: ``
+30005: `The positions limit must be a valid number ranging 1-9. Received: ${newStrategy.positions_limit}`
 
 30006: ``
 

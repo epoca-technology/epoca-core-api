@@ -271,10 +271,15 @@ export class PositionService implements IPositionService {
      */
     private getDefaultStrategy(): IPositionStrategy {
         return {
+            long_status: false,
+            short_status: false,
+            leverage: 3,
+            position_size: 25,
+            positions_limit: 1,
             take_profit_1: { price_change_requirement: 0.5,     max_gain_drawdown: -15 },
             take_profit_2: { price_change_requirement: 1.25,    max_gain_drawdown: -7.5 },
             take_profit_3: { price_change_requirement: 2,       max_gain_drawdown: -5 },
-            stop_loss: 0.75
+            stop_loss: 0.5
         }
     }
 

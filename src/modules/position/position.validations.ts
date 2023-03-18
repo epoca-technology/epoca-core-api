@@ -48,6 +48,30 @@ export class PositionValidations implements IPositionValidations {
             throw new Error(this._utils.buildApiError(`The provided strategy is not a valid object.`, 30004));
         }
 
+        // Validate the statuses
+        if (typeof newStrategy.long_status != "boolean" || typeof newStrategy.short_status != "boolean") {
+            throw new Error(this._utils.buildApiError(`The long and short statuses must be valid booleans. 
+            Received: ${newStrategy.long_status}, ${newStrategy.short_status}`, 30000));
+        }
+
+        // Validate the leverage
+        if (typeof newStrategy.leverage != "number" || !this._validations.numberValid(newStrategy.leverage, 2, 20)) {
+            throw new Error(this._utils.buildApiError(`The leverage must be a valid number ranging 2-20. 
+            Received: ${newStrategy.leverage}`, 30001));
+        }
+
+        // Validate the position size
+        if (typeof newStrategy.position_size != "number" || !this._validations.numberValid(newStrategy.position_size, 25, 10000)) {
+            throw new Error(this._utils.buildApiError(`The position size must be a valid number ranging 25-10,000. 
+            Received: ${newStrategy.position_size}`, 30003));
+        }
+
+        // Validate the positions limit
+        if (typeof newStrategy.positions_limit != "number" || !this._validations.numberValid(newStrategy.positions_limit, 1, 9)) {
+            throw new Error(this._utils.buildApiError(`The positions limit must be a valid number ranging 1-9. 
+            Received: ${newStrategy.positions_limit}`, 30005));
+        }
+
         // Validate the take profit 1
         if (
             typeof newStrategy.take_profit_1 != "object" || 
