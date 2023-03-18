@@ -21,7 +21,7 @@ import {
     ICoin,
     IStateUtilitiesService,
     ISplitStates,
-    ICoinStateEvent
+    IStateType
 } from "./interfaces";
 
 
@@ -530,7 +530,7 @@ export class CoinsService implements ICoinsService {
         let minState: ICoinsState = {};
         for (let symbol in this.installed) { 
             this.calculateCoinState(symbol);
-            minState[symbol] = { s: this.states[symbol].s, e: this.states[symbol].e }
+            minState[symbol] = { s: this.states[symbol].s, se: this.states[symbol].se }
         }
 
         // Finally, return the minified build
@@ -564,17 +564,17 @@ export class CoinsService implements ICoinsService {
              * If the coin's price window is not perfectly synced, the state is replaced
              * with "n".
              */
-            let stateEvent: ICoinStateEvent = this.getStateEvent(splitStates);
-            if (stateEvent != "n") {
+            let stateEvent: IStateType = this.calculateStateEvent(splitStates);
+            if (stateEvent != 0) {
                 if (this.states[symbol].w.at(-1).x <= moment().subtract(this.priceIntervalSeconds + 10, "seconds").valueOf()) {
-                    stateEvent = "n";
+                    stateEvent = 0;
                 }
             }
 
             // Update the coin's state
             this.states[symbol].s = averageState;
             this.states[symbol].ss = splitStates;
-            this.states[symbol].e = stateEvent;
+            this.states[symbol].se = stateEvent;
         }
 
         // If the state is not in the object, initialize it
@@ -589,13 +589,30 @@ export class CoinsService implements ICoinsService {
 
 
     /**
-     * Checks if there is a state event based on the split states.
+     * Calculates the state event for a coin based on its split states.
      * @param splitStates 
-     * @returns ICoinStateEvent
+     * @returns IStateType
      */
-    private getStateEvent(splitStates: ISplitStates): ICoinStateEvent {
-        // Check if there is a support reversal state
+    private calculateStateEvent(splitStates: ISplitStates): IStateType {
+        // Init the state
+        let stateEvent: IStateType = 0;
+
+        /* Support Reversal */
+
+        // Check if a strong support reversal took place
         if (
+            splitStates.s100.s <= -2 &&
+            splitStates.s75.s <= -2 &&
+            splitStates.s50.s <= -2 &&
+            splitStates.s25.s <= -2 &&
+            splitStates.s15.s <= -2 &&
+            splitStates.s10.s <= -2 &&
+            splitStates.s5.s >= 1 &&
+            splitStates.s2.s >= 1
+        ) { stateEvent = -2 }
+
+        // Check if a support reversal took place
+        else if (
             splitStates.s100.s <= -1 &&
             splitStates.s75.s <= -1 &&
             splitStates.s50.s <= -1 &&
@@ -604,11 +621,23 @@ export class CoinsService implements ICoinsService {
             splitStates.s10.s <= -1 &&
             splitStates.s5.s >= 1 &&
             splitStates.s2.s >= 1
-        ) {
-            return "sr";
-        }
+        ) { stateEvent = -1 }
 
-        // Check if there is a resistance reversal state
+        /* Resistance Reversal */
+
+        // Check if a strong resistance reversal took place
+        if (
+            splitStates.s100.s >= 2 &&
+            splitStates.s75.s >= 2 &&
+            splitStates.s50.s >= 2 &&
+            splitStates.s25.s >= 2 &&
+            splitStates.s15.s >= 2 &&
+            splitStates.s10.s >= 2 &&
+            splitStates.s5.s <= -1 &&
+            splitStates.s2.s <= -1
+        ) { stateEvent = 2 }
+
+        // Check if a strong resistance reversal took place
         else if (
             splitStates.s100.s >= 1 &&
             splitStates.s75.s >= 1 &&
@@ -618,13 +647,12 @@ export class CoinsService implements ICoinsService {
             splitStates.s10.s >= 1 &&
             splitStates.s5.s <= -1 &&
             splitStates.s2.s <= -1
-        ) {
-            return "rr";
-        }
+        ) { stateEvent = 1 }
 
-        // Otherwise, there is no event
-        else { return "n" }
+        // Finally, return the event
+        return stateEvent;
     }
+
 
 
 
@@ -847,7 +875,7 @@ export class CoinsService implements ICoinsService {
                 s5: {s: 0, c: 0},
                 s2: {s: 0, c: 0},
             },
-            e: "n",
+            se: 0,
             w: []
         }
     }

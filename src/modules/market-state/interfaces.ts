@@ -150,6 +150,14 @@ export interface IMinifiedSplitStates {
 
 
 
+
+
+
+
+
+
+
+
 /****************************************************************************
  * WINDOW STATE                                                             *
  * The purpose of the window state is to enable programatic understanding   *
@@ -188,6 +196,12 @@ export interface IWindowState {
 
 
 
+
+
+
+
+
+
 /****************************************************************************
  * VOLUME STATE                                                             *
  * The purpose of the volume state is to enable programatic understanding   *
@@ -198,8 +212,8 @@ export interface IWindowState {
 // Service
 export interface IVolumeStateService {
     state: IVolumeState,
-    calculateState(window: ICandlestick[]): IMinifiedVolumeState
-    getDefaultState(): IMinifiedVolumeState,
+    calculateState(window: ICandlestick[]): IStateType
+    getDefaultState(): IStateType,
 }
 
 
@@ -212,22 +226,8 @@ export interface IVolumeState {
     m: number,
     mh: number,
 
-    // The direction in which the volume is driving the price and its value
-    d: IStateType,
-    dv: number,
-
     // The list of volumes that comprise the window
     w: ISplitStateSeriesItem[]
-}
-
-
-// Minified State
-export interface IMinifiedVolumeState {
-    // The state of the volume
-    s: IStateType,
-
-    // The direction in which the volume is driving the price and its value
-    d: IStateType
 }
 
 
@@ -619,6 +619,10 @@ export interface ITrendState {
 
 
 
+
+
+
+
 /********************************************************************************
  * COINS                                                                        *
  * The purpose of the coin state submodule is to have a deep understanding of   *
@@ -682,17 +686,6 @@ export interface ICoinsSummary {
 /* State */
 
 
-/**
- * State Event
- * The state of a coin provides a brief description of the price's direction. By making
- * use of this, we can derive "events" that can be combined with KeyZone events in order
- * to open positions.
- * sr: Support Reversal     -> The price has been decreasing and started reversing
- * rr: Resistance Reversal  -> The price has been increasing and started reversing
- * n:  No event is present
- */
-export type ICoinStateEvent = "sr"|"rr"|"n";
-
 
 // Full Coin State
 export interface ICoinState {
@@ -702,8 +695,18 @@ export interface ICoinState {
     // The split states payload
     ss: ISplitStates,
 
-    // The event present in the state (If any)
-    e: ICoinStateEvent,
+    /**
+     * State Event
+     * This event refers to a coin's price starting a reversal. When the price is dropping
+     * and suddently starts rising, it is known as a "Support Reversal". On the contrary, 
+     * when the price has been rising and starts dropping, it is known as a "Resistance Reversal".
+     * Moreover, when an event is detected, it also has an intensity based on how hard the price
+     * had decreased/increased prior to reversing. 
+     * Support Reversals can be -2 (reversal occurred after a strong crash) or a -1.
+     * Resistance Reversals can be 2 (reversal occurred after a strong increase) or 1.
+     * If the state event of a coin is 0, means there is no event at all.
+     */
+    se: IStateType,
 
     // The coin prices within the window
     w: ISplitStateSeriesItem[]
@@ -715,8 +718,8 @@ export interface IMinifiedCoinState {
     // The state of the coin
     s: IStateType,
 
-    // The event present in the state (If any)
-    e: ICoinStateEvent
+    // The state event
+    se: IStateType,
 }
 
 
@@ -761,7 +764,7 @@ export interface ICoinsState {
  *********************************************************************************/
 export interface IMarketState {
     window: IWindowState,
-    volume: IMinifiedVolumeState,
+    volume: IStateType,
     liquidity: IMinifiedLiquidityState,
     keyzones: IKeyZoneState,
     trend: ITrendState,
