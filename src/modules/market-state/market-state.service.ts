@@ -3,7 +3,7 @@ import { BehaviorSubject, Subscription } from "rxjs";
 import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
-import { ICandlestick, ICandlestickService } from "../candlestick";
+import { ICandlestick, ICandlestickService, ICandlestickStream } from "../candlestick";
 import { INotificationService } from "../notification";
 import { IUtilitiesService } from "../utilities";
 import { 
@@ -16,6 +16,7 @@ import {
     ILiquidityStateService,
     ITrendStateService,
     ICoinsService,
+    IKeyZoneState,
 } from "./interfaces";
 
 
@@ -108,8 +109,8 @@ export class MarketStateService implements IMarketStateService {
 
         // Calculate the state and initialize the interval
         await this.calculateState();
-        this.candlestickStreamSub = this._candlestick.stream.subscribe(async (c) => {
-            try { await this.calculateState() } 
+        this.candlestickStreamSub = this._candlestick.stream.subscribe(async (stream: ICandlestickStream) => {
+            try { if (this._candlestick.isStreamInSync(stream)) await this.calculateState() } 
             catch (e) { 
                 console.error(e);
                 this._apiError.log("MarketStateService.calculateState", e)
@@ -166,7 +167,7 @@ export class MarketStateService implements IMarketStateService {
             this.active.next({
                 window: windowState,
                 volume: this._volumeState.calculateState(window),
-                keyzones: this._keyZones.calculateState(),
+                keyzones: <IKeyZoneState>this._keyZones.calculateState(),
                 trend: this._trend.state,
                 coins: this._coins.calculateState()
             });

@@ -1,4 +1,4 @@
-import {injectable, inject} from "inversify";
+import {injectable, inject, postConstruct} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { ICandlestick, ICandlestickService } from "../candlestick";
@@ -12,7 +12,12 @@ import {
     IReversalType,
     IReversal,
     IMinifiedKeyZone,
-    IKeyZoneVolumeIntensity
+    IKeyZoneVolumeIntensity,
+    ILiquidityStateService,
+    ILiquidityState,
+    IKeyZoneStateEvent,
+    ILiquiditySideBuild,
+    IKeyZoneScoreWeights
 } from "./interfaces";
 
 
@@ -22,6 +27,7 @@ import {
 export class KeyZonesStateService implements IKeyZonesStateService {
     // Inject dependencies
     @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
+    @inject(SYMBOLS.LiquidityService)                   private _liquidity: ILiquidityStateService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
@@ -97,6 +103,34 @@ export class KeyZonesStateService implements IKeyZonesStateService {
     private volumeMeanHigh: number = 0;
 
 
+    /**
+     * Score Weights
+     * The object containing the weights that will be used to calculate a 
+     * KeyZone's Score. The score should be limitted to a number from 0 to 10.
+     */
+    private readonly scoreWeights: IKeyZoneScoreWeights = {
+        volume_intensity: 7,
+        liquidity_share: 3
+    }
+
+
+    /**
+     * Price
+     * Every time the state is calculated, the current price and the snapshots
+     * are updated.
+     */
+    private currentPrice: number;
+    private priceSnapshots: ICandlestick[] = [];
+    private priceSnapshotsLimit: number = 5; // ~15 seconds worth
+
+
+    /**
+     * State
+     * The KeyZone state is stored locally and updated every time it is calculated.
+     * The reason this copy needs to be kept is because the state event needs to 
+     * be calculated based on the previous levels, before the scores are recalculated.
+     */
+    private state: IKeyZoneState;
 
 
     /**
@@ -108,7 +142,14 @@ export class KeyZonesStateService implements IKeyZonesStateService {
     private buildTS: number = 0;
 
 
+
     constructor() {}
+
+
+    @postConstruct()
+    public onInit(): void {
+        this.state = this.getDefaultState();
+    }
 
 
 
@@ -156,7 +197,16 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         if (this.buildInterval) clearInterval(this.buildInterval);
         this.buildInterval = undefined;
         this.volumeMean = 0;
+        this.volumeMeanLow = 0;
+        this.volumeMeanMedium = 0;
+        this.volumeMeanHigh = 0;
     }
+
+
+
+
+
+
 
 
 
@@ -172,9 +222,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
     
 
 
-    /**************
-     * Retrievers *
-     **************/
+    /*********************
+     * State Calculation *
+     *********************/
 
 
 
@@ -185,32 +235,268 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * @returns IKeyZoneState|IKeyZoneFullState
      */
     public calculateState(fullState?: boolean): IKeyZoneState|IKeyZoneFullState {
-        // Initialize the current price
-        const currentPrice: number = this._candlestick.predictionLookback.at(-1).c;
+        // Firstly, update the price
+        this.updatePrice();
 
         // Check if the price is currently in a keyzone
-        const active: IKeyZone[] = this.zones.filter((z) => currentPrice >= z.s && currentPrice <= z.e);
+        const active: IKeyZone|undefined = this.zones.filter((z) => this.currentPrice >= z.s && this.currentPrice <= z.e)[0];
 
-        // Finally, return the state accordingly
+        // Check if the full state payload should be calculated
         if (fullState) {
             return <IKeyZoneFullState>{
-                active: active[0] || null,
-                above: this.getZonesFromPrice(currentPrice, true),
-                below: this.getZonesFromPrice(currentPrice, false),
+                active: active || null,
+                above: this.getZonesFromPrice(this.currentPrice, true),
+                below: this.getZonesFromPrice(this.currentPrice, false),
+                price_snapshots: this.priceSnapshots,
                 volume_mean: this.volumeMean,
                 volume_mean_low: this.volumeMeanLow,
                 volume_mean_medium: this.volumeMeanMedium,
                 volume_mean_high: this.volumeMeanHigh,
                 build_ts: this.buildTS
             };
-        } else {
-            return <IKeyZoneState>{
-                active: active.length ? this.minifyKeyZone(active[0]): null,
-                above: this.getZonesFromPrice(currentPrice, true, this.stateLimit).map(kz => this.minifyKeyZone(kz)),
-                below: this.getZonesFromPrice(currentPrice, false, this.stateLimit).map(kz => this.minifyKeyZone(kz))
-            };
+        } 
+        
+        // Otherwise, calculate the active state
+        else {
+            // Handle the state event
+            const event: IKeyZoneStateEvent|null = this.buildStateEvent();
+
+            // Init the state zones
+            const above: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, true, this.stateLimit);
+            const below: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, false, this.stateLimit);
+
+            // Retrieve the liquidity state
+            const liq: ILiquidityState = this._liquidity.calculateState(this.currentPrice);
+
+            // Update the state and return it
+            this.state = {
+                event: event,
+                active: active ? this.minifyKeyZone(active, 0, 0): null,
+                above: this.buildStateKeyZones(above, liq.a),
+                below: this.buildStateKeyZones(below, liq.b),
+            }
+            return <IKeyZoneState>this.state;
         }
     }
+
+
+
+
+
+    /* KeyZone Event Build */
+
+
+
+
+
+    /**
+     * Manages the detecting and management of state events. If no event is found
+     * or one has expired, it returns null.
+     * @returns IKeyZoneStateEvent|null
+     */
+    private buildStateEvent(): IKeyZoneStateEvent|null {
+        return null;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    /* State KeyZones Build */
+
+
+
+
+    /**
+     * Builds the KeyZone object that is used by the state. Apart from inserting
+     * all essential info, it also inserts the liquidity share and the score.
+     * @param zones 
+     * @param sideLiquidity 
+     * @returns IMinifiedKeyZone[]
+     */
+    private buildStateKeyZones(zones: IKeyZone[], sideLiquidity: ILiquiditySideBuild): IMinifiedKeyZone[] {
+        // Init the list of zones
+        let finalZones: IMinifiedKeyZone[] = [];
+
+        // Iterate over each zone
+        for (let zone of zones) {
+            // Init the range that will be used to calculate the accumulated liquidity
+            const start: number = Math.floor(zone.s - 1);
+            const end: number = Math.ceil(zone.e + 1);
+
+            // Calculate the accum liquidity
+            const accumulatedLiquidity: number = sideLiquidity.l.reduce((a, b) => a + (b.p >= start && b.p <= end ? b.l: 0), 0);
+
+            // Calculate the liquidity share
+            const liquidityShare: number = <number>this._utils.calculatePercentageOutOfTotal(accumulatedLiquidity, sideLiquidity.t);
+
+            // Calculate the KeyZone's Score
+            const score: number = this.calculateKeyZoneScore(zone.vi, liquidityShare);
+
+            // Add the processed/minified KeyZone to the list
+            finalZones.push(this.minifyKeyZone(zone, liquidityShare, score));
+        }
+
+        // Finally, return the list
+        return finalZones;
+    }
+
+
+
+
+
+
+
+
+    /* KeyZone Score Calculation */
+
+
+
+    /**
+     * Calculates the KeyZone's score based on the volume intensity and 
+     * the liquidity share.
+     * @param volIntensity 
+     * @param liquidityShare 
+     * @returns number
+     */
+    private calculateKeyZoneScore(
+        volIntensity: IKeyZoneVolumeIntensity, 
+        liquidityShare: number
+    ): number { 
+        // Init the score
+        let score: number = 0;
+
+        // Calculate the volume intensity score
+        score += this.calculateVolumeIntensityScore(volIntensity);
+
+        // Calculate the liquidity share score
+        score += this.calculateLiquidityShareScore(liquidityShare);
+
+        // Finally, return it
+        return <number>this._utils.outputNumber(score);
+    }
+
+
+
+
+
+    /**
+     * Calculates the score of the KeyZone's Volume Intensity.
+     * @param volIntensity 
+     * @returns number
+     */
+    private calculateVolumeIntensityScore(volIntensity: IKeyZoneVolumeIntensity): number {
+        // Init the score
+        let score: number = 0.25;
+
+        // Set the score accordingly
+        if      (volIntensity == 4) { score = 1 }
+        else if (volIntensity == 3) { score = 0.75 }
+        else if (volIntensity == 2) { score = 0.66 }
+        else if (volIntensity == 1) { score = 0.5 }
+
+        // Finally, return the local score multiplied by the weights
+        return this.scoreWeights.volume_intensity * score;
+    }
+
+
+
+
+
+
+    /**
+     * Calculates the score of the KeyZone's Liquidity Share.
+     * @param volIntensity 
+     * @returns number
+     */
+    private calculateLiquidityShareScore(liquidityShare: number): number {
+        // Init the score
+        let score: number = 0.25;
+
+        // Set the score accordingly
+        if      (liquidityShare >= 20)   { score = 1 }
+        else if (liquidityShare >= 19)   { score = 0.97 }
+        else if (liquidityShare >= 18)   { score = 0.94 }
+        else if (liquidityShare >= 17)   { score = 0.91 }
+        else if (liquidityShare >= 16)   { score = 0.88 }
+        else if (liquidityShare >= 15)   { score = 0.85 }
+        else if (liquidityShare >= 14)   { score = 0.82 }
+        else if (liquidityShare >= 13)   { score = 0.79 }
+        else if (liquidityShare >= 12)   { score = 0.76 }
+        else if (liquidityShare >= 11)   { score = 0.73 }
+        else if (liquidityShare >= 10)   { score = 0.70 }
+        else if (liquidityShare >= 9)    { score = 0.67 }
+        else if (liquidityShare >= 8)    { score = 0.64 }
+        else if (liquidityShare >= 7)    { score = 0.61 }
+        else if (liquidityShare >= 6)    { score = 0.58 }
+        else if (liquidityShare >= 5)    { score = 0.55 }
+        else if (liquidityShare >= 4)    { score = 0.52 }
+        else if (liquidityShare >= 3)    { score = 0.49 }
+        else if (liquidityShare >= 2)    { score = 0.46 }
+        else if (liquidityShare >= 1)    { score = 0.43 }
+        else if (liquidityShare >= 0.5)  { score = 0.40 }
+        else if (liquidityShare >= 0.25) { score = 0.35 }
+
+        // Finally, return the local score multiplied by the weights
+        return this.scoreWeights.liquidity_share * score;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    /* Price Management */
+
+
+
+
+
+    /**
+     * Prior to the KeyZone State being calculated, the price and
+     * the snaptshots are updated in order to be able to build 
+     * the state and identify events.
+     */
+    private updatePrice(): void {
+        // Initialize the candlestick
+        const candle: ICandlestick = this._candlestick.stream.value.candlesticks.at(-1);
+
+        // Append the candlestick to the list of snapshots
+        this.priceSnapshots.push(candle);
+
+        // Set the current price
+        this.currentPrice = candle.c;
+
+        // Slice the list of snaps and keep only the neccessary ones
+        if (this.priceSnapshots.length > this.priceSnapshotsLimit) {
+            this.priceSnapshots = this.priceSnapshots.slice(-this.priceSnapshotsLimit);
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /* State Calculation Misc Helpers */
+
 
 
 
@@ -242,12 +528,23 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
 
 
+
     /**
      * Minifies a KeyZone based on the full record.
      * @param zone 
+     * @param liquidityShare 
+     * @param score 
      * @returns IMinifiedKeyZone
      */
-    private minifyKeyZone(zone: IKeyZone): IMinifiedKeyZone { return { s: zone.s, e: zone.e, vi: zone.vi } }
+    private minifyKeyZone(zone: IKeyZone, liquidityShare: number, score: number): IMinifiedKeyZone { 
+        return { 
+            s: zone.s, 
+            e: zone.e, 
+            vi: zone.vi,
+            ls: liquidityShare,
+            scr: score
+        } 
+    }
 
 
 
@@ -255,17 +552,13 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
 
 
+
     /**
-     * Retrieves the module's default state.
+     * Retrieves the module's default active state.
      * @returns IKeyZoneState
      */
-     public getDefaultState(): IKeyZoneState {
-        return {
-            active: null,
-            above: [],
-            below: []
-        }
-    }
+    public getDefaultState(): IKeyZoneState { return { event: null, active: null, above: [], below: [] } }
+    
 
 
 
@@ -284,9 +577,11 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
 
 
-    /*********
-     * Build *
-     *********/
+
+
+    /******************
+     * KeyZones Build *
+     ******************/
 
 
 
