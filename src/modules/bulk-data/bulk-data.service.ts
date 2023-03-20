@@ -127,7 +127,6 @@ export class BulkDataService implements IBulkDataService {
                 marketState: <ICompressedMarketState>{
                     window: this.compressWindowState(),
                     volume: this._marketState.active.value.volume,
-                    liquidity: this._marketState.active.value.liquidity,
                     keyzones: this._marketState.active.value.keyzones,
                     trend: this._marketState.active.value.trend,
                     coins: this._marketState.active.value.coins

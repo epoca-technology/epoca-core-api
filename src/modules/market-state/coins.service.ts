@@ -68,7 +68,7 @@ export class CoinsService implements ICoinsService {
      * Otherwise, it will notify the users and attempt to restart the subscription.
      */
     private wsInterval: any;
-    private readonly wsIntervalSeconds: number = 60; // ~1 minutes
+    private readonly wsIntervalSeconds: number = 30;
     private wsLastUpdate: number;
     private ws: WebSocket;
     private states: {[symbol: string]: ICoinState} = {};

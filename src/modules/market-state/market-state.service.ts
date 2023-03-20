@@ -166,7 +166,6 @@ export class MarketStateService implements IMarketStateService {
             this.active.next({
                 window: windowState,
                 volume: this._volumeState.calculateState(window),
-                liquidity: this._liquidity.calculateState(windowState.w.at(-1).c),
                 keyzones: this._keyZones.calculateState(),
                 trend: this._trend.state,
                 coins: this._coins.calculateState()
@@ -208,7 +207,6 @@ export class MarketStateService implements IMarketStateService {
         return {
             window: this._windowState.getDefaultState(),
             volume: this._volumeState.getDefaultState(),
-            liquidity: this._liquidity.getDefaultState(),
             keyzones: this._keyZones.getDefaultState(),
             trend: this._trend.getDefaultState(),
             coins: this._coins.getDefaultState()

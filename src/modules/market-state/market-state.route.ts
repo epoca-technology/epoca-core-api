@@ -107,6 +107,7 @@ MarketStateRoute.route("/getFullVolumeState").get(ultraLowRiskLimit, async (req:
 * @requires id-token
 * @requires api-secret
 * @requires authority: 1
+* @param currentPrice
 * @returns IAPIResponse<ILiquidityState>
 */
 MarketStateRoute.route("/getLiquidityState").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
@@ -118,13 +119,13 @@ MarketStateRoute.route("/getLiquidityState").get(ultraLowRiskLimit, async (req: 
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["currentPrice"], req.query);
 
         // Return the response
-        res.send(_utils.apiResponse(_liquidity.state));
+        res.send(_utils.apiResponse(_liquidity.calculateState(Number(req.query.currentPrice))));
     } catch (e) {
 		console.log(e);
-        _apiError.log("MarketStateRoute.getLiquidityState", e, reqUid, ip);
+        _apiError.log("MarketStateRoute.getLiquidityState", e, reqUid, ip, req.query);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
