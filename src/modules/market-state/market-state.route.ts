@@ -172,7 +172,7 @@ MarketStateRoute.route("/calculateKeyZoneState").get(ultraLowRiskLimit, async (r
         reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
 
         // Return the response
-        res.send(_utils.apiResponse(_keyZones.calculateState(true)));
+        res.send(_utils.apiResponse(_keyZones.calculateState(undefined, true)));
     } catch (e) {
 		console.log(e);
         _apiError.log("MarketStateRoute.calculateKeyZoneState", e, reqUid, ip);

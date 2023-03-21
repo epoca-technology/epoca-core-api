@@ -167,7 +167,7 @@ export class MarketStateService implements IMarketStateService {
             this.active.next({
                 window: windowState,
                 volume: this._volumeState.calculateState(window),
-                keyzones: <IKeyZoneState>this._keyZones.calculateState(),
+                keyzones: <IKeyZoneState>this._keyZones.calculateState(windowState.ss),
                 trend: this._trend.state,
                 coins: this._coins.calculateState()
             });

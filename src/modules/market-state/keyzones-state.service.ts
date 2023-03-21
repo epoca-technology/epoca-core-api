@@ -1,4 +1,5 @@
 import {injectable, inject, postConstruct} from "inversify";
+import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { ICandlestick, ICandlestickService } from "../candlestick";
@@ -17,7 +18,10 @@ import {
     ILiquidityState,
     IKeyZoneStateEvent,
     ILiquiditySideBuild,
-    IKeyZoneScoreWeights
+    IKeyZoneScoreWeights,
+    IIdleKeyZones,
+    IKeyZoneStateEventKind,
+    ISplitStates
 } from "./interfaces";
 
 
@@ -109,8 +113,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * KeyZone's Score. The score should be limitted to a number from 0 to 10.
      */
     private readonly scoreWeights: IKeyZoneScoreWeights = {
-        volume_intensity: 7,
-        liquidity_share: 3
+        volume_intensity: 6.5,
+        liquidity_share: 3.5
     }
 
 
@@ -122,6 +126,20 @@ export class KeyZonesStateService implements IKeyZonesStateService {
     private currentPrice: number;
     private priceSnapshots: ICandlestick[] = [];
     private priceSnapshotsLimit: number = 5; // ~15 seconds worth
+
+
+    /**
+     * Event
+     * When the price is increasing or decreasing and hits a KeyZone that isn't idle
+     * and which score is greater than or equals to eventScoreRequirement, an event
+     * is created and emmited. This event lasts for eventDurationSeconds and 
+     * sets the KeyZone on idle state for keyzoneIdleOnEventMinutes.
+     * Keep in mind the KeyZone score is a float ranging from 0 to 10.
+     */
+    private idleKeyZones: IIdleKeyZones = {}; // ID: Idle Until Timestamp
+    private readonly eventDurationSeconds: number = 20;
+    private readonly keyzoneIdleOnEventMinutes: number = 60;
+    private readonly eventScoreRequirement: number = 5;
 
 
     /**
@@ -196,6 +214,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
     public stop(): void {
         if (this.buildInterval) clearInterval(this.buildInterval);
         this.buildInterval = undefined;
+        this.idleKeyZones = {};
         this.volumeMean = 0;
         this.volumeMeanLow = 0;
         this.volumeMeanMedium = 0;
@@ -231,10 +250,11 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
     /**
      * Calculates the state based on the current price.
+     * @param windowSplitStates? <- Must be provided unless calculating the full state
      * @param fullState? 
      * @returns IKeyZoneState|IKeyZoneFullState
      */
-    public calculateState(fullState?: boolean): IKeyZoneState|IKeyZoneFullState {
+    public calculateState(windowSplitStates?: ISplitStates, fullState?: boolean): IKeyZoneState|IKeyZoneFullState {
         // Firstly, update the price
         this.updatePrice();
 
@@ -248,6 +268,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 above: this.getZonesFromPrice(this.currentPrice, true),
                 below: this.getZonesFromPrice(this.currentPrice, false),
                 price_snapshots: this.priceSnapshots,
+                idle: this.idleKeyZones,
                 volume_mean: this.volumeMean,
                 volume_mean_low: this.volumeMeanLow,
                 volume_mean_medium: this.volumeMeanMedium,
@@ -259,7 +280,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         // Otherwise, calculate the active state
         else {
             // Handle the state event
-            const event: IKeyZoneStateEvent|null = this.buildStateEvent();
+            const event: IKeyZoneStateEvent|null = this.buildStateEvent(windowSplitStates);
 
             // Init the state zones
             const above: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, true, this.stateLimit);
@@ -283,6 +304,10 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
 
 
+
+
+
+
     /* KeyZone Event Build */
 
 
@@ -292,11 +317,181 @@ export class KeyZonesStateService implements IKeyZonesStateService {
     /**
      * Manages the detecting and management of state events. If no event is found
      * or one has expired, it returns null.
+     * @param windowSplitStates
      * @returns IKeyZoneStateEvent|null
      */
-    private buildStateEvent(): IKeyZoneStateEvent|null {
-        return null;
+    private buildStateEvent(windowSplitStates: ISplitStates): IKeyZoneStateEvent|null {
+        // Initialize the event (if any)
+        let evt: IKeyZoneStateEvent|null = this.state && this.state.event ? this.state.event: null;
+
+        // If there is an event, ensure it is still active, otherwise, null it
+        if (evt && !this.isEventActive(evt.e)) evt = null;
+
+        // Look for an event if there are enough price snapshots
+        if (this.priceSnapshots.length == this.priceSnapshotsLimit) {
+            /**
+             * Support Event Requirements:
+             * 1) The initial price snapshot must be greater than the current (Decreased)
+             * 2) The window split states for the 2% and 5% of the dataset must be decreasing
+             * 3) The low from the current 15-minute-interval candlestick must be lower than 
+             * the previous one.
+             * 4) There must be zones below
+             */
+            if (
+                this.priceSnapshots[0].c > this.priceSnapshots.at(-1).c &&
+                windowSplitStates.s5.s <= -1 &&
+                windowSplitStates.s2.s <= -1 &&
+                this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
+                this.state.below.length
+            ) {
+                /**
+                 * Retrieve the active KeyZone from below (if any). A Support KeyZone is active if:
+                 * 1) The current snapshot's close price is within a KeyZone OR the current snapshot's 
+                 * low is within a KeyZone and the current low is lower to the previous low. The second
+                 * way of activating a KeyZone was implemented in order to not miss the events in which 
+                 * the price touches the KeyZone for a very brief period of time and then reverses.
+                 * 2) And the KeyZone's Score is greater than or equals to the eventScoreRequirement
+                 * 3) And the KeyZone is not idle
+                 */
+                let active: IMinifiedKeyZone|undefined = this.state.below.filter(
+                    (z) =>  (
+                        (this.priceSnapshots.at(-1).c >= z.s && this.priceSnapshots.at(-1).c <= z.e) ||
+                        (
+                            this.priceSnapshots.at(-1).l >= z.s && this.priceSnapshots.at(-1).l <= z.e && 
+                            this.priceSnapshots.at(-1).l < this.priceSnapshots.at(-2).l
+                        )
+                    ) &&
+                    z.scr >= this.eventScoreRequirement &&
+                    !this.isIdle(z.id)
+                )[0];
+
+                /**
+                 * If there is an active support event, ensure the active support is from
+                 * below, otherwise, unset it so an event is not issued.
+                 */
+                if (evt && active && active.s >= evt.kz.s) active = undefined;
+
+                // If an event was found, set it
+                if (active) evt = this.onKeyZoneEvent(active, "s");
+            }
+
+            /**
+             * Resistance Event Requirements:
+             * 1) The initial price snapshot must be lower than the current(Increased)
+             * 2) The window split states for the 2% and 5% of the dataset must be increasing
+             * 3) The high from the current 15-minute-interval candlestick must be higher than 
+             * the previous one.
+             * 4) There must be zones above
+             */
+            else if (
+                this.priceSnapshots[0].c < this.priceSnapshots.at(-1).c &&
+                windowSplitStates.s5.s >= 1 &&
+                windowSplitStates.s2.s >= 1 &&
+                this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
+                this.state.above.length
+            ) {
+                /**
+                 * Retrieve the active KeyZone from above (if any). A Resistance KeyZone is active if:
+                 * 1) The current snapshot's close price is within a KeyZone OR the current snapshot's 
+                 * high is within a KeyZone and the current high is higher to the previous high. The second
+                 * way of activating a KeyZone was implemented in order to not miss the events in which 
+                 * the price touches the KeyZone for a very brief period of time and then reverses.
+                 * 2) And the KeyZone's Score is greater than or equals to the eventScoreRequirement
+                 * 3) And the KeyZone is not idle
+                 */
+                let active: IMinifiedKeyZone|undefined = this.state.above.filter(
+                    (z) =>  (
+                        (this.priceSnapshots.at(-1).c >= z.s && this.priceSnapshots.at(-1).c <= z.e) ||
+                        (
+                            this.priceSnapshots.at(-1).h >= z.s && this.priceSnapshots.at(-1).h <= z.e && 
+                            this.priceSnapshots.at(-1).h > this.priceSnapshots.at(-2).h
+                        )
+                    ) &&
+                    z.scr >= this.eventScoreRequirement &&
+                    !this.isIdle(z.id)
+                )[0];
+
+                /**
+                 * If there is an active resistance event, ensure the active resistance is from
+                 * above, otherwise, unset it so an event is not issued.
+                 */
+                if (evt && active && active.s <= evt.kz.s) active = undefined;
+
+                // If an event was found, set it
+                if (active) evt = this.onKeyZoneEvent(active, "r");
+            }
+        }
+
+        // Finally, return the event
+        return evt;
     }
+
+
+
+
+
+
+    /**
+     * Builds the KeyZone State event object and activates the idle when an
+     * event is detected.
+     * @param zone 
+     * @param kind 
+     * @returns IKeyZoneStateEvent
+     */
+    private onKeyZoneEvent(zone: IMinifiedKeyZone, kind: IKeyZoneStateEventKind): IKeyZoneStateEvent {
+        // Activate the idle on the zone
+        this.activateIdle(zone.id);
+
+        // Return the event's build
+        return {
+            k: kind,
+            kz: zone,
+            e: moment().add(this.eventDurationSeconds, "seconds").valueOf()
+        }
+    }
+
+
+
+
+    /**
+     * Checks if an event is still active based on its expiry.
+     * @param expiry 
+     * @returns boolean
+     */
+    private isEventActive(expiry: number): boolean { return Date.now() <= expiry }
+
+
+
+
+
+
+
+    // Idle Helpers
+
+
+    /**
+     * Checks if a KeyZone is currently on Idle State.
+     * @param id 
+     * @returns boolean
+     */
+    private isIdle(id: number): boolean { 
+        return typeof this.idleKeyZones[id] == "number" && Date.now() < this.idleKeyZones[id];
+    }
+
+
+
+    /**
+     * Activates the idle state on a KeyZone based on its ID.
+     * @param id 
+     */
+    private activateIdle(id: number): void {
+        this.idleKeyZones[id] = moment().add(this.keyzoneIdleOnEventMinutes, "minutes").valueOf();
+    }
+
+
+
+
+
 
 
 
@@ -456,45 +651,6 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
 
 
-
-
-
-    /* Price Management */
-
-
-
-
-
-    /**
-     * Prior to the KeyZone State being calculated, the price and
-     * the snaptshots are updated in order to be able to build 
-     * the state and identify events.
-     */
-    private updatePrice(): void {
-        // Initialize the candlestick
-        const candle: ICandlestick = this._candlestick.stream.value.candlesticks.at(-1);
-
-        // Append the candlestick to the list of snapshots
-        this.priceSnapshots.push(candle);
-
-        // Set the current price
-        this.currentPrice = candle.c;
-
-        // Slice the list of snaps and keep only the neccessary ones
-        if (this.priceSnapshots.length > this.priceSnapshotsLimit) {
-            this.priceSnapshots = this.priceSnapshots.slice(-this.priceSnapshotsLimit);
-        }
-    }
-
-
-
-
-
-
-
-
-
-
     /* State Calculation Misc Helpers */
 
 
@@ -538,6 +694,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private minifyKeyZone(zone: IKeyZone, liquidityShare: number, score: number): IMinifiedKeyZone { 
         return { 
+            id: zone.id, 
             s: zone.s, 
             e: zone.e, 
             vi: zone.vi,
@@ -559,6 +716,49 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     public getDefaultState(): IKeyZoneState { return { event: null, active: null, above: [], below: [] } }
     
+
+
+
+
+
+
+
+
+
+
+
+    /* Price Management */
+
+
+
+
+
+    /**
+     * Prior to the KeyZone State being calculated, the price and
+     * the snaptshots are updated in order to be able to build 
+     * the state and identify events.
+     */
+    private updatePrice(): void {
+        // Initialize the candlestick
+        const candle: ICandlestick = this._candlestick.stream.value.candlesticks.at(-1);
+
+        // Append the candlestick to the list of snapshots
+        this.priceSnapshots.push(candle);
+
+        // Set the current price
+        this.currentPrice = candle.c;
+
+        // Slice the list of snaps and keep only the neccessary ones
+        if (this.priceSnapshots.length > this.priceSnapshotsLimit) {
+            this.priceSnapshots = this.priceSnapshots.slice(-this.priceSnapshotsLimit);
+        }
+    }
+
+
+
+
+
+
 
 
 
@@ -630,6 +830,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
         // Calculate the KeyZone Volumes
         this.calculateKeyZoneVolumes();
+
+        // Reset the idle object
+        this.idleKeyZones = {};
 
         // Finally, update the build time
         this.buildTS = Date.now();
