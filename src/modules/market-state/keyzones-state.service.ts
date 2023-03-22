@@ -137,8 +137,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * Keep in mind the KeyZone score is a float ranging from 0 to 10.
      */
     private idleKeyZones: IIdleKeyZones = {}; // ID: Idle Until Timestamp
-    private readonly eventDurationSeconds: number = 20;
-    private readonly keyzoneIdleOnEventMinutes: number = 60;
+    private readonly eventDurationSeconds: number = 30;
+    private readonly keyzoneIdleOnEventMinutes: number = 120;
     private readonly eventScoreRequirement: number = 5;
 
 
@@ -338,7 +338,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              * 4) There must be zones below
              */
             if (
-                this.priceSnapshots[0].c > this.priceSnapshots.at(-1).c &&
+                this.priceSnapshots[0].o > this.priceSnapshots.at(-1).c &&
                 windowSplitStates.s5.s <= -1 &&
                 windowSplitStates.s2.s <= -1 &&
                 this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
@@ -353,17 +353,21 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                  * 2) And the KeyZone's Score is greater than or equals to the eventScoreRequirement
                  * 3) And the KeyZone is not idle
                  */
-                let active: IMinifiedKeyZone|undefined = this.state.below.filter(
+                const activeZones: IMinifiedKeyZone[] = this.state.below.filter(
                     (z) =>  (
                         (this.priceSnapshots.at(-1).c >= z.s && this.priceSnapshots.at(-1).c <= z.e) ||
-                        (
+                        (this.priceSnapshots.at(-1).l >= z.s && this.priceSnapshots.at(-1).l <= z.e)
+                        /*(
                             this.priceSnapshots.at(-1).l >= z.s && this.priceSnapshots.at(-1).l <= z.e && 
                             this.priceSnapshots.at(-1).l < this.priceSnapshots.at(-2).l
-                        )
+                        )*/
                     ) &&
                     z.scr >= this.eventScoreRequirement &&
                     !this.isIdle(z.id)
-                )[0];
+                );
+
+                // If zones were found, pick the one that is further down
+                let active: IMinifiedKeyZone|undefined = activeZones.length > 0 ? activeZones.at(-1): undefined;
 
                 /**
                  * If there is an active support event, ensure the active support is from
@@ -384,7 +388,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              * 4) There must be zones above
              */
             else if (
-                this.priceSnapshots[0].c < this.priceSnapshots.at(-1).c &&
+                this.priceSnapshots[0].o < this.priceSnapshots.at(-1).c &&
                 windowSplitStates.s5.s >= 1 &&
                 windowSplitStates.s2.s >= 1 &&
                 this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
@@ -399,17 +403,21 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                  * 2) And the KeyZone's Score is greater than or equals to the eventScoreRequirement
                  * 3) And the KeyZone is not idle
                  */
-                let active: IMinifiedKeyZone|undefined = this.state.above.filter(
+                let activeZones: IMinifiedKeyZone[] = this.state.above.filter(
                     (z) =>  (
                         (this.priceSnapshots.at(-1).c >= z.s && this.priceSnapshots.at(-1).c <= z.e) ||
-                        (
+                        (this.priceSnapshots.at(-1).h >= z.s && this.priceSnapshots.at(-1).h <= z.e)
+                        /*(
                             this.priceSnapshots.at(-1).h >= z.s && this.priceSnapshots.at(-1).h <= z.e && 
                             this.priceSnapshots.at(-1).h > this.priceSnapshots.at(-2).h
-                        )
+                        )*/
                     ) &&
                     z.scr >= this.eventScoreRequirement &&
                     !this.isIdle(z.id)
-                )[0];
+                );
+
+                // If zones were found, pick the one that is further up
+                let active: IMinifiedKeyZone|undefined = activeZones.length > 0 ? activeZones.at(-1): undefined;
 
                 /**
                  * If there is an active resistance event, ensure the active resistance is from
