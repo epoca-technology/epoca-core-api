@@ -138,7 +138,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private idleKeyZones: IIdleKeyZones = {}; // ID: Idle Until Timestamp
     private readonly eventDurationSeconds: number = 30;
-    private readonly keyzoneIdleOnEventMinutes: number = 120;
+    private readonly keyzoneIdleOnEventMinutes: number = 60;
     private readonly eventScoreRequirement: number = 5;
 
 
@@ -342,6 +342,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 windowSplitStates.s5.s <= -1 &&
                 windowSplitStates.s2.s <= -1 &&
                 this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
+                this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c &&
                 this.state.below.length
             ) {
                 /**
@@ -392,6 +393,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 windowSplitStates.s5.s >= 1 &&
                 windowSplitStates.s2.s >= 1 &&
                 this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
+                this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c &&
                 this.state.above.length
             ) {
                 /**

@@ -78,6 +78,8 @@ export interface ITableNames {
     prediction_model_certificates: string,
     regression_certificates: string,
     coins: string,
+    signal_policies: string,
+    signal_records: string,
     position_strategy: string,
 }
 

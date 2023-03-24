@@ -18,6 +18,7 @@ import {
     IServerDataBulk, 
     IServerResourcesBulk 
 } from "./interfaces";
+import { ISignalService } from "../signal";
 
 
 
@@ -31,6 +32,7 @@ export class BulkDataService implements IBulkDataService {
     @inject(SYMBOLS.MarketStateService)             private _marketState: IMarketStateService;
     @inject(SYMBOLS.GuiVersionService)              private _guiVersion: IGuiVersionService;
     @inject(SYMBOLS.ServerService)                  private _server: IServerService;
+    @inject(SYMBOLS.SignalService)                  private _signal: ISignalService;
     @inject(SYMBOLS.PositionService)                private _position: IPositionService;
     @inject(SYMBOLS.ApiErrorService)                private _apiError: IApiErrorService;
 
@@ -75,6 +77,7 @@ export class BulkDataService implements IBulkDataService {
             position: this._position.active,
             prediction: this._prediction.active.value,
             marketState: this._marketState.active.value,
+            signal: this._signal.active.value,
             apiErrors: this._apiError.count
         }
     }
@@ -131,6 +134,7 @@ export class BulkDataService implements IBulkDataService {
                     trend: this._marketState.active.value.trend,
                     coins: this._marketState.active.value.coins
                 },
+                signal: this._signal.active.value,
                 apiErrors: this._apiError.count
             });
         } catch (e) {

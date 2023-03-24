@@ -627,27 +627,15 @@
 
 
 
-#
-## Position Health (32.000 - 32.999)
 
-32000: ``
 
-32001: ``
-
-32002: ``
-
-32003: ``
-
-32004: ``
-
-32005: ``
 
 
 
 
 
 #
-## Signal Service (35.000 - 35.999)
+## Signal Service (35.000 - 35.499)
 
 35000: ``
 
@@ -657,26 +645,40 @@
 
 
 #
-## Signal Validations (36.000 - 36.999)
+## Signal Validations (35.500 - 35.999)
 
-36000: ``
+35500: `The signal records range is invalid. Received: ${startAt} - ${endAt}.`
 
-36001: ``
+35501: `The signal records starting point must be less than the end. Received: ${startAt} - ${endAt}.`
 
-36002: ``
+35502: `The signal records query is larger than the permitted data limit. Limit: ${dataLimit}, Received: ${difference}`
 
-36003: ``
+35503: `The provided signal policies object is invalid.`
 
-36004: ``
+35504: `The provided long keyzone_reversal.enabled is invalid.`
 
-36005: ``
+35505: `The provided long keyzone_reversal.trend_sum is invalid.`
+
+35506: `The provided long keyzone_reversal.trend_state is invalid.`
+
+35507: `The provided long keyzone_reversal.volume_state is invalid.`
+
+35508: `The provided long keyzone_reversal.coin_state_event is invalid.`
+
+35509: `The provided long window_state.enabled is invalid.`
+
+35510: `The provided long window_state.window_state is invalid.`
+
+35511: `The provided long trend_state.enabled is invalid.`
+
+35512: ``
 
 
 
 
 
 #
-## Signal Validations (36.000 - 36.999)
+## Signal Model (36.000 - 36.499)
 
 36000: ``
 

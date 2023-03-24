@@ -60,7 +60,7 @@ export class PositionService implements IPositionService {
      */
     public balance: IAccountBalance;
     private balanceSyncInterval: any;
-    private readonly balanceIntervalSeconds: number = 60 * 120; // Every ~2 hours
+    private readonly balanceIntervalSeconds: number = 60 * 180; // Every ~3 hours
 
 
 
@@ -217,9 +217,9 @@ export class PositionService implements IPositionService {
 
 
 
-    /*********************
-     * Position Strategy *
-     *********************/
+    /********************************
+     * Position Strategy Management *
+     ********************************/
 
 
 

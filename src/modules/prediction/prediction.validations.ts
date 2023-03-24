@@ -76,7 +76,7 @@ export class PredictionValidations implements IPredictionValidations {
             throw new Error(this._utils.buildApiError(`The predictions starting point must be less than the end. Received: ${startAt} - ${endAt}.`, 21003));
         }
 
-        // Make sure the query does not exceed 15 days worth of data
+        // Make sure the query does not exceed the data limit
         const dataLimit: number = listingCandlesticks ? this.predictionCandlesticksListLimit: this.predictionListLimit;
         const difference: number = endAt - startAt;
         if (difference > dataLimit) {
