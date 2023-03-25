@@ -339,7 +339,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              */
             if (
                 this.priceSnapshots[0].o > this.priceSnapshots.at(-1).c &&
-                windowSplitStates.s5.s <= -1 &&
+                windowSplitStates.s5.s <= 0 &&
                 windowSplitStates.s2.s <= -1 &&
                 this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
                 this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c &&
@@ -390,7 +390,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              */
             else if (
                 this.priceSnapshots[0].o < this.priceSnapshots.at(-1).c &&
-                windowSplitStates.s5.s >= 1 &&
+                windowSplitStates.s5.s >= 0 &&
                 windowSplitStates.s2.s >= 1 &&
                 this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
                 this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c &&

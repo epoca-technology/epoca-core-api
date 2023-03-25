@@ -124,6 +124,9 @@ export interface ISignalPolicy {
  * user wishes to stop trading, it has to be done through the Trading Strategy.
  */
 export interface IKeyZoneReversalIssuancePolicy extends ISignalPolicy {
+    // The required coin state event. This value cannot be disabled.
+    coin_state_event: IStateType,
+
     // The minimum trend sum required - If 0, the trend sum will comply automatically
     trend_sum: number,
 
@@ -132,9 +135,6 @@ export interface IKeyZoneReversalIssuancePolicy extends ISignalPolicy {
 
     // The volume state required - If 0, the volume state will comply automatically
     volume_state: IStateType,
-
-    // The required coin state event. This value cannot be disabled.
-    coin_state_event: IStateType
 }
 
 

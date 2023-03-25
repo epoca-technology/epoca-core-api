@@ -95,8 +95,13 @@ export class SignalService implements ISignalService {
         await this.initializePolicies();
 
         // Initialize the subscription to the market state
-        this.msSub = this._marketState.active.subscribe((ms: IMarketState) => {
-            this.onNewMarketState(ms);
+        this.msSub = this._marketState.active.subscribe(async (ms: IMarketState) => {
+            try {
+                await this.onNewMarketState(ms);
+            } catch (e) {
+                console.log(e);
+                this._apiError.log("SignalService.interval.onNewMarketState", e);
+            }
         });
     }
 
