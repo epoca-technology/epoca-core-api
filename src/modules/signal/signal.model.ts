@@ -154,7 +154,7 @@ export class SignalModel implements ISignalModel {
                 INSERT INTO ${this._db.tn.signal_records}(t, r, s) 
                 VALUES ($1, $2, $3)
             `,
-            values: [record.t, record.r, record.s]
+            values: [record.t, record.r, JSON.stringify(record.s)]
         });
     }
 }

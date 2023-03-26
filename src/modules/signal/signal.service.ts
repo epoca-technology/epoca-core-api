@@ -3,7 +3,13 @@ import { BehaviorSubject, Subscription } from "rxjs";
 import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
-import { ICoinsState, IKeyZoneStateEventKind, IMarketState, IMarketStateService, IStateType } from "../market-state";
+import { 
+    ICoinsState, 
+    IKeyZoneStateEventKind, 
+    IMarketState, 
+    IMarketStateService, 
+    IStateType 
+} from "../market-state";
 import { IPredictionService } from "../prediction";
 import { IUtilitiesService } from "../utilities";
 import { 
@@ -631,10 +637,10 @@ export class SignalService implements ISignalService {
                 issuance: {
                     keyzone_reversal: {
                         enabled: true, // Cannot be disabled
-                        trend_sum: 0.5,
+                        coin_state_event: -1, // Cannot be disabled
+                        trend_sum: 0,
                         trend_state: 0,
                         volume_state: 0,
-                        coin_state_event: -1
                     }
                 },
                 cancellation: {
@@ -652,10 +658,10 @@ export class SignalService implements ISignalService {
                 issuance: {
                     keyzone_reversal: {
                         enabled: true, // Cannot be disabled
-                        trend_sum: -0.5,
+                        coin_state_event: 1, // Cannot be disabled
+                        trend_sum: 0,
                         trend_state: 0,
-                        volume_state: 0,
-                        coin_state_event: 1
+                        volume_state: 0
                     }
                 },
                 cancellation: {

@@ -113,8 +113,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * KeyZone's Score. The score should be limitted to a number from 0 to 10.
      */
     private readonly scoreWeights: IKeyZoneScoreWeights = {
-        volume_intensity: 6.5,
-        liquidity_share: 3.5
+        volume_intensity: 5,
+        liquidity_share: 5
     }
 
 
