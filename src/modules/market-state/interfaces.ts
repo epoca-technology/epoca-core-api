@@ -368,6 +368,9 @@ export interface ILiquidityState {
 
 // Service
 export interface IKeyZonesStateService {
+    // Properties
+    config: IKeyZonesConfiguration,
+
     // Initializer
     initialize(): Promise<void>,
     stop(): void,
@@ -375,7 +378,103 @@ export interface IKeyZonesStateService {
     // State Calculation
     calculateState(windowSplitStates?: ISplitStates, fullState?: boolean): IKeyZoneState|IKeyZoneFullState,
     getDefaultState(): IKeyZoneState,
+
+    // Configuration Management
+    updateConfiguration(newConfiguration: IKeyZonesConfiguration): Promise<void>
 }
+
+
+
+
+
+/**
+ * Score Weights
+ * The values used to score a KeyZone based on the most relevant parameters.
+ */
+export interface IKeyZoneScoreWeights {
+    // The worth of the KeyZone's Volume Intensity
+    volume_intensity: number,
+
+    // The worth of the KeyZone's Liquidity Share
+    liquidity_share: number,
+}
+
+
+/**
+ * Configuration
+ * The KeyZones' Module Configuration that can be managed from the GUI.
+ */
+export interface IKeyZonesConfiguration {
+    /**
+     * Build Frequency
+     * Once the KeyZones Module is initialized, a build is made and an interval
+     * that will re-build the KeyZones every buildFrequencyHours is started.
+     */
+    buildFrequencyHours: number,
+
+    /**
+     * Build Lookback Size
+     * The number of 15-minute-interval candlesticks that will be used to build
+     * the KeyZones.
+     */
+    buildLookbackSize: number,
+
+    /**
+     * Zone Size
+     * The zone's size percentage. The start and end prices are based on this value.
+     */
+    zoneSize: number,
+
+    /**
+     * Merge Distance
+     * Once all zones have been set and ordered by price, it will merge the ones that 
+     * are close to one another.
+     */
+    zoneMergeDistanceLimit: number,
+
+    /**
+     * State Limit
+     * Limits the number of zones returned from the current price. For example, 
+     * if 2 is provided, it retrieves 4 zones in total (2 above and 2 below)
+     */
+    stateLimit: number,
+
+    /**
+     * Score Weights
+     * The object containing the weights that will be used to calculate a 
+     * KeyZone's Score. The score should be limitted to a number from 0 to 10.
+     */
+    scoreWeights: IKeyZoneScoreWeights,
+
+    /**
+     * Price Snapshots Limit
+     * The limit of the 1-minute-candlestick snapshots that are taken whenever
+     * there is an update (every ~3 seconds).
+     */
+    priceSnapshotsLimit: number,
+
+    /**
+     * Event Duration
+     * The number of seconds a KeyZone event will remain active after being
+     * issued.
+     */
+    eventDurationSeconds: number,
+
+    /**
+     * KeyZone Idle Duration
+     * The number of minutes a KeyZone will remain idle after issuing an event.
+     */
+    keyzoneIdleOnEventMinutes: number,
+
+    /**
+     * Event Score Requirement
+     * The minimum score needed by a KeyZone in order to be capable of issuing
+     * an event.
+     */
+    eventScoreRequirement: number
+}
+
+
 
 
 
@@ -410,18 +509,6 @@ export interface IReversal {
 export type IKeyZoneVolumeIntensity = 0|1|2|3|4;
 
 
-
-/**
- * Score Weights
- * The values used to score a KeyZone based on the most relevant parameters.
- */
-export interface IKeyZoneScoreWeights {
-    // The worth of the KeyZone's Volume Intensity
-    volume_intensity: number,
-
-    // The worth of the KeyZone's Liquidity Share
-    liquidity_share: number,
-}
 
 
 

@@ -455,19 +455,6 @@
 
 
 
-#
-## Order Book Service (23.000 - 23.999)
-
-23000: `The integrity of the order book cannot be validated because the candlesticks stream is out of sync.`
-
-23001: `The difference between the current candlestick (spot) and the safe bid (futures) exceeds the established tolerance. Difference: ${bidDiff}%`
-
-23002: `The difference between the current candlestick (spot) and the safe ask (futures) exceeds the established tolerance. Difference: ${askDiff}%`
-
-23003: `The order book's safe bid cannot be greater than the safe ask. Bid: ${safeBid}, Ask: ${safeAsk}`
-
-
-
 
 #
 ## Market State Service (24.000 - 24.999)
@@ -499,31 +486,30 @@
 #
 ## KeyZone State Service (27.000 - 27.999)
 
-27000: ``
+27000: `The provided keyzones config object is invalid.`
 
-27001: ``
+27001: `The provided buildFrequencyHours (${config.buildFrequencyHours}) is invalid.`
+
+27002: `The provided zoneSize (${config.zoneSize}) is invalid.`
+
+27003: `The provided zoneMergeDistanceLimit (${config.zoneMergeDistanceLimit}) is invalid.`
+
+27004: `The provided stateLimit (${config.stateLimit}) is invalid.`
+
+27005: `The provided scoreWeights are invalid.`
+
+27006: `The provided priceSnapshotsLimit (${config.priceSnapshotsLimit}) is invalid.`
+
+27007: `The provided eventDurationSeconds (${config.eventDurationSeconds}) is invalid.`
+
+27008: `The provided keyzoneIdleOnEventMinutes (${config.keyzoneIdleOnEventMinutes}) is invalid.`
+
+27009: `The provided eventScoreRequirement (${config.eventScoreRequirement}) is invalid.`
+
+27010: `The provided buildLookbackSize (${config.buildLookbackSize}) is invalid.`
 
 
 
-#
-## Network Fee State Service (28.000 - 28.499)
-
-28000: `Mempool.space returned an invalid HTTP response code (${response.statusCode}) when retrieving the fee records.`
-
-28001: `Mempool.space returned an invalid fee record series.`
-
-
-
-#
-## Technical Analysis State Service (28.500 - 28.999)
-
-28500: `The retrieved candlesticks are not sufficient to generate the trading analysis state. Has: ${candlesticks.length}. Needs: ${requirement}`
-
-28501: `The provided TA interval is invalid. Received: ${intervalID}`
-
-28502: ``
-
-28503: ``
 
 
 

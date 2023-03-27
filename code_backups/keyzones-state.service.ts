@@ -19,6 +19,7 @@ import {
     ILiquidityState,
     IKeyZoneStateEvent,
     ILiquiditySideBuild,
+    IKeyZoneScoreWeights,
     IIdleKeyZones,
     IKeyZoneStateEventKind,
     ISplitStates,
@@ -51,6 +52,14 @@ export class KeyZonesStateService implements IKeyZonesStateService {
     public config: IKeyZonesConfiguration;
 
 
+    /**
+     * Build Lookback Size
+     * The number of 15-minute-interval candlesticks that will be used to build
+     * the KeyZones.
+     */
+    private readonly buildLookbackSize: number = 2880; // ~30 days
+
+
 
     /**
      * KeyZones
@@ -69,6 +78,33 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
 
 
+    /**
+     * Zone Size
+     * The zone's size percentage. The start and end prices are based on this value.
+     */
+    private readonly zoneSize: number = 0.1;
+
+
+
+    /**
+     * Merge Distance
+     * Once all zones have been set and ordered by price, it will merge the ones that 
+     * are close to one another.
+     */
+    private readonly zoneMergeDistanceLimit: number = 0.05;
+
+
+
+
+    /**
+     * State Limit
+     * Limits the number of zones returned from the current price. For example, 
+     * if 2 is provided, it retrieves 4 zones in total (2 above and 2 below)
+     */
+    private readonly stateLimit: number = 10;
+
+
+
 
     /**
      * Volume Mean
@@ -82,12 +118,24 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
 
     /**
+     * Score Weights
+     * The object containing the weights that will be used to calculate a 
+     * KeyZone's Score. The score should be limitted to a number from 0 to 10.
+     */
+    private readonly scoreWeights: IKeyZoneScoreWeights = {
+        volume_intensity: 5,
+        liquidity_share: 5
+    }
+
+
+    /**
      * Price
      * Every time the state is calculated, the current price and the snapshots
      * are updated.
      */
     private currentPrice: number;
     private priceSnapshots: ICandlestick[] = [];
+    private priceSnapshotsLimit: number = 5; // ~15 seconds worth
 
 
     /**
@@ -99,6 +147,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * Keep in mind the KeyZone score is a float ranging from 0 to 10.
      */
     private idleKeyZones: IIdleKeyZones = {}; // ID: Idle Until Timestamp
+    private readonly eventDurationSeconds: number = 35;
+    private readonly keyzoneIdleOnEventMinutes: number = 60;
+    private readonly eventScoreRequirement: number = 5;
 
 
     /**
@@ -115,6 +166,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * Every intervalSeconds, the keyzones will be built based on the latest data.
      */
     private buildInterval: any;
+    private readonly intervalSeconds: number = 60 * 360; // ~6 hours
     private buildTS: number = 0;
 
 
@@ -162,7 +214,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 console.error(e);
                 this._apiError.log("KeyZonesState.initialize.interval", e)
             }
-        }, this.config.buildFrequencyHours * 60 * 60 * 1000);
+        }, this.intervalSeconds * 1000);
     }
 
 
@@ -244,8 +296,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             const event: IKeyZoneStateEvent|null = this.buildStateEvent(windowSplitStates);
 
             // Init the state zones
-            const above: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, true, this.config.stateLimit);
-            const below: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, false, this.config.stateLimit);
+            const above: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, true, this.stateLimit);
+            const below: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, false, this.stateLimit);
 
             // Retrieve the liquidity state
             const liq: ILiquidityState = this._liquidity.calculateState(this.currentPrice);
@@ -289,7 +341,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         if (evt && !this.isEventActive(evt.e)) evt = null;
 
         // Look for an event if there are enough price snapshots
-        if (this.priceSnapshots.length == this.config.priceSnapshotsLimit) {
+        if (this.priceSnapshots.length == this.priceSnapshotsLimit) {
             /**
              * Support Event Requirements:
              * 1) The initial price snapshot must be greater than the current (Decreased)
@@ -320,7 +372,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                         (this.priceSnapshots.at(-1).c >= z.s && this.priceSnapshots.at(-1).c <= z.e) ||
                         (this.priceSnapshots.at(-1).l >= z.s && this.priceSnapshots.at(-1).l <= z.e)
                     ) &&
-                    z.scr >= this.config.eventScoreRequirement &&
+                    z.scr >= this.eventScoreRequirement &&
                     !this.isIdle(z.id)
                 );
 
@@ -367,7 +419,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                         (this.priceSnapshots.at(-1).c >= z.s && this.priceSnapshots.at(-1).c <= z.e) ||
                         (this.priceSnapshots.at(-1).h >= z.s && this.priceSnapshots.at(-1).h <= z.e)
                     ) &&
-                    z.scr >= this.config.eventScoreRequirement &&
+                    z.scr >= this.eventScoreRequirement &&
                     !this.isIdle(z.id)
                 );
 
@@ -409,7 +461,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         return {
             k: kind,
             kz: zone,
-            e: moment().add(this.config.eventDurationSeconds, "seconds").valueOf()
+            e: moment().add(this.eventDurationSeconds, "seconds").valueOf()
         }
     }
 
@@ -448,7 +500,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * @param id 
      */
     private activateIdle(id: number): void {
-        this.idleKeyZones[id] = moment().add(this.config.keyzoneIdleOnEventMinutes, "minutes").valueOf();
+        this.idleKeyZones[id] = moment().add(this.keyzoneIdleOnEventMinutes, "minutes").valueOf();
     }
 
 
@@ -561,7 +613,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         else if (volIntensity == 1) { score = 0.5 }
 
         // Finally, return the local score multiplied by the weights
-        return this.config.scoreWeights.volume_intensity * score;
+        return this.scoreWeights.volume_intensity * score;
     }
 
 
@@ -603,7 +655,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         else if (liquidityShare >= 0.25) { score = 0.35 }
 
         // Finally, return the local score multiplied by the weights
-        return this.config.scoreWeights.liquidity_share * score;
+        return this.scoreWeights.liquidity_share * score;
     }
 
 
@@ -712,8 +764,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         this.currentPrice = candle.c;
 
         // Slice the list of snaps and keep only the neccessary ones
-        if (this.priceSnapshots.length > this.config.priceSnapshotsLimit) {
-            this.priceSnapshots = this.priceSnapshots.slice(-this.config.priceSnapshotsLimit);
+        if (this.priceSnapshots.length > this.priceSnapshotsLimit) {
+            this.priceSnapshots = this.priceSnapshots.slice(-this.priceSnapshotsLimit);
         }
     }
 
@@ -758,7 +810,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private updateBuild(): void {
         // Retrieve the candlesticks
-        const candlesticks: ICandlestick[] = this._candlestick.predictionLookback.slice(-this.config.buildLookbackSize);
+        const candlesticks: ICandlestick[] = this._candlestick.predictionLookback.slice(-this.buildLookbackSize);
 
         /**
          * Iterate over each candlestick scanning for reversals. The loop starts on the fourth 
@@ -832,7 +884,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                     );
                     
                     // Merge the zones if needed
-                    if (change <= this.config.zoneMergeDistanceLimit) {
+                    if (change <= this.zoneMergeDistanceLimit) {
                         finalZones.push(this.mergeZones(this.tempZones[i], this.tempZones[i + 1]));
                         merged = true;
                     } 
@@ -983,7 +1035,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         // Check if it was a resistance
         if (reversalType == "r") {
             return {
-                s: <number>this._utils.alterNumberByPercentage(candlestick.h, -(this.config.zoneSize), this.numberConfig),
+                s: <number>this._utils.alterNumberByPercentage(candlestick.h, -(this.zoneSize), this.numberConfig),
                 e: candlestick.h
             }
         }
@@ -992,7 +1044,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         else {
             return {
                 s: candlestick.l,
-                e: <number>this._utils.alterNumberByPercentage(candlestick.l, this.config.zoneSize, this.numberConfig)
+                e: <number>this._utils.alterNumberByPercentage(candlestick.l, this.zoneSize, this.numberConfig)
             }
         }
     }
@@ -1138,9 +1190,6 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         if (!this._val.numberValid(config.buildFrequencyHours, 1, 24)) {
             throw new Error(this._utils.buildApiError(`The provided buildFrequencyHours (${config.buildFrequencyHours}) is invalid.`, 27001));
         }
-        if (!this._val.numberValid(config.buildLookbackSize, 150, 150000)) {
-            throw new Error(this._utils.buildApiError(`The provided buildLookbackSize (${config.buildLookbackSize}) is invalid.`, 27010));
-        }
         if (!this._val.numberValid(config.zoneSize, 0.01, 10)) {
             throw new Error(this._utils.buildApiError(`The provided zoneSize (${config.zoneSize}) is invalid.`, 27002));
         }
@@ -1151,7 +1200,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             throw new Error(this._utils.buildApiError(`The provided stateLimit (${config.stateLimit}) is invalid.`, 27004));
         }
         if (
-            !config.scoreWeights || typeof this.config.scoreWeights != "object" ||
+            !config.scoreWeights || typeof this.scoreWeights != "object" ||
             !this._val.numberValid(config.scoreWeights.volume_intensity, 1, 10) ||
             !this._val.numberValid(config.scoreWeights.liquidity_share, 1, 10) ||
             config.scoreWeights.volume_intensity + config.scoreWeights.liquidity_share != 10
@@ -1259,11 +1308,11 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             buildLookbackSize: 2880, // ~30 days
             zoneSize: 0.1,
             zoneMergeDistanceLimit: 0.05,
+            stateLimit: 10,
             scoreWeights: {
                 volume_intensity: 5,
                 liquidity_share: 5
             },
-            stateLimit: 10,
             priceSnapshotsLimit: 5, // ~15 seconds worth
             eventDurationSeconds: 35,
             keyzoneIdleOnEventMinutes: 60,
