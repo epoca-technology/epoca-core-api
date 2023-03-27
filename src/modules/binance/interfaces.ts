@@ -22,7 +22,7 @@ export interface IBinanceService {
 
     /* FUTURES PUBLIC ENDPOINTS */
     getExchangeInformation(): Promise<IBinanceExchangeInformation>,
-
+    getCoinTickers(): Promise<IBinanceCoinTicker[]>,
 
 
     /* SPOT PUBLIC ENDPOINTS */
@@ -284,6 +284,41 @@ export interface IBinanceExchangeInformationSymbolFilter {
 export type IBinanceExchangeInformationSymbolFilterType = "PRICE_FILTER"|"LOT_SIZE"|"MARKET_LOT_SIZE"|"MAX_NUM_ORDERS"|"MAX_NUM_ALGO_ORDERS"|"MIN_NOTIONAL"|"PERCENT_PRICE";
 export type IBinanceExchangeInformationSymbolOrderType = "LIMIT"|"MARKET"|"STOP"|"STOP_MARKET"|"TAKE_PROFIT"|"TAKE_PROFIT_MARKET"|"TRAILING_STOP_MARKET";
 export type IBinanceExchangeInformationSymbolTimeInForce = "GTC"|"IOC"|"FOK"|"GTX";
+
+
+
+
+
+
+
+
+
+/**
+ * Coin 24h Ticker
+ * Binance Futures API exposes the tickers for all the supported symbols
+ * which can be used to determine the quality of each coin based on their
+ * volume.
+ */
+export interface IBinanceCoinTicker {
+    symbol: string, // "BALUSDT"
+    priceChange: string, // "-0.347"
+    priceChangePercent: string, // "-5.124"
+    weightedAvgPrice: string, // "6.651"
+    lastPrice: string, // "6.425"
+    lastQty: string, // "5.9"
+    openPrice: string, // "6.772"
+    highPrice: string, // "6.911"
+    lowPrice: string, // "6.354"
+    volume: string, // "3562627.4"
+    quoteVolume: string, // "23696682.000" <- Use this value
+    openTime: number, // 1679863500000
+    closeTime: number, // 1679949919335
+    firstId: number, // 114569674
+    lastId: number, // 114737810
+    count: number // 168137
+}
+
+
 
 
 

@@ -32,6 +32,7 @@ export interface INotificationService {
 
     // Coin Notifications
     coinNoLongerSupported(symbol: string): Promise<void>,
+    installedLowScoreCoin(symbol: string): Promise<void>,
     coinWebsocketError(error: any): Promise<void>,
     coinWebsocketConnectionIssue(): Promise<void>,
 

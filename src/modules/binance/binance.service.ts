@@ -18,7 +18,8 @@ import {
     IBinancePositionActionSide,
     IBinancePositionSide,
     IBinanceOrderBook,
-    IBinanceExchangeInformation
+    IBinanceExchangeInformation,
+    IBinanceCoinTicker
 } from "./interfaces";
 
 
@@ -344,6 +345,46 @@ export class BinanceService implements IBinanceService {
     }
 
 
+
+
+
+
+
+
+    /**
+     * Retrieves the tickers for all the supported coins in Binance Futures.
+     * @returns Promise<IBinanceCoinTicker[]>
+     */
+    public async getCoinTickers(): Promise<IBinanceCoinTicker[]> {
+        // Build options
+        const options: IExternalRequestOptions = {
+            host: "fapi.binance.com",
+            path: `/fapi/v1/ticker/24hr`,
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        };
+
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the coin tickers: ${this.extractErrorMessage(response)}`, 7));
+        }
+
+        // Validate the response's data
+        if (!response.data || !Array.isArray(response.data) || !response.data.length){
+            console.log(response);
+            throw new Error(this._utils.buildApiError("Binance returned an invalid list of coin tickers.", 8));
+        }
+
+        // Return the series
+        return response.data;
+    }
 
 
 

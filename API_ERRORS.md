@@ -18,9 +18,9 @@
 
 6: `Binance returned an invalid exchange information object.`
 
-7: ``
+7: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the coin tickers: ${this.extractErrorMessage(response)}`
 
-8: ``
+8: `Binance returned an invalid list of coin tickers.`
 
 9: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the balances.`
 

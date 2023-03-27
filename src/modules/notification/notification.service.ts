@@ -442,6 +442,23 @@ export class NotificationService implements INotificationService {
 
 
     /**
+     * Triggers when an installed coin no longer has an acceptable score.
+     * @param symbol
+     * @returns Promise<void>
+     */
+    public installedLowScoreCoin(symbol: string): Promise<void> {
+        return this.broadcast({
+            sender: "COIN",
+            title: `${symbol} Warning:`,
+            description: `The score of ${symbol} no longer meets the standards set by Epoca and should be uninstalled as soon as possible.`
+        });
+    }
+
+
+
+
+
+    /**
      * Triggers when the websocket broadcasts an error.
      * @param error
      * @returns Promise<void>

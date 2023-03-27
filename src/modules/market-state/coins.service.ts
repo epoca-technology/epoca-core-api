@@ -7,7 +7,8 @@ import {
     IBinanceService, 
     IBinanceExchangeInformation, 
     IBinanceExchangeInformationSymbol, 
-    IMarkPriceStreamDataItem 
+    IMarkPriceStreamDataItem, 
+    IBinanceCoinTicker
 } from "../binance";
 import { IDatabaseService } from "../database";
 import { INotificationService } from "../notification";
@@ -21,7 +22,9 @@ import {
     ICoin,
     IStateUtilitiesService,
     ISplitStates,
-    IStateType
+    IStateType,
+    ICoinsScores,
+    ICoinScore
 } from "./interfaces";
 
 
@@ -45,7 +48,7 @@ export class CoinsService implements ICoinsService {
      */
     private installed: ICoinsObject;
     private supported: ICoinsObject;
-
+    private scores: ICoinsScores;
 
 
 
@@ -56,7 +59,7 @@ export class CoinsService implements ICoinsService {
      * users will be notified.
      */
     private supportedCoinsInterval: any;
-    private readonly supportedCoinsIntervalSeconds: number = 480; // ~8 hours
+    private readonly supportedCoinsIntervalHours: number = 8;
 
 
 
@@ -128,7 +131,7 @@ export class CoinsService implements ICoinsService {
                 console.log(e);
                 this._apiError.log("CoinsService.updateSupportedCoins", e);
             }
-        }, this.supportedCoinsIntervalSeconds * 1000);
+        }, this.supportedCoinsIntervalHours * 60 * 60 * 1000);
 
         // Initialize the websocket status interval
         this.wsInterval = setInterval(async () => {
@@ -221,7 +224,7 @@ export class CoinsService implements ICoinsService {
      * @returns ICoinsSummary
      */
     public getCoinsSummary(): ICoinsSummary {
-        return { installed: this.installed, supported: this.supported }
+        return { installed: this.installed, supported: this.supported, scores: this.scores }
     }
 
     
@@ -394,7 +397,10 @@ export class CoinsService implements ICoinsService {
         // Firstly, retrieve the up-to-date exchange info object
         const info: IBinanceExchangeInformation = await this.getExchangeInfo();
 
-        // Iterate over each supported symbol and add it to the local property if complies
+        /**
+         * Iterate over each supported symbol and add it to the local property 
+         * if complies with all requirements.
+         */
         this.supported = {};
         for (let coin of info.symbols) {
             if (this.isCoinSupported(coin)) {
@@ -406,12 +412,19 @@ export class CoinsService implements ICoinsService {
             }
         }
 
-        // Iterate over each installed coin and ensure it is still supported
+        /**
+         * Iterate over each installed coin and ensure it is still supported.
+         * If an installed coin is no longer supported, notify the users.
+         */
         for (let installedSymbol in this.installed) {
             if (!this.supported[installedSymbol]) {
                 await this._notification.coinNoLongerSupported(installedSymbol);
             }
         }
+
+        // Finally, calculate the scores for all coins after a small delay
+        await this._utils.asyncDelay(5);
+        await this.calculateCoinsScores();
     }
 
 
@@ -458,6 +471,95 @@ export class CoinsService implements ICoinsService {
             }
         }
     }
+
+
+
+
+
+
+
+
+    /**
+     * Triggers whenever the system updates the supported coins. 
+     * Retrieves the tickers from Binance, analyzes each coin and
+     * builds the score object. If a coin no longer meets the 
+     * standards, a notification is broadcasted.
+     * @returns Promise<void>
+     */
+    private async calculateCoinsScores(): Promise<void> {
+        try {
+            // Reset the scores object
+            this.scores = {};
+
+            // Firstly, retrieve all the tickers
+            const tickers: IBinanceCoinTicker[] = await this._binance.getCoinTickers();
+
+            // Init the list of supported tickers
+            let supported: {symbol: string, vol: number}[] = [];
+            let volAccum: number = 0;
+            for (let ticker of tickers) {
+                // Ensure the ticker is marked as supported
+                if (this.supported[ticker.symbol]) {
+                    // Init the volume value and add it to the list
+                    const vol: number = Number(ticker.quoteVolume);
+                    supported.push({symbol: ticker.symbol, vol: vol});
+
+                    // Add the volume to the accumulator
+                    volAccum += vol;
+                }
+            }
+
+            // Proceed if supported symbols have been found
+            if (supported.length) {
+                // Calculate the mean of all the volumes, as well as the requirements
+                const mean: number = <number>this._utils.outputNumber(volAccum / supported.length);
+                const low: number = <number>this._utils.outputNumber(mean / 10);
+                const medium: number = <number>this._utils.outputNumber(mean / 7);
+                const high: number = <number>this._utils.outputNumber(mean / 4);
+
+                // Iterate over each supported ticker once again
+                for (let ticker of supported) {
+                    // Calculate the score
+                    const score: ICoinScore = this.calculateCoinScore(ticker.vol, low, medium, high, mean);
+
+                    // Set the score on the object
+                    this.scores[ticker.symbol] = score;
+
+                    // If the symbol is installed and the score is not good, notify users
+                    if (this.installed[ticker.symbol] && score <= 2) {
+                        await this._notification.installedLowScoreCoin(ticker.symbol);
+                    }
+                }
+            }
+        } catch (e) {
+            console.log(e);
+            this._apiError.log("CoinsService.calculateCoinsScores", e);
+        }
+    }
+
+
+
+
+
+
+    /**
+     * Calculates the score of a coin based on its 24h volume and the requirements.
+     * @param coinVolume 
+     * @param low 
+     * @param medium 
+     * @param high 
+     * @param mean 
+     * @returns ICoinScore
+     */
+    private calculateCoinScore(coinVolume: number, low: number, medium: number, high: number, mean: number): ICoinScore {
+        if      (coinVolume >= mean)    { return 5 }
+        else if (coinVolume >= high)    { return 4 }
+        else if (coinVolume >= medium)  { return 3 }
+        else if (coinVolume >= low)     { return 2 }
+        else                            { return 1 }
+    }
+
+
 
 
 

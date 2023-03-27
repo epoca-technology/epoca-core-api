@@ -557,8 +557,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         // Set the score accordingly
         if      (volIntensity == 4) { score = 1 }
         else if (volIntensity == 3) { score = 0.75 }
-        else if (volIntensity == 2) { score = 0.66 }
-        else if (volIntensity == 1) { score = 0.5 }
+        else if (volIntensity == 2) { score = 0.6  }
+        else if (volIntensity == 1) { score = 0.45 }
 
         // Finally, return the local score multiplied by the weights
         return this.config.scoreWeights.volume_intensity * score;
@@ -579,28 +579,46 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         let score: number = 0.25;
 
         // Set the score accordingly
-        if      (liquidityShare >= 20)   { score = 1 }
-        else if (liquidityShare >= 19)   { score = 0.97 }
-        else if (liquidityShare >= 18)   { score = 0.94 }
-        else if (liquidityShare >= 17)   { score = 0.91 }
-        else if (liquidityShare >= 16)   { score = 0.88 }
-        else if (liquidityShare >= 15)   { score = 0.85 }
-        else if (liquidityShare >= 14)   { score = 0.82 }
-        else if (liquidityShare >= 13)   { score = 0.79 }
-        else if (liquidityShare >= 12)   { score = 0.76 }
-        else if (liquidityShare >= 11)   { score = 0.73 }
-        else if (liquidityShare >= 10)   { score = 0.70 }
-        else if (liquidityShare >= 9)    { score = 0.67 }
-        else if (liquidityShare >= 8)    { score = 0.64 }
-        else if (liquidityShare >= 7)    { score = 0.61 }
-        else if (liquidityShare >= 6)    { score = 0.58 }
-        else if (liquidityShare >= 5)    { score = 0.55 }
-        else if (liquidityShare >= 4)    { score = 0.52 }
-        else if (liquidityShare >= 3)    { score = 0.49 }
-        else if (liquidityShare >= 2)    { score = 0.46 }
-        else if (liquidityShare >= 1)    { score = 0.43 }
-        else if (liquidityShare >= 0.5)  { score = 0.40 }
-        else if (liquidityShare >= 0.25) { score = 0.35 }
+        if      (liquidityShare >= 20)      { score = 1 }
+        else if (liquidityShare >= 19.5)    { score = 0.99 }
+        else if (liquidityShare >= 19)      { score = 0.98 }
+        else if (liquidityShare >= 18.5)    { score = 0.97 }
+        else if (liquidityShare >= 18)      { score = 0.96 }
+        else if (liquidityShare >= 17.5)    { score = 0.95 }
+        else if (liquidityShare >= 17)      { score = 0.94 }
+        else if (liquidityShare >= 16.5)    { score = 0.93 }
+        else if (liquidityShare >= 16)      { score = 0.92 }
+        else if (liquidityShare >= 15.5)    { score = 0.91 }
+        else if (liquidityShare >= 15)      { score = 0.90 }
+        else if (liquidityShare >= 14.5)    { score = 0.89 }
+        else if (liquidityShare >= 14)      { score = 0.88 }
+        else if (liquidityShare >= 13.5)    { score = 0.87 }
+        else if (liquidityShare >= 13)      { score = 0.86 }
+        else if (liquidityShare >= 12.5)    { score = 0.85 }
+        else if (liquidityShare >= 12)      { score = 0.84 }
+        else if (liquidityShare >= 11.5)    { score = 0.83 }
+        else if (liquidityShare >= 11)      { score = 0.82 }
+        else if (liquidityShare >= 10.5)    { score = 0.81 }
+        else if (liquidityShare >= 10)      { score = 0.80 }
+        else if (liquidityShare >= 9.5)     { score = 0.78 }
+        else if (liquidityShare >= 9)       { score = 0.76 }
+        else if (liquidityShare >= 8.5)     { score = 0.74 }
+        else if (liquidityShare >= 8)       { score = 0.72 }
+        else if (liquidityShare >= 7.5)     { score = 0.70 }
+        else if (liquidityShare >= 7)       { score = 0.68 }
+        else if (liquidityShare >= 6.5)     { score = 0.66 }
+        else if (liquidityShare >= 6)       { score = 0.64 }
+        else if (liquidityShare >= 5.5)     { score = 0.62 }
+        else if (liquidityShare >= 5)       { score = 0.60 }
+        else if (liquidityShare >= 4.5)     { score = 0.57 }
+        else if (liquidityShare >= 4)       { score = 0.54 }
+        else if (liquidityShare >= 3.5)     { score = 0.51 }
+        else if (liquidityShare >= 3)       { score = 0.48 }
+        else if (liquidityShare >= 2.5)     { score = 0.45 }
+        else if (liquidityShare >= 2)       { score = 0.42 }
+        else if (liquidityShare >= 1.5)     { score = 0.38 }
+        else if (liquidityShare >= 1)       { score = 0.34 }
+        else if (liquidityShare >= 0.5)     { score = 0.30 }
 
         // Finally, return the local score multiplied by the weights
         return this.config.scoreWeights.liquidity_share * score;
@@ -795,7 +813,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         this.calculateKeyZoneVolumes();
 
         // Reset the idle object
-        this.idleKeyZones = {};
+        // @DEPRECATED due the the high risk it represents as events can be issued unexpectedly.
+        //this.idleKeyZones = {};
 
         // Finally, update the build time
         this.buildTS = Date.now();
