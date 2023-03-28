@@ -456,9 +456,10 @@ export interface IKeyZonesConfiguration {
     /**
      * Event Duration
      * The number of seconds a KeyZone event will remain active after being
-     * issued.
+     * issued based on its kind.
      */
-    eventDurationSeconds: number,
+    supportEventDurationSeconds: number,
+    resistanceEventDurationSeconds: number,
 
     /**
      * KeyZone Idle Duration

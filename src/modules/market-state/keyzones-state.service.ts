@@ -409,7 +409,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         return {
             k: kind,
             kz: zone,
-            e: moment().add(this.config.eventDurationSeconds, "seconds").valueOf()
+            e: moment().add(kind == "s" ? this.config.supportEventDurationSeconds: this.config.resistanceEventDurationSeconds, "seconds").valueOf()
         }
     }
 
@@ -1181,8 +1181,11 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         if (!this._val.numberValid(config.priceSnapshotsLimit, 3, 50)) {
             throw new Error(this._utils.buildApiError(`The provided priceSnapshotsLimit (${config.priceSnapshotsLimit}) is invalid.`, 27006));
         }
-        if (!this._val.numberValid(config.eventDurationSeconds, 5, 3600)) {
-            throw new Error(this._utils.buildApiError(`The provided eventDurationSeconds (${config.eventDurationSeconds}) is invalid.`, 27007));
+        if (!this._val.numberValid(config.supportEventDurationSeconds, 5, 3600)) {
+            throw new Error(this._utils.buildApiError(`The provided supportEventDurationSeconds (${config.supportEventDurationSeconds}) is invalid.`, 27011));
+        }
+        if (!this._val.numberValid(config.resistanceEventDurationSeconds, 5, 3600)) {
+            throw new Error(this._utils.buildApiError(`The provided resistanceEventDurationSeconds (${config.resistanceEventDurationSeconds}) is invalid.`, 27012));
         }
         if (!this._val.numberValid(config.keyzoneIdleOnEventMinutes, 1, 1440)) {
             throw new Error(this._utils.buildApiError(`The provided keyzoneIdleOnEventMinutes (${config.keyzoneIdleOnEventMinutes}) is invalid.`, 27008));
@@ -1284,7 +1287,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             },
             stateLimit: 10,
             priceSnapshotsLimit: 5, // ~15 seconds worth
-            eventDurationSeconds: 35,
+            supportEventDurationSeconds: 60,
+            resistanceEventDurationSeconds: 60,
             keyzoneIdleOnEventMinutes: 60,
             eventScoreRequirement: 5
         }

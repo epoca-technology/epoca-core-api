@@ -500,13 +500,17 @@
 
 27006: `The provided priceSnapshotsLimit (${config.priceSnapshotsLimit}) is invalid.`
 
-27007: `The provided eventDurationSeconds (${config.eventDurationSeconds}) is invalid.`
+27007: ``
 
 27008: `The provided keyzoneIdleOnEventMinutes (${config.keyzoneIdleOnEventMinutes}) is invalid.`
 
 27009: `The provided eventScoreRequirement (${config.eventScoreRequirement}) is invalid.`
 
 27010: `The provided buildLookbackSize (${config.buildLookbackSize}) is invalid.`
+
+27011: `The provided supportEventDurationSeconds (${config.supportEventDurationSeconds}) is invalid.`
+
+27012: `The provided resistanceEventDurationSeconds (${config.resistanceEventDurationSeconds}) is invalid.`
 
 
 

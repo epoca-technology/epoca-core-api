@@ -1,4 +1,4 @@
-import { IBinancePositionActionSide, IBinancePositionSide } from "../binance";
+import { IBinanceMarginType, IBinancePositionActionSide, IBinancePositionSide } from "../binance";
 
 
 
@@ -220,6 +220,12 @@ export interface IActivePosition {
 
     // The type of position "LONG"|"SHORT".
     side: IBinancePositionSide,
+
+    // The leverage used in the position.
+    leverage: number,
+
+    // The type of margin in which the position was opened. Always should be "isolated".
+    margin_type: IBinanceMarginType,
 
     // The weighted entry price based on all the trades within the position.
     entry_price: number,
