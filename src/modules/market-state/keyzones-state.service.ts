@@ -812,9 +812,10 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         // Calculate the KeyZone Volumes
         this.calculateKeyZoneVolumes();
 
-        // Reset the idle object
-        // @DEPRECATED due the the high risk it represents as events can be issued unexpectedly.
-        //this.idleKeyZones = {};
+        // Clean up the idle object
+        for (let idleZoneID in this.idleKeyZones) {
+            if (!this.isIdle(Number(idleZoneID))) delete this.idleKeyZones[idleZoneID];
+        }
 
         // Finally, update the build time
         this.buildTS = Date.now();

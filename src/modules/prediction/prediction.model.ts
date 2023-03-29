@@ -188,23 +188,23 @@ export class PredictionModel implements IPredictionModel {
 
             // Update the active candlestick (if any) - The open sum & open time don"t need to be updated
             if (activeCandle) {
-                await client.query({ // @TODO @DEPRECATE sm property!!!
+                await client.query({ 
                     text: `
-                        UPDATE ${this._db.tn.epoch_prediction_candlesticks} SET ct=$1, h=$2, l=$3, c=$4, sm=$5
-                        WHERE epoch_id = $6 AND ot=$7
+                        UPDATE ${this._db.tn.epoch_prediction_candlesticks} SET ct=$1, h=$2, l=$3, c=$4 
+                        WHERE epoch_id = $5 AND ot=$6
                     `,
-                    values: [activeCandle.ct, activeCandle.h, activeCandle.l, activeCandle.c, 0, epochID, activeCandle.ot]
+                    values: [activeCandle.ct, activeCandle.h, activeCandle.l, activeCandle.c, epochID, activeCandle.ot]
                 });
             }
 
             // Insert the new candlestick (if any)
             if (newCandle) {
-                await client.query({ // @TODO @DEPRECATE sm property!!!
+                await client.query({
                     text: `
-                        INSERT INTO ${this._db.tn.epoch_prediction_candlesticks}(epoch_id, ot, ct, o, h, l, c, sm) 
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                        INSERT INTO ${this._db.tn.epoch_prediction_candlesticks}(epoch_id, ot, ct, o, h, l, c) 
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)
                     `,
-                    values: [epochID, newCandle.ot, newCandle.ct, newCandle.o, newCandle.h, newCandle.l, newCandle.c, 0]
+                    values: [epochID, newCandle.ot, newCandle.ct, newCandle.o, newCandle.h, newCandle.l, newCandle.c]
                 });
             }
 
