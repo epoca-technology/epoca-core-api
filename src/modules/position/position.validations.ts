@@ -2,6 +2,7 @@ import {inject, injectable} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService, IValidationsService } from "../utilities";
 import { 
+    IPositionActionKind,
     IPositionStrategy,
     IPositionValidations
 } from "./interfaces";
@@ -17,6 +18,119 @@ export class PositionValidations implements IPositionValidations {
 
 
     constructor() {}
+
+
+
+
+
+
+
+    /******************************
+     * Position Record Management *
+     ******************************/
+
+
+
+
+
+
+    /**
+     * Verifies if a position can be retrieved from a given id.
+     * @param id 
+     */
+    public canPositionRecordBeRetrieved(id: string): void {
+        if (!this._validations.uuidValid(id)) {
+            throw new Error(this._utils.buildApiError(`The provided position id is invalid: ${id}.`, 30007));
+        }
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Verifies if the position headlines can be listed for a 
+     * given date range.
+     * @param startAt 
+     * @param endAt 
+     */
+    public canPositionHeadlinesBeListed(startAt: number, endAt: number): void {
+        // Make sure the start and the end have been provided
+        if (typeof startAt != "number" || typeof endAt != "number") {
+            throw new Error(this._utils.buildApiError(`The positions date range is invalid. Received: ${startAt} - ${endAt}.`, 30009));
+        }
+
+        // The start cannot be greater or equals to the end
+        if (startAt >= endAt) {
+            throw new Error(this._utils.buildApiError(`The positions starting point must be less than the end. Received: ${startAt} - ${endAt}.`, 30010));
+        }
+
+        // Make sure the query does not exceed the data limit
+        const dataLimit: number = 730 * 24 * 60 * 60 * 1000; // ~730 days
+        const difference: number = endAt - startAt;
+        if (difference > dataLimit) {
+            throw new Error(this._utils.buildApiError(`The positions query is larger than the permitted data limit. 
+            Limit: ${dataLimit}, Received: ${difference}`, 30011));
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**************************************
+     * Position Action Payload Management *
+     **************************************/
+
+
+
+
+
+
+
+    /**
+     * Ensures the payloads can be listed based on provided params.
+     * @param kind 
+     * @param startAt 
+     * @param endAt 
+     */
+    public canPositionActionPayloadsBeListed(kind: IPositionActionKind, startAt: number, endAt: number): void {
+        // Make sure the provided kind is valid
+        if (kind != "POSITION_OPEN" && kind != "POSITION_CLOSE") {
+            throw new Error(this._utils.buildApiError(`The pos. action payloads cannot be listed because an invalid kind was provided: ${kind}`, 30012));
+        }
+        // Make sure the start and the end have been provided
+        if (typeof startAt != "number" || typeof endAt != "number") {
+            throw new Error(this._utils.buildApiError(`The pos. action payloads date range is invalid. Received: ${startAt} - ${endAt}.`, 30013));
+        }
+
+        // The start cannot be greater or equals to the end
+        if (startAt >= endAt) {
+            throw new Error(this._utils.buildApiError(`The pos. action payloads starting point must be less than the end. Received: ${startAt} - ${endAt}.`, 30014));
+        }
+
+        // Make sure the query does not exceed the data limit
+        const dataLimit: number = 365 * 24 * 60 * 60 * 1000; // ~365 days
+        const difference: number = endAt - startAt;
+        if (difference > dataLimit) {
+            throw new Error(this._utils.buildApiError(`The pos. action payloads query is larger than the permitted data limit. 
+            Limit: ${dataLimit}, Received: ${difference}`, 30015));
+        }
+    }
+
+
+
 
 
 
@@ -114,7 +228,7 @@ export class PositionValidations implements IPositionValidations {
         if (!ascendingTakeProfits) {
             console.log(newStrategy);
             throw new Error(this._utils.buildApiError(`The price change requirements in the take profits must be provided
-            in ascending order.`, 30021));
+            in ascending order.`, 30006));
         }
 
         // Validate the stop loss

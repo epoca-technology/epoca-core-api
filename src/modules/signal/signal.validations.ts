@@ -53,13 +53,13 @@ export class SignalValidations implements ISignalValidations {
             !newPolicies.long.issuance.keyzone_reversal || typeof newPolicies.long.issuance.keyzone_reversal != "object" || 
             !newPolicies.long.cancellation || typeof newPolicies.long.cancellation != "object" || 
             !newPolicies.long.cancellation.window_state || typeof newPolicies.long.cancellation.window_state != "object" || 
-            !newPolicies.long.cancellation.trend_state || typeof newPolicies.long.cancellation.trend_state != "object" || 
+            !newPolicies.long.cancellation.trend || typeof newPolicies.long.cancellation.trend != "object" || 
             !newPolicies.short || typeof newPolicies.short != "object" || 
             !newPolicies.short.issuance || typeof newPolicies.short.issuance != "object" || 
             !newPolicies.short.issuance.keyzone_reversal || typeof newPolicies.short.issuance.keyzone_reversal != "object" || 
             !newPolicies.short.cancellation || typeof newPolicies.short.cancellation != "object" || 
             !newPolicies.short.cancellation.window_state || typeof newPolicies.short.cancellation.window_state != "object" || 
-            !newPolicies.short.cancellation.trend_state || typeof newPolicies.short.cancellation.trend_state != "object"
+            !newPolicies.short.cancellation.trend || typeof newPolicies.short.cancellation.trend != "object"
         ) {
             console.log(newPolicies);
             throw new Error(this._utils.buildApiError(`The provided signal policies object is invalid.`, 35503));
@@ -107,12 +107,18 @@ export class SignalValidations implements ISignalValidations {
             throw new Error(this._utils.buildApiError(`The provided long window_state.window_state is invalid.`, 35510));
         }
 
-        // Validate the trend state cancellation policy
-        if (typeof policies.cancellation.trend_state.enabled != "boolean") {
-            throw new Error(this._utils.buildApiError(`The provided long trend_state.enabled is invalid.`, 35511));
+        // Validate the trend cancellation policy
+        if (typeof policies.cancellation.trend.enabled != "boolean") {
+            throw new Error(this._utils.buildApiError(`The provided long trend.enabled is invalid.`, 35511));
         }
-        if (!this._v.numberValid(policies.cancellation.trend_state.trend_state, -2, -1)) {
-            throw new Error(this._utils.buildApiError(`The provided long trend_state.trend_state is invalid.`, 35512));
+        if (!this._v.numberValid(policies.cancellation.trend.trend_state, -2, 0)) {
+            throw new Error(this._utils.buildApiError(`The provided long trend.trend_state is invalid.`, 35512));
+        }
+        if (!this._v.numberValid(policies.cancellation.trend.trend_sum, -8, 0)) {
+            throw new Error(this._utils.buildApiError(`The provided long trend.trend_sum is invalid.`, 35514));
+        }
+        if (policies.cancellation.trend.trend_state == 0 && policies.cancellation.trend.trend_sum == 0) {
+            throw new Error(this._utils.buildApiError(`The provided long trend cancellation policy is invalid. The sum or the state must be active.`, 35513));
         }
     }
 
@@ -155,11 +161,17 @@ export class SignalValidations implements ISignalValidations {
         }
 
         // Validate the trend state cancellation policy
-        if (typeof policies.cancellation.trend_state.enabled != "boolean") {
-            throw new Error(this._utils.buildApiError(`The provided short trend_state.enabled is invalid.`, 35511));
+        if (typeof policies.cancellation.trend.enabled != "boolean") {
+            throw new Error(this._utils.buildApiError(`The provided short trend.enabled is invalid.`, 35511));
         }
-        if (!this._v.numberValid(policies.cancellation.trend_state.trend_state, 1, 2)) {
-            throw new Error(this._utils.buildApiError(`The provided short trend_state.trend_state is invalid.`, 35512));
+        if (!this._v.numberValid(policies.cancellation.trend.trend_state, 0, 2)) {
+            throw new Error(this._utils.buildApiError(`The provided short trend.trend_state is invalid.`, 35512));
+        }
+        if (!this._v.numberValid(policies.cancellation.trend.trend_sum, 0, 8)) {
+            throw new Error(this._utils.buildApiError(`The provided short trend.trend_sum is invalid.`, 35514));
+        }
+        if (policies.cancellation.trend.trend_state == 0 && policies.cancellation.trend.trend_sum == 0) {
+            throw new Error(this._utils.buildApiError(`The provided short trend cancellation policy is invalid. The sum or the state must be active.`, 35513));
         }
     }
 

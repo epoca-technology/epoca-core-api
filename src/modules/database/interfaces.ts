@@ -82,6 +82,9 @@ export interface ITableNames {
     signal_policies: string,
     signal_records: string,
     position_strategy: string,
+    position_action_payloads: string,
+    position_records: string,
+    position_headlines: string,
 }
 
 

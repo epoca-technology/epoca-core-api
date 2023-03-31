@@ -160,6 +160,16 @@ export class NotificationService implements INotificationService {
 
 
 
+
+
+
+
+
+
+
+
+
+
     /**
      * NOTIFICATION FACTORY
      * Other modules can call these functions directly in order to simplify the 
@@ -169,7 +179,21 @@ export class NotificationService implements INotificationService {
 
 
 
-    /* API Initializer Notifications */
+
+
+
+
+
+
+
+
+
+
+
+    /*********************************
+     * API Initializer Notifications *
+     *********************************/
+
 
 
 
@@ -213,7 +237,17 @@ export class NotificationService implements INotificationService {
 
     
 
-    /* Candlestick Notifications */
+
+
+
+
+
+
+
+    /*****************************
+     * Candlestick Notifications *
+     *****************************/
+
 
 
 
@@ -243,7 +277,14 @@ export class NotificationService implements INotificationService {
 
 
 
-    /* Server Notifications */
+
+
+
+
+    /************************
+     * Server Notifications *
+     ************************/
+
 
 
 
@@ -351,9 +392,17 @@ export class NotificationService implements INotificationService {
 
 
 
+
+
+
+
+
     
 
-    /* Prediction Notifications */
+    /****************************
+     * Prediction Notifications *
+     ****************************/
+
 
 
 
@@ -384,9 +433,16 @@ export class NotificationService implements INotificationService {
 
 
 
-    
 
-    /* Market State Notifications */
+
+
+
+
+
+    
+    /******************************
+     * Market State Notifications *
+     ******************************/
 
 
 
@@ -416,7 +472,22 @@ export class NotificationService implements INotificationService {
 
 
 
-    /* Coin Notifications */
+
+
+
+
+
+
+
+
+
+
+
+
+    /**********************
+     * Coin Notifications *
+     **********************/
+
 
 
 
@@ -496,9 +567,54 @@ export class NotificationService implements INotificationService {
 
 
 
-    /* Position Notifications */
 
 
 
 
+
+
+
+
+    /**************************
+     * Position Notifications *
+     **************************/
+
+
+
+
+
+
+
+
+    /**
+     * Notifies the users that the new signal event has triggered
+     * an error.
+     * @param error 
+     * @returns Promise<void>
+     */
+    public onNewSignalError(error: any): Promise<void> {
+        return this.broadcast({
+            sender: "POSITION",
+            title: "PositionService.onNewSignalError:",
+            description: this._utils.getErrorMessage(error)
+        });
+    }
+
+
+
+
+
+    /**
+     * Notifies the users that the position refresh function has thrown
+     * an unknown error.
+     * @param msg 
+     * @returns Promise<void>
+     */
+    public onRefreshActivePositionsError(msg: string): Promise<void> {
+        return this.broadcast({
+            sender: "POSITION",
+            title: "PositionService.refreshActivePositions:",
+            description: msg
+        });
+    }
 }

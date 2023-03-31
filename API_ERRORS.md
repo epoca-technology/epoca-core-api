@@ -528,7 +528,7 @@
 
 29002: `The extracted USDT balance object is not complete. Available ${balances[0].availableBalance} | Balance: ${balances[0].balance}`
 
-29003: `The positions cannot be evaluated against the current price because the candlesticks stream is out of sync.`
+29003: `The position cannot be closed because ${symbol} does not have an active one.`
 
 29004: ``
 
@@ -553,25 +553,25 @@
 
 30005: `The positions limit must be a valid number ranging 1-9. Received: ${newStrategy.positions_limit}`
 
-30006: ``
+30006: `The price change requirements in the take profits must be provided in ascending order.`
 
-30007: ``
+30007: `The provided position id is invalid: ${id}.`
 
 30008: `The take profit 'n' must be a valid object containing the price change requirement & the max gain drawdown.`
 
-30009: ``
+30009: `The positions date range is invalid. Received: ${startAt} - ${endAt}.`
 
-30010: ``
+30010: `The positions starting point must be less than the end. Received: ${startAt} - ${endAt}.`
 
-30011: ``
+30011: `The positions query is larger than the permitted data limit. Limit: ${dataLimit}, Received: ${difference}`
 
-30012: ``
+30012: `The pos. action payloads cannot be listed because an invalid kind was provided: ${kind}`
 
-30013: ``
+30013: `The pos. action payloads date range is invalid. Received: ${startAt} - ${endAt}.`
 
-30014: ``
+30014: `The pos. action payloads starting point must be less than the end. Received: ${startAt} - ${endAt}.`
 
-30015: ``
+30015: `The pos. action payloads query is larger than the permitted data limit. Limit: ${dataLimit}, Received: ${difference}`
 
 30016: ``
 
@@ -585,7 +585,7 @@
 
 30020: ``
 
-30021: `The price change requirements in the take profits must be provided in ascending order.`
+30021: ``
 
 30022: ``
 
@@ -611,9 +611,13 @@
 #
 ## Position Model (31.000 - 31.999)
 
-31000: ``
+31000: `The position record ${id} was not found in the database.`
 
 31001: ``
+
+31002: ``
+
+31003: ``
 
 
 
@@ -661,7 +665,13 @@
 
 35511: `The provided long trend_state.enabled is invalid.`
 
-35512: ``
+35512: `The provided long trend.trend_sum is invalid.`
+
+35513: `The provided long trend cancellation policy is invalid. The sum or the state must be active.`
+
+35514: `The provided short trend.trend_sum is invalid.`
+
+35515: ``
 
 
 
@@ -692,7 +702,7 @@
 
 37005: `The full state of the coin cannot be retrieved because ${symbol} is not installed.`
 
-37006: ``
+37006: `The coin ${symbol} does not have a loaded price.`
 
 37007: ``
 

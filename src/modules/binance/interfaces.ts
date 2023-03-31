@@ -14,6 +14,7 @@ export interface IBinanceService {
 
     // Position Actions
     order(
+        symbol: string,
         actionSide: IBinancePositionActionSide, 
         positionSide: IBinancePositionSide, 
         quantity: number
@@ -192,7 +193,7 @@ export interface IBinanceTradeExecutionPayload {
     cumQty: string, // e.g: '0'
     cumQuote: string, // e.g: '0'
     timeInForce: string, // e.g: 'GTC'
-    type: "MARKET",
+    type: "MARKET", // <- Evaluate this
     reduceOnly: boolean,
     side: IBinancePositionActionSide,
     stopPrice: string,

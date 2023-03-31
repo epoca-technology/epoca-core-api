@@ -218,6 +218,30 @@ export class CoinsService implements ICoinsService {
 
 
 
+    /**
+     * Retrieves the coin object as well as the price. Note that
+     * this function will throw an error if the coin is not 
+     * installed or if it does not have a loaded price.
+     * @param symbol 
+     * @returns {coin: ICoin, price: number}
+     */
+    public getInstalledCoinAndPrice(symbol: string): {coin: ICoin, price: number} {
+        // Firstly, retrieve the installed coin
+        const coin: ICoin = this.getInstalledCoin(symbol);
+
+        // Now ensure the coin has prices
+        if (!this.states[symbol].w.length) {
+            throw new Error(this._utils.buildApiError(`The coin ${symbol} does not have a loaded price.`, 37006));
+        }
+
+        // Finally, return the packed values
+        return { coin: coin, price: this.states[symbol].w.at(-1).y }
+    }
+
+
+
+
+
 
     /**
      * Retrieves the coins summary.

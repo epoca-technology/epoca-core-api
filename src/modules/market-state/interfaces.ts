@@ -731,6 +731,7 @@ export interface ICoinsService {
 
     // Coin Management
     getInstalledCoin(symbol: string): ICoin,
+    getInstalledCoinAndPrice(symbol: string): {coin: ICoin, price: number},
     getCoinsSummary(): ICoinsSummary,
     installCoin(symbol: string): Promise<ICoinsSummary>,
     uninstallCoin(symbol: string): Promise<ICoinsSummary>,

@@ -321,4 +321,66 @@ export const TABLES: IRawTable[] = [
             );`
         }
     },
+
+
+
+    /**
+     * Position Action Payloads
+     * 
+     */
+    {
+        name: "position_action_payloads",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                t           BIGINT NOT NULL,
+                k           VARCHAR(50) NOT NULL,
+                s           VARCHAR(20) NOT NULL,
+                sd          VARCHAR(10) NOT NULL,
+                p           JSONB NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_t ON ${tableName}(t);
+            CREATE INDEX IF NOT EXISTS ${tableName}_k ON ${tableName}(k);`
+        }
+    },
+
+
+
+    /**
+     * Position Records
+     * 
+     */
+    {
+        name: "position_records",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id          uuid NOT NULL PRIMARY KEY,
+                data        JSONB NOT NULL
+            );`
+        }
+    },
+
+
+
+    /**
+     * Position Headlines
+     * 
+     */
+    {
+        name: "position_headlines",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id          uuid NOT NULL PRIMARY KEY,
+                o           BIGINT NOT NULL,
+                s           VARCHAR(20) NOT NULL,
+                sd          VARCHAR(10) NOT NULL,
+                g           NUMERIC(4,2) NOT NULL,
+                gd          NUMERIC(4,2) NOT NULL,
+                slo         BOOLEAN NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_o ON ${tableName}(o);`
+        }
+    },
+
+
+
 ];

@@ -1,5 +1,10 @@
-import { IBinanceMarginType, IBinancePositionActionSide, IBinancePositionSide } from "../binance";
 import { ICoin } from "../market-state";
+import { 
+    IBinanceMarginType, 
+    IBinancePositionSide, 
+    IBinanceTradeExecutionPayload 
+} from "../binance";
+
 
 
 
@@ -8,15 +13,30 @@ import { ICoin } from "../market-state";
 export interface IPositionService {
     // Properties
     strategy: IPositionStrategy,
-    active: IActivePosition|null,
     balance: IAccountBalance,
 
     // Initializer
     initialize(): Promise<void>,
     stop(): void,
 
+    // Retrievers
+    getActivePositionHeadlines(): IPositionHeadline[],
+    getPositionRecord(id: string): Promise<IPositionRecord>,
+    listPositionHeadlines(startAt: number, endAt: number): Promise<IPositionHeadline[]>,
+    listPositionActionPayloads(
+        kind: IPositionActionKind, 
+        startAt: number, 
+        endAt: number
+    ): Promise<IPositionActionRecord[]>,
+
+    // Position Actions
+    closePosition(symbol: string): Promise<void>,
+
     // Position Strategy
-    updateStrategy(newStrategy: IPositionStrategy): Promise<void>
+    updateStrategy(newStrategy: IPositionStrategy): Promise<void>,
+
+    // Futures Account Balance
+    refreshBalance(): Promise<void>,
 }
 
 
@@ -24,9 +44,15 @@ export interface IPositionService {
 
 // Validations
 export interface IPositionValidations {
+    // Position Record Management
+    canPositionRecordBeRetrieved(id: string): void,
+    canPositionHeadlinesBeListed(startAt: number, endAt: number): void,
+
+    // Position Action Payload Management 
+    canPositionActionPayloadsBeListed(kind: IPositionActionKind, startAt: number, endAt: number): void,
+
     // Position Strategy
     canStrategyBeUpdated(newStrategy: IPositionStrategy): void,
-
 }
 
 
@@ -37,6 +63,24 @@ export interface IPositionValidations {
 
 // Model
 export interface IPositionModel {
+    // Position Records Management
+    savePosition(position: IPositionRecord): Promise<void>,
+    getPositionRecord(id: string): Promise<IPositionRecord>,
+    listPositionHeadlines(startAt: number, endAt: number): Promise<IPositionHeadline[]>,
+
+    // Position Action Payload Management
+    savePositionActionPayload(
+        kind: IPositionActionKind, 
+        symbol: string,
+        side: IBinancePositionSide,
+        payload: IBinanceTradeExecutionPayload
+    ): Promise<void>,
+    listPositionActionPayloads(
+        kind: IPositionActionKind, 
+        startAt: number, 
+        endAt: number
+    ): Promise<IPositionActionRecord[]>,
+
     // Position Strategy
     getStrategy(): Promise<IPositionStrategy|undefined>,
     createStrategy(strategy: IPositionStrategy): Promise<void>,
@@ -180,93 +224,6 @@ export interface IPositionExitStrategy {
 
 
 
-/**
- * Account Balance
- * In Epoca, the balance is always referring to USDT and is always extracted
- * fresh from Binance's API.
- */
-export interface IAccountBalance {
-    // The available balance in the account that can be used to initialize positions
-    available: number,
-
-    // The balance that has been allocated to positions (margin)
-    on_positions: number,
-
-    // The total balance in the account including unrealized pnl
-    total: number,
-
-    // The time in which the balance data was last updated by Binance
-    ts: number
-}
-
-
-
-
-
-
-
-
-
-/* Account Active Position */
-
-
-/**
- * Active Position
- * The active position including all the details in order to measure
- * risks and visualize targets.
- */
-export interface IActivePosition {
-    // The symbol of the position
-    symbol: string,
-
-    // The type of position "LONG"|"SHORT".
-    side: IBinancePositionSide,
-
-    // The leverage used in the position.
-    leverage: number,
-
-    // The type of margin in which the position was opened. Always should be "isolated".
-    margin_type: IBinanceMarginType,
-
-    // The weighted entry price based on all the trades within the position.
-    entry_price: number,
-
-    // The mark price when the active positions were updated.
-    mark_price: number,
-
-    // The prices at which each level is activated
-    take_profit_price_1: number,
-    take_profit_price_2: number,
-    take_profit_price_3: number,
-
-    // The price in which the position is labeled as "unsuccessful" and is ready to be closed.
-    stop_loss_price: number,
-
-    // The price at which the position will be automatically liquidated by the exchange.
-    liquidation_price: number,
-
-    // The current unrealized PNL in USDT
-    unrealized_pnl: number,
-
-    // The current return on equity
-    roe: number,
-
-    // The total margin (USDT) put into the position.
-    isolated_wallet: number,
-
-    // The current value of the isolated_wallet + unrealized_pnl.
-    isolated_margin: number,
-
-    // The size of the position in BTC with leverage included.
-    position_amount: number,
-
-    // The size of the position in USDT with leverage included.
-    notional: number,
-
-    // The timestamp in ms at which the position was updated.
-    ts: number
-}
-
 
 
 
@@ -389,7 +346,13 @@ export interface IPositionHeadline {
     sd: IBinancePositionSide,
 
     // The gain% the price has moved in favor or against. If losing, the value will be a negative number
-    g: number
+    g: number,
+
+    // The gain drawdown% from the highest gain
+    gd: number,
+
+    // Stop Loss Order - If the position has one, this value will be true
+    slo: boolean
 }
 
 
@@ -436,16 +399,22 @@ export interface IPositionCandlestick {
  */
 export interface IActivePositionCandlestick {
     // The time at which the candlestick first came into existance
-    ot: number|undefined,
+    ot: number,
+
+    /**
+     * The time at which the candlestick closes. This value is only to be used
+     * for optimization reasons and should not be stored in the record.
+     */
+    ct: number,
 
     // The candlestick containing the Mark Price history within the interval
-    markPrice: Partial<IPositionCandlestick>|undefined,
+    markPrice: Partial<IPositionCandlestick>,
 
     // The candlestick containing the Gain% history within the interval
-    gain: Partial<IPositionCandlestick>|undefined,
+    gain: Partial<IPositionCandlestick>,
 
     // The candlestick containing the Gain Drawdown% history within the interval
-    gainDrawdown: Partial<IPositionCandlestick>|undefined
+    gainDrawdown: Partial<IPositionCandlestick>
 }
 
 
@@ -480,4 +449,69 @@ export interface IPositionCandlestickRecord {
         // Close Value: Mark Price, Gain%, Gain Drawdown%
         c: [number, number, number]
     }
+}
+
+
+
+
+/**
+ * Trade Execution Payload
+ * Whenever an action such as opening or closing a position, creating
+ * a stop-loss order or any other position action is executed, the
+ * exchange returns a Payload object which should be stored and 
+ * analyzed if a problem was to raise.
+ */
+export type IPositionActionKind = "POSITION_OPEN"|"POSITION_CLOSE";
+export interface IPositionActionRecord {
+    // The time in which the payload was received and stored
+    t: number,
+
+    // The kind of execution
+    k: IPositionActionKind,
+
+    // The symbol of the coin being traded
+    s: string,
+
+    // The side of the position
+    sd: IBinancePositionSide,
+
+    // The exeution payload returned by the exchange
+    p: IBinanceTradeExecutionPayload
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Balance */
+
+
+
+
+/**
+ * Account Balance
+ * In Epoca, the balance is always referring to USDT and is always extracted
+ * fresh from Binance's API.
+ */
+export interface IAccountBalance {
+    // The available balance in the account that can be used to initialize positions
+    available: number,
+
+    // The balance that has been allocated to positions (margin)
+    on_positions: number,
+
+    // The total balance in the account including unrealized pnl
+    total: number,
+
+    // The time in which the balance data was last updated by Binance
+    ts: number
 }

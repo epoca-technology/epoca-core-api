@@ -10,7 +10,7 @@ import {
     IStateType,
     ITrendState, 
 } from "../market-state";
-import { IActivePosition } from "../position";
+import { IPositionHeadline } from "../position";
 
 
 
@@ -69,8 +69,8 @@ export interface IAppBulk {
     // The active prediction. If there isn't one, or an epoch isn't active, it will be undefined
     prediction: IPrediction|undefined,
 
-    // The current position summary
-    position: IActivePosition|null,
+    // The list of active position headlines
+    positions: IPositionHeadline[],
 
     // The active market state.
     marketState: IMarketState,
@@ -91,8 +91,8 @@ export interface IAppBulkStream {
     // The active prediction. If there isn't one, or an epoch isn't active, it will be undefined
     prediction: IPrediction|undefined,
 
-    // The current position summary
-    position: IActivePosition|null,
+    // The list of active position headlines
+    positions: IPositionHeadline[],
 
     // The active market state.
     marketState: ICompressedMarketState,

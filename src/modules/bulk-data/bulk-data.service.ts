@@ -72,7 +72,7 @@ export class BulkDataService implements IBulkDataService {
             serverTime: Date.now(),
             guiVersion: typeof this._guiVersion.activeVersion == "string" ? this._guiVersion.activeVersion: await this._guiVersion.get(),
             epoch: epoch,
-            position: this._position.active,
+            positions: this._position.getActivePositionHeadlines(),
             prediction: this._prediction.active.value,
             marketState: this._marketState.active.value,
             apiErrors: this._apiError.count
@@ -123,7 +123,7 @@ export class BulkDataService implements IBulkDataService {
         try {
             await this._db.appBulkRef.update(<IAppBulkStream> {
                 prediction: this._prediction.active.value && typeof this._prediction.active.value == "object" ? this._prediction.active.value: null,
-                position: this._position.active,
+                positions: this._position.getActivePositionHeadlines(),
                 marketState: <ICompressedMarketState>{
                     window: this.compressWindowState(),
                     volume: this._marketState.active.value.volume,

@@ -37,7 +37,8 @@ export interface INotificationService {
     coinWebsocketConnectionIssue(): Promise<void>,
 
     // Position Notifications
-
+    onNewSignalError(error: any): Promise<void>,
+    onRefreshActivePositionsError(msg: string): Promise<void>,
 }
 
 

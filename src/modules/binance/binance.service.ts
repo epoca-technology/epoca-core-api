@@ -197,19 +197,21 @@ export class BinanceService implements IBinanceService {
 
     /**
      * Creates, increases or closes a position.
+     * @param symbol
      * @param actionSide
      * @param positionSide
      * @param quantity
      * @returns Promise<IBinanceTradeExecutionPayload|undefined>
      */
      public async order(
+        symbol: string,
         actionSide: IBinancePositionActionSide, 
         positionSide: IBinancePositionSide, 
         quantity: number
     ): Promise<IBinanceTradeExecutionPayload|undefined> {
         // Build options
         const params: string = this.buildSignedParamsString({
-            symbol: "BTCUSDT",
+            symbol: symbol,
             side: actionSide,
             positionSide: positionSide,
             type: "MARKET",
