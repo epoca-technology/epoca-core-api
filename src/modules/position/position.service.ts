@@ -6,12 +6,13 @@ import { SYMBOLS } from "../../ioc";
 import { 
     IBinanceActivePosition, 
     IBinanceBalance, 
+    IBinancePositionActionSide, 
     IBinancePositionSide, 
     IBinanceService,
     IBinanceTradeExecutionPayload, 
 } from "../binance";
 import { ISignalRecord, ISignalService } from "../signal";
-import { ICoinsService } from "../market-state";
+import { ICoin, ICoinsService } from "../market-state";
 import { INotificationService } from "../notification";
 import { IApiErrorService } from "../api-error";
 import { IUtilitiesService } from "../utilities";
@@ -20,7 +21,10 @@ import {
     IActivePositionCandlestick,
     IPositionActionKind,
     IPositionActionRecord,
+    IPositionCandlestick,
     IPositionCandlestickRecord,
+    IPositionExitStrategy,
+    IPositionGainState,
     IPositionHeadline,
     IPositionModel,
     IPositionRecord,
@@ -39,7 +43,7 @@ export class PositionService implements IPositionService {
     @inject(SYMBOLS.PositionValidations)        private _validations: IPositionValidations;
     @inject(SYMBOLS.PositionModel)              private _model: IPositionModel;
     @inject(SYMBOLS.SignalService)              private _signal: ISignalService;
-    @inject(SYMBOLS.CoinsService)              private _coin: ICoinsService;
+    @inject(SYMBOLS.CoinsService)               private _coin: ICoinsService;
     @inject(SYMBOLS.NotificationService)        private _notification: INotificationService;
     @inject(SYMBOLS.ApiErrorService)            private _apiError: IApiErrorService;
     @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
@@ -151,7 +155,7 @@ export class PositionService implements IPositionService {
                 try { await this.onNewSignal(s) } 
                 catch (e) {
                     console.log(e);
-                    this._apiError.log("PositionService.signalSub.@TODO", e);
+                    this._apiError.log("PositionService.signalSub.onNewSignal", e);
                     this._notification.onNewSignalError(e);
                 }
             }
@@ -226,25 +230,28 @@ export class PositionService implements IPositionService {
         // Calculate the number of active positions
         const activeNum: number = Object.keys(this.active).length + this.queuedPositions;
 
-        // Only proceed if position slots are available
-        if (activeNum < this.strategy.positions_limit) {
+        // Only proceed if position slots are available and the trading strategy allows it
+        if (
+            activeNum < this.strategy.positions_limit &&
+            ((signal.r == 1 && this.strategy.long_status) || (signal.r == -1 && this.strategy.short_status))
+        ) {
             // Calculate the number of positions that can be opened
             const availableSlots: number = this.strategy.positions_limit - activeNum;
 
-            // Handle a Long Signal
-            if (
-                signal.r == 1 &&
-                this.strategy.long_status
-            ) {
+            // Init the list of tradeable symbols
+            const tradeableSymbols: string[] = signal.s.filter((s) => !this.active[s]).slice(0, availableSlots);
 
-            }
+            // Ensure there are tradeable symbols before proceeding
+            if (tradeableSymbols.length) {
+                // Increment the queued positions
+                this.queuedPositions += tradeableSymbols.length;
 
-            // Handle a Short Signal
-            else if (
-                signal.r == -1 &&
-                this.strategy.short_status
-            ) {
-
+                // Execute the position opening for all the tradeable symbols
+                await Promise.all(
+                    tradeableSymbols.map(
+                        (symbol) => this.openPositionFactory(signal.r == 1 ? "LONG": "SHORT", symbol)()
+                    )
+                );
             }
         }
     }
@@ -269,9 +276,9 @@ export class PositionService implements IPositionService {
 
 
 
-    /******************************
-     * Active Position Management *
-     ******************************/
+    /*******************************
+     * Active Positions Management *
+     *******************************/
 
 
 
@@ -284,15 +291,223 @@ export class PositionService implements IPositionService {
      * @returns Promise<void>
      */
     private async refreshActivePositions(): Promise<void> {
+        // Init the list of errors
+        let errors: string[] = [];
+
         // Retrieve the position
-        const position: IBinanceActivePosition[] = await this._binance.getActivePositions();
+        const positions: IBinanceActivePosition[] = await this._binance.getActivePositions();
 
-        // ...
-        
+        // Init the position event lists
+        let newPositions: IBinanceActivePosition[] = [];
+        let changedPositions: IBinanceActivePosition[] = [];
+        let activeSymbols: string[] = [];
 
+        // Iterate over each position and populate the lists accordingly
+        for (let pos of positions) {
+            // Check if it is a position change event
+            if (this.active[pos.symbol]) { changedPositions.push(pos) }
+
+            // Check if it is a new position event
+            else if (!this.active[pos.symbol]) { newPositions.push(pos) }
+
+            // Add the symbol to the active list
+            activeSymbols.push(pos.symbol);
+        }
+
+        // Trigger the position changes event (if any)
+        if (changedPositions.length) {
+            try {
+                await Promise.all(changedPositions.map((pos) => this.onPositionChangesFactory(pos)()));
+            } catch (e) {
+                console.log(e);
+                errors.push(this._utils.getErrorMessage(e));
+            }
+        }
+
+        // Trigger the new position event (if any)
+        if (newPositions.length) {
+            try {
+                await Promise.all(newPositions.map((pos) => this.onNewPositionFactory(pos)()));
+            } catch (e) {
+                console.log(e);
+                errors.push(this._utils.getErrorMessage(e));
+            }
+        }
+
+        // Trigger the position closed event if applies
+        const closedPositionSymbols: string[] = Object.keys(this.active).filter(x => !activeSymbols.includes(x));
+        if (closedPositionSymbols.length) {
+            try {
+                await Promise.all(closedPositionSymbols.map((symbol) => this.onPositionCloseFactory(symbol)()));
+            } catch (e) {
+                console.log(e);
+                errors.push(this._utils.getErrorMessage(e));
+            }
+        }
 
         // Reset the queued positions
         this.queuedPositions = 0;
+
+        // Re-throw the errors (if any)
+        if (errors.length) { throw new Error(errors.join(" | ")) }
+    }
+
+
+
+
+
+
+
+    /* On New Position Event */
+
+
+    /**
+     * When a new position is detected, the following actions are performed:
+     * 1) The full position record is built.
+     * 2) The system attempts to create the stop-loss order.
+     * 3) The candlestick history is initialized.
+     * 4) Notifies the users about the position.
+     * 5) Ensures the leverage and margin type are correct. Otherwise, it
+     * notifies users
+     * @param pos 
+     * @returns Promise<void>
+     */
+    private onNewPositionFactory(pos: IBinanceActivePosition): () => Promise<void> {
+        return () => this.onNewPosition(pos);
+    }
+    private async onNewPosition(pos: IBinanceActivePosition): Promise<void> {
+        // Build the position record
+        this.active[pos.symbol] = this.buildNewPositionRecord(pos);
+
+        // Initialize the active candlestick
+        this.activeCandlestick[pos.symbol] = this.buildNewActiveCandlestick(
+            this.active[pos.symbol].open,
+            this.active[pos.symbol].mark_price,
+            this.active[pos.symbol].gain,
+            this.active[pos.symbol].gain_drawdown
+        );
+
+        // Attempt to create the stop-loss order @TODO
+        try {
+            this.active[pos.symbol].stop_loss_order = await this.createStopMarketOrder(
+                pos.symbol,
+                this.active[pos.symbol].side,
+                Math.abs(this.active[pos.symbol].position_amount),
+                this.active[pos.symbol].stop_loss_price
+            );
+        } catch (e) {
+            console.log(e);
+            this._apiError.log("PositionService.onNewPosition.createStopMarketOrder", e);
+        }
+
+        // Notify users if the leverage is missconfigured
+        if (this.active[pos.symbol].leverage != this.strategy.leverage) {
+            this._notification.positionHasBeenOpenedWithInvalidLeverage(this.active[pos.symbol], this.strategy.leverage);
+        }
+
+        // Notify users if the margin type is missconfigured
+        if (this.active[pos.symbol].margin_type != "isolated") {
+            this._notification.positionHasBeenOpenedWithInvalidMarginType(this.active[pos.symbol], "isolated");
+        }
+
+        // Notify the users about the new position
+        this._notification.positionHasBeenOpened(this.active[pos.symbol]);
+    }
+
+
+
+
+
+
+    /**
+     * Builds a Position Record for a brand new position.
+     * @param pos 
+     * @returns IPositionRecord
+     */
+    private buildNewPositionRecord(pos: IBinanceActivePosition): IPositionRecord {
+        // Retrieve the coin
+        const coin: ICoin = this._coin.getInstalledCoin(pos.symbol);
+
+        // Initialize the position amount
+        const positionAmount: number = <number>this._utils.outputNumber(pos.positionAmt, { dp: coin.quantityPrecision });
+
+        // Initialize the side of the position
+        const side: IBinancePositionSide = positionAmount > 0 ? "LONG": "SHORT";
+
+        // Initialize the entry price and put the exit prices strategy together
+        const entryPrice: number = <number>this._utils.outputNumber(pos.entryPrice, {dp: coin.pricePrecision});
+        const exit: IPositionExitStrategy = this.calculatePositionExitStrategy(side, entryPrice, coin.pricePrecision);
+
+        // Finally, return the build
+        return {
+            // General Data
+            id: this._utils.generateID(),
+            open: Date.now(),
+            close: undefined,
+            coin: coin,
+            side: side,
+            leverage: Number(pos.leverage),
+            margin_type: pos.marginType,
+            mark_price: <number>this._utils.outputNumber(pos.markPrice, {dp: coin.pricePrecision}),
+            entry_price: entryPrice,
+            liquidation_price: <number>this._utils.outputNumber(pos.liquidationPrice, {dp: coin.pricePrecision}),
+            unrealized_pnl: <number>this._utils.outputNumber(pos.unRealizedProfit),
+            isolated_wallet: <number>this._utils.outputNumber(pos.isolatedWallet),
+            isolated_margin: <number>this._utils.outputNumber(pos.isolatedMargin),
+            position_amount: positionAmount,
+            notional: <number>this._utils.outputNumber(pos.notional),
+
+            // Exit Strategy Data
+            take_profit_price_1: exit.take_profit_price_1,
+            take_profit_price_2: exit.take_profit_price_2,
+            take_profit_price_3: exit.take_profit_price_3,
+            stop_loss_price: exit.stop_loss_price,
+            stop_loss_order: undefined,
+
+            // Gain Data
+            gain: 0,
+            highest_gain: 0,
+            gain_drawdown: 0,
+
+            // History
+            history: []
+        }
+    }
+
+
+
+
+    /**
+     * Calculates the exit strategy prices for a position based on
+     * its side and the entry.
+     * @param side 
+     * @param entryPrice 
+     * @param pricePrecision 
+     * @returns IPositionExitStrategy
+     */
+    private calculatePositionExitStrategy(side: IBinancePositionSide, entryPrice: number, pricePrecision: number): IPositionExitStrategy {
+        return {
+            take_profit_price_1: <number>this._utils.alterNumberByPercentage(
+                entryPrice, 
+                side == "LONG" ? this.strategy.take_profit_1.price_change_requirement: -(this.strategy.take_profit_1.price_change_requirement),
+                { dp: pricePrecision }
+            ),
+            take_profit_price_2: <number>this._utils.alterNumberByPercentage(
+                entryPrice, 
+                side == "LONG" ? this.strategy.take_profit_2.price_change_requirement: -(this.strategy.take_profit_2.price_change_requirement),
+                { dp: pricePrecision }
+            ),
+            take_profit_price_3: <number>this._utils.alterNumberByPercentage(
+                entryPrice, 
+                side == "LONG" ? this.strategy.take_profit_3.price_change_requirement: -(this.strategy.take_profit_3.price_change_requirement),
+                { dp: pricePrecision }
+            ),
+            stop_loss_price: <number>this._utils.alterNumberByPercentage(
+                entryPrice, 
+                side == "LONG" ? -(this.strategy.stop_loss): this.strategy.stop_loss,
+                { dp: pricePrecision }
+            )
+        }
     }
 
 
@@ -307,7 +522,241 @@ export class PositionService implements IPositionService {
 
 
 
-    /* Position Candlestick Helpers */
+    /* On Position Changes Event */
+
+
+    /**
+     * Updates a position with the latest data and performs the following:
+     * 1) Updates all the mutable properties.
+     * 2) Checks if the position has a stop loss order. If not, it attemps to create it.
+     * 3) Checks if the position is in a state to claim profits. If so, it closes it.
+     * 4) Checks if the position is in a state to take losses. If the stop loss order
+     * has not yet triggered, it will be manually closed.
+     * @param pos 
+     * @returns Promise<void>
+     */
+    private onPositionChangesFactory(pos: IBinanceActivePosition): () => Promise<void> {
+        return () => this.onPositionChanges(pos);
+    }
+    private async onPositionChanges(pos: IBinanceActivePosition): Promise<void> {
+        // Initialize the Mark Price
+        const markPrice: number = <number>this._utils.outputNumber(pos.markPrice, {dp: this.active[pos.symbol].coin.pricePrecision});
+
+        /* Update Position Data */
+
+        // Update general data
+        this.active[pos.symbol].mark_price = markPrice;
+        this.active[pos.symbol].liquidation_price = <number>this._utils.outputNumber(pos.liquidationPrice, {dp: this.active[pos.symbol].coin.pricePrecision});
+        this.active[pos.symbol].unrealized_pnl = <number>this._utils.outputNumber(pos.unRealizedProfit);
+        this.active[pos.symbol].isolated_wallet = <number>this._utils.outputNumber(pos.isolatedWallet);
+        this.active[pos.symbol].isolated_margin = <number>this._utils.outputNumber(pos.isolatedMargin);
+        this.active[pos.symbol].position_amount = <number>this._utils.outputNumber(pos.positionAmt, { dp: this.active[pos.symbol].coin.quantityPrecision });
+        this.active[pos.symbol].notional = <number>this._utils.outputNumber(pos.notional);
+
+        // Update gain data
+        const gs: IPositionGainState = this.calculateGainState(
+            this.active[pos.symbol].side,
+            this.active[pos.symbol].entry_price,
+            this.active[pos.symbol].mark_price,
+            this.active[pos.symbol].highest_gain
+        );
+        this.active[pos.symbol].gain = gs.gain;
+        this.active[pos.symbol].highest_gain = gs.highest_gain;
+        this.active[pos.symbol].gain_drawdown = gs.gain_drawdown;
+
+        // Update history data
+        const current_ts: number = Date.now();
+        this.activeCandlestick[pos.symbol].markPrice = this.buildUpdatedCandlestickItem(markPrice, this.activeCandlestick[pos.symbol].markPrice);
+        this.activeCandlestick[pos.symbol].gain = this.buildUpdatedCandlestickItem(gs.gain, this.activeCandlestick[pos.symbol].gain);
+        this.activeCandlestick[pos.symbol].gainDrawdown = this.buildUpdatedCandlestickItem(gs.gain_drawdown, this.activeCandlestick[pos.symbol].gainDrawdown);
+        if (current_ts >= this.activeCandlestick[pos.symbol].ct) {
+            this.active[pos.symbol].history.push(this.buildCandlestickRecord(this.activeCandlestick[pos.symbol]));
+            delete this.activeCandlestick[pos.symbol];
+            this.activeCandlestick[pos.symbol] = this.buildNewActiveCandlestick(current_ts, markPrice, gs.gain, gs.gain_drawdown);
+        }
+
+        /* Check if the position should be closed */
+        
+        // If the stop loss has been hit, close the position
+        if (
+            (this.active[pos.symbol].side == "LONG" && markPrice <= this.active[pos.symbol].stop_loss_price) ||
+            (this.active[pos.symbol].side == "SHORT" && markPrice >= this.active[pos.symbol].stop_loss_price)
+        ) {
+            await this.closePosition(pos.symbol);
+        }
+
+        // If the first take profit level has been broken, close the position
+        else if (
+            gs.gain < this.strategy.take_profit_1.price_change_requirement && 
+            gs.highest_gain >= this.strategy.take_profit_1.price_change_requirement
+        ) {
+            await this.closePosition(pos.symbol);
+        }
+
+        // If the take profit level's gain drawdown% limit has been exceeded, close the position
+        else if (gs.gain_drawdown <= this.calculateMaxGainDrawdown(gs.gain)) {
+            await this.closePosition(pos.symbol);
+        }
+    }
+
+
+
+
+
+
+    /**
+     * Calculates the gain state of a given position.
+     * @param side 
+     * @param entryPrice 
+     * @param markPrice 
+     * @param highestGain 
+     * @returns IPositionGainState
+     */
+    private calculateGainState(
+        side: IBinancePositionSide, 
+        entryPrice: number,
+        markPrice: number,
+        highestGain: number,
+    ): IPositionGainState {
+        // Init values
+        let gain: number = 0;
+        let highest_gain: number = highestGain;
+        let gain_drawdown: number = 0;
+
+        // Calculate the current gain based on a long position
+        if (side == "LONG") {
+            gain = <number>this._utils.calculatePercentageChange(entryPrice, markPrice);
+        }
+
+        // Calculate the gain based on a short position
+        else {
+            gain = <number>this._utils.calculatePercentageChange(markPrice, entryPrice);
+        }
+
+        // Check if the position is currently in profit
+        if (gain > 0) {
+            // Check if the gain is the highest yet
+            highest_gain = gain > highest_gain ? gain: highest_gain;
+
+            // If any of the take profit levels is active, calculate the gain drawdown
+            if (gain >= this.strategy.take_profit_1.price_change_requirement) {
+                gain_drawdown = <number>this._utils.calculatePercentageChange(highest_gain, gain);
+            }
+        }
+
+        // Finally, return the state
+        return { gain: gain, highest_gain: highest_gain, gain_drawdown: gain_drawdown }
+    }
+
+
+
+
+
+
+    /**
+     * Updates a partial candlestick item with the new data
+     * @param currentValue 
+     * @param item 
+     * @returns Partial<IPositionCandlestick>
+     */
+    private buildUpdatedCandlestickItem(currentValue: number, item: Partial<IPositionCandlestick>): Partial<IPositionCandlestick> {
+        return {
+            o: item.o,
+            h: currentValue > item.h ? currentValue: item.h,
+            l: currentValue < item.l ? currentValue: item.l,
+            c: currentValue
+        }
+    }
+
+
+
+
+
+
+    /**
+     * Calculates the gain drawdown% limit based on the position's gain.
+     * @param gain 
+     * @returns number
+     */
+    private calculateMaxGainDrawdown(gain: number): number {
+        // Level 1
+        if (
+            gain >= this.strategy.take_profit_1.price_change_requirement && gain < this.strategy.take_profit_2.price_change_requirement
+        ) {
+            return this.strategy.take_profit_1.max_gain_drawdown;
+        }
+
+        // Level 2
+        else if (
+            gain >= this.strategy.take_profit_2.price_change_requirement && gain < this.strategy.take_profit_3.price_change_requirement
+        ) {
+            return this.strategy.take_profit_2.max_gain_drawdown;
+        }
+
+        // Level 3
+        else if (gain >= this.strategy.take_profit_3.price_change_requirement) {
+            return this.strategy.take_profit_3.max_gain_drawdown;
+        }
+
+        // No level is active
+        else { return -100 }
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /* On Position Close Event */
+
+
+    /**
+     * When the system detects a position has been closed, it does the following:
+     * 1) Adds the active candlestick to the record and saves it as well as the
+     * headline.
+     * 2) Notifies the users providing basic information regarding the outcome.
+     * 3) Unsets the position in the local properties.
+     * @param symbol 
+     * @returns Promise<void>
+     */
+    private onPositionCloseFactory(symbol: string): () => Promise<void> {
+        return () => this.onPositionClose(symbol);
+    }
+    private async onPositionClose(symbol: string): Promise<void> {
+        // Firstly, set the close time on the record
+        this.active[symbol].close = Date.now();
+
+        // Add the active candlestick to the history
+        this.active[symbol].history.push(this.buildCandlestickRecord(this.activeCandlestick[symbol]));
+
+        // Store the position the db
+        await this._model.savePosition(this.active[symbol]);
+
+        // Notify the users
+        this._notification.positionHasBeenClosed(this.active[symbol]);
+
+        // Finally, clean the position from the local properties
+        delete this.active[symbol];
+        delete this.activeCandlestick[symbol];
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    /* Position Management Helpers */
 
 
 
@@ -411,7 +860,7 @@ export class PositionService implements IPositionService {
                 sd: position.side,
                 g: position.gain,
                 gd: position.gain_drawdown,
-                slo: position.stop_loss_order && typeof position.stop_loss_order == "object"
+                slo: position.stop_loss_order && typeof position.stop_loss_order == "object" ? true: false
             };
         });
     }
@@ -441,15 +890,15 @@ export class PositionService implements IPositionService {
         // If the position is active, add the current candlestick to the history
         if (record) {
             // Clone the record prior to adding the candlestick
-            record = Object.assign({}, record);
-            record.history.push(this.buildCandlestickRecord(this.activeCandlestick[record.coin.symbol]));
+            let localRecord: IPositionRecord = JSON.parse(JSON.stringify(record));
+            localRecord.history.push(this.buildCandlestickRecord(this.activeCandlestick[record.coin.symbol]));
+            return localRecord;
         }
 
         // If no record was found, retrieve it from the database
-        else { record = await this._model.getPositionRecord(id) }
-
-        // Finally, return the record
-        return record;
+        else { 
+            return await this._model.getPositionRecord(id) 
+        }
     }
 
 
@@ -530,6 +979,9 @@ export class PositionService implements IPositionService {
      * @param symbol 
      * @returns Promise<void>
      */
+    private openPositionFactory(side: IBinancePositionSide, symbol: string): () => Promise<void> {
+        return () => this.openPosition(side, symbol);
+    }
     private async openPosition(side: IBinancePositionSide, symbol: string): Promise<void> {
         // Firstly, retrieve the coin and the price
         const { coin, price } = this._coin.getInstalledCoinAndPrice(symbol);
@@ -544,7 +996,6 @@ export class PositionService implements IPositionService {
         const payload: IBinanceTradeExecutionPayload|undefined = await this._binance.order(
             symbol,
             side == "LONG" ? "BUY": "SELL",
-            side,
             amount
         );
 
@@ -575,9 +1026,8 @@ export class PositionService implements IPositionService {
         // Execute the trade
         const payload: IBinanceTradeExecutionPayload|undefined = await this._binance.order(
             symbol,
-            this.active[symbol].side == "LONG" ? "BUY": "SELL",
-            this.active[symbol].side,
-            this.active[symbol].position_amount
+            this.active[symbol].side == "LONG" ? "SELL": "BUY",
+            Math.abs(this.active[symbol].position_amount)
         );
 
         // Do something with the payload if provided @TODO
@@ -590,6 +1040,44 @@ export class PositionService implements IPositionService {
 
 
 
+
+
+    /**
+     * Attempts to create a STOP_MARKET order for a given symbol. Once it 
+     * completes, it returns the execution payload if returned by Binance.
+     * @param symbol 
+     * @param side 
+     * @param quantity 
+     * @param stopPrice 
+     * @returns Promise<IBinanceTradeExecutionPayload|undefined>
+     */
+    private async createStopMarketOrder(
+        symbol: string, 
+        side: IBinancePositionSide, 
+        quantity: number,
+        stopPrice: number
+    ): Promise<IBinanceTradeExecutionPayload|undefined> {
+        // Derive the action side from the position side
+        let actionSide: IBinancePositionActionSide = side == "LONG" ? "SELL": "BUY";
+
+        // Attempt to create the stop loss order in a persistant way
+        try { return await this._binance.order(symbol, actionSide, quantity, stopPrice) }
+        catch (e) {
+            console.log(`1/3 ) Error when creating STOP_MARKET order for ${symbol}: `, e);
+            await this._utils.asyncDelay(3);
+            try { return await this._binance.order(symbol, actionSide, quantity, stopPrice) }
+            catch (e) {
+                console.log(`2/3 ) Error when creating STOP_MARKET order for ${symbol}: `, e);
+                await this._utils.asyncDelay(5);
+                try { return await this._binance.order(symbol, actionSide, quantity, stopPrice) }
+                catch (e) {
+                    console.log(`3/3 ) Error when creating STOP_MARKET order for ${symbol}: `, e);
+                    await this._utils.asyncDelay(7);
+                    return await this._binance.order(symbol, actionSide, quantity, stopPrice);
+                }
+            }
+        }
+    }
 
 
 

@@ -312,6 +312,20 @@ export class UtilitiesService implements IUtilitiesService {
 
 
 
+    
+
+    /**
+     * Converts a numeric value into a readable string format.
+     * @param value 
+     * @param dp? 
+     * @returns string
+     */
+    public formatNumber(value: number, dp?: number): string {
+        return new BigNumber(value).toFormat(typeof dp == "number" ? dp: 2);
+    }
+
+
+
 
 
 

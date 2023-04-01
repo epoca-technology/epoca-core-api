@@ -68,7 +68,7 @@ export class PositionModel implements IPositionModel {
             });
 
             // Save the position headline
-            const slo: boolean = position.stop_loss_order && typeof position.stop_loss_order == "object";
+            const slo: string = position.stop_loss_order && typeof position.stop_loss_order == "object" ? "true": "false";
             await client.query({
                 text: `
                     INSERT INTO ${this._db.tn.position_headlines}(id, o, s, sd, g, gd, slo) 

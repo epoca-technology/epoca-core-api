@@ -17,6 +17,7 @@ export interface IUtilitiesService {
     closeEnough(val1: INumber, val2: INumber, maxDifference: number): boolean,
     outputNumber(value: INumber, config?: INumberConfig): INumber,
     getBigNumber(value: INumber): BigNumber,
+    formatNumber(value: number, dp?: number): string,
 
     // UUID (Universally Unique IDentifier)
     generateID(): string,

@@ -1,4 +1,6 @@
+import { IBinanceMarginType } from "../binance";
 import { IStateType } from "../market-state";
+import { IPositionRecord } from "../position";
 
 
 // Service
@@ -39,6 +41,10 @@ export interface INotificationService {
     // Position Notifications
     onNewSignalError(error: any): Promise<void>,
     onRefreshActivePositionsError(msg: string): Promise<void>,
+    positionHasBeenOpened(pos: IPositionRecord): Promise<void>,
+    positionHasBeenOpenedWithInvalidLeverage(pos: IPositionRecord, correctLeverage: number): Promise<void>,
+    positionHasBeenOpenedWithInvalidMarginType(pos: IPositionRecord, correctMarginType: IBinanceMarginType): Promise<void>,
+    positionHasBeenClosed(pos: IPositionRecord): Promise<void>,
 }
 
 

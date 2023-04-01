@@ -7,6 +7,8 @@ import { IAuthService } from "../auth";
 import { IApiErrorService } from "../api-error";
 import { IStateType } from "../market-state";
 import { INotificationService, INotification, INotificationChannel } from "./interfaces";
+import { IPositionRecord } from "../position";
+import { IBinanceMarginType } from "../binance";
 
 
 
@@ -615,6 +617,104 @@ export class NotificationService implements INotificationService {
             sender: "POSITION",
             title: "PositionService.refreshActivePositions:",
             description: msg
+        });
+    }
+
+
+
+
+
+
+
+
+    /**
+     * This function is invoked whenever a position is opened.
+     * @param pos 
+     * @returns Promise<void>
+     */
+    public positionHasBeenOpened(pos: IPositionRecord): Promise<void> {
+        let desc: string = `The ${pos.side} position has been opened `;
+        desc += `at ${this._utils.formatNumber(pos.entry_price, pos.coin.pricePrecision)}$ `;
+        desc += `with a margin of $${this._utils.formatNumber(pos.isolated_margin)}, totaling `;
+        desc += `${this._utils.formatNumber(pos.position_amount, pos.coin.quantityPrecision)} ${pos.coin.symbol}.`;
+        return this.broadcast({
+            sender: "POSITION",
+            title: `${pos.coin.symbol} ${pos.side} Opened:`,
+            description: desc
+        });
+    }
+
+
+
+
+
+
+    /**
+     * This function is invoked whenever a position is opened with an 
+     * invalid leverage
+     * @param pos 
+     * @param correctLeverage 
+     * @returns Promise<void>
+     */
+    public positionHasBeenOpenedWithInvalidLeverage(pos: IPositionRecord, correctLeverage: number): Promise<void> {
+        let desc: string = `Warning! The ${pos.coin.symbol} position has been opened `;
+        desc += `with a levereage of x${pos.leverage}, different to the one set on the `;
+        desc += `Trading Strategy (x${correctLeverage}). Please close this position `;
+        desc += `as soon as possible to avoid loss of funds as the behaviour of this `;
+        desc += `missconfiguration may be unexpected.`;
+        return this.broadcast({
+            sender: "POSITION",
+            title: `${pos.coin.symbol} INVALID LEVERAGE:`,
+            description: desc
+        });
+    }
+
+
+
+
+
+
+
+
+    /**
+     * This function is invoked whenever a position is opened with an 
+     * invalid margin type
+     * @param pos 
+     * @param correctMarginType 
+     * @returns Promise<void>
+     */
+    public positionHasBeenOpenedWithInvalidMarginType(pos: IPositionRecord, correctMarginType: IBinanceMarginType): Promise<void> {
+        let desc: string = `Warning! The ${pos.coin.symbol} position has been opened `;
+        desc += `with the margin type set to ${pos.margin_type}, different to the one supported `;
+        desc += `by Epoca (${correctMarginType}). Please close this position `;
+        desc += `as soon as possible to avoid loss of funds as the behaviour of this `;
+        desc += `missconfiguration may be unexpected.`;
+        return this.broadcast({
+            sender: "POSITION",
+            title: `${pos.coin.symbol} INVALID MARGIN TYPE:`,
+            description: desc
+        });
+    }
+
+
+
+
+
+
+    /**
+     * This function is invoked whenever a position is closed.
+     * @param pos 
+     * @returns Promise<void>
+     */
+    public positionHasBeenClosed(pos: IPositionRecord): Promise<void> {
+        let desc: string = `The ${pos.side} position has been closed `;
+        desc += `at ${this._utils.formatNumber(pos.mark_price, pos.coin.pricePrecision)}$ `;
+        desc += `with a gain of ${pos.gain > 0 ? '+': ''}${pos.gain}% and a `;
+        desc += `PNL of ${pos.unrealized_pnl > 0 ? '+': ''}${this._utils.formatNumber(pos.unrealized_pnl)}$.`;
+        return this.broadcast({
+            sender: "POSITION",
+            title: `${pos.coin.symbol} ${pos.side} Closed:`,
+            description: desc
         });
     }
 }

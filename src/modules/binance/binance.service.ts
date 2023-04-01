@@ -199,27 +199,40 @@ export class BinanceService implements IBinanceService {
      * Creates, increases or closes a position.
      * @param symbol
      * @param actionSide
-     * @param positionSide
      * @param quantity
+     * @param stopPrice?
      * @returns Promise<IBinanceTradeExecutionPayload|undefined>
      */
      public async order(
         symbol: string,
         actionSide: IBinancePositionActionSide, 
-        positionSide: IBinancePositionSide, 
-        quantity: number
+        quantity: number,
+        stopPrice?: number,
     ): Promise<IBinanceTradeExecutionPayload|undefined> {
-        // Build options
-        const params: string = this.buildSignedParamsString({
+        // Init the raw parameters
+        let rawParams: {[key: string]: string|number} = {
             symbol: symbol,
             side: actionSide,
-            positionSide: positionSide,
-            type: "MARKET",
+            positionSide: "BOTH",
             quantity: quantity
-        });
+        };
+
+        // If a STOP_MARKET order is being created, adapt the params
+        if (stopPrice && typeof stopPrice == "number") {
+            rawParams.type = "STOP_MARKET";
+            rawParams.workingType = "MARK_PRICE";
+            rawParams.stopPrice = stopPrice;
+        }
+
+        // Otherwise, a position is being opened or closed
+        else {
+            rawParams.type = "MARKET";
+        }
+
+        // Build the request options
         const options: IExternalRequestOptions = {
             host: this.futuresBaseURL,
-            path: `/fapi/v1/order?${params}`,
+            path: `/fapi/v1/order?${this.buildSignedParamsString(rawParams)}`,
             method: "POST",
             headers: {
                 "Content-Type": "application/json;charset=utf-8",
