@@ -222,6 +222,8 @@ export class BinanceService implements IBinanceService {
             rawParams.type = "STOP_MARKET";
             rawParams.workingType = "MARK_PRICE";
             rawParams.stopPrice = stopPrice;
+            rawParams.reduceOnly = "true";
+            rawParams.timeInForce = "GTE_GTC";
         }
 
         // Otherwise, a position is being opened or closed
