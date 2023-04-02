@@ -581,6 +581,9 @@ export interface IKeyZoneStateEvent {
     // The KeyZone that was hit by the price
     kz: IMinifiedKeyZone,
 
+    // The time at which the event was issued
+    t: number,
+
     // The event's expiration timestamp
     e: number
 }
@@ -806,6 +809,12 @@ export interface ICoinState {
      */
     se: IStateType,
 
+    /**
+     * State Event Time
+     * The time at which the event was first issued. It is null if there is no event.
+     */
+    set: number|null,
+
     // The coin prices within the window
     w: ISplitStateSeriesItem[]
 }
@@ -818,6 +827,9 @@ export interface IMinifiedCoinState {
 
     // The state event
     se: IStateType,
+
+    // The state event time
+    set: number|null,
 }
 
 

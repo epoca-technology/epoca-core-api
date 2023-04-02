@@ -5,6 +5,7 @@ import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { 
     ICoinsState, 
+    IKeyZoneStateEvent, 
     IKeyZoneStateEventKind, 
     IMarketState, 
     IMarketStateService, 
@@ -165,10 +166,11 @@ export class SignalService implements ISignalService {
 
         // Check if there is a potential signal
         if (
-            (ds.keyzoneStateEvent == "s" || ds.keyzoneStateEvent == "r") &&
-            !this.isWindowStateCancelling(ds.keyzoneStateEvent, ds.windowState) &&
-            !this.isTrendCancelling(ds.keyzoneStateEvent, ds.trendSum, ds.trendState) &&
-            this.isKeyZoneReversalComplying(ds.keyzoneStateEvent, ds.trendSum, ds.trendState, ds.volumeState)
+            ds.keyzoneStateEvent &&
+            (ds.keyzoneStateEvent.k == "s" || ds.keyzoneStateEvent.k == "r") &&
+            !this.isWindowStateCancelling(ds.keyzoneStateEvent.k, ds.windowState) &&
+            !this.isTrendCancelling(ds.keyzoneStateEvent.k, ds.trendSum, ds.trendState) &&
+            this.isKeyZoneReversalComplying(ds.keyzoneStateEvent.k, ds.trendSum, ds.trendState, ds.volumeState)
         ) {
             // Init the time
             const ts: number = Date.now();
@@ -181,7 +183,7 @@ export class SignalService implements ISignalService {
                 // Build the signal record
                 record = {
                     t: ts,
-                    r: ds.keyzoneStateEvent == "s" ? 1: -1,
+                    r: ds.keyzoneStateEvent.k == "s" ? 1: -1,
                     s: symbols
                 };
 
@@ -441,13 +443,13 @@ export class SignalService implements ISignalService {
      * Retrieves the symbols that comply with the keyzone event
      * and the market state. It also ensures none of the symbols
      * are idle.
-     * @param kind 
+     * @param kzEvent 
      * @param coinsState 
      * @param currentTime 
      * @returns string[]
      */
     private getSignalSymbols(
-        kind: IKeyZoneStateEventKind, 
+        kzEvent: IKeyZoneStateEvent, 
         coinsState: ICoinsState, 
         currentTime: number
     ): string[] {
@@ -458,8 +460,9 @@ export class SignalService implements ISignalService {
         for (let symbol in coinsState) {
             // Check if a long should be opened for the symbol
             if (
-                kind == "s" &&
+                kzEvent.k == "s" &&
                 coinsState[symbol].se <= this.policies.long.issuance.keyzone_reversal.coin_state_event &&
+                kzEvent.t < coinsState[symbol].set &&
                 !this.isIdle(symbol, currentTime)
             ) {
                 symbols.push(symbol);
@@ -467,8 +470,9 @@ export class SignalService implements ISignalService {
 
             // Check if a short should be opened for the symbol
             else if (
-                kind == "r" &&
+                kzEvent.k == "r" &&
                 coinsState[symbol].se >= this.policies.short.issuance.keyzone_reversal.coin_state_event &&
+                kzEvent.t < coinsState[symbol].set &&
                 !this.isIdle(symbol, currentTime)
             ) {
                 symbols.push(symbol);
@@ -555,7 +559,7 @@ export class SignalService implements ISignalService {
             windowState: ms.window.s,
             volumeState: ms.volume,
             coinsState: ms.coins,
-            keyzoneStateEvent: ms.keyzones.event ? ms.keyzones.event.k: undefined
+            keyzoneStateEvent: ms.keyzones.event ? ms.keyzones.event: undefined
         }
     }
 

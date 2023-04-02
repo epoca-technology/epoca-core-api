@@ -656,7 +656,7 @@ export class CoinsService implements ICoinsService {
         let minState: ICoinsState = {};
         for (let symbol in this.installed) { 
             this.calculateCoinState(symbol);
-            minState[symbol] = { s: this.states[symbol].s, se: this.states[symbol].se }
+            minState[symbol] = { s: this.states[symbol].s, se: this.states[symbol].se, set: this.states[symbol].set }
         }
 
         // Finally, return the minified build
@@ -688,19 +688,25 @@ export class CoinsService implements ICoinsService {
              * This event has the power to open positions. Therefore, if there is one, 
              * the integrity must be verified by validating the last price update.
              * If the coin's price window is not perfectly synced, the state is replaced
-             * with "n".
+             * with 0.
              */
             let stateEvent: IStateType = this.calculateStateEvent(splitStates);
+            let stateEventTime: number|null = null;
             if (stateEvent != 0) {
+                // Make sure the price is properly synced
                 if (this.states[symbol].w.at(-1).x <= moment().subtract(this.priceIntervalSeconds + 10, "seconds").valueOf()) {
                     stateEvent = 0;
                 }
+
+                // If there is still an event and the time has not been set, do so
+                if (stateEvent != 0 && !this.states[symbol].set) stateEventTime = Date.now();
             }
 
             // Update the coin's state
             this.states[symbol].s = averageState;
             this.states[symbol].ss = splitStates;
             this.states[symbol].se = stateEvent;
+            this.states[symbol].set = stateEventTime;
         }
 
         // If the state is not in the object, initialize it
@@ -1002,6 +1008,7 @@ export class CoinsService implements ICoinsService {
                 s2: {s: 0, c: 0},
             },
             se: 0,
+            set: null,
             w: []
         }
     }

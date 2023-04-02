@@ -409,6 +409,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         return {
             k: kind,
             kz: zone,
+            t: Date.now(),
             e: moment().add(kind == "s" ? this.config.supportEventDurationSeconds: this.config.resistanceEventDurationSeconds, "seconds").valueOf()
         }
     }
