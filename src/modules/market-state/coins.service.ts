@@ -691,22 +691,22 @@ export class CoinsService implements ICoinsService {
              * with 0.
              */
             let stateEvent: IStateType = this.calculateStateEvent(splitStates);
-            let stateEventTime: number|null = null;
+            let stateEventTime: number|null = this.states[symbol].set;
             if (stateEvent != 0) {
                 // Make sure the price is properly synced
                 if (this.states[symbol].w.at(-1).x <= moment().subtract(this.priceIntervalSeconds + 10, "seconds").valueOf()) {
                     stateEvent = 0;
                 }
 
-                // If there is still an event and the time has not been set, do so
-                if (stateEvent != 0 && !this.states[symbol].set) stateEventTime = Date.now();
+                // If there is still an event and it is fresh, set the time
+                if (stateEvent != 0 && stateEvent != this.states[symbol].se) stateEventTime = Date.now();
             }
 
             // Update the coin's state
             this.states[symbol].s = averageState;
             this.states[symbol].ss = splitStates;
             this.states[symbol].se = stateEvent;
-            this.states[symbol].set = stateEventTime;
+            this.states[symbol].set = stateEvent != 0 ? stateEventTime: null;
         }
 
         // If the state is not in the object, initialize it
