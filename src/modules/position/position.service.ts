@@ -585,11 +585,8 @@ export class PositionService implements IPositionService {
             await this.closePosition(pos.symbol);
         }
 
-        // If the first take profit level has been broken, close the position
-        else if (
-            gs.gain < this.strategy.take_profit_1.price_change_requirement && 
-            gs.highest_gain >= this.strategy.take_profit_1.price_change_requirement
-        ) {
+        // If any take profit level has been broken, close the position
+        else if (this.hasBrokenTakeProfitLevel(gs.gain, gs.highest_gain)) {
             await this.closePosition(pos.symbol);
         }
 
@@ -598,6 +595,7 @@ export class PositionService implements IPositionService {
             await this.closePosition(pos.symbol);
         }
     }
+
 
 
 
@@ -654,18 +652,25 @@ export class PositionService implements IPositionService {
 
 
     /**
-     * Updates a partial candlestick item with the new data
-     * @param currentValue 
-     * @param item 
-     * @returns Partial<IPositionCandlestick>
+     * Based on the current and highest gain, it will determine if any of the
+     * take profit levels have been broken.
+     * @param currentGain 
+     * @param highestGain 
+     * @returns boolean
      */
-    private buildUpdatedCandlestickItem(currentValue: number, item: Partial<IPositionCandlestick>): Partial<IPositionCandlestick> {
-        return {
-            o: item.o,
-            h: currentValue > item.h ? currentValue: item.h,
-            l: currentValue < item.l ? currentValue: item.l,
-            c: currentValue
-        }
+    private hasBrokenTakeProfitLevel(currentGain: number, highestGain: number): boolean {
+        return (
+            currentGain < this.strategy.take_profit_1.price_change_requirement && 
+            highestGain >= this.strategy.take_profit_1.price_change_requirement
+        ) ||
+        (
+            currentGain < this.strategy.take_profit_2.price_change_requirement && 
+            highestGain >= this.strategy.take_profit_2.price_change_requirement
+        ) ||
+        (
+            currentGain < this.strategy.take_profit_3.price_change_requirement && 
+            highestGain >= this.strategy.take_profit_3.price_change_requirement
+        );
     }
 
 
@@ -705,6 +710,31 @@ export class PositionService implements IPositionService {
 
 
 
+
+
+
+
+
+
+    /**
+     * Updates a partial candlestick item with the new data
+     * @param currentValue 
+     * @param item 
+     * @returns Partial<IPositionCandlestick>
+     */
+    private buildUpdatedCandlestickItem(currentValue: number, item: Partial<IPositionCandlestick>): Partial<IPositionCandlestick> {
+        return {
+            o: item.o,
+            h: currentValue > item.h ? currentValue: item.h,
+            l: currentValue < item.l ? currentValue: item.l,
+            c: currentValue
+        }
+    }
+
+
+
+
+    
 
 
 
