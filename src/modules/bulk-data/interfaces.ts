@@ -11,6 +11,7 @@ import {
     ITrendState, 
 } from "../market-state";
 import { IPositionHeadline } from "../position";
+import { ICandlestick } from "../candlestick";
 
 
 
@@ -77,6 +78,9 @@ export interface IAppBulk {
 
     // The number of api errors in existance
     apiErrors: number,
+
+    // The minimum score requirement for a KeyZone to issue an event
+    keyzoneEventScoreRequirement: number
 }
 
 
@@ -122,18 +126,10 @@ export interface ICompressedWindowState {
     // The split states payload
     ss: ISplitStates,
     
-    // The compressed prediction candlesticks that comprise the window
-    w: ICompressedCandlesticks
+    // The current prediction candlestick
+    w: ICandlestick
 }
 
-export interface ICompressedCandlesticks {
-    ot: number[],                 // Open Times
-    ct: number[],                 // Close Times
-    o: number[],                  // Open Prices
-    h: number[],                  // High Prices
-    l: number[],                  // Low Prices
-    c: number[],                  // Close Prices
-}
 
 
 

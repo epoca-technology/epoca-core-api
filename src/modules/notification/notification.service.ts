@@ -532,6 +532,25 @@ export class NotificationService implements INotificationService {
 
 
     /**
+     * Triggers when an installed coin is crashing strongly.
+     * @param symbol
+     * @param priceChangePercent
+     * @returns Promise<void>
+     */
+    public installedCoinIsCrashing(symbol: string, priceChangePercent: number): Promise<void> {
+        return this.broadcast({
+            sender: "COIN",
+            title: `${symbol} Warning:`,
+            description: `The coin ${symbol} has decreased ${priceChangePercent}% in the past 24 hours. Please consider uninstalling this coin as soon as possible.`
+        });
+    }
+
+
+
+
+
+
+    /**
      * Triggers when the websocket broadcasts an error.
      * @param error
      * @returns Promise<void>

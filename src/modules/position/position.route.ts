@@ -343,6 +343,49 @@ PositionRoute.route("/updateStrategy").post(ultraHighRiskLimit, async (req: expr
 
 
 
+
+
+/**
+ * Refreshes the futures account balance and retrieves the updated version.
+ * @requires id-token
+ * @requires api-secret
+ * @requires otp
+ * @requires authority: 4
+ * @param newStrategy
+ * @returns IAPIResponse<IAccountBalance>
+*/
+PositionRoute.route("/refreshBalance").post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, undefined, undefined, otp || "");
+
+        // Perform Action
+        await _position.refreshBalance();
+
+        // Return the response
+        res.send(_utils.apiResponse(_position.balance));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("PositionRoute.refreshBalance", e, reqUid, ip, req.body);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+
+
 /**
  * Retrieves the account's balance in the futures wallet.
  * @requires id-token

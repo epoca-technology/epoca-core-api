@@ -632,15 +632,6 @@ export interface IKeyZoneFullState {
     // Idle KeyZones
     idle: IIdleKeyZones,
 
-    /**
-     * The mean of all the keyzone volumes used as requirements in order to calculate 
-     * the intensities
-     */
-    volume_mean: number,
-    volume_mean_low: number,
-    volume_mean_medium: number,
-    volume_mean_high: number,
-
     // The timestamp in which the build was generated
     build_ts: number
 }

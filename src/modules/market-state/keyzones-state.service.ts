@@ -69,18 +69,6 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
 
 
-
-    /**
-     * Volume Mean
-     * Once the KeyZones are built, the mean of the volumes is calculated and
-     * stored in order to be able to derive the intensity.
-     */
-    private volumeMean: number = 0;
-    private volumeMeanLow: number = 0;
-    private volumeMeanMedium: number = 0;
-    private volumeMeanHigh: number = 0;
-
-
     /**
      * Price
      * Every time the state is calculated, the current price and the snapshots
@@ -176,10 +164,6 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         if (this.buildInterval) clearInterval(this.buildInterval);
         this.buildInterval = undefined;
         this.idleKeyZones = {};
-        this.volumeMean = 0;
-        this.volumeMeanLow = 0;
-        this.volumeMeanMedium = 0;
-        this.volumeMeanHigh = 0;
     }
 
 
@@ -230,10 +214,6 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 below: this.getZonesFromPrice(this.currentPrice, false),
                 price_snapshots: this.priceSnapshots,
                 idle: this.idleKeyZones,
-                volume_mean: this.volumeMean,
-                volume_mean_low: this.volumeMeanLow,
-                volume_mean_medium: this.volumeMeanMedium,
-                volume_mean_high: this.volumeMeanHigh,
                 build_ts: this.buildTS
             };
         } 
@@ -244,8 +224,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             const event: IKeyZoneStateEvent|null = this.buildStateEvent(windowSplitStates);
 
             // Init the state zones
-            const above: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, true, this.config.stateLimit);
-            const below: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, false, this.config.stateLimit);
+            const { above, below } = this.getStateKeyZonesFromCurrentPrice();
 
             // Retrieve the liquidity state
             const liq: ILiquidityState = this._liquidity.calculateState(this.currentPrice);
@@ -260,6 +239,80 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             return <IKeyZoneState>this.state;
         }
     }
+
+
+
+
+
+
+    /**
+     * Retrieves all the state KeyZones and calculates their volume 
+     * intensity.
+     * @returns {above: IKeyZone[], below: IKeyZone[]}
+     */
+    private getStateKeyZonesFromCurrentPrice(): {above: IKeyZone[], below: IKeyZone[]} {
+        // Init the zones
+        let above: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, true, this.config.stateLimit);
+        let below: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, false, this.config.stateLimit);
+
+        // Iterate over each zone and calculate the required volume values
+        let volSum: number = 0;
+        let volLow: number = 0;
+        let volHigh: number = 0;
+        for (let zone of above.concat(below)) {
+            volSum += zone.vm;
+            volLow = volLow == 0 || zone.vm < volLow ? zone.vm: volLow;
+            volHigh = zone.vm > volHigh ? zone.vm: volHigh;
+        }
+
+        // Calculate the requirements
+        const volMean: number = volSum  / (above.length + below.length);
+        const lowRequirement: number = <number>this._utils.calculateAverage([volMean, volLow]);
+        const mediumRequirement: number = <number>this._utils.calculateAverage([volMean, lowRequirement]);
+        const highRequirement: number = <number>this._utils.calculateAverage([volMean, volHigh]);
+        const veryHighRequirement: number = <number>this._utils.calculateAverage([highRequirement, volHigh]);
+        
+        // Iterate over each KeyZone above and calculate the volume intensity
+        for (let i = 0; i < above.length; i++) {
+            above[i].vi = this.calculateVolumeIntensity(above[i].vm, lowRequirement, mediumRequirement, highRequirement, veryHighRequirement);
+        }
+        
+        // Iterate over each KeyZone below and calculate the volume intensity
+        for (let i = 0; i < below.length; i++) {
+            below[i].vi = this.calculateVolumeIntensity(below[i].vm, lowRequirement, mediumRequirement, highRequirement, veryHighRequirement);
+        }
+
+        // Finally, return the build
+        return { above: above, below: below};
+    }
+
+
+
+
+
+
+
+    /**
+     * Calculates the volume intensity for a KeyZone based on the volume
+     * recorded in it.
+     * @param vol 
+     * @param low 
+     * @param medium 
+     * @param high 
+     * @param veryHigh 
+     * @returns IKeyZoneVolumeIntensity
+     */
+    private calculateVolumeIntensity(vol: number, low: number, medium: number, high: number, veryHigh: number): IKeyZoneVolumeIntensity {
+        if      (vol >= veryHigh)   { return 4 }
+        else if (vol >= high)       { return 3 }
+        else if (vol >= medium)     { return 2 }
+        else if (vol >= low)        { return 1 }
+        else                        { return 0 }
+    }
+
+
+
+
 
 
 
@@ -810,8 +863,10 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         // Merge the nearby zones
         this.mergeNearbyTempZones();
 
-        // Calculate the KeyZone Volumes
-        this.calculateKeyZoneVolumes();
+        // Iterate over each zone and calculate the volume mean based on all the reversals within
+        for (let i = 0; i < this.zones.length; i++) {
+            this.zones[i].vm = <number>this._utils.calculateAverage(this.zones[i].r.map(r => r.v));
+        }
 
         // Clean up the idle object
         for (let idleZoneID in this.idleKeyZones) {
@@ -1027,7 +1082,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * Once the KeyZones have been built and merged, the mean of the volumes 
      * are calculated and an intensity (0|1|2) is assigned to each zone.
      */
-    private calculateKeyZoneVolumes(): void {
+    /*private calculateKeyZoneVolumes(): void {
         if (this.zones.length > 0) {
             // Init values
             let volMeanAccum: number = 0;
@@ -1071,7 +1126,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 this.zones[i].vi = intensity;
             }
         }
-    }
+    }*/
 
 
 
@@ -1289,10 +1344,10 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             },
             stateLimit: 10,
             priceSnapshotsLimit: 5, // ~15 seconds worth
-            supportEventDurationSeconds: 60,
-            resistanceEventDurationSeconds: 60,
-            keyzoneIdleOnEventMinutes: 60,
-            eventScoreRequirement: 5
+            supportEventDurationSeconds: 180,
+            resistanceEventDurationSeconds: 180,
+            keyzoneIdleOnEventMinutes: 90,
+            eventScoreRequirement: 6
         }
     }
 }

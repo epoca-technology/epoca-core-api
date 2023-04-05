@@ -661,15 +661,15 @@ export class PositionService implements IPositionService {
     private hasBrokenTakeProfitLevel(currentGain: number, highestGain: number): boolean {
         return (
             currentGain < this.strategy.take_profit_1.price_change_requirement && 
-            highestGain >= this.strategy.take_profit_1.price_change_requirement
+            highestGain >= (this.strategy.take_profit_1.price_change_requirement + 0.025)
         ) ||
         (
             currentGain < this.strategy.take_profit_2.price_change_requirement && 
-            highestGain >= this.strategy.take_profit_2.price_change_requirement
+            highestGain >= (this.strategy.take_profit_2.price_change_requirement + 0.025)
         ) ||
         (
             currentGain < this.strategy.take_profit_3.price_change_requirement && 
-            highestGain >= this.strategy.take_profit_3.price_change_requirement
+            highestGain >= (this.strategy.take_profit_3.price_change_requirement + 0.025)
         );
     }
 

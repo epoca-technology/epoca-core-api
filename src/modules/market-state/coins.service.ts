@@ -59,7 +59,7 @@ export class CoinsService implements ICoinsService {
      * users will be notified.
      */
     private supportedCoinsInterval: any;
-    private readonly supportedCoinsIntervalHours: number = 8;
+    private readonly supportedCoinsIntervalHours: number = 3;
 
 
 
@@ -521,6 +521,7 @@ export class CoinsService implements ICoinsService {
             // Init the list of supported tickers
             let supported: {symbol: string, vol: number}[] = [];
             let volAccum: number = 0;
+            let priceChangePercentBySymbol: {[symbol: string]: number} = {};
             for (let ticker of tickers) {
                 // Ensure the ticker is marked as supported
                 if (this.supported[ticker.symbol]) {
@@ -530,6 +531,9 @@ export class CoinsService implements ICoinsService {
 
                     // Add the volume to the accumulator
                     volAccum += vol;
+
+                    // Add the price change percent to the dict
+                    priceChangePercentBySymbol[ticker.symbol] = Number(ticker.priceChangePercent);
                 }
             }
 
@@ -552,6 +556,11 @@ export class CoinsService implements ICoinsService {
                     // If the symbol is installed and the score is not good, notify users
                     if (this.installed[ticker.symbol] && score <= 2) {
                         await this._notification.installedLowScoreCoin(ticker.symbol);
+                    }
+
+                    // If the symbol is installed and the price has decreased 20%, notify users
+                    if (this.installed[ticker.symbol] && priceChangePercentBySymbol[ticker.symbol] <= -20) {
+                        await this._notification.installedCoinIsCrashing(ticker.symbol, priceChangePercentBySymbol[ticker.symbol]);
                     }
                 }
             }
@@ -729,57 +738,33 @@ export class CoinsService implements ICoinsService {
         // Init the state
         let stateEvent: IStateType = 0;
 
-        /* Support Reversal */
-
-        // Check if a strong support reversal took place
-        if (
-            splitStates.s100.s <= -2 &&
-            splitStates.s75.s <= -2 &&
-            splitStates.s50.s <= -2 &&
-            splitStates.s25.s <= -2 &&
-            splitStates.s15.s <= -2 &&
-            splitStates.s10.s <= -2 &&
-            splitStates.s5.s >= 1 &&
-            splitStates.s2.s >= 1
-        ) { stateEvent = -2 }
-
         // Check if a support reversal took place
-        else if (
+        if (
             splitStates.s100.s <= -1 &&
             splitStates.s75.s <= -1 &&
             splitStates.s50.s <= -1 &&
             splitStates.s25.s <= -1 &&
-            splitStates.s15.s <= -1 &&
-            splitStates.s10.s <= -1 &&
+            splitStates.s15.s <= 0 &&
+            splitStates.s10.s >= 0 &&
             splitStates.s5.s >= 1 &&
             splitStates.s2.s >= 1
-        ) { stateEvent = -1 }
+        ) { 
+            stateEvent = splitStates.s2.s >= 2 || splitStates.s5.s >= 2 ? -2: -1; 
+        }
 
-        /* Resistance Reversal */
-
-        // Check if a strong resistance reversal took place
-        if (
-            splitStates.s100.s >= 2 &&
-            splitStates.s75.s >= 2 &&
-            splitStates.s50.s >= 2 &&
-            splitStates.s25.s >= 2 &&
-            splitStates.s15.s >= 2 &&
-            splitStates.s10.s >= 2 &&
-            splitStates.s5.s <= -1 &&
-            splitStates.s2.s <= -1
-        ) { stateEvent = 2 }
-
-        // Check if a strong resistance reversal took place
+        // Check if a resistance reversal took place
         else if (
             splitStates.s100.s >= 1 &&
             splitStates.s75.s >= 1 &&
             splitStates.s50.s >= 1 &&
             splitStates.s25.s >= 1 &&
-            splitStates.s15.s >= 1 &&
-            splitStates.s10.s >= 1 &&
+            splitStates.s15.s >= 0 &&
+            splitStates.s10.s <= 0 &&
             splitStates.s5.s <= -1 &&
             splitStates.s2.s <= -1
-        ) { stateEvent = 1 }
+        ) { 
+            stateEvent = splitStates.s2.s <= -2 || splitStates.s5.s <= -2 ? 2: 1;
+        }
 
         // Finally, return the event
         return stateEvent;

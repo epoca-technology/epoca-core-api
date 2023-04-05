@@ -3,7 +3,7 @@ import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { IEpochRecord, IEpochService } from "../epoch";
 import { IPredictionService } from "../prediction";
-import { IMarketStateService, IWindowState } from "../market-state";
+import { IKeyZonesStateService, IMarketStateService } from "../market-state";
 import { IGuiVersionService } from "../gui-version";
 import { IServerService } from "../server";
 import { IPositionService } from "../position";
@@ -12,9 +12,7 @@ import {
     IAppBulk, 
     IAppBulkStream, 
     IBulkDataService, 
-    ICompressedCandlesticks, 
     ICompressedMarketState, 
-    ICompressedWindowState, 
     IServerDataBulk, 
     IServerResourcesBulk 
 } from "./interfaces";
@@ -28,6 +26,7 @@ export class BulkDataService implements IBulkDataService {
     @inject(SYMBOLS.DatabaseService)                private _db: IDatabaseService;
     @inject(SYMBOLS.EpochService)                   private _epoch: IEpochService;
     @inject(SYMBOLS.PredictionService)              private _prediction: IPredictionService;
+    @inject(SYMBOLS.KeyZonesStateService)           private _kz: IKeyZonesStateService;
     @inject(SYMBOLS.MarketStateService)             private _marketState: IMarketStateService;
     @inject(SYMBOLS.GuiVersionService)              private _guiVersion: IGuiVersionService;
     @inject(SYMBOLS.ServerService)                  private _server: IServerService;
@@ -75,7 +74,8 @@ export class BulkDataService implements IBulkDataService {
             positions: this._position.getActivePositionHeadlines(),
             prediction: this._prediction.active.value,
             marketState: this._marketState.active.value,
-            apiErrors: this._apiError.count
+            apiErrors: this._apiError.count,
+            keyzoneEventScoreRequirement: this._kz.config.eventScoreRequirement
         }
     }
 
@@ -125,7 +125,11 @@ export class BulkDataService implements IBulkDataService {
                 prediction: this._prediction.active.value && typeof this._prediction.active.value == "object" ? this._prediction.active.value: null,
                 positions: this._position.getActivePositionHeadlines(),
                 marketState: <ICompressedMarketState>{
-                    window: this.compressWindowState(),
+                    window: {
+                        s: this._marketState.active.value.window.s,
+                        ss: this._marketState.active.value.window.ss,
+                        w: this._marketState.active.value.window.w.at(-1) || null
+                    },
                     volume: this._marketState.active.value.volume,
                     keyzones: this._marketState.active.value.keyzones,
                     trend: this._marketState.active.value.trend,
@@ -140,40 +144,7 @@ export class BulkDataService implements IBulkDataService {
 
 
 
-    /**
-     * Compresses the candlesticks within the current window state .
-     * @returns ICompressedWindowState
-     */
-    private compressWindowState(): ICompressedWindowState {
-        // Init the compressed candlesticks
-        let compressed: ICompressedCandlesticks = {
-            ot: [],
-            ct: [],
-            o: [],
-            h: [],
-            l: [],
-            c: [],
-        }
 
-        // Grab a copy of the current window state
-        let state: IWindowState|ICompressedWindowState|any = Object.assign({}, this._marketState.active.value.window);
-
-        // Iterate over each candlestick in the window and build the object
-        for (let candlestick of state.w) {
-            compressed.ot.push(candlestick.ot);
-            compressed.ct.push(candlestick.ct);
-            compressed.o.push(candlestick.o);
-            compressed.h.push(candlestick.h);
-            compressed.l.push(candlestick.l);
-            compressed.c.push(candlestick.c);
-        }
-
-        // Update the candlesticks
-        state.w = compressed;
-
-        // Finally, return the compressed object
-        return state;
-    }
 
     
 
