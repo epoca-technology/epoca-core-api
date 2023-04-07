@@ -764,8 +764,8 @@ export class CoinsService implements ICoinsService {
             splitStates.s75.s <= -1 &&
             splitStates.s50.s <= -1 &&
             splitStates.s25.s <= -1 &&
-            splitStates.s15.s <= -1 &&
-            splitStates.s10.s <= -1 &&
+            splitStates.s15.s <= 0 &&
+            splitStates.s10.s >= 0 &&
             splitStates.s5.s >= 1 &&
             splitStates.s2.s >= 1
         ) { 
@@ -778,8 +778,8 @@ export class CoinsService implements ICoinsService {
             splitStates.s75.s >= 1 &&
             splitStates.s50.s >= 1 &&
             splitStates.s25.s >= 1 &&
-            splitStates.s15.s >= 1 &&
-            splitStates.s10.s >= 1 &&
+            splitStates.s15.s >= 0 &&
+            splitStates.s10.s <= 0 &&
             splitStates.s5.s <= -1 &&
             splitStates.s2.s <= -1
         ) { 
