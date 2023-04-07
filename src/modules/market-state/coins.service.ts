@@ -26,6 +26,7 @@ import {
     ICoinsScores,
     ICoinScore
 } from "./interfaces";
+import { ICandlestick, ICandlestickService } from "../candlestick";
 
 
 
@@ -35,6 +36,7 @@ export class CoinsService implements ICoinsService {
     // Inject dependencies
     @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
+    @inject(SYMBOLS.CandlestickService)                 private _candlesticks: ICandlestickService;
     @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.StateUtilitiesService)              private _stateUtils: IStateUtilitiesService;
@@ -83,10 +85,10 @@ export class CoinsService implements ICoinsService {
      * Each coin has its own state that includes the history of prices
      * based on the priceWindowSize.
      */
-    private readonly requirement: number = 0.1;
-    private readonly strongRequirement: number = 0.4;
-    private readonly priceIntervalSeconds: number = 30;
-    private readonly priceWindowSize: number = 128; // ~64 minutes
+    private readonly requirement: number = 0.05;
+    private readonly strongRequirement: number = 0.3;
+    private readonly priceIntervalSeconds: number = 60;
+    private readonly priceWindowSize: number = 128; // ~128 minutes
 
 
 
@@ -132,6 +134,12 @@ export class CoinsService implements ICoinsService {
                 this._apiError.log("CoinsService.updateSupportedCoins", e);
             }
         }, this.supportedCoinsIntervalHours * 60 * 60 * 1000);
+
+        // If BTC is installed and the candlestick stream is in sync, give it a head start
+        if (this.states["BTCUSDT"] && this._candlesticks.isStreamInSync(this._candlesticks.stream.value)) {
+            const candlesticks: ICandlestick[] = await this._candlesticks.getLast(false, this.priceWindowSize - 10);
+            this.states["BTCUSDT"].w = candlesticks.map((c) => { return { x: c.ot, y: c.c } });
+        }
 
         // Initialize the websocket status interval
         this.wsInterval = setInterval(async () => {
@@ -661,15 +669,27 @@ export class CoinsService implements ICoinsService {
      * @returns ICoinsState
      */
     public calculateState(): ICoinsState {
-        // Firstly, calculate the full state for all symbols
-        let minState: ICoinsState = {};
+        // Init values
+        let state: ICoinsState = { sbs: {}, cd: 0 };
+        let coinStates: IStateType[] = [];
+
+        // Iterate over each installed symbol
         for (let symbol in this.installed) { 
+            // Calculate the full coin state
             this.calculateCoinState(symbol);
-            minState[symbol] = { s: this.states[symbol].s, se: this.states[symbol].se, set: this.states[symbol].set }
+
+            // Insert the result into the minified state
+            state.sbs[symbol] = { s: this.states[symbol].s, se: this.states[symbol].se, set: this.states[symbol].set };
+
+            // Append the coin state to the list
+            coinStates.push(this.states[symbol].s);
         }
 
-        // Finally, return the minified build
-        return minState;
+        // Calculate the coins direction
+        state.cd = this._stateUtils.calculateAverageState(coinStates);
+
+        // Finally, return the state
+        return state;
     }
 
 
@@ -966,7 +986,7 @@ export class CoinsService implements ICoinsService {
      * @returns ICoinsState
      */
     public getDefaultState(): ICoinsState {
-        return {}
+        return { sbs: {}, cd: 0 }
     }
 
 

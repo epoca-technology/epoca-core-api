@@ -92,7 +92,7 @@ export class PositionService implements IPositionService {
      * 2 -> Gain Drawdown%
      */
     private activeCandlestick: {[symbol: string]: IActivePositionCandlestick} = {};
-    private readonly candlestickIntervalSeconds: number = 30;
+    private readonly candlestickIntervalSeconds: number = 60;
 
 
 
@@ -661,15 +661,15 @@ export class PositionService implements IPositionService {
     private hasBrokenTakeProfitLevel(currentGain: number, highestGain: number): boolean {
         return (
             currentGain < this.strategy.take_profit_1.price_change_requirement && 
-            highestGain >= (this.strategy.take_profit_1.price_change_requirement + 0.025)
+            highestGain >= (this.strategy.take_profit_1.price_change_requirement + this.strategy.take_profit_1.activation_offset)
         ) ||
         (
             currentGain < this.strategy.take_profit_2.price_change_requirement && 
-            highestGain >= (this.strategy.take_profit_2.price_change_requirement + 0.025)
+            highestGain >= (this.strategy.take_profit_2.price_change_requirement + this.strategy.take_profit_2.activation_offset)
         ) ||
         (
             currentGain < this.strategy.take_profit_3.price_change_requirement && 
-            highestGain >= (this.strategy.take_profit_3.price_change_requirement + 0.025)
+            highestGain >= (this.strategy.take_profit_3.price_change_requirement + this.strategy.take_profit_3.activation_offset)
         );
     }
 
@@ -1183,13 +1183,13 @@ export class PositionService implements IPositionService {
         return {
             long_status: false,
             short_status: false,
-            leverage: 5,
-            position_size: 20,
-            positions_limit: 3,
-            take_profit_1: { price_change_requirement: 0.35,    max_gain_drawdown: -15 },
-            take_profit_2: { price_change_requirement: 1,       max_gain_drawdown: -7.5 },
-            take_profit_3: { price_change_requirement: 2,       max_gain_drawdown: -5 },
-            stop_loss: 0.5
+            leverage: 70,
+            position_size: 1,
+            positions_limit: 1,
+            take_profit_1: { price_change_requirement: 0.35, activation_offset: 0.05, max_gain_drawdown: -99 },
+            take_profit_2: { price_change_requirement: 0.7,  activation_offset: 0.05, max_gain_drawdown: -30 },
+            take_profit_3: { price_change_requirement: 1.5,  activation_offset: 0.05, max_gain_drawdown: -10 },
+            stop_loss: 0.25
         }
     }
 

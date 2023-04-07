@@ -169,8 +169,8 @@ export class PositionValidations implements IPositionValidations {
         }
 
         // Validate the leverage
-        if (typeof newStrategy.leverage != "number" || !this._validations.numberValid(newStrategy.leverage, 2, 20)) {
-            throw new Error(this._utils.buildApiError(`The leverage must be a valid number ranging 2-20. 
+        if (typeof newStrategy.leverage != "number" || !this._validations.numberValid(newStrategy.leverage, 2, 125)) {
+            throw new Error(this._utils.buildApiError(`The leverage must be a valid number ranging 2-125. 
             Received: ${newStrategy.leverage}`, 30001));
         }
 
@@ -190,33 +190,36 @@ export class PositionValidations implements IPositionValidations {
         if (
             typeof newStrategy.take_profit_1 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_1.price_change_requirement, 0.05, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_1.activation_offset, 0.01, 5) ||
             !this._validations.numberValid(newStrategy.take_profit_1.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_1);
             throw new Error(this._utils.buildApiError(`The take profit 1 must be a valid object containing the price change 
-            requirement & the max gain drawdown.`, 30008));
+            requirement, activation offset & the max gain drawdown.`, 30008));
         }
 
         // Validate the take profit 2
         if (
             typeof newStrategy.take_profit_2 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_2.price_change_requirement, 0.05, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_2.activation_offset, 0.01, 5) ||
             !this._validations.numberValid(newStrategy.take_profit_2.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_2);
             throw new Error(this._utils.buildApiError(`The take profit 2 must be a valid object containing the price change 
-            requirement & the max gain drawdown.`, 30008));
+            requirement, activation offset & the max gain drawdown.`, 30008));
         }
 
         // Validate the take profit 3
         if (
             typeof newStrategy.take_profit_3 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_3.price_change_requirement, 0.05, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_3.activation_offset, 0.01, 5) ||
             !this._validations.numberValid(newStrategy.take_profit_3.max_gain_drawdown, -100, -0.01)
         ) {
             console.log(newStrategy.take_profit_3);
             throw new Error(this._utils.buildApiError(`The take profit 3 must be a valid object containing the price change 
-            requirement & the max gain drawdown.`, 30008));
+            requirement, activation offset & the max gain drawdown.`, 30008));
         }
 
 

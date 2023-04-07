@@ -118,6 +118,13 @@ export interface ITakeProfitLevel {
     price_change_requirement: number,
 
     /**
+     * The additional %  requirement for the level to be officially "locked". A 
+     * take profit level can only be broken and trigger a position close when
+     * it has been locked. 
+     */
+    activation_offset: number
+
+    /**
      * The maximum Gain Drawdown% allowed in the level. If this requirement is not met, 
      * the position is closed.
      */

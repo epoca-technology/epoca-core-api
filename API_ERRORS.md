@@ -649,13 +649,13 @@
 
 35503: `The provided signal policies object is invalid.`
 
-35504: `The provided long keyzone_reversal.enabled is invalid.`
+35504: `The provided long issuance.enabled is invalid.`
 
-35505: `The provided long keyzone_reversal.trend_sum is invalid.`
+35505: ``
 
-35506: `The provided long keyzone_reversal.trend_state is invalid.`
+35506: ``
 
-35507: `The provided long keyzone_reversal.volume_state is invalid.`
+35507: ``
 
 35508: `The provided long keyzone_reversal.coin_state_event is invalid.`
 

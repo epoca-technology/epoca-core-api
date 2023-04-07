@@ -83,17 +83,8 @@ export class SignalValidations implements ISignalValidations {
      */
     private validateLongPolicies(policies: ISignalSidePolicies): void {
         // Validate the keyzone reversal issuance policy
-        if (policies.issuance.keyzone_reversal.enabled !== true) {
-            throw new Error(this._utils.buildApiError(`The provided long keyzone_reversal.enabled is invalid.`, 35504));
-        }
-        if (!this._v.numberValid(policies.issuance.keyzone_reversal.trend_sum, 0, 8)) {
-            throw new Error(this._utils.buildApiError(`The provided long keyzone_reversal.trend_sum is invalid.`, 35505));
-        }
-        if (!this._v.numberValid(policies.issuance.keyzone_reversal.trend_state, 0, 2)) {
-            throw new Error(this._utils.buildApiError(`The provided long keyzone_reversal.trend_state is invalid.`, 35506));
-        }
-        if (!this._v.numberValid(policies.issuance.keyzone_reversal.volume_state, 0, 2)) {
-            throw new Error(this._utils.buildApiError(`The provided long keyzone_reversal.volume_state is invalid.`, 35507));
+        if (policies.issuance.keyzone_reversal.enabled != true) {
+            throw new Error(this._utils.buildApiError(`The provided long issuance.enabled is invalid.`, 35504));
         }
         if (!this._v.numberValid(policies.issuance.keyzone_reversal.coin_state_event, -2, -1)) {
             throw new Error(this._utils.buildApiError(`The provided long keyzone_reversal.coin_state_event is invalid.`, 35508));
@@ -136,17 +127,8 @@ export class SignalValidations implements ISignalValidations {
      */
     private validateShortPolicies(policies: ISignalSidePolicies): void {
         // Validate the keyzone reversal issuance policy
-        if (policies.issuance.keyzone_reversal.enabled !== true) {
-            throw new Error(this._utils.buildApiError(`The provided short keyzone_reversal.enabled is invalid.`, 35504));
-        }
-        if (!this._v.numberValid(policies.issuance.keyzone_reversal.trend_sum, -8, 0)) {
-            throw new Error(this._utils.buildApiError(`The provided short keyzone_reversal.trend_sum is invalid.`, 35505));
-        }
-        if (!this._v.numberValid(policies.issuance.keyzone_reversal.trend_state, -2, 0)) {
-            throw new Error(this._utils.buildApiError(`The provided short keyzone_reversal.trend_state is invalid.`, 35506));
-        }
-        if (!this._v.numberValid(policies.issuance.keyzone_reversal.volume_state, 0, 2)) {
-            throw new Error(this._utils.buildApiError(`The provided short keyzone_reversal.volume_state is invalid.`, 35507));
+        if (policies.issuance.keyzone_reversal.enabled != true) {
+            throw new Error(this._utils.buildApiError(`The provided short issuance.enabled is invalid.`, 35504));
         }
         if (!this._v.numberValid(policies.issuance.keyzone_reversal.coin_state_event, 1, 2)) {
             throw new Error(this._utils.buildApiError(`The provided short keyzone_reversal.coin_state_event is invalid.`, 35508));

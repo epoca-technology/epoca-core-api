@@ -120,22 +120,15 @@ export interface ISignalPolicy {
  * Issuance Policy based on KeyZone Reversals and Coin States. The purpose of this
  * policy is to long when the price has dropped and is reversing or short when the
  * price has increased and is reversing.
- * It is important to note that this issuance policy cannot be disabled. If the 
- * user wishes to stop trading, it has to be done through the Trading Strategy.
  */
 export interface IKeyZoneReversalIssuancePolicy extends ISignalPolicy {
     // The required coin state event. This value cannot be disabled.
-    coin_state_event: IStateType,
-
-    // The minimum trend sum required - If 0, the trend sum will comply automatically
-    trend_sum: number,
-
-    // The trend state required - If 0, the trend state will comply automatically
-    trend_state: IStateType,
-
-    // The volume state required - If 0, the volume state will comply automatically
-    volume_state: IStateType,
+    coin_state_event: IStateType
 }
+
+
+
+
 
 
 
@@ -228,9 +221,6 @@ export interface ISignalDataset {
 
     // The current state of the window
     windowState: IStateType,
-
-    // The current state of the volume
-    volumeState: IStateType,
 
     // The state of all installed coins
     coinsState: ICoinsState,
