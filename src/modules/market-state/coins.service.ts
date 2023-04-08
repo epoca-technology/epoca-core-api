@@ -59,7 +59,7 @@ export class CoinsService implements ICoinsService {
      * users will be notified.
      */
     private supportedCoinsInterval: any;
-    private readonly supportedCoinsIntervalHours: number = 8;
+    private readonly supportedCoinsIntervalHours: number = 3;
 
 
 
