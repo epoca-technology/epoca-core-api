@@ -64,7 +64,7 @@ export class SignalService implements ISignalService {
      * period of time in which no new signals will be issued.
      */
     private idleSymbols: {[symbol: string]: number} = {}; // Symbol: Idle Until
-    private readonly idleDurationMinutes: number = 3;
+    private readonly idleDurationMinutes: number = 30;
 
 
     /**
@@ -178,7 +178,7 @@ export class SignalService implements ISignalService {
             if (ds.coinsState.cd > 0) {
                 for (let symbol in ds.coinsState.sbs) {
                     if (
-                        (this.prevState.sbs[symbol].s < 0 && ds.coinsState.sbs[symbol].s >= 0) &&
+                        (ds.coinsState.sbs[symbol].s > this.prevState.sbs[symbol].s) &&
                         !this.isIdle(symbol, ts)
                     ) {
                         symbols.push(symbol);
@@ -190,7 +190,7 @@ export class SignalService implements ISignalService {
             else if (ds.coinsState.cd < 0) {
                 for (let symbol in ds.coinsState.sbs) {
                     if (
-                        (this.prevState.sbs[symbol].s > 0 && ds.coinsState.sbs[symbol].s <= 0) &&
+                        (ds.coinsState.sbs[symbol].s < this.prevState.sbs[symbol].s) &&
                         !this.isIdle(symbol, ts)
                     ) {
                         symbols.push(symbol);
