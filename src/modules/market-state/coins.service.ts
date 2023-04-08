@@ -61,7 +61,7 @@ export class CoinsService implements ICoinsService {
      * users will be notified.
      */
     private supportedCoinsInterval: any;
-    private readonly supportedCoinsIntervalHours: number = 3;
+    private readonly supportedCoinsIntervalHours: number = 8;
 
 
 
@@ -85,7 +85,7 @@ export class CoinsService implements ICoinsService {
      * Each coin has its own state that includes the history of prices
      * based on the priceWindowSize.
      */
-    private readonly requirement: number = 0.05;
+    private readonly requirement: number = 0.035;
     private readonly strongRequirement: number = 0.3;
     private readonly priceIntervalSeconds: number = 60;
     private readonly priceWindowSize: number = 128; // ~128 minutes
@@ -764,8 +764,8 @@ export class CoinsService implements ICoinsService {
             splitStates.s75.s <= -1 &&
             splitStates.s50.s <= -1 &&
             splitStates.s25.s <= -1 &&
-            splitStates.s15.s <= 0 &&
-            splitStates.s10.s >= 0 &&
+            splitStates.s15.s <= -1 &&
+            splitStates.s10.s <= -1 &&
             splitStates.s5.s >= 1 &&
             splitStates.s2.s >= 1
         ) { 
@@ -778,8 +778,8 @@ export class CoinsService implements ICoinsService {
             splitStates.s75.s >= 1 &&
             splitStates.s50.s >= 1 &&
             splitStates.s25.s >= 1 &&
-            splitStates.s15.s >= 0 &&
-            splitStates.s10.s <= 0 &&
+            splitStates.s15.s >= 1 &&
+            splitStates.s10.s >= 1 &&
             splitStates.s5.s <= -1 &&
             splitStates.s2.s <= -1
         ) { 
