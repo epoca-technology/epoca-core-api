@@ -67,6 +67,12 @@ export class SignalService implements ISignalService {
     private readonly idleDurationMinutes: number = 3;
 
 
+    /**
+     * Previous Coins State
+     * Whenever the market state changes, the coins' state is stored locally so 
+     * it can be used with future values in order to generate signals.
+     */
+    private prevState: ICoinsState;
 
 
 
@@ -158,6 +164,67 @@ export class SignalService implements ISignalService {
      * @returns Promise<void>
      */
     private async onNewMarketState(marketState: IMarketState): Promise<void> {
+        // Before proceeding, ensure the previous coins state exists
+        if (this.prevState) {
+            // Initialize the record and the symbols
+            const ts: number = Date.now();
+            let symbols: string[] = [];
+            let record: ISignalRecord|null = null;
+
+            // Build the dataset
+            const ds: ISignalDataset = this.makeSignalDataset(marketState);
+
+            // Check if there are coins trending upwards as the direction
+            if (ds.coinsState.cd > 0) {
+                for (let symbol in ds.coinsState.sbs) {
+                    if (
+                        (this.prevState.sbs[symbol].s < 0 && ds.coinsState.sbs[symbol].s >= 0) &&
+                        !this.isIdle(symbol, ts)
+                    ) {
+                        symbols.push(symbol);
+                    }
+                }
+            }
+
+            // Check if there are coins trending downwards as the direction
+            else if (ds.coinsState.cd < 0) {
+                for (let symbol in ds.coinsState.sbs) {
+                    if (
+                        (this.prevState.sbs[symbol].s > 0 && ds.coinsState.sbs[symbol].s <= 0) &&
+                        !this.isIdle(symbol, ts)
+                    ) {
+                        symbols.push(symbol);
+                    }
+                }
+            }
+
+            // Check if symbols were found
+            if (symbols.length) {
+                // Build the signal record
+                record = {
+                    t: ts,
+                    r: ds.coinsState.cd > 0 ? 1: -1,
+                    s: symbols
+                };
+
+                // Activate the idle state on the signal symbols
+                this.activateIdle(symbols);
+            }
+
+            // Broadcast the signal
+            this.active.next(record);
+
+            // If a signal was built, store it
+            if (record) await this._model.saveRecord(record);
+        }
+
+        // Store the previous state
+        this.prevState = marketState.coins;
+    }
+
+
+
+    /*private async onNewMarketState(marketState: IMarketState): Promise<void> {
         // Initialize the record
         let record: ISignalRecord|null = null;
 
@@ -196,7 +263,7 @@ export class SignalService implements ISignalService {
 
         // If a signal was built, store it
         if (record) await this._model.saveRecord(record);
-    } 
+    }*/
 
 
 
