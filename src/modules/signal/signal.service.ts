@@ -164,6 +164,46 @@ export class SignalService implements ISignalService {
      * @returns Promise<void>
      */
     private async onNewMarketState(marketState: IMarketState): Promise<void> {
+        // Initialize the record
+        let record: ISignalRecord|null = null;
+
+        // Build the dataset
+        const ds: ISignalDataset = this.makeSignalDataset(marketState);
+
+        // Check if there is a potential signal
+        if (
+            ds.keyzoneStateEvent &&
+            (ds.keyzoneStateEvent.k == "s" || ds.keyzoneStateEvent.k == "r") &&
+            !this.isWindowStateCancelling(ds.keyzoneStateEvent.k, ds.windowState) &&
+            !this.isTrendCancelling(ds.keyzoneStateEvent.k, ds.trendSum, ds.trendState)
+        ) {
+            // Init the time
+            const ts: number = Date.now();
+
+            // Retrieve the signal symbols
+            const symbols: string[] = this.getKeyZoneReversalBasedSignalSymbols(ds.keyzoneStateEvent, ds.coinsState, ts);
+
+            // Check if symbols were found
+            if (symbols.length) {
+                // Build the signal record
+                record = {
+                    t: ts,
+                    r: ds.keyzoneStateEvent.k == "s" ? 1: -1,
+                    s: symbols
+                };
+
+                // Activate the idle state on the signal symbols
+                this.activateIdle(symbols);
+            }
+        }
+
+        // Broadcast the signal
+        this.active.next(record);
+
+        // If a signal was built, store it
+        if (record) await this._model.saveRecord(record);
+    }
+    /*private async onNewMarketState(marketState: IMarketState): Promise<void> {
         // Before proceeding, ensure the previous coins state exists
         if (this.prevState) {
             // Initialize the record and the symbols
@@ -220,50 +260,10 @@ export class SignalService implements ISignalService {
 
         // Store the previous state
         this.prevState = marketState.coins;
-    }
-
-
-
-    /*private async onNewMarketState(marketState: IMarketState): Promise<void> {
-        // Initialize the record
-        let record: ISignalRecord|null = null;
-
-        // Build the dataset
-        const ds: ISignalDataset = this.makeSignalDataset(marketState);
-
-        // Check if there is a potential signal
-        if (
-            ds.keyzoneStateEvent &&
-            (ds.keyzoneStateEvent.k == "s" || ds.keyzoneStateEvent.k == "r") &&
-            !this.isWindowStateCancelling(ds.keyzoneStateEvent.k, ds.windowState) &&
-            !this.isTrendCancelling(ds.keyzoneStateEvent.k, ds.trendSum, ds.trendState)
-        ) {
-            // Init the time
-            const ts: number = Date.now();
-
-            // Retrieve the signal symbols
-            const symbols: string[] = this.getKeyZoneReversalBasedSignalSymbols(ds.keyzoneStateEvent, ds.coinsState, ts);
-
-            // Check if symbols were found
-            if (symbols.length) {
-                // Build the signal record
-                record = {
-                    t: ts,
-                    r: ds.keyzoneStateEvent.k == "s" ? 1: -1,
-                    s: symbols
-                };
-
-                // Activate the idle state on the signal symbols
-                this.activateIdle(symbols);
-            }
-        }
-
-        // Broadcast the signal
-        this.active.next(record);
-
-        // If a signal was built, store it
-        if (record) await this._model.saveRecord(record);
     }*/
+
+
+
 
 
 
