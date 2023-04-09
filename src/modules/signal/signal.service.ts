@@ -173,9 +173,13 @@ export class SignalService implements ISignalService {
         // Check if there is a potential signal
         if (
             ds.keyzoneStateEvent &&
-            (ds.keyzoneStateEvent.k == "s" || ds.keyzoneStateEvent.k == "r") &&
-            !this.isWindowStateCancelling(ds.keyzoneStateEvent.k, ds.windowState) &&
-            !this.isTrendCancelling(ds.keyzoneStateEvent.k, ds.trendSum, ds.trendState)
+            //(ds.keyzoneStateEvent.k == "s" || ds.keyzoneStateEvent.k == "r") &&
+            (
+                (ds.keyzoneStateEvent.k == "s" && ds.windowState  >= -1) ||
+                (ds.keyzoneStateEvent.k == "r" && ds.windowState  <= 1)
+            )
+            //!this.isWindowStateCancelling(ds.keyzoneStateEvent.k, ds.windowState) &&
+            //!this.isTrendCancelling(ds.keyzoneStateEvent.k, ds.trendSum, ds.trendState)
         ) {
             // Init the time
             const ts: number = Date.now();
@@ -203,7 +207,7 @@ export class SignalService implements ISignalService {
         // If a signal was built, store it
         if (record) await this._model.saveRecord(record);
     }
-    /*private async onNewMarketState(marketState: IMarketState): Promise<void> {
+    /*private async onNewMarketState(marketState: IMarketState): Promise<void> { <- TREND FOLLOWING
         // Before proceeding, ensure the previous coins state exists
         if (this.prevState) {
             // Initialize the record and the symbols
