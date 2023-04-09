@@ -455,8 +455,19 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * @returns IKeyZoneStateEvent
      */
     private onKeyZoneEvent(zone: IMinifiedKeyZone, kind: IKeyZoneStateEventKind): IKeyZoneStateEvent {
-        // Activate the idle on the zone
-        this.activateIdle(zone.id);
+        // If the event is a support contact, activate the idle on all the supports above
+        if (kind == "s") {
+            for (let support of this.state.below) {
+                if (zone.s <= support.s) this.activateIdle(support.id);
+            }
+        }
+
+        // If the event is a resistance contact, activate the idle on all the resitances below
+        else {
+            for (let resistance of this.state.above) {
+                if (zone.s >= resistance.s) this.activateIdle(resistance.id);
+            }
+        }
 
         // Return the event's build
         return {

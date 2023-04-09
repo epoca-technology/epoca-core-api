@@ -28,7 +28,7 @@ export class TrendStateService implements ITrendStateService {
      * it to have a state.
      */
     private readonly requirement: number = 0.025;
-    private readonly strongRequirement: number = 0.1;
+    private readonly strongRequirement: number = 0.35;
 
 
     /**
