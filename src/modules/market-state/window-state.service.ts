@@ -22,7 +22,7 @@ export class WindowStateService implements IWindowStateService {
      * it to have a state.
      */
     private readonly requirement: number = 0.025;
-    private readonly strongRequirement: number = 0.5;
+    private readonly strongRequirement: number = 0.4;
 
 
 

@@ -89,12 +89,15 @@ export class SignalValidations implements ISignalValidations {
         if (!this._v.numberValid(policies.issuance.keyzone_reversal.coin_state_event, -2, -1)) {
             throw new Error(this._utils.buildApiError(`The provided long keyzone_reversal.coin_state_event is invalid.`, 35508));
         }
+        if (!this._v.numberValid(policies.issuance.keyzone_reversal.volume_state, 0, 2)) {
+            throw new Error(this._utils.buildApiError(`The provided long keyzone_reversal.volume_state is invalid.`, 35505));
+        }
 
         // Validate the window cancellation policy
         if (typeof policies.cancellation.window_state.enabled != "boolean") {
             throw new Error(this._utils.buildApiError(`The provided long window_state.enabled is invalid.`, 35509));
         }
-        if (!this._v.numberValid(policies.cancellation.window_state.window_state, 1, 2)) {
+        if (!this._v.numberValid(policies.cancellation.window_state.window_state, -2, -1)) {
             throw new Error(this._utils.buildApiError(`The provided long window_state.window_state is invalid.`, 35510));
         }
 
@@ -133,12 +136,15 @@ export class SignalValidations implements ISignalValidations {
         if (!this._v.numberValid(policies.issuance.keyzone_reversal.coin_state_event, 1, 2)) {
             throw new Error(this._utils.buildApiError(`The provided short keyzone_reversal.coin_state_event is invalid.`, 35508));
         }
+        if (!this._v.numberValid(policies.issuance.keyzone_reversal.volume_state, 0, 2)) {
+            throw new Error(this._utils.buildApiError(`The provided short keyzone_reversal.volume_state is invalid.`, 35505));
+        }
 
         // Validate the window cancellation policy
         if (typeof policies.cancellation.window_state.enabled != "boolean") {
             throw new Error(this._utils.buildApiError(`The provided short window_state.enabled is invalid.`, 35509));
         }
-        if (!this._v.numberValid(policies.cancellation.window_state.window_state, -2, -1)) {
+        if (!this._v.numberValid(policies.cancellation.window_state.window_state, 1, 2)) {
             throw new Error(this._utils.buildApiError(`The provided short window_state.window_state is invalid.`, 35510));
         }
 

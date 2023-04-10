@@ -123,7 +123,10 @@ export interface ISignalPolicy {
  */
 export interface IKeyZoneReversalIssuancePolicy extends ISignalPolicy {
     // The required coin state event. This value cannot be disabled.
-    coin_state_event: IStateType
+    coin_state_event: IStateType,
+
+    // The volume state required - If 0, the volume state will comply automatically
+    volume_state: IStateType,
 }
 
 
@@ -135,9 +138,7 @@ export interface IKeyZoneReversalIssuancePolicy extends ISignalPolicy {
 /**
  * Window State Cancellation Policy
  * Cancellation Policy based on the state of the window. The purpose of this
- * policy is to avoid position sides when the market has already moved that
- * way strongly. For instance: avoid longs when the price has increased
- * significantly and avoid shorts when the price has decreased significantly.
+ * policy is to avoid attempting to trade the top or the bottom. 
  */
 export interface IWindowStateCancellationPolicy extends ISignalPolicy {
     window_state: IStateType
@@ -221,6 +222,9 @@ export interface ISignalDataset {
 
     // The current state of the window
     windowState: IStateType,
+
+    // The current state of the volume
+    volumeState: IStateType,
 
     // The state of all installed coins
     coinsState: ICoinsState,

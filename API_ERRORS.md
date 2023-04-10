@@ -651,7 +651,7 @@
 
 35504: `The provided long issuance.enabled is invalid.`
 
-35505: ``
+35505: `The provided long keyzone_reversal.volume_state is invalid.`
 
 35506: ``
 

@@ -1186,10 +1186,10 @@ export class PositionService implements IPositionService {
             leverage: 70,
             position_size: 1,
             positions_limit: 1,
-            take_profit_1: { price_change_requirement: 0.35, activation_offset: 0.05, max_gain_drawdown: -99 },
-            take_profit_2: { price_change_requirement: 0.7,  activation_offset: 0.05, max_gain_drawdown: -30 },
-            take_profit_3: { price_change_requirement: 1.5,  activation_offset: 0.05, max_gain_drawdown: -10 },
-            stop_loss: 0.25
+            take_profit_1: { price_change_requirement: 0.35, activation_offset: 0.1, max_gain_drawdown: -99 },
+            take_profit_2: { price_change_requirement: 0.55, activation_offset: 0.1, max_gain_drawdown: -40 },
+            take_profit_3: { price_change_requirement: 0.9,  activation_offset: 0.1, max_gain_drawdown: -15 },
+            stop_loss: 0.15
         }
     }
 
