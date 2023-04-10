@@ -92,7 +92,7 @@ export class PositionService implements IPositionService {
      * 2 -> Gain Drawdown%
      */
     private activeCandlestick: {[symbol: string]: IActivePositionCandlestick} = {};
-    private readonly candlestickIntervalSeconds: number = 300; // ~5 minutes
+    private readonly candlestickIntervalSeconds: number = 900; // ~15 minutes
 
 
 

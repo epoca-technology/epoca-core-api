@@ -59,7 +59,7 @@ export class CoinsService implements ICoinsService {
      * users will be notified.
      */
     private supportedCoinsInterval: any;
-    private readonly supportedCoinsIntervalHours: number = 3;
+    private readonly supportedCoinsIntervalHours: number = 8;
 
 
 
@@ -84,7 +84,7 @@ export class CoinsService implements ICoinsService {
      * based on the priceWindowSize.
      */
     private readonly requirement: number = 0.025;
-    private readonly strongRequirement: number = 0.3;
+    private readonly strongRequirement: number = 0.25;
     private readonly priceIntervalSeconds: number = 30;
     private readonly priceWindowSize: number = 128; // ~64 minutes
 

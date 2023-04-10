@@ -12,9 +12,9 @@ const options: rateLimit.Options = {
 
 /**
  * Ultra Low risk endpoints.
- * 300 requests every 15 minutes
+ * 350 requests every 15 minutes
  */
- export const ultraLowRiskLimit: rateLimit.RateLimit = rateLimit({max: 300, ...options});
+ export const ultraLowRiskLimit: rateLimit.RateLimit = rateLimit({max: 350, ...options});
 
 
 

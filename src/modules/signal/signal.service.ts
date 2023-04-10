@@ -64,15 +64,7 @@ export class SignalService implements ISignalService {
      * period of time in which no new signals will be issued.
      */
     private idleSymbols: {[symbol: string]: number} = {}; // Symbol: Idle Until
-    private readonly idleDurationMinutes: number = 30;
-
-
-    /**
-     * Previous Coins State
-     * Whenever the market state changes, the coins' state is stored locally so 
-     * it can be used with future values in order to generate signals.
-     */
-    private prevState: ICoinsState;
+    private readonly idleDurationMinutes: number = 1;
 
 
 
