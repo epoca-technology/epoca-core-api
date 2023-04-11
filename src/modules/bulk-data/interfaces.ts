@@ -12,6 +12,7 @@ import {
 } from "../market-state";
 import { IPositionHeadline } from "../position";
 import { ICandlestick } from "../candlestick";
+import { IPredictionCandlestick } from "../prediction";
 
 
 
@@ -115,7 +116,7 @@ export interface ICompressedMarketState {
     window: ICompressedWindowState,
     volume: IStateType,
     keyzones: IKeyZoneState,
-    trend: ITrendState,
+    trend: ICompressedTrendState,
     coins: ICoinsState
 }
 
@@ -131,7 +132,16 @@ export interface ICompressedWindowState {
 }
 
 
+export interface ICompressedTrendState {
+    // The state of the trend
+    s: IStateType,
 
+    // The split states payload
+    ss: ISplitStates,
+
+    // The current epoch prediction candlestick
+    w: IPredictionCandlestick
+}
 
 
 

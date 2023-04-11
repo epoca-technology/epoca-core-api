@@ -54,12 +54,14 @@ export class SignalValidations implements ISignalValidations {
             !newPolicies.long.cancellation || typeof newPolicies.long.cancellation != "object" || 
             !newPolicies.long.cancellation.window_state || typeof newPolicies.long.cancellation.window_state != "object" || 
             !newPolicies.long.cancellation.trend || typeof newPolicies.long.cancellation.trend != "object" || 
+            !newPolicies.long.cancellation.coins_direction || typeof newPolicies.long.cancellation.coins_direction != "object" || 
             !newPolicies.short || typeof newPolicies.short != "object" || 
             !newPolicies.short.issuance || typeof newPolicies.short.issuance != "object" || 
             !newPolicies.short.issuance.keyzone_reversal || typeof newPolicies.short.issuance.keyzone_reversal != "object" || 
             !newPolicies.short.cancellation || typeof newPolicies.short.cancellation != "object" || 
             !newPolicies.short.cancellation.window_state || typeof newPolicies.short.cancellation.window_state != "object" || 
-            !newPolicies.short.cancellation.trend || typeof newPolicies.short.cancellation.trend != "object"
+            !newPolicies.short.cancellation.trend || typeof newPolicies.short.cancellation.trend != "object" ||
+            !newPolicies.short.cancellation.coins_direction || typeof newPolicies.short.cancellation.coins_direction != "object"
         ) {
             console.log(newPolicies);
             throw new Error(this._utils.buildApiError(`The provided signal policies object is invalid.`, 35503));
@@ -114,6 +116,14 @@ export class SignalValidations implements ISignalValidations {
         if (policies.cancellation.trend.trend_state == 0 && policies.cancellation.trend.trend_sum == 0) {
             throw new Error(this._utils.buildApiError(`The provided long trend cancellation policy is invalid. The sum or the state must be active.`, 35513));
         }
+
+        // Validate the coins direction cancellation policy
+        if (typeof policies.cancellation.coins_direction.enabled != "boolean") {
+            throw new Error(this._utils.buildApiError(`The provided long coins_direction.enabled is invalid.`, 35506));
+        }
+        if (!this._v.numberValid(policies.cancellation.coins_direction.coins_direction, -2, -1)) {
+            throw new Error(this._utils.buildApiError(`The provided long coins_direction.coins_direction is invalid.`, 35507));
+        }
     }
 
 
@@ -160,6 +170,14 @@ export class SignalValidations implements ISignalValidations {
         }
         if (policies.cancellation.trend.trend_state == 0 && policies.cancellation.trend.trend_sum == 0) {
             throw new Error(this._utils.buildApiError(`The provided short trend cancellation policy is invalid. The sum or the state must be active.`, 35513));
+        }
+
+        // Validate the coins direction cancellation policy
+        if (typeof policies.cancellation.coins_direction.enabled != "boolean") {
+            throw new Error(this._utils.buildApiError(`The provided short coins_direction.enabled is invalid.`, 35506));
+        }
+        if (!this._v.numberValid(policies.cancellation.coins_direction.coins_direction, 1, 2)) {
+            throw new Error(this._utils.buildApiError(`The provided short coins_direction.coins_direction is invalid.`, 35507));
         }
     }
 

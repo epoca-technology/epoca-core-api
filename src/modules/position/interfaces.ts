@@ -147,6 +147,12 @@ export interface IPositionStrategy {
     short_status: boolean,
 
     /**
+     * Bitcoin Only
+     * If enabled, the system will only pick and trade BTCUSDT signals.
+     */
+    bitcoin_only: boolean,
+
+    /**
      * Leverage
      * The leverage that will be used to calculate the position amount whenever a
      * position is opened. The leverage has to be set manually per installed coin,

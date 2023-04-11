@@ -367,6 +367,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                  * the price touches the KeyZone for a very brief period of time and then reverses.
                  * 2) And the KeyZone's Score is greater than or equals to the eventScoreRequirement
                  * 3) And the KeyZone is not idle
+                 * 4) And the KeyZone Start Price is less than or equals to the prediction candlestick's low.
                  */
                 const activeZones: IMinifiedKeyZone[] = this.state.below.filter(
                     (z) =>  (
@@ -374,7 +375,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                         (this.priceSnapshots.at(-1).l >= z.s && this.priceSnapshots.at(-1).l <= z.e)
                     ) &&
                     z.scr >= this.config.eventScoreRequirement &&
-                    !this.isIdle(z.id)
+                    !this.isIdle(z.id) &&
+                    z.s <= this._candlestick.predictionLookback.at(-1).l
                 );
 
                 // If zones were found, pick the one that is further down
@@ -414,6 +416,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                  * the price touches the KeyZone for a very brief period of time and then reverses.
                  * 2) And the KeyZone's Score is greater than or equals to the eventScoreRequirement
                  * 3) And the KeyZone is not idle
+                 * 4) And the KeyZone End Price is greater than or equals to the prediction candlestick's high.
                  */
                 let activeZones: IMinifiedKeyZone[] = this.state.above.filter(
                     (z) =>  (
@@ -421,7 +424,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                         (this.priceSnapshots.at(-1).h >= z.s && this.priceSnapshots.at(-1).h <= z.e)
                     ) &&
                     z.scr >= this.config.eventScoreRequirement &&
-                    !this.isIdle(z.id)
+                    !this.isIdle(z.id) &&
+                    z.e >= this._candlestick.predictionLookback.at(-1).h
                 );
 
                 // If zones were found, pick the one that is further up
@@ -644,50 +648,46 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         let score: number = 0.25;
 
         // Set the score accordingly
-        if      (liquidityShare >= 20)      { score = 1 }
-        else if (liquidityShare >= 19.5)    { score = 0.99 }
-        else if (liquidityShare >= 19)      { score = 0.98 }
-        else if (liquidityShare >= 18.5)    { score = 0.97 }
-        else if (liquidityShare >= 18)      { score = 0.96 }
-        else if (liquidityShare >= 17.5)    { score = 0.95 }
-        else if (liquidityShare >= 17)      { score = 0.94 }
-        else if (liquidityShare >= 16.5)    { score = 0.93 }
-        else if (liquidityShare >= 16)      { score = 0.92 }
-        else if (liquidityShare >= 15.5)    { score = 0.91 }
-        else if (liquidityShare >= 15)      { score = 0.90 }
-        else if (liquidityShare >= 14.5)    { score = 0.89 }
-        else if (liquidityShare >= 14)      { score = 0.88 }
-        else if (liquidityShare >= 13.5)    { score = 0.87 }
-        else if (liquidityShare >= 13)      { score = 0.86 }
-        else if (liquidityShare >= 12.5)    { score = 0.85 }
-        else if (liquidityShare >= 12)      { score = 0.84 }
-        else if (liquidityShare >= 11.5)    { score = 0.83 }
-        else if (liquidityShare >= 11)      { score = 0.82 }
-        else if (liquidityShare >= 10.5)    { score = 0.81 }
-        else if (liquidityShare >= 10)      { score = 0.80 }
-        else if (liquidityShare >= 9.5)     { score = 0.78 }
-        else if (liquidityShare >= 9)       { score = 0.76 }
-        else if (liquidityShare >= 8.5)     { score = 0.74 }
-        else if (liquidityShare >= 8)       { score = 0.72 }
-        else if (liquidityShare >= 7.5)     { score = 0.70 }
-        else if (liquidityShare >= 7)       { score = 0.68 }
-        else if (liquidityShare >= 6.5)     { score = 0.66 }
-        else if (liquidityShare >= 6)       { score = 0.64 }
-        else if (liquidityShare >= 5.5)     { score = 0.62 }
+        if      (liquidityShare >= 17)      { score = 1 }
+        else if (liquidityShare >= 16.5)    { score = 0.99 }
+        else if (liquidityShare >= 16)      { score = 0.98 }
+        else if (liquidityShare >= 15.5)    { score = 0.97 }
+        else if (liquidityShare >= 15)      { score = 0.96 }
+        else if (liquidityShare >= 14.5)    { score = 0.95 }
+        else if (liquidityShare >= 14)      { score = 0.94 }
+        else if (liquidityShare >= 13.5)    { score = 0.93 }
+        else if (liquidityShare >= 13)      { score = 0.92 }
+        else if (liquidityShare >= 12.5)    { score = 0.91 }
+        else if (liquidityShare >= 12)      { score = 0.90 }
+        else if (liquidityShare >= 11.5)    { score = 0.89 }
+        else if (liquidityShare >= 11)      { score = 0.88 }
+        else if (liquidityShare >= 10.5)    { score = 0.86 }
+        else if (liquidityShare >= 10)      { score = 0.84 }
+        else if (liquidityShare >= 9.5)     { score = 0.82 }
+        else if (liquidityShare >= 9)       { score = 0.80 }
+        else if (liquidityShare >= 8.5)     { score = 0.78 }
+        else if (liquidityShare >= 8)       { score = 0.76 }
+        else if (liquidityShare >= 7.5)     { score = 0.74 }
+        else if (liquidityShare >= 7)       { score = 0.72 }
+        else if (liquidityShare >= 6.5)     { score = 0.69 }
+        else if (liquidityShare >= 6)       { score = 0.66 }
+        else if (liquidityShare >= 5.5)     { score = 0.63 }
         else if (liquidityShare >= 5)       { score = 0.60 }
         else if (liquidityShare >= 4.5)     { score = 0.57 }
         else if (liquidityShare >= 4)       { score = 0.54 }
         else if (liquidityShare >= 3.5)     { score = 0.51 }
         else if (liquidityShare >= 3)       { score = 0.48 }
-        else if (liquidityShare >= 2.5)     { score = 0.45 }
-        else if (liquidityShare >= 2)       { score = 0.42 }
-        else if (liquidityShare >= 1.5)     { score = 0.38 }
-        else if (liquidityShare >= 1)       { score = 0.34 }
-        else if (liquidityShare >= 0.5)     { score = 0.30 }
+        else if (liquidityShare >= 2.5)     { score = 0.44 }
+        else if (liquidityShare >= 2)       { score = 0.40 }
+        else if (liquidityShare >= 1.5)     { score = 0.36 }
+        else if (liquidityShare >= 1)       { score = 0.32 }
+        else if (liquidityShare >= 0.5)     { score = 0.28 }
 
         // Finally, return the local score multiplied by the weights
         return this.config.scoreWeights.liquidity_share * score;
     }
+
+    
 
 
 
@@ -1297,11 +1297,11 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         return {
             buildFrequencyHours: 6,
             buildLookbackSize: 2880, // ~30 days
-            zoneSize: 0.05,
+            zoneSize: 0.075,
             zoneMergeDistanceLimit: 0.05,
             scoreWeights: {
-                volume_intensity: 3,
-                liquidity_share: 7
+                volume_intensity: 3.5,
+                liquidity_share: 6.5
             },
             stateLimit: 10,
             priceSnapshotsLimit: 5, // ~15 seconds worth

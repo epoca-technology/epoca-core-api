@@ -132,7 +132,11 @@ export class BulkDataService implements IBulkDataService {
                     },
                     volume: this._marketState.active.value.volume,
                     keyzones: this._marketState.active.value.keyzones,
-                    trend: this._marketState.active.value.trend,
+                    trend: {
+                        s: this._marketState.active.value.trend.s,
+                        ss: this._marketState.active.value.trend.ss,
+                        w: this._marketState.active.value.trend.w.at(-1) || null
+                    },
                     coins: this._marketState.active.value.coins
                 },
                 apiErrors: this._apiError.count

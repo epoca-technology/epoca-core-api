@@ -99,7 +99,8 @@ export interface ISignalSidePolicies {
     },
     cancellation: {
         window_state: IWindowStateCancellationPolicy,
-        trend: ITrendCancellationPolicy
+        trend: ITrendCancellationPolicy,
+        coins_direction: ICoinsDirectionCancellationPolicy
     }
 }
 
@@ -159,6 +160,17 @@ export interface ITrendCancellationPolicy extends ISignalPolicy {
 
 
 
+
+
+/**
+ * Coins Direction Cancellation Policy
+ * Cancellation Policy based on the state of the installed coins. The purpose of this
+ * policy is to avoid attempting to trade supports or resistances when there is too much
+ * selling/buying power.
+ */
+export interface ICoinsDirectionCancellationPolicy extends ISignalPolicy {
+    coins_direction: IStateType
+}
 
 
 

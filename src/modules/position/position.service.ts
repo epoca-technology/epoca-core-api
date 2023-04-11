@@ -75,6 +75,7 @@ export class PositionService implements IPositionService {
      * and monitors it. When is closed, the payload is stored in both,
      * record and headline format.
      */
+    private readonly btcSymbol: string = "BTCUSDT";
     private active: {[symbol: string]: IPositionRecord} = {};
     private queuedPositions: number = 0;
     private activePositionsSyncInterval: any;
@@ -239,7 +240,17 @@ export class PositionService implements IPositionService {
             const availableSlots: number = this.strategy.positions_limit - activeNum;
 
             // Init the list of tradeable symbols
-            const tradeableSymbols: string[] = signal.s.filter((s) => !this.active[s]).slice(0, availableSlots);
+            let tradeableSymbols: string[] = [];
+
+            // If the Bitcoin Only Strategy is enabled, check if a signal was issued
+            if (this.strategy.bitcoin_only && signal.s.includes(this.btcSymbol) && !this.active[this.btcSymbol]) {
+                tradeableSymbols = [ this.btcSymbol ];
+            }
+
+            // Otherwise, the multicoin system is enabled
+            else if (!this.strategy.bitcoin_only) {
+                tradeableSymbols = signal.s.filter((s) => !this.active[s]).slice(0, availableSlots);
+            }
 
             // Ensure there are tradeable symbols before proceeding
             if (tradeableSymbols.length) {
@@ -1183,11 +1194,12 @@ export class PositionService implements IPositionService {
         return {
             long_status: false,
             short_status: false,
+            bitcoin_only: true,
             leverage: 70,
             position_size: 1,
             positions_limit: 1,
-            take_profit_1: { price_change_requirement: 0.35, activation_offset: 0.1, max_gain_drawdown: -99 },
-            take_profit_2: { price_change_requirement: 0.55, activation_offset: 0.1, max_gain_drawdown: -40 },
+            take_profit_1: { price_change_requirement: 0.35, activation_offset: 0.1, max_gain_drawdown: -100 },
+            take_profit_2: { price_change_requirement: 0.55, activation_offset: 0.1, max_gain_drawdown: -35 },
             take_profit_3: { price_change_requirement: 0.9,  activation_offset: 0.1, max_gain_drawdown: -15 },
             stop_loss: 0.15
         }

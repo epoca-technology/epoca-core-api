@@ -653,9 +653,9 @@
 
 35505: `The provided long keyzone_reversal.volume_state is invalid.`
 
-35506: ``
+35506: `The provided long coins_direction.enabled is invalid.`
 
-35507: ``
+35507: `The provided long coins_direction.coins_direction is invalid.`
 
 35508: `The provided long keyzone_reversal.coin_state_event is invalid.`
 

@@ -168,7 +168,8 @@ export class SignalService implements ISignalService {
             (ds.keyzoneStateEvent.k == "s" || ds.keyzoneStateEvent.k == "r") &&
             this.isVolumeStateCompliying(ds.keyzoneStateEvent.k, ds.volumeState) &&
             !this.isWindowStateCancelling(ds.keyzoneStateEvent.k, ds.windowState) &&
-            !this.isTrendCancelling(ds.keyzoneStateEvent.k, ds.trendSum, ds.trendState)
+            !this.isTrendCancelling(ds.keyzoneStateEvent.k, ds.trendSum, ds.trendState) &&
+            !this.isCoinsDirectionCancelling(ds.keyzoneStateEvent.k, ds.coinsState.cd)
         ) {
             // Init the time
             const ts: number = Date.now();
@@ -378,6 +379,40 @@ export class SignalService implements ISignalService {
 
 
 
+    /**
+     * Evaluates if the coins direction policy is currently cancelling
+     * the KeyZone Event Kind.
+     * @param kind 
+     * @param currentState 
+     * @returns boolean
+     */
+    private isCoinsDirectionCancelling(kind: IKeyZoneStateEventKind, currentState: IStateType): boolean {
+        // Evaluate if a long should be cancelled
+        if (
+            kind == "s" &&
+            this.policies.long.cancellation.coins_direction.enabled &&
+            currentState <= this.policies.long.cancellation.coins_direction.coins_direction
+        ) {
+            return true;
+        }
+
+        // Evaluate if a short should be cancelled
+        else if (
+            kind == "r" &&
+            this.policies.short.cancellation.coins_direction.enabled &&
+            currentState >= this.policies.short.cancellation.coins_direction.coins_direction
+        ) {
+            return true;
+        }
+
+        // Otherwise, the window state policy is not cancelling
+        else { return false }
+    }
+
+
+
+
+
 
 
 
@@ -549,8 +584,12 @@ export class SignalService implements ISignalService {
                     },
                     trend: {
                         enabled: true,
-                        trend_sum: -2,
+                        trend_sum: -1.5,
                         trend_state: 0
+                    },
+                    coins_direction: {
+                        enabled: true,
+                        coins_direction: -2
                     }
                 }
             },
@@ -569,8 +608,12 @@ export class SignalService implements ISignalService {
                     },
                     trend: {
                         enabled: true,
-                        trend_sum: 2,
+                        trend_sum: 1.5,
                         trend_state: 0
+                    },
+                    coins_direction: {
+                        enabled: true,
+                        coins_direction: 2
                     }
                 }
             }

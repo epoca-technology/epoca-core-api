@@ -110,7 +110,7 @@ export class TrendStateService implements ITrendStateService {
         // Only update the state if there are at least 5 candlesticks in the window
         if (this._prediction.window.length >= 5) {
             const { averageState, splitStates } = this.calculateCurrentState(this._prediction.window);
-            this.state = { s: averageState, ss: splitStates };
+            this.state = { s: averageState, ss: splitStates, w: this._prediction.window };
         } else { this.state = this.getDefaultState() }
     }
 
@@ -258,7 +258,8 @@ export class TrendStateService implements ITrendStateService {
                 s10: {s: 0, c: 0},
                 s5: {s: 0, c: 0},
                 s2: {s: 0, c: 0},
-            }
+            },
+            w: []
         }
     }
 }

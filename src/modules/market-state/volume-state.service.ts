@@ -55,11 +55,12 @@ export class VolumeStateService implements IVolumeStateService {
         // Calculate the mean and the mean high values
         const mean: number = <number>this._utils.outputNumber(accum / window.length);
         const meanHigh: number = <number>this._utils.calculateAverage([mean, highest]);
+        const adjustedMeanHigh: number = <number>this._utils.calculateAverage([mean, meanHigh]);
 
         // Calculate the state of the volume
         let state: IStateType = 0;
         const currentVolume: number = window.at(-1).v;
-        if (currentVolume >= meanHigh) { state = 2 }
+        if (currentVolume >= adjustedMeanHigh) { state = 2 }
         else if (currentVolume >= mean) { state = 1 }
 
         /**
@@ -79,7 +80,7 @@ export class VolumeStateService implements IVolumeStateService {
         this.state = {
             s: state,
             m: mean,
-            mh: meanHigh,
+            mh: adjustedMeanHigh,
             w: items
         };
 
