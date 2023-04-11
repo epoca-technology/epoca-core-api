@@ -181,8 +181,8 @@ export class PositionValidations implements IPositionValidations {
         }
 
         // Validate the positions limit
-        if (typeof newStrategy.positions_limit != "number" || !this._validations.numberValid(newStrategy.positions_limit, 1, 9)) {
-            throw new Error(this._utils.buildApiError(`The positions limit must be a valid number ranging 1-9. 
+        if (typeof newStrategy.positions_limit != "number" || !this._validations.numberValid(newStrategy.positions_limit, 1, 3)) {
+            throw new Error(this._utils.buildApiError(`The positions limit must be a valid number ranging 1-3. 
             Received: ${newStrategy.positions_limit}`, 30005));
         }
 
