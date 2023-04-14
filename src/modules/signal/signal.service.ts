@@ -584,7 +584,7 @@ export class SignalService implements ISignalService {
                     },
                     trend: {
                         enabled: true,
-                        trend_sum: -1.5,
+                        trend_sum: -1,
                         trend_state: 0
                     },
                     coins_direction: {
@@ -608,7 +608,7 @@ export class SignalService implements ISignalService {
                     },
                     trend: {
                         enabled: true,
-                        trend_sum: 1.5,
+                        trend_sum: 1,
                         trend_state: 0
                     },
                     coins_direction: {

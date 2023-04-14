@@ -12,7 +12,7 @@ import {
 } from "../binance";
 import { IDatabaseService } from "../database";
 import { INotificationService } from "../notification";
-import { IUtilitiesService } from "../utilities";
+import { IUtilitiesService, IValidationsService } from "../utilities";
 import { 
     ICoinsService,
     ICoinsState,
@@ -24,7 +24,8 @@ import {
     ISplitStates,
     IStateType,
     ICoinsScores,
-    ICoinScore
+    ICoinScore,
+    ICoinsConfiguration
 } from "./interfaces";
 
 
@@ -38,7 +39,16 @@ export class CoinsService implements ICoinsService {
     @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.StateUtilitiesService)              private _stateUtils: IStateUtilitiesService;
+    @inject(SYMBOLS.ValidationsService)                   private _val: IValidationsService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
+
+
+    /**
+     * Configuration
+     * The configuration that will be used to build the coins and calculate
+     * their states.
+     */
+    public config: ICoinsConfiguration;
 
 
     /**
@@ -59,7 +69,6 @@ export class CoinsService implements ICoinsService {
      * users will be notified.
      */
     private supportedCoinsInterval: any;
-    private readonly supportedCoinsIntervalHours: number = 8;
 
 
 
@@ -75,18 +84,6 @@ export class CoinsService implements ICoinsService {
     private wsLastUpdate: number;
     private ws: WebSocket;
     private states: {[symbol: string]: ICoinState} = {};
-
-
-
-    /**
-     * State
-     * Each coin has its own state that includes the history of prices
-     * based on the priceWindowSize.
-     */
-    private readonly requirement: number = 0.025;
-    private readonly strongRequirement: number = 0.25;
-    private readonly priceIntervalSeconds: number = 30;
-    private readonly priceWindowSize: number = 128; // ~64 minutes
 
 
 
@@ -119,6 +116,9 @@ export class CoinsService implements ICoinsService {
      * @returns Promise<void>
      */
     public async initialize(): Promise<void> {
+        // Initalize the configuration
+        await this.initializeConfiguration();
+
         // Initialize the installed coins
         await this.initializeInstalledCoins();
 
@@ -131,7 +131,7 @@ export class CoinsService implements ICoinsService {
                 console.log(e);
                 this._apiError.log("CoinsService.updateSupportedCoins", e);
             }
-        }, this.supportedCoinsIntervalHours * 60 * 60 * 1000);
+        }, this.config.supportedCoinsIntervalHours * 60 * 60 * 1000);
 
         // Initialize the websocket status interval
         this.wsInterval = setInterval(async () => {
@@ -161,6 +161,9 @@ export class CoinsService implements ICoinsService {
         this.wsInterval = undefined;
         this.stopWebsocketSubscription();
     }
+
+
+
 
 
 
@@ -699,10 +702,10 @@ export class CoinsService implements ICoinsService {
          * If the state has been set and there are enough items in the window, 
          * calculate the state.
          */
-        if (this.states[symbol] && this.states[symbol].w.length == this.priceWindowSize) {
+        if (this.states[symbol] && this.states[symbol].w.length == this.config.priceWindowSize) {
             // Calculate the state
             const { averageState, splitStates } = 
-                this._stateUtils.calculateCurrentState(this.states[symbol].w, this.requirement, this.strongRequirement);
+                this._stateUtils.calculateCurrentState(this.states[symbol].w, this.config.requirement, this.config.strongRequirement);
 
             /**
              * State Event
@@ -715,7 +718,7 @@ export class CoinsService implements ICoinsService {
             let stateEventTime: number|null = this.states[symbol].set;
             if (stateEvent != 0) {
                 // Make sure the price is properly synced
-                if (this.states[symbol].w.at(-1).x <= moment().subtract(this.priceIntervalSeconds + 10, "seconds").valueOf()) {
+                if (this.states[symbol].w.at(-1).x <= moment().subtract(this.config.priceIntervalSeconds + 10, "seconds").valueOf()) {
                     stateEvent = 0;
                 }
 
@@ -878,12 +881,12 @@ export class CoinsService implements ICoinsService {
                                     
                                     // Check if the last period ended
                                     const periodClose: number = 
-                                        moment(this.states[item.s].w.at(-1).x).add(this.priceIntervalSeconds, "seconds").valueOf();
+                                        moment(this.states[item.s].w.at(-1).x).add(this.config.priceIntervalSeconds, "seconds").valueOf();
 
                                     // If it ended, append the new price and slice the list
                                     if (currentTS > periodClose) {
                                         this.states[item.s].w.push({ x: item.E, y: markPrice});
-                                        this.states[item.s].w = this.states[item.s].w.slice(-this.priceWindowSize);
+                                        this.states[item.s].w = this.states[item.s].w.slice(-this.config.priceWindowSize);
                                     }
 
                                     // Otherwise, update the current price
@@ -1007,6 +1010,189 @@ export class CoinsService implements ICoinsService {
             se: 0,
             set: null,
             w: []
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /****************************
+     * Configuration Management *
+     ****************************/
+
+
+
+
+
+
+    /**
+     * Initializes the Coins's Configuration straight from the db.
+     * If the record does not exist, it is initialized.
+     * @returns Promise<void>
+     */
+    private async initializeConfiguration(): Promise<void> {
+        // Retrieve the config stored in the db
+        const config: ICoinsConfiguration|undefined = await this.getConfigurationRecord();
+
+        // If they have been set, unpack them into the local property
+        if (config) {
+            this.config = config;
+        }
+
+        // Otherwise, set the default policies and save them
+        else {
+            this.config = this.buildDefaultConfig();
+            await this.createConfigurationRecord(this.config);
+        }
+    }
+
+
+
+
+
+
+    /**
+     * Updates the Coins's Configuration on the db and the local property.
+     * @param newConfiguration 
+     * @returns Promise<void>
+     */
+    public async updateConfiguration(newConfiguration: ICoinsConfiguration): Promise<void> {
+        // Validate the request
+        if (!newConfiguration || typeof newConfiguration != "object") {
+            console.log(newConfiguration);
+            throw new Error(this._utils.buildApiError(`The provided coins config object is invalid.`, 37007));
+        }
+        if (!this._val.numberValid(newConfiguration.requirement, 0.01, 100)) {
+            throw new Error(this._utils.buildApiError(`The provided requirement (${newConfiguration.requirement}) is invalid.`, 37008));
+        }
+        if (!this._val.numberValid(newConfiguration.strongRequirement, 0.01, 100)) {
+            throw new Error(this._utils.buildApiError(`The provided strongRequirement (${newConfiguration.strongRequirement}) is invalid.`, 37009));
+        }
+        if (newConfiguration.requirement >= newConfiguration.strongRequirement) {
+            throw new Error(this._utils.buildApiError(`The requirement cannot be greater than or equals to the 
+            strongRequirement. Received: ${newConfiguration.requirement} | ${newConfiguration.strongRequirement}.`, 37010));
+        }
+        if (!this._val.numberValid(newConfiguration.supportedCoinsIntervalHours, 1, 48)) {
+            throw new Error(this._utils.buildApiError(`The provided supportedCoinsIntervalHours (${newConfiguration.supportedCoinsIntervalHours}) is invalid.`, 37011));
+        }
+        if (!this._val.numberValid(newConfiguration.priceWindowSize, 32, 1024)) {
+            throw new Error(this._utils.buildApiError(`The provided priceWindowSize (${newConfiguration.priceWindowSize}) is invalid.`, 37012));
+        }
+        if (!this._val.numberValid(newConfiguration.priceIntervalSeconds, 1, 128)) {
+            throw new Error(this._utils.buildApiError(`The provided priceIntervalSeconds (${newConfiguration.priceIntervalSeconds}) is invalid.`, 37013));
+        }
+
+
+        // Store the new config on the db and update the local property
+        await this.updateConfigurationRecord(newConfiguration);
+        this.config = newConfiguration;
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /* Configuration Record Management */
+
+
+
+
+
+
+    /**
+     * Retrieves the Coins's Configuration from the db. If there is
+     * no record, it returns undefined.
+     * @returns Promise<ICoinsConfiguration|undefined>
+     */
+    private async getConfigurationRecord(): Promise<ICoinsConfiguration|undefined> {
+        // Retrieve the data
+        const { rows } = await this._db.query({
+            text: `SELECT data FROM  ${this._db.tn.coins_configuration} WHERE id = 1`,
+            values: []
+        });
+
+        // Return the result
+        return rows.length ? rows[0].data: undefined;
+    }
+
+
+
+
+
+    /**
+     * Creates the Coins' Configuration on the db.
+     * @param defaultConfiguration 
+     * @returns Promise<void>
+     */
+    private async createConfigurationRecord(defaultConfiguration: ICoinsConfiguration): Promise<void> {
+        await this._db.query({
+            text: `INSERT INTO ${this._db.tn.coins_configuration}(id, data) VALUES(1, $1)`,
+            values: [defaultConfiguration]
+        });
+    }
+
+
+
+
+
+    /**
+     * Updates the Coins's Configuration on the db.
+     * @param newConfiguration 
+     * @returns Promise<void>
+     */
+    private async updateConfigurationRecord(newConfiguration: ICoinsConfiguration): Promise<void> {
+        await this._db.query({
+            text: `UPDATE ${this._db.tn.coins_configuration} SET data=$1 WHERE id=1`,
+            values: [newConfiguration]
+        });
+    }
+
+
+
+
+
+
+
+    /* Misc Helpers */
+
+
+
+    /**
+     * Builds the default configuration object in order
+     * of the db record to be initialized.
+     * @returns ICoinsConfiguration
+     */
+    private buildDefaultConfig(): ICoinsConfiguration {
+        return {
+            supportedCoinsIntervalHours: 8,
+            priceWindowSize: 128,
+            priceIntervalSeconds: 30,
+            requirement: 0.025,
+            strongRequirement: 0.25
         }
     }
 }

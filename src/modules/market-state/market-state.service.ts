@@ -95,6 +95,9 @@ export class MarketStateService implements IMarketStateService {
      * @returns Promise<void>
      */
     public async initialize(): Promise<void> {
+        // Initialize the window module
+        await this._windowState.initialize();
+        
         // Initialize the Liquidity Module
         await this._liquidity.initialize();
 

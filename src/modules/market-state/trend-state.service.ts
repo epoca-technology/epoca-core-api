@@ -3,6 +3,8 @@ import { Subscription } from "rxjs";
 import { SYMBOLS } from "../../ioc";
 import { IPrediction } from "../epoch-builder";
 import { IPredictionCandlestick, IPredictionService } from "../prediction";
+import { IDatabaseService } from "../database";
+import { IUtilitiesService, IValidationsService } from "../utilities";
 import {
     IStateUtilitiesService,
     ITrendStateService,
@@ -10,6 +12,7 @@ import {
     IStateType,
     ISplitStateResult,
     ISplitStates,
+    ITrendStateConfiguration
 } from "./interfaces";
 
 
@@ -18,17 +21,19 @@ import {
 @injectable()
 export class TrendStateService implements ITrendStateService {
     // Inject dependencies
+    @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
     @inject(SYMBOLS.PredictionService)                  private _prediction: IPredictionService;
     @inject(SYMBOLS.StateUtilitiesService)              private _stateUtils: IStateUtilitiesService;
+    @inject(SYMBOLS.ValidationsService)                 private _val: IValidationsService;
+    @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
 
     /**
-     * Requirements
-     * The trend sum changes that must exist in the window in order for
-     * it to have a state.
+     * Configuration
+     * The configuration that will be used in order to calculate the 
+     * state of the trend.
      */
-    private readonly requirement: number = 0.025;
-    private readonly strongRequirement: number = 0.35;
+    public config: ITrendStateConfiguration;
 
 
     /**
@@ -53,6 +58,12 @@ export class TrendStateService implements ITrendStateService {
 
 
 
+
+
+
+
+
+
     /***************
      * Initializer *
      ***************/
@@ -67,6 +78,10 @@ export class TrendStateService implements ITrendStateService {
      * @returns  Promise<void>
      */
     public async initialize(): Promise<void> {
+        // Initialize the configuration
+        await this.initializeConfiguration();
+
+        // Build the default state and subscribe to the predictions
         this.state = this.getDefaultState();
         this.predictionSub = this._prediction.active.subscribe((pred: IPrediction|undefined) => {
             if (pred) this.calculateState(); 
@@ -91,9 +106,25 @@ export class TrendStateService implements ITrendStateService {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
 
-    /* State Calculation */
+    /*********************
+     * State Calculation *
+     *********************/
 
 
 
@@ -182,11 +213,11 @@ export class TrendStateService implements ITrendStateService {
         // Calculates the state based on the difference
         let state: IStateType = 0;
         if (initial > final) {
-            if      (diff >= this.strongRequirement) { state = -2 }
-            else if (diff >= this.requirement)       { state = -1 }
+            if      (diff >= this.config.strongRequirement) { state = -2 }
+            else if (diff >= this.config.requirement)       { state = -1 }
         } else if (initial < final) {
-            if      (diff >= this.strongRequirement) { state = 2 }
-            else if (diff >= this.requirement)       { state = 1 }
+            if      (diff >= this.config.strongRequirement) { state = 2 }
+            else if (diff >= this.config.requirement)       { state = 1 }
         }
 
         // Finally, return the result
@@ -230,11 +261,6 @@ export class TrendStateService implements ITrendStateService {
 
 
 
-
-
-
-
-
     /* Misc Helpers */
 
 
@@ -260,6 +286,171 @@ export class TrendStateService implements ITrendStateService {
                 s2: {s: 0, c: 0},
             },
             w: []
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /****************************
+     * Configuration Management *
+     ****************************/
+
+
+
+
+
+
+    /**
+     * Initializes the Trend's Configuration straight from the db.
+     * If the record does not exist, it is initialized.
+     * @returns Promise<void>
+     */
+    private async initializeConfiguration(): Promise<void> {
+        // Retrieve the config stored in the db
+        const config: ITrendStateConfiguration|undefined = await this.getConfigurationRecord();
+
+        // If they have been set, unpack them into the local property
+        if (config) {
+            this.config = config;
+        }
+
+        // Otherwise, set the default policies and save them
+        else {
+            this.config = this.buildDefaultConfig();
+            await this.createConfigurationRecord(this.config);
+        }
+    }
+
+
+
+
+
+
+    /**
+     * Updates the Trend's Configuration on the db and the local property.
+     * @param newConfiguration 
+     * @returns Promise<void>
+     */
+    public async updateConfiguration(newConfiguration: ITrendStateConfiguration): Promise<void> {
+        // Validate the request
+        if (!newConfiguration || typeof newConfiguration != "object") {
+            console.log(newConfiguration);
+            throw new Error(this._utils.buildApiError(`The provided trend config object is invalid.`, 28000));
+        }
+        if (!this._val.numberValid(newConfiguration.requirement, 0.01, 100)) {
+            throw new Error(this._utils.buildApiError(`The provided requirement (${newConfiguration.requirement}) is invalid.`, 28001));
+        }
+        if (!this._val.numberValid(newConfiguration.strongRequirement, 0.01, 100)) {
+            throw new Error(this._utils.buildApiError(`The provided strongRequirement (${newConfiguration.strongRequirement}) is invalid.`, 28002));
+        }
+        if (newConfiguration.requirement >= newConfiguration.strongRequirement) {
+            throw new Error(this._utils.buildApiError(`The requirement cannot be greater than or equals to the 
+            strongRequirement. Received: ${newConfiguration.requirement} | ${newConfiguration.strongRequirement}.`, 28003));
+        }
+
+        // Store the new config on the db and update the local property
+        await this.updateConfigurationRecord(newConfiguration);
+        this.config = newConfiguration;
+    }
+
+
+
+
+
+
+
+
+
+    /* Configuration Record Management */
+
+
+
+
+
+
+    /**
+     * Retrieves the Trend's Configuration from the db. If there is
+     * no record, it returns undefined.
+     * @returns Promise<ITrendStateConfiguration|undefined>
+     */
+    private async getConfigurationRecord(): Promise<ITrendStateConfiguration|undefined> {
+        // Retrieve the data
+        const { rows } = await this._db.query({
+            text: `SELECT data FROM  ${this._db.tn.trend_state_configuration} WHERE id = 1`,
+            values: []
+        });
+
+        // Return the result
+        return rows.length ? rows[0].data: undefined;
+    }
+
+
+
+
+
+    /**
+     * Creates the Trend' Configuration on the db.
+     * @param defaultConfiguration 
+     * @returns Promise<void>
+     */
+    private async createConfigurationRecord(defaultConfiguration: ITrendStateConfiguration): Promise<void> {
+        await this._db.query({
+            text: `INSERT INTO ${this._db.tn.trend_state_configuration}(id, data) VALUES(1, $1)`,
+            values: [defaultConfiguration]
+        });
+    }
+
+
+
+
+
+    /**
+     * Updates the Trend's Configuration on the db.
+     * @param newConfiguration 
+     * @returns Promise<void>
+     */
+    private async updateConfigurationRecord(newConfiguration: ITrendStateConfiguration): Promise<void> {
+        await this._db.query({
+            text: `UPDATE ${this._db.tn.trend_state_configuration} SET data=$1 WHERE id=1`,
+            values: [newConfiguration]
+        });
+    }
+
+
+
+
+
+
+
+    /* Misc Helpers */
+
+
+
+    /**
+     * Builds the default configuration object in order
+     * of the db record to be initialized.
+     * @returns ITrendStateConfiguration
+     */
+    private buildDefaultConfig(): ITrendStateConfiguration {
+        return {
+            requirement: 0.025,
+            strongRequirement: 0.35
         }
     }
 }

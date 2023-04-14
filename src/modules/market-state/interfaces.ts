@@ -168,9 +168,34 @@ export interface IMinifiedSplitStates {
 
 // Service
 export interface IWindowStateService {
+    // Properties
+    config: IWindowStateConfiguration,
+
+    // Initialization
+    initialize(): Promise<void>,
+    stop(): void,
+
+    // State Calculation
     calculateState(window: ICandlestick[]): IWindowState,
     getDefaultState(): IWindowState,
+
+    // Configuration Management
+    updateConfiguration(newConfiguration: IWindowStateConfiguration): Promise<void>,
 }
+
+
+/**
+ * Configuration
+ * The Window' Module Configuration that can be managed from the GUI.
+ */
+export interface IWindowStateConfiguration {
+    // The % change required for the window splits to have a state (1 or -1)
+    requirement: number,
+
+    // The % change required for the window splits to have a strong state (2 or -2)
+    strongRequirement: number
+}
+
 
 // State Object
 export interface IWindowState {
@@ -677,11 +702,36 @@ export interface IKeyZoneFullState {
 
 // Service
 export interface ITrendStateService {
+    // Properties
+    config: ITrendStateConfiguration,
     state: ITrendState,
+
+    // Initialization
     initialize(): Promise<void>,
     stop(): void,
+
+    // State Calculation
     getDefaultState(): ITrendState,
+
+    // Configuration Management
+    updateConfiguration(newConfiguration: ITrendStateConfiguration): Promise<void>
 }
+
+
+
+/**
+ * Configuration
+ * The Trend' Module Configuration that can be managed from the GUI.
+ */
+export interface ITrendStateConfiguration {
+    // The trend sum change required for the window splits to have a state (1 or -1)
+    requirement: number,
+
+    // The trend sum change required for the window splits to have a strong state (2 or -2)
+    strongRequirement: number
+}
+
+
 
 // State Object
 export interface ITrendState {
@@ -722,6 +772,7 @@ export interface ITrendState {
 // Service
 export interface ICoinsService {
     // Properties
+    config: ICoinsConfiguration,
     
     // Initializer
     initialize(): Promise<void>,
@@ -738,7 +789,39 @@ export interface ICoinsService {
     calculateState(): ICoinsState,
     getCoinFullState(symbol: string): ICoinState,
     getDefaultState(): ICoinsState,
+
+    // Configuration Management
+    updateConfiguration(newConfiguration: ICoinsConfiguration): Promise<void>
 }
+
+
+
+
+/**
+ * Configuration
+ * The Coins' Module Configuration that can be managed from the GUI.
+ */
+export interface ICoinsConfiguration {
+    // The duration of the interval that refreshes the supported coins
+    supportedCoinsIntervalHours: number,
+
+    // The number of items that comprise the window
+    priceWindowSize: number,
+
+    // The number of seconds that will comprise each interval
+    priceIntervalSeconds: number,
+
+    // The % change required for the window splits to have a state (1 or -1)
+    requirement: number,
+
+    // The % change required for the window splits to have a strong state (2 or -2)
+    strongRequirement: number
+}
+
+
+
+
+
 
 
 /* Coins */

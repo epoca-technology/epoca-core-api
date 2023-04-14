@@ -23,11 +23,15 @@ import {
     IVolumeStateService, 
     ILiquidityStateService,
     ICoinsService,
-    ICoinsSummary
+    ICoinsSummary,
+    IWindowStateService,
+    ITrendStateService
 } from "./interfaces";
+const _window: IWindowStateService = appContainer.get<IWindowStateService>(SYMBOLS.WindowStateService);
 const _vol: IVolumeStateService = appContainer.get<IVolumeStateService>(SYMBOLS.VolumeStateService);
 const _liquidity: ILiquidityStateService = appContainer.get<ILiquidityStateService>(SYMBOLS.LiquidityService);
 const _keyZones: IKeyZonesStateService = appContainer.get<IKeyZonesStateService>(SYMBOLS.KeyZonesStateService);
+const _trend: ITrendStateService = appContainer.get<ITrendStateService>(SYMBOLS.TrendStateService);
 const _coins: ICoinsService = appContainer.get<ICoinsService>(SYMBOLS.CoinsService);
 
 
@@ -129,6 +133,99 @@ MarketStateRoute.route("/getLiquidityState").get(ultraLowRiskLimit, async (req: 
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*********************
+ * Window Management *
+ *********************/
+
+
+
+
+
+
+
+/**
+* Retrieves the window's configuration
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @returns IAPIResponse<IWindowStateConfiguration>
+*/
+MarketStateRoute.route("/getWindowConfiguration").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+
+        // Return the response
+        res.send(_utils.apiResponse(_window.config));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.getWindowConfiguration", e, reqUid, ip);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+/**
+* Updates the configuration of the Window.
+* @requires id-token
+* @requires api-secret
+* @requires otp
+* @requires authority: 4
+* @param newConfiguration
+* @returns IAPIResponse<void>
+*/
+MarketStateRoute.route("/updateWindowConfiguration").post(highRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["newConfiguration"], req.body, otp || "");
+
+        // Perform Action
+        await _window.updateConfiguration(req.body.newConfiguration);
+
+        // Return the response
+        res.send(_utils.apiResponse());
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.updateWindowConfiguration", e, reqUid, ip, req.body);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
 
 
 
@@ -252,6 +349,108 @@ MarketStateRoute.route("/updateKeyZonesConfiguration").post(highRiskLimit, async
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**************************
+ * Trend State Management *
+ **************************/
+
+
+
+
+
+
+
+/**
+* Retrieves the trend's configuration
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @returns IAPIResponse<ITrendStateConfiguration>
+*/
+MarketStateRoute.route("/getTrendConfiguration").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+
+        // Return the response
+        res.send(_utils.apiResponse(_trend.config));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.getTrendConfiguration", e, reqUid, ip);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+/**
+* Updates the configuration of the Trend.
+* @requires id-token
+* @requires api-secret
+* @requires otp
+* @requires authority: 4
+* @param newConfiguration
+* @returns IAPIResponse<void>
+*/
+MarketStateRoute.route("/updateTrendConfiguration").post(highRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["newConfiguration"], req.body, otp || "");
+
+        // Perform Action
+        await _trend.updateConfiguration(req.body.newConfiguration);
+
+        // Return the response
+        res.send(_utils.apiResponse());
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.updateTrendConfiguration", e, reqUid, ip, req.body);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
 
 
 
@@ -415,6 +614,83 @@ MarketStateRoute.route("/getCoinFullState").get(ultraLowRiskLimit, async (req: e
     } catch (e) {
 		console.log(e);
         _apiError.log("MarketStateRoute.getCoinFullState", e, reqUid, ip, req.query);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+* Retrieves the coins's configuration
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @returns IAPIResponse<ICoinsConfiguration>
+*/
+MarketStateRoute.route("/getCoinsConfiguration").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+
+        // Return the response
+        res.send(_utils.apiResponse(_coins.config));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.getCoinsConfiguration", e, reqUid, ip);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+/**
+* Updates the configuration of the Coins.
+* @requires id-token
+* @requires api-secret
+* @requires otp
+* @requires authority: 4
+* @param newConfiguration
+* @returns IAPIResponse<void>
+*/
+MarketStateRoute.route("/updateCoinsConfiguration").post(highRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["newConfiguration"], req.body, otp || "");
+
+        // Perform Action
+        await _coins.updateConfiguration(req.body.newConfiguration);
+
+        // Return the response
+        res.send(_utils.apiResponse());
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.updateCoinsConfiguration", e, reqUid, ip, req.body);
         res.send(_utils.apiResponse(undefined, e));
     }
 });

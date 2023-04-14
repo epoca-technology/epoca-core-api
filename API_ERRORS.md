@@ -468,9 +468,13 @@
 #
 ## Window State Service (25.000 - 25.999)
 
-25000: ``
+25000: `The provided window config object is invalid.`
 
-25001: ``
+25001: `The provided requirement (${newConfiguration.requirement}) is invalid.`
+
+25002: `The provided strongRequirement (${newConfiguration.strongRequirement}) is invalid.`
+
+25003: `The requirement cannot be greater than or equals to the strongRequirement. Received: ${newConfiguration.requirement} | ${newConfiguration.strongRequirement}.`
 
 
 
@@ -511,6 +515,23 @@
 27011: `The provided supportEventDurationSeconds (${config.supportEventDurationSeconds}) is invalid.`
 
 27012: `The provided resistanceEventDurationSeconds (${config.resistanceEventDurationSeconds}) is invalid.`
+
+
+
+
+
+
+#
+## Trend State Service (28.000 - 28.100)
+
+28000: `The provided trend config object is invalid.`
+
+28001: `The provided requirement (${newConfiguration.requirement}) is invalid.`
+
+28002: `The provided strongRequirement (${newConfiguration.strongRequirement}) is invalid.`
+
+28003: `The requirement cannot be greater than or equals to the strongRequirement. Received: ${newConfiguration.requirement} | ${newConfiguration.strongRequirement}.`
+
 
 
 
@@ -704,6 +725,16 @@
 
 37006: `The coin ${symbol} does not have a loaded price.`
 
-37007: ``
+37007: `The provided coins config object is invalid.`
 
-37008: ``
+37008: `The provided requirement (${newConfiguration.requirement}) is invalid.`
+
+37009: `The provided strongRequirement (${newConfiguration.strongRequirement}) is invalid.`
+
+37010: `The requirement cannot be greater than or equals to the strongRequirement. Received: ${newConfiguration.requirement} | ${newConfiguration.strongRequirement}.`
+
+37011: `The provided supportedCoinsIntervalHours (${newConfiguration.supportedCoinsIntervalHours}) is invalid.`
+
+37012: `The provided priceWindowSize (${newConfiguration.priceWindowSize}) is invalid.`
+
+37013: `The provided priceIntervalSeconds (${newConfiguration.priceIntervalSeconds}) is invalid.`

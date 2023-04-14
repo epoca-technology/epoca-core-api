@@ -1308,7 +1308,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             supportEventDurationSeconds: 300,
             resistanceEventDurationSeconds: 300,
             keyzoneIdleOnEventMinutes: 90,
-            eventScoreRequirement: 5
+            eventScoreRequirement: 4.5
         }
     }
 }

@@ -248,11 +248,56 @@ export const TABLES: IRawTable[] = [
 
     
     /**
+     * Window State Configuration
+     * 
+     */
+    {
+        name: "window_state_configuration",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id              SMALLINT NOT NULL PRIMARY KEY,
+                data            JSONB NOT NULL
+            );`
+        }
+    },
+
+    
+    /**
      * KeyZones Configuration
      * 
      */
     {
         name: "keyzones_configuration",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id              SMALLINT NOT NULL PRIMARY KEY,
+                data            JSONB NOT NULL
+            );`
+        }
+    },
+
+    
+    /**
+     * Trend State Configuration
+     * 
+     */
+    {
+        name: "trend_state_configuration",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id              SMALLINT NOT NULL PRIMARY KEY,
+                data            JSONB NOT NULL
+            );`
+        }
+    },
+
+    
+    /**
+     * Coins Configuration
+     * 
+     */
+    {
+        name: "coins_configuration",
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 id              SMALLINT NOT NULL PRIMARY KEY,
