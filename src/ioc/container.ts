@@ -9,6 +9,7 @@ import { apiErrorModule } from "../modules/api-error";
 import { authModule } from "../modules/auth";
 import { binanceModule } from "../modules/binance";
 import { bulkDataModule } from "../modules/bulk-data";
+import { campaignModule } from "../modules/campaign";
 import { candlestickModule } from "../modules/candlestick";
 import { databaseModule } from "../modules/database";
 import { epochModule } from "../modules/epoch";
@@ -53,6 +54,9 @@ appContainer.load(
 
     // Bulk Data
     bulkDataModule,
+
+    // Campaign
+    campaignModule,
 
     // Candlestick
     candlestickModule,

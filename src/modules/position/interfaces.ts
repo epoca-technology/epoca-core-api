@@ -13,7 +13,6 @@ import {
 export interface IPositionService {
     // Properties
     strategy: IPositionStrategy,
-    balance: IAccountBalance,
 
     // Initializer
     initialize(): Promise<void>,
@@ -34,9 +33,6 @@ export interface IPositionService {
 
     // Position Strategy
     updateStrategy(newStrategy: IPositionStrategy): Promise<void>,
-
-    // Futures Account Balance
-    refreshBalance(): Promise<void>,
 }
 
 
@@ -176,6 +172,20 @@ export interface IPositionStrategy {
     positions_limit: number,
 
     /**
+     * Reopen If Better Duration Minutes
+     * When a position looses, the stop_loss_price is stored in RAM as well as the
+     * time + reopen_if_better_duration_minutes. During this period of time, only
+     * "better" positions can be opened. This functionality can be disabled by 
+     * setting the value to 0.
+     * "Better" stands for "Better Rate". For example, a long position is opened at 
+     * 1.000 and looses at 999, for the next reopen_if_better_duration_minutes, longs
+     * can only be opened if the price is < 999. On the other hand, if a short was
+     * opened at 1.000 and lost at 1.001, no shorts with price < 1.001 can be opened
+     * for reopen_if_better_duration_minutes.
+     */
+    reopen_if_better_duration_minutes: number,
+
+    /**
      * Profit Optimization Strategy
      * When a position is opened, a take profit grid is generated. Each level
      * activates when hit by the mark price. The position is maintained active
@@ -184,6 +194,7 @@ export interface IPositionStrategy {
     take_profit_1: ITakeProfitLevel,
     take_profit_2: ITakeProfitLevel,
     take_profit_3: ITakeProfitLevel,
+    take_profit_4: ITakeProfitLevel,
 
     /**
      * Loss Optimization Strategy
@@ -206,6 +217,7 @@ export interface IPositionExitStrategy {
     take_profit_price_1: number,
     take_profit_price_2: number,
     take_profit_price_3: number,
+    take_profit_price_4: number,
 
     // Stop Loss
     stop_loss_price: number
@@ -234,6 +246,26 @@ export interface IPositionGainState {
 }
 
 
+
+
+
+/**
+ * Stop Lossed Positions
+ * When a position looses, it stores the essential data in order to ensure
+ * that if a position for the side was to be re-opened, the price must be 
+ * better.
+ */
+export interface IStopLossedPositions {
+    LONG: {[symbol: string]: IStopLossedPositionBySide},
+    SHORT: {[symbol: string]: IStopLossedPositionBySide},
+}
+export interface IStopLossedPositionBySide {
+    // The price at which the position stop lossed
+    price: number,
+
+    // The time at which the stop lossed position fades away
+    until: number
+}
 
 
 
@@ -326,6 +358,7 @@ export interface IPositionRecord {
     take_profit_price_1: number,
     take_profit_price_2: number,
     take_profit_price_3: number,
+    take_profit_price_4: number,
 
     // The price in which the position is labeled as "unsuccessful" and is ready to be closed.
     stop_loss_price: number,
@@ -521,29 +554,3 @@ export interface IPositionActionRecord {
 
 
 
-
-
-
-/* Balance */
-
-
-
-
-/**
- * Account Balance
- * In Epoca, the balance is always referring to USDT and is always extracted
- * fresh from Binance's API.
- */
-export interface IAccountBalance {
-    // The available balance in the account that can be used to initialize positions
-    available: number,
-
-    // The balance that has been allocated to positions (margin)
-    on_positions: number,
-
-    // The total balance in the account including unrealized pnl
-    total: number,
-
-    // The time in which the balance data was last updated by Binance
-    ts: number
-}

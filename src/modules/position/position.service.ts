@@ -5,7 +5,6 @@ import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { 
     IBinanceActivePosition, 
-    IBinanceBalance, 
     IBinancePositionActionSide, 
     IBinancePositionSide, 
     IBinanceService,
@@ -17,7 +16,6 @@ import { INotificationService } from "../notification";
 import { IApiErrorService } from "../api-error";
 import { IUtilitiesService } from "../utilities";
 import { 
-    IAccountBalance,
     IActivePositionCandlestick,
     IPositionActionKind,
     IPositionActionRecord,
@@ -31,6 +29,7 @@ import {
     IPositionService,
     IPositionStrategy,
     IPositionValidations,
+    IStopLossedPositions,
 } from "./interfaces";
 
 
@@ -93,19 +92,20 @@ export class PositionService implements IPositionService {
      * 2 -> Gain Drawdown%
      */
     private activeCandlestick: {[symbol: string]: IActivePositionCandlestick} = {};
-    private readonly candlestickIntervalSeconds: number = 300; // ~5 minutes
-
+    private readonly candlestickIntervalSeconds: number = 600; // ~10 minutes
 
 
 
     /**
-     * Futures Account Balance
-     * In order for members to be trully involved, the balance is synced
-     * every certain period of time.
+     * Stop Lossed Positions
+     * If strategy.reopen_if_better_duration_minutes is greater than 0, whenever a position
+     * looses, it stores the stop loss price as well as the time in which only "better"
+     * positions can be reopened based on the side.
      */
-    public balance: IAccountBalance;
-    private balanceSyncInterval: any;
-    private readonly balanceIntervalSeconds: number = 60 * 180; // Every ~3 hours
+    private stopLossedPositions: IStopLossedPositions = {
+        LONG: {},
+        SHORT: {}
+    }
 
 
 
@@ -141,9 +141,6 @@ export class PositionService implements IPositionService {
      * @returns Promise<void>
      */
     public async initialize(): Promise<void> {
-        // Initialize the default balance
-        this.setDefaultBalance();
-
         // Initialize the strategy
         await this.initializeStrategy();
 
@@ -172,12 +169,6 @@ export class PositionService implements IPositionService {
                 }
             }
         }, this.activePositionsIntervalSeconds * 1000);
-        this.balanceSyncInterval = setInterval(async () => {
-            try { await this.refreshBalance() } catch (e) { 
-                this._apiError.log("PositionService.interval.refreshBalance", e);
-                this.setDefaultBalance();
-            }
-        }, this.balanceIntervalSeconds * 1000);
     }
 
 
@@ -193,8 +184,6 @@ export class PositionService implements IPositionService {
         if (this.signalSub) this.signalSub.unsubscribe();
         if (this.activePositionsSyncInterval) clearInterval(this.activePositionsSyncInterval);
         this.activePositionsSyncInterval = undefined;
-        if (this.balanceSyncInterval) clearInterval(this.balanceSyncInterval);
-        this.balanceSyncInterval = undefined;
     }
 
 
@@ -472,6 +461,7 @@ export class PositionService implements IPositionService {
             take_profit_price_1: exit.take_profit_price_1,
             take_profit_price_2: exit.take_profit_price_2,
             take_profit_price_3: exit.take_profit_price_3,
+            take_profit_price_4: exit.take_profit_price_4,
             stop_loss_price: exit.stop_loss_price,
             stop_loss_order: undefined,
 
@@ -511,6 +501,11 @@ export class PositionService implements IPositionService {
             take_profit_price_3: <number>this._utils.alterNumberByPercentage(
                 entryPrice, 
                 side == "LONG" ? this.strategy.take_profit_3.price_change_requirement: -(this.strategy.take_profit_3.price_change_requirement),
+                { dp: pricePrecision }
+            ),
+            take_profit_price_4: <number>this._utils.alterNumberByPercentage(
+                entryPrice, 
+                side == "LONG" ? this.strategy.take_profit_4.price_change_requirement: -(this.strategy.take_profit_4.price_change_requirement),
                 { dp: pricePrecision }
             ),
             stop_loss_price: <number>this._utils.alterNumberByPercentage(
@@ -681,6 +676,10 @@ export class PositionService implements IPositionService {
         (
             currentGain < this.strategy.take_profit_3.price_change_requirement && 
             highestGain >= (this.strategy.take_profit_3.price_change_requirement + this.strategy.take_profit_3.activation_offset)
+        ) ||
+        (
+            currentGain < this.strategy.take_profit_4.price_change_requirement && 
+            highestGain >= (this.strategy.take_profit_4.price_change_requirement + this.strategy.take_profit_4.activation_offset)
         );
     }
 
@@ -710,8 +709,15 @@ export class PositionService implements IPositionService {
         }
 
         // Level 3
-        else if (gain >= this.strategy.take_profit_3.price_change_requirement) {
+        else if (
+            gain >= this.strategy.take_profit_3.price_change_requirement && gain < this.strategy.take_profit_4.price_change_requirement
+        ) {
             return this.strategy.take_profit_3.max_gain_drawdown;
+        }
+
+        // Level 4
+        else if (gain >= this.strategy.take_profit_4.price_change_requirement) {
+            return this.strategy.take_profit_4.max_gain_drawdown;
         }
 
         // No level is active
@@ -777,6 +783,14 @@ export class PositionService implements IPositionService {
 
         // Store the position the db
         await this._model.savePosition(this.active[symbol]);
+
+        // If the position stop lossed and reopen_if_better_duration_minutes is enabled, store the data
+        if (this.active[symbol].gain <= 0.1 && this.strategy.reopen_if_better_duration_minutes > 0) {
+            this.stopLossedPositions[this.active[symbol].side][symbol] = {
+                price: this.active[symbol].stop_loss_price,
+                until: moment(this.active[symbol].close).add(this.strategy.reopen_if_better_duration_minutes, "minutes").valueOf()
+            }
+        }
 
         // Notify the users
         this._notification.positionHasBeenClosed(this.active[symbol]);
@@ -1027,22 +1041,45 @@ export class PositionService implements IPositionService {
         // Firstly, retrieve the coin and the price
         const { coin, price } = this._coin.getInstalledCoinAndPrice(symbol);
 
-        // Calculate the notional size
-        const notional: BigNumber = new BigNumber(this.strategy.position_size).times(this.strategy.leverage);
+        // Evaluate if the position can be opened
+        let canBeOpened: boolean = true;
+        if (
+            this.strategy.reopen_if_better_duration_minutes > 0 &&
+            this.stopLossedPositions[side][symbol] &&
+            Date.now() <= this.stopLossedPositions[side][symbol].until
+        ) {
+            // In the case of a long, the new position's price must be lower than the previous one
+            if (side == "LONG") {
+                canBeOpened = price < this.stopLossedPositions[side][symbol].price;
+            }
 
-        // Convert the notional into the coin, resulting in the leveraged position amount
-        const amount: number = <number>this._utils.outputNumber(notional.dividedBy(price), {dp: coin.quantityPrecision, ru: false});
+            // In the case of a short, the new position's price must be higher than the previous one
+            else {
+                canBeOpened = price > this.stopLossedPositions[side][symbol].price;
+            }
+        }
 
-        // Execute the trade
-        const payload: IBinanceTradeExecutionPayload|undefined = await this._binance.order(
-            symbol,
-            side == "LONG" ? "BUY": "SELL",
-            amount
-        );
+        // If the position can be opened, proceed
+        if (canBeOpened) {
+            // Calculate the notional size
+            const notional: BigNumber = new BigNumber(this.strategy.position_size).times(this.strategy.leverage);
 
-        // Store the payload if provided
-        if (payload && typeof payload == "object") {
-            await this._model.savePositionActionPayload("POSITION_OPEN", symbol, side, payload);
+            // Convert the notional into the coin, resulting in the leveraged position amount
+            const amount: number = <number>this._utils.outputNumber(notional.dividedBy(price), {dp: coin.quantityPrecision, ru: false});
+
+            // Execute the trade
+            const payload: IBinanceTradeExecutionPayload|undefined = await this._binance.order(
+                symbol,
+                side == "LONG" ? "BUY": "SELL",
+                amount
+            );
+
+            // Store the payload if provided
+            if (payload && typeof payload == "object") {
+                await this._model.savePositionActionPayload("POSITION_OPEN", symbol, side, payload);
+            }
+        } else {
+            console.log(`The pos. ${symbol} ${side} was not opened because its price was not better than the previous stop lossed position.`);
         }
     }
 
@@ -1198,86 +1235,12 @@ export class PositionService implements IPositionService {
             leverage: 70,
             position_size: 1,
             positions_limit: 1,
-            take_profit_1: { price_change_requirement: 0.35, activation_offset: 0.1, max_gain_drawdown: -100 },
-            take_profit_2: { price_change_requirement: 0.55, activation_offset: 0.1, max_gain_drawdown: -35 },
-            take_profit_3: { price_change_requirement: 0.9,  activation_offset: 0.1, max_gain_drawdown: -15 },
+            reopen_if_better_duration_minutes: 60,
+            take_profit_1: { price_change_requirement: 0.35, activation_offset: 0.1,  max_gain_drawdown: -100 },
+            take_profit_2: { price_change_requirement: 0.55, activation_offset: 0.1,  max_gain_drawdown: -35 },
+            take_profit_3: { price_change_requirement: 0.9,  activation_offset: 0.1,  max_gain_drawdown: -15 },
+            take_profit_4: { price_change_requirement: 1.5,  activation_offset: 0.1,  max_gain_drawdown: -5 },
             stop_loss: 0.15
         }
-    }
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /***************************
-     * Futures Account Balance *
-     ***************************/
-
-
-
-
-
-    /**
-     * Retrieves the current futures account balance and
-     * updates the local property.
-     * @returns Promise<void>
-     */
-    public async refreshBalance(): Promise<void> {
-        // Retrieve the account balances
-        let balances: IBinanceBalance[] = await this._binance.getBalances();
-
-        // Filter all the balances except for USDT
-        balances = balances.filter((b) => b.asset == "USDT");
-        if (balances.length != 1) {
-            console.log(balances);
-            throw new Error(this._utils.buildApiError(`The USDT balance could not be retrieved from the Binance API. Received ${balances.length}`, 29001));
-        }
-
-        // Ensure all the required properties have been extracted
-        if (typeof balances[0].availableBalance != "string" || typeof balances[0].balance != "string") {
-            throw new Error(this._utils.buildApiError(`The extracted USDT balance object is not complete. 
-            Available ${balances[0].availableBalance} | Balance: ${balances[0].balance}`, 29002));
-        }
-
-        // Calculate the balance
-        const available: BigNumber = new BigNumber(balances[0].availableBalance);
-        const total: BigNumber = new BigNumber(balances[0].balance);
-
-        // Update the local property
-        this.balance = {
-            available: <number>this._utils.outputNumber(available),
-            on_positions: <number>this._utils.outputNumber(total.minus(available)),
-            total: <number>this._utils.outputNumber(total),
-            ts: balances[0].updateTime || Date.now()
-        };
-    }
-
-
-
-
-    /**
-     * Builds the default Binance Balance object and sets it on the local property.
-     * @returns Promise<IBinanceBalance[]>
-     */
-    private setDefaultBalance(): void {
-        this.balance = { available: 0, on_positions: 0, total: 0, ts: Date.now() };
     }
 }

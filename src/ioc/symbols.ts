@@ -18,6 +18,11 @@
     // Bulk Data
     BulkDataService: Symbol.for("BulkDataService"),
 
+    // Campaign
+    CampaignService: Symbol.for("CampaignService"),
+    CampaignModel: Symbol.for("CampaignModel"),
+    CampaignValidations: Symbol.for("CampaignValidations"),
+
     // Candlestick
     CandlestickService: Symbol.for("CandlestickService"),
     CandlestickModel: Symbol.for("CandlestickModel"),
@@ -103,6 +108,11 @@ export interface ISymbols {
 
 
     BulkDataService: symbol,
+
+
+    CampaignService: symbol,
+    CampaignModel: symbol,
+    CampaignValidations: symbol,
 
 
     CandlestickService: symbol,

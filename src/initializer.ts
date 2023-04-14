@@ -58,6 +58,10 @@ const _signal = appContainer.get<ISignalService>(SYMBOLS.SignalService);
 import {IPositionService} from "./modules/position";
 const _position = appContainer.get<IPositionService>(SYMBOLS.PositionService);
 
+// Campaign
+import {ICampaignService} from "./modules/campaign";
+const _campaign = appContainer.get<ICampaignService>(SYMBOLS.CampaignService);
+
 // App Bulk Stream
 import {IBulkDataService} from "./modules/bulk-data";
 const _bulkData = appContainer.get<IBulkDataService>(SYMBOLS.BulkDataService);
@@ -77,7 +81,8 @@ const _bulkData = appContainer.get<IBulkDataService>(SYMBOLS.BulkDataService);
  * 8)  Prediction Module
  * 9)  Signal Module
  * 10) Position Module
- * 11) Bulk Data Module
+ * 11) Campaign Module
+ * 12) Bulk Data Module
  * 
  * If any of the initialization actions triggers an error, it crashes the execution and
  * stop the following modules:
@@ -88,7 +93,8 @@ const _bulkData = appContainer.get<IBulkDataService>(SYMBOLS.BulkDataService);
  * 5)  Prediction Module
  * 6)  Signal Module
  * 7)  Position Module
- * 8)  Bulk Data Module
+ * 8)  Campaign Module
+ * 9)  Bulk Data Module
  */
 export async function init(): Promise<void> {
     try { await _init() }
@@ -214,6 +220,14 @@ async function _init(): Promise<void> {
                 throw e;
             }
 
+            // Initialize the Campaign Module after a delay
+            try {
+                await _campaign.initialize();
+            } catch (e) {
+                console.error("Error when initializing the Campaign Module: ", e)
+                throw e;
+            }
+
             // Initialize the Bulk Data Module
             try {
                 await _bulkData.initialize();
@@ -249,6 +263,9 @@ async function _init(): Promise<void> {
 
         // Stop the Positions Module
         _position.stop();
+
+        // Stop the Campaign Module
+        _campaign.stop();
 
         // Stop the Bulk Data Module
         _bulkData.stop();

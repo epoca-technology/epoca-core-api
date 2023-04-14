@@ -186,6 +186,12 @@ export class PositionValidations implements IPositionValidations {
             Received: ${newStrategy.positions_limit}`, 30005));
         }
 
+        // Validate the reopen if better restriction
+        if (typeof newStrategy.reopen_if_better_duration_minutes != "number" || !this._validations.numberValid(newStrategy.reopen_if_better_duration_minutes, 1, 720)) {
+            throw new Error(this._utils.buildApiError(`The reopen_if_better_duration_minutes must be a valid number ranging 1-720. 
+            Received: ${newStrategy.reopen_if_better_duration_minutes}`, 30016));
+        }
+
         // Validate the take profit 1
         if (
             typeof newStrategy.take_profit_1 != "object" || 
@@ -222,12 +228,25 @@ export class PositionValidations implements IPositionValidations {
             requirement, activation offset & the max gain drawdown.`, 30008));
         }
 
+        // Validate the take profit 4
+        if (
+            typeof newStrategy.take_profit_4 != "object" || 
+            !this._validations.numberValid(newStrategy.take_profit_4.price_change_requirement, 0.05, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_4.activation_offset, 0.01, 5) ||
+            !this._validations.numberValid(newStrategy.take_profit_4.max_gain_drawdown, -100, -0.01)
+        ) {
+            console.log(newStrategy.take_profit_4);
+            throw new Error(this._utils.buildApiError(`The take profit 4 must be a valid object containing the price change 
+            requirement, activation offset & the max gain drawdown.`, 30008));
+        }
+
 
 
         // Ensure the take profit levels are in ascending order
         const ascendingTakeProfits: boolean = 
             newStrategy.take_profit_2.price_change_requirement > newStrategy.take_profit_1.price_change_requirement &&
-            newStrategy.take_profit_3.price_change_requirement > newStrategy.take_profit_2.price_change_requirement;
+            newStrategy.take_profit_3.price_change_requirement > newStrategy.take_profit_2.price_change_requirement &&
+            newStrategy.take_profit_4.price_change_requirement > newStrategy.take_profit_3.price_change_requirement;
         if (!ascendingTakeProfits) {
             console.log(newStrategy);
             throw new Error(this._utils.buildApiError(`The price change requirements in the take profits must be provided

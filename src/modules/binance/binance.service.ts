@@ -16,10 +16,10 @@ import {
     IBinanceActivePosition,
     IBinanceTradeExecutionPayload,
     IBinancePositionActionSide,
-    IBinancePositionSide,
     IBinanceOrderBook,
     IBinanceExchangeInformation,
-    IBinanceCoinTicker
+    IBinanceCoinTicker,
+    IBinanceIncomeRecord
 } from "./interfaces";
 
 
@@ -110,7 +110,7 @@ export class BinanceService implements IBinanceService {
             }
         };
 
-        // Retrieve the order book
+        // Retrieve the balances
         const response: IExternalRequestResponse = await this._er.request(options);
 
         // Validate the response
@@ -155,7 +155,7 @@ export class BinanceService implements IBinanceService {
             }
         };
 
-        // Retrieve the order book
+        // Retrieve the active positions
         const response: IExternalRequestResponse = await this._er.request(options);
 
         // Validate the response
@@ -174,6 +174,66 @@ export class BinanceService implements IBinanceService {
         // Return the the active position (if any)
         return response.data.filter((p: IBinanceActivePosition) => Number(p.entryPrice) > 0);
     }
+
+
+
+
+
+
+
+
+    /**
+     * Retrieves the list of income records based on a provided starting point.
+     * Note: the response may include an empty list.
+     * @param startAt
+     * @param endAt
+     * @returns Promise<IBinanceIncomeRecord[]>
+     */
+    public async getIncome(startAt: number, endAt: number): Promise<IBinanceIncomeRecord[]> {
+        // Build options
+        const params: string = this.buildSignedParamsString({
+            incomeType: "REALIZED_PNL",
+            startTime: startAt,
+            endTime: endAt,
+            limit: 1000
+        });
+        const options: IExternalRequestOptions = {
+            host: this.futuresBaseURL,
+            path: `/fapi/v1/income?${params}`,
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json;charset=utf-8",
+                "X-MBX-APIKEY": this.apiKey
+            }
+        };
+
+        // Retrieve the order book
+        const response: IExternalRequestResponse = await this._er.request(options);
+
+        // Validate the response
+        if (!response || typeof response != "object" || response.statusCode != 200) {
+            console.log(params);
+            console.log(response);
+            throw new Error(this._utils.buildApiError(`Binance returned an invalid HTTP response code (${response.statusCode}) 
+            when retrieving the income records: ${this.extractErrorMessage(response)}`, 14));
+        }
+
+        // Validate the response's data
+        if (!response.data || !Array.isArray(response.data)) {
+            console.log(params);
+            console.log(response);
+            throw new Error(this._utils.buildApiError("Binance returned an invalid list of income records.", 15));
+        }
+
+        // Return the series
+        return response.data;
+    }
+
+
+
+
+
+
 
 
 

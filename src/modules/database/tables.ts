@@ -428,4 +428,22 @@ export const TABLES: IRawTable[] = [
 
 
 
+
+
+    /**
+     * Campaign Income Records
+     * 
+     */
+    {
+        name: "campaign_income_records",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id          VARCHAR(100) NOT NULL PRIMARY KEY,
+                t           BIGINT NOT NULL,
+                v           NUMERIC(20,2) NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_t ON ${tableName}(t);`
+        }
+    },
+
 ];

@@ -32,11 +32,15 @@
 
 13: `Binance returned an invalid HTTP response code (${response.statusCode}) when interacting with a position.`
 
-14: ``
+14: `Binance returned an invalid HTTP response code (${response.statusCode}) when retrieving the income records: ${this.extractErrorMessage(response)}`
 
-15: ``
+15: `Binance returned an invalid list of income records.`
 
 16: ``
+
+17: ``
+
+18: ``
 
 
 #
@@ -545,9 +549,9 @@
 
 29000: ``
 
-29001: `The USDT balance could not be retrieved from the Binance API. Received ${balances.length}`
+29001: ``
 
-29002: `The extracted USDT balance object is not complete. Available ${balances[0].availableBalance} | Balance: ${balances[0].balance}`
+29002: ``
 
 29003: `The position cannot be closed because ${symbol} does not have an active one.`
 
@@ -594,7 +598,7 @@
 
 30015: `The pos. action payloads query is larger than the permitted data limit. Limit: ${dataLimit}, Received: ${difference}`
 
-30016: ``
+30016: `The reopen_if_better_duration_minutes must be a valid number ranging 1-720. Received: ${newStrategy.reopen_if_better_duration_minutes}`
 
 30017: ``
 
@@ -738,3 +742,48 @@
 37012: `The provided priceWindowSize (${newConfiguration.priceWindowSize}) is invalid.`
 
 37013: `The provided priceIntervalSeconds (${newConfiguration.priceIntervalSeconds}) is invalid.`
+
+
+
+
+
+
+
+
+
+#
+## Campaign Service (38.000 - 38.999)
+
+38000: `The USDT balance could not be retrieved from the Binance API. Received ${balances.length}`
+
+38001: `The extracted USDT balance object is not complete. Available ${balances[0].availableBalance} | Balance: ${balances[0].balance}`
+
+38002: `The income cannot be synced because there isn't an active campaign.`
+
+38003: ``
+
+38004: ``
+
+
+
+
+
+
+
+
+#
+## Campaign Validations (39.000 - 39.999)
+
+39000: ``
+
+
+
+
+
+
+
+
+#
+## Campaign Model (40.000 - 40.999)
+
+40000: ``
