@@ -238,7 +238,7 @@ export interface IWindowState {
 // Service
 export interface IVolumeStateService {
     state: IVolumeState,
-    calculateState(window: ICandlestick[]): IStateType
+    calculateState(): IStateType
     getDefaultState(): IStateType,
 }
 
@@ -252,8 +252,8 @@ export interface IVolumeState {
     m: number,
     mh: number,
 
-    // The list of volumes that comprise the window
-    w: ISplitStateSeriesItem[]
+    // The volume within the current 1m interval
+    v: number
 }
 
 

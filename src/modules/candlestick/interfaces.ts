@@ -9,7 +9,8 @@ export interface ICandlestickService {
     // Real Time Candlesticks Stream
     stream: BehaviorSubject<ICandlestickStream>,
 
-    // Prediction Candlestick Lookback
+    // Candlestick Lookbacks
+    lookback: ICandlestick[],
     predictionLookback: ICandlestick[],
 
     // Candlestick Retrievers

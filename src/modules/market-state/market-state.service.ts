@@ -169,7 +169,7 @@ export class MarketStateService implements IMarketStateService {
             // Broadcast the states through the observables
             this.active.next({
                 window: windowState,
-                volume: this._volumeState.calculateState(window),
+                volume: this._volumeState.calculateState(),
                 keyzones: <IKeyZoneState>this._keyZones.calculateState(windowState.ss),
                 trend: this._trend.state,
                 coins: this._coins.calculateState()

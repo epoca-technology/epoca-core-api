@@ -35,8 +35,17 @@ export class CandlestickService implements ICandlestickService {
 
 
     /**
+     * Candlestick Lookback
+     * Since many modules require a number of synced candlesticks in order to 
+     * operate, a lookback with the size of the market state window will be 
+     * kept in RAM. Notice that this property can be an empty list.
+     */
+    private readonly lookbackSize: number = 1920; // ~32 hours
+    public lookback: ICandlestick[] = [];
+
+    /**
      * Prediction Candlestick Lookback
-     * Since many models require a number of synced candlesticks in order to 
+     * Since many modules require a number of synced candlesticks in order to 
      * operate, a lookback will be loaded into RAM and kept updated if the
      * default candlesticks are synced. Notice that this property can be
      * an empty list.
@@ -463,12 +472,17 @@ export class CandlestickService implements ICandlestickService {
         // Init the current time
         const ts: number = Date.now();
 
-        // Update the prediction lookback if the candlesticks are synced
+        // Update the lookbacks if the candlesticks are synced
         if (
+            !error &&
             candlesticks && 
             candlesticks.length && 
             candlesticks.at(-1).ct > moment(ts).subtract(this.streamSyncSecondsTolerance, "seconds").valueOf()
         ) {
+            // Update the 1m candlesticks lookback
+            await this.updateLookback(candlesticks);
+
+            // Update the prediction candlesticks lookback
             await this.updatePredictionLookback();
         }
 
@@ -517,7 +531,47 @@ export class CandlestickService implements ICandlestickService {
 
 
 
-    /* Prediction Lookback */
+
+
+
+
+    /* Candlestick Lookbacks */
+
+
+
+
+
+    /**
+     * Whenever the candlesticks are refreshed and in sync, the lookback
+     * is also updated.
+     * @param newCandlesticks 
+     */
+    private async updateLookback(newCandlesticks: ICandlestick[]): Promise<void> {
+        // Check if the lookback has already been initialized
+        if (this.lookback.length) {
+            // Initialize the new data
+            const newData: ICandlestick = newCandlesticks.at(-1);
+
+            // Check if it matches the active one. If so, update its data
+            if (this.lookback.at(-1).ot == newData.ot) {
+                this.lookback[this.lookback.length - 1] = newData;
+            }
+
+            // Otherwise, add the new candlestick and slice the list
+            else {
+                this.lookback.push(newData);
+                this.lookback = this.lookback.slice(-this.lookbackSize);
+            }
+        }
+
+        // Otherwise, initialize it
+        else {
+            this.lookback = await this._model.getLast(false, this.lookbackSize);
+        }
+    }
+
+
+
 
 
 
@@ -572,6 +626,9 @@ export class CandlestickService implements ICandlestickService {
             );
         }
     }
+
+
+
 
 
 

@@ -1,9 +1,9 @@
 import {injectable, inject, postConstruct} from "inversify";
+import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
-import { ICandlestick } from "../candlestick";
+import { ICandlestick, ICandlestickService } from "../candlestick";
 import { IUtilitiesService } from "../utilities";
 import { 
-    ISplitStateSeriesItem,
     IStateType,
     IVolumeState,
     IVolumeStateService,
@@ -15,13 +15,25 @@ import {
 @injectable()
 export class VolumeStateService implements IVolumeStateService {
     // Inject dependencies
+    @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
+
+    /**
+     * The requirements for the volume to have a state. They are
+     * recalculated every 3 hours.
+     */
+    private mean: number;
+    private meanHigh: number;
+    private nextRequirementCalculation: number;
+
+
 
     /**
      * State
      * The full volume state. Used to derive the minified state.
      */
     public state: IVolumeState;
+    public statefulUntil: number;
 
 
     constructor() {}
@@ -38,54 +50,65 @@ export class VolumeStateService implements IVolumeStateService {
 
     /**
      * Calculates the volume state for the current window.
-     * @param window 
      * @returns IStateType
      */
-    public calculateState(window: ICandlestick[]): IStateType {
-        // Build the series as well as the volume accumulation
-        let items: ISplitStateSeriesItem[] = [];
-        let accum: number = 0;
-        let highest: number = 0;
-        for (let c of window) {
-            items.push({x: c.ot, y: c.v});
-            accum += c.v;
-            if (c.v > highest) highest = c.v; 
+    public calculateState(): IStateType {
+        // Make sure the candlesticks lookback has been initialized
+        if (this._candlestick.lookback.length) {
+            // Init the current candlestick
+            const current: ICandlestick = this._candlestick.lookback.at(-1);
+
+            // Check if the requirements need to be recalculated
+            if (!this.mean || !this.meanHigh || !this.nextRequirementCalculation || current.ot >= this.nextRequirementCalculation) {
+                // Iterate over each candlestick, accumulate its values and identify the highest
+                let accum: number = 0;
+                let highest: number = 0;
+                for (let c of this._candlestick.lookback) {
+                    accum += c.v;
+                    if (c.v > highest) highest = c.v; 
+                }
+
+                // Calculate the mean and the mean high values
+                this.mean = <number>this._utils.outputNumber(accum / this._candlestick.lookback.length);
+                const meanHigh: number = <number>this._utils.calculateAverage([this.mean, highest]);
+                this.meanHigh = <number>this._utils.calculateAverage([this.mean, meanHigh]);
+
+                // Set the next calculation time
+                this.nextRequirementCalculation = moment().add(3, "hours").valueOf();
+            }
+
+            // Calculate the state of the volume
+            let state: IStateType = 0;
+            if (current.v >= this.meanHigh) { state = 2 }
+            else if (current.v >= this.mean) { state = 1 }
+
+            // If it is stateful, set the timer
+            if (state > 0) {
+                this.statefulUntil = moment().add(90, "seconds").valueOf();
+            }
+
+            // If there is no longer a state, check if the previous one should be preserved
+            else if (this.state.s > 0 && this.statefulUntil && Date.now() <= this.statefulUntil){
+                state = this.state.s;
+            }
+
+            // Update the local state
+            this.state = {
+                s: state,
+                m: this.mean,
+                mh: this.meanHigh,
+                v: current.v
+            };
+
+            // Finally, return the state
+            return state;
         }
 
-        // Calculate the mean and the mean high values
-        const mean: number = <number>this._utils.outputNumber(accum / window.length);
-        const meanHigh: number = <number>this._utils.calculateAverage([mean, highest]);
-        const adjustedMeanHigh: number = <number>this._utils.calculateAverage([mean, meanHigh]);
-
-        // Calculate the state of the volume
-        let state: IStateType = 0;
-        const currentVolume: number = window.at(-1).v;
-        if (currentVolume >= adjustedMeanHigh) { state = 2 }
-        else if (currentVolume >= mean) { state = 1 }
-
-        /**
-         * If the state is neutral, check if it is forming an increasing line. 
-         * If so, assign it the increasing state.
-         */
-        if (
-            state == 0 &&
-            currentVolume > window.at(-2).v &&
-            window.at(-2).v > window.at(-3).v
-        ) {
-            state = 1;
+        // Otherwise, set and return the default state
+        else {
+            this.state = this.getDefaultFullState();
+            return 0;
         }
-
-
-        // Update the local state
-        this.state = {
-            s: state,
-            m: mean,
-            mh: adjustedMeanHigh,
-            w: items
-        };
-
-        // Finally, return the state
-        return state;
     }
 
 
@@ -107,7 +130,7 @@ export class VolumeStateService implements IVolumeStateService {
             s: 0,
             m: 0,
             mh: 0,
-            w: []
+            v: 0
         }
     }
 
