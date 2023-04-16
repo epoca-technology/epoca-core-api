@@ -20,7 +20,7 @@ export class VolumeStateService implements IVolumeStateService {
 
     /**
      * The requirements for the volume to have a state. They are
-     * recalculated every 3 hours.
+     * recalculated every hour.
      */
     private mean: number;
     private meanHigh: number;
@@ -74,7 +74,7 @@ export class VolumeStateService implements IVolumeStateService {
                 this.meanHigh = <number>this._utils.calculateAverage([this.mean, meanHigh]);
 
                 // Set the next calculation time
-                this.nextRequirementCalculation = moment().add(3, "hours").valueOf();
+                this.nextRequirementCalculation = moment().add(1, "hour").valueOf();
             }
 
             // Calculate the state of the volume

@@ -1079,7 +1079,11 @@ export class PositionService implements IPositionService {
                 await this._model.savePositionActionPayload("POSITION_OPEN", symbol, side, payload);
             }
         } else {
-            console.log(`The pos. ${symbol} ${side} was not opened because its price was not better than the previous stop lossed position.`);
+            let msg: string = `Warning: The position ${symbol} ${side} was not opened because the price (${price}) `;
+            msg += `is worse than the previous stop lossed position (${this.stopLossedPositions[side][symbol].price}).`
+            msg += `(${this.stopLossedPositions[side][symbol] ? this.stopLossedPositions[side][symbol].price: 'Unknown'}).`
+            console.log(msg);
+            this._apiError.log("PositionService.openPosition", msg);
         }
     }
 

@@ -347,17 +347,15 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              * Support Event Requirements:
              * 1) The initial price snapshot must be greater than the current (Decreased)
              * 2) The window split states for the 2% and 5% of the dataset must be decreasing
-             * 3) The low from the current 15-minute-interval candlestick must be lower than 
-             * the previous one.
-             * 4) There must be zones below
+             * 3) The low and the close from the current 15-minute-interval candlestick must 
+             * be lower than the previous one.
              */
             if (
                 this.priceSnapshots[0].o > this.priceSnapshots.at(-1).c &&
                 windowSplitStates.s5.s <= 0 &&
                 windowSplitStates.s2.s <= -1 &&
                 this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
-                this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c &&
-                this.state.below.length
+                this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c
             ) {
                 /**
                  * Retrieve the active KeyZone from below (if any). A Support KeyZone is active if:
@@ -369,7 +367,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                  * 3) And the KeyZone is not idle
                  * 4) And the KeyZone Start Price is less than or equals to the prediction candlestick's low.
                  */
-                const activeZones: IMinifiedKeyZone[] = this.state.below.filter(
+                const active: IMinifiedKeyZone|undefined = this.state.below.filter(
                     (z) =>  (
                         (this.priceSnapshots.at(-1).c >= z.s && this.priceSnapshots.at(-1).c <= z.e) ||
                         (this.priceSnapshots.at(-1).l >= z.s && this.priceSnapshots.at(-1).l <= z.e)
@@ -377,16 +375,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                     z.scr >= this.config.eventScoreRequirement &&
                     !this.isIdle(z.id) &&
                     z.s <= this._candlestick.predictionLookback.at(-1).l
-                );
-
-                // If zones were found, pick the one that is further down
-                let active: IMinifiedKeyZone|undefined = activeZones.length > 0 ? activeZones.at(-1): undefined;
-
-                /**
-                 * If there is an active support event, ensure the active support is from
-                 * below, otherwise, unset it so an event is not issued.
-                 */
-                if (evt && active && active.s >= evt.kz.s) active = undefined;
+                )[0];
 
                 // If an event was found, set it
                 if (active) evt = this.onKeyZoneEvent(active, "s");
@@ -396,17 +385,15 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              * Resistance Event Requirements:
              * 1) The initial price snapshot must be lower than the current(Increased)
              * 2) The window split states for the 2% and 5% of the dataset must be increasing
-             * 3) The high from the current 15-minute-interval candlestick must be higher than 
-             * the previous one.
-             * 4) There must be zones above
+             * 3) The high and the close from the current 15-minute-interval candlestick must 
+             * be higher than the previous one.
              */
             else if (
                 this.priceSnapshots[0].o < this.priceSnapshots.at(-1).c &&
                 windowSplitStates.s5.s >= 0 &&
                 windowSplitStates.s2.s >= 1 &&
                 this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
-                this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c &&
-                this.state.above.length
+                this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c
             ) {
                 /**
                  * Retrieve the active KeyZone from above (if any). A Resistance KeyZone is active if:
@@ -418,7 +405,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                  * 3) And the KeyZone is not idle
                  * 4) And the KeyZone End Price is greater than or equals to the prediction candlestick's high.
                  */
-                let activeZones: IMinifiedKeyZone[] = this.state.above.filter(
+                const active: IMinifiedKeyZone|undefined = this.state.above.filter(
                     (z) =>  (
                         (this.priceSnapshots.at(-1).c >= z.s && this.priceSnapshots.at(-1).c <= z.e) ||
                         (this.priceSnapshots.at(-1).h >= z.s && this.priceSnapshots.at(-1).h <= z.e)
@@ -426,16 +413,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                     z.scr >= this.config.eventScoreRequirement &&
                     !this.isIdle(z.id) &&
                     z.e >= this._candlestick.predictionLookback.at(-1).h
-                );
-
-                // If zones were found, pick the one that is further up
-                let active: IMinifiedKeyZone|undefined = activeZones.length > 0 ? activeZones.at(-1): undefined;
-
-                /**
-                 * If there is an active resistance event, ensure the active resistance is from
-                 * above, otherwise, unset it so an event is not issued.
-                 */
-                if (evt && active && active.s <= evt.kz.s) active = undefined;
+                )[0];
 
                 // If an event was found, set it
                 if (active) evt = this.onKeyZoneEvent(active, "r");
@@ -459,19 +437,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * @returns IKeyZoneStateEvent
      */
     private onKeyZoneEvent(zone: IMinifiedKeyZone, kind: IKeyZoneStateEventKind): IKeyZoneStateEvent {
-        // If the event is a support contact, activate the idle on all the supports above
-        if (kind == "s") {
-            for (let support of this.state.below) {
-                if (zone.s <= support.s) this.activateIdle(support.id);
-            }
-        }
-
-        // If the event is a resistance contact, activate the idle on all the resitances below
-        else {
-            for (let resistance of this.state.above) {
-                if (zone.s >= resistance.s) this.activateIdle(resistance.id);
-            }
-        }
+        // Activate the idle on the zone
+        this.activateIdle(zone.id);
 
         // Return the event's build
         return {

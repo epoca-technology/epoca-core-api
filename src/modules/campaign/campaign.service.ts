@@ -48,7 +48,7 @@ export class CampaignService implements ICampaignService {
     public balance: IAccountBalance;
     private incomeSyncCheckpoint: number|undefined = undefined;
     private futuresDataSyncInterval: any;
-    private readonly futuresDataIntervalSeconds: number = 60 * 60; // Every ~1 hours
+    private readonly futuresDataIntervalMinutes: number = 45;
 
 
 
@@ -91,7 +91,7 @@ export class CampaignService implements ICampaignService {
                 this._apiError.log("CampaignService.interval.syncFuturesAccountData", e);
                 this.setDefaultBalance();
             }
-        }, this.futuresDataIntervalSeconds * 1000);
+        }, (this.futuresDataIntervalMinutes * 60) * 1000);
     }
 
 

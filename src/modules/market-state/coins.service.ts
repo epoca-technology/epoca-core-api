@@ -557,7 +557,7 @@ export class CoinsService implements ICoinsService {
                     this.scores[ticker.symbol] = score;
 
                     // If the symbol is installed and the score is not good, notify users
-                    if (this.installed[ticker.symbol] && score <= 2) {
+                    if (this.installed[ticker.symbol] && score <= 3) {
                         await this._notification.installedLowScoreCoin(ticker.symbol);
                     }
 
