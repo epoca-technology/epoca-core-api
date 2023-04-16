@@ -588,13 +588,13 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private calculateVolumeIntensityScore(volIntensity: IKeyZoneVolumeIntensity): number {
         // Init the score
-        let score: number = 0.25;
+        let score: number = 0.35;
 
         // Set the score accordingly
         if      (volIntensity == 4) { score = 1 }
-        else if (volIntensity == 3) { score = 0.75 }
-        else if (volIntensity == 2) { score = 0.6  }
-        else if (volIntensity == 1) { score = 0.45 }
+        else if (volIntensity == 3) { score = 0.80 }
+        else if (volIntensity == 2) { score = 0.65  }
+        else if (volIntensity == 1) { score = 0.50 }
 
         // Finally, return the local score multiplied by the weights
         return this.config.scoreWeights.volume_intensity * score;
