@@ -19,7 +19,8 @@ import {
     IBinanceOrderBook,
     IBinanceExchangeInformation,
     IBinanceCoinTicker,
-    IBinanceIncomeRecord
+    IBinanceIncomeRecord,
+    IBinanceIncomeType
 } from "./interfaces";
 
 
@@ -185,14 +186,15 @@ export class BinanceService implements IBinanceService {
     /**
      * Retrieves the list of income records based on a provided starting point.
      * Note: the response may include an empty list.
+     * @param incomeType
      * @param startAt
      * @param endAt
      * @returns Promise<IBinanceIncomeRecord[]>
      */
-    public async getIncome(startAt: number, endAt: number): Promise<IBinanceIncomeRecord[]> {
+    public async getIncome(incomeType: IBinanceIncomeType, startAt: number, endAt: number): Promise<IBinanceIncomeRecord[]> {
         // Build options
         const params: string = this.buildSignedParamsString({
-            incomeType: "REALIZED_PNL",
+            incomeType: incomeType,
             startTime: startAt,
             endTime: endAt,
             limit: 1000

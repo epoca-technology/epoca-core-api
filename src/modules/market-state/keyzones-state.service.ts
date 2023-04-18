@@ -339,7 +339,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         let evt: IKeyZoneStateEvent|null = this.state && this.state.event ? this.state.event: null;
 
         // If there is an event, ensure it is still active, otherwise, null it
-        if (evt && !this.isEventActive(evt.e)) evt = null;
+        if (evt && !this.isEventActive(evt)) evt = null;
 
         // Look for an event if there are enough price snapshots
         if (this.priceSnapshots.length == this.config.priceSnapshotsLimit) {
@@ -347,13 +347,18 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              * Support Event Requirements:
              * 1) The initial price snapshot must be greater than the current (Decreased)
              * 2) The window split states for the 2% and 5% of the dataset must be decreasing
-             * 3) The low and the close from the current 15-minute-interval candlestick must 
+             * 3) At least one of the large window splits must have a state different to strongly increasing
+             * 4) The low and the close from the current 15-minute-interval candlestick must 
              * be lower than the previous one.
              */
             if (
                 this.priceSnapshots[0].o > this.priceSnapshots.at(-1).c &&
                 windowSplitStates.s5.s <= 0 &&
                 windowSplitStates.s2.s <= -1 &&
+                (
+                    windowSplitStates.s100.s < 2 || windowSplitStates.s75.s < 2 || 
+                    windowSplitStates.s50.s < 2 || windowSplitStates.s25.s < 2
+                ) &&
                 this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
                 this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c
             ) {
@@ -385,6 +390,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              * Resistance Event Requirements:
              * 1) The initial price snapshot must be lower than the current(Increased)
              * 2) The window split states for the 2% and 5% of the dataset must be increasing
+             * 3) At least one of the large window splits must have a state different to strongly decreasing 
              * 3) The high and the close from the current 15-minute-interval candlestick must 
              * be higher than the previous one.
              */
@@ -392,6 +398,10 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 this.priceSnapshots[0].o < this.priceSnapshots.at(-1).c &&
                 windowSplitStates.s5.s >= 0 &&
                 windowSplitStates.s2.s >= 1 &&
+                (
+                    windowSplitStates.s100.s > -2 || windowSplitStates.s75.s > -2 || 
+                    windowSplitStates.s50.s > -2 || windowSplitStates.s25.s > -2
+                ) &&
                 this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
                 this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c
             ) {
@@ -440,24 +450,48 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         // Activate the idle on the zone
         this.activateIdle(zone.id);
 
-        // Return the event's build
-        return {
+        // Calculate the price limit based on the kind of event
+        let priceLimit: number;
+        if (kind == "s") {
+            priceLimit = <number>this._utils.alterNumberByPercentage(zone.e, this.config.eventPriceDistanceLimit);
+        } else {
+            priceLimit = <number>this._utils.alterNumberByPercentage(zone.s, -(this.config.eventPriceDistanceLimit));
+        }
+
+        // Build the event
+        const build: IKeyZoneStateEvent = {
             k: kind,
             kz: zone,
             t: Date.now(),
-            e: moment().add(kind == "s" ? this.config.supportEventDurationSeconds: this.config.resistanceEventDurationSeconds, "seconds").valueOf()
-        }
+            e: moment().add(
+                kind == "s" ? this.config.supportEventDurationSeconds: this.config.resistanceEventDurationSeconds, "seconds"
+            ).valueOf(),
+            pl: priceLimit
+        };
+
+        // Store it in the db
+        this.saveKeyZoneEvent(build);
+
+        // Return the event's build
+        return build;
     }
 
 
 
 
     /**
-     * Checks if an event is still active based on its expiry.
-     * @param expiry 
+     * Checks if an event is still active based on its expiry time
+     * as well as its price limit.
+     * @param evt 
      * @returns boolean
      */
-    private isEventActive(expiry: number): boolean { return Date.now() <= expiry }
+    private isEventActive(evt: IKeyZoneStateEvent): boolean { 
+        return Date.now() <= evt.e &&
+                (
+                    (evt.k == "s" && this.currentPrice <= evt.pl) ||
+                    (evt.k == "r" && this.currentPrice >= evt.pl)
+                )
+    }
 
 
 
@@ -773,6 +807,59 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
 
 
+
+    /************************************
+     * KeyZones Event Record Management *
+     ************************************/
+
+
+
+
+
+
+    /**
+     * Retrieves the list of KeyZones Events by a given date range.
+     * @param startAt 
+     * @param endAt 
+     * @returns Promise<IKeyZoneStateEvent[]>
+     */
+    public async listKeyZoneEvents(startAt: number, endAt: number): Promise<IKeyZoneStateEvent[]> {
+        // Execute the query
+        const { rows } = await this._db.query({ 
+            text: `
+                SELECT * FROM ${this._db.tn.keyzones_events}  
+                WHERE t BETWEEN $1 AND $2 ORDER BY t DESC;
+            `, 
+            values: [startAt, endAt]
+        });
+
+        // Finally, return the result of the query
+        return rows;
+    }
+
+
+
+
+
+    /**
+     * Saves a KeyZone Event into the database safely.
+     * @param evt 
+     * @returns Promise<void>
+     */
+    private async saveKeyZoneEvent(evt: IKeyZoneStateEvent): Promise<void> {
+        try {
+            await this._db.query({
+                text: `
+                    INSERT INTO ${this._db.tn.keyzones_events}(k, kz, t, e, pl) 
+                    VALUES ($1, $2, $3, $4, $5)
+                `,
+                values: [evt.k, evt.kz, evt.t, evt.e, evt.pl]
+            });
+        } catch (e) {
+            console.log(e);
+            this._apiError.log("KeyZonesService.saveKeyZoneEvent", e);
+        }
+    }
 
 
 
@@ -1167,6 +1254,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         if (!this._val.numberValid(config.resistanceEventDurationSeconds, 5, 3600)) {
             throw new Error(this._utils.buildApiError(`The provided resistanceEventDurationSeconds (${config.resistanceEventDurationSeconds}) is invalid.`, 27012));
         }
+        if (!this._val.numberValid(config.eventPriceDistanceLimit, 0.1, 10)) {
+            throw new Error(this._utils.buildApiError(`The provided eventPriceDistanceLimit (${config.eventPriceDistanceLimit}) is invalid.`, 27013));
+        }
         if (!this._val.numberValid(config.keyzoneIdleOnEventMinutes, 1, 1440)) {
             throw new Error(this._utils.buildApiError(`The provided keyzoneIdleOnEventMinutes (${config.keyzoneIdleOnEventMinutes}) is invalid.`, 27008));
         }
@@ -1269,6 +1359,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             priceSnapshotsLimit: 5, // ~15 seconds worth
             supportEventDurationSeconds: 300,
             resistanceEventDurationSeconds: 300,
+            eventPriceDistanceLimit: 0.35,
             keyzoneIdleOnEventMinutes: 90,
             eventScoreRequirement: 5
         }

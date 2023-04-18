@@ -13,6 +13,7 @@ import {
 import { IPositionHeadline } from "../position";
 import { ICandlestick } from "../candlestick";
 import { IPredictionCandlestick } from "../prediction";
+import { IAuthorities } from "../auth";
 
 
 
@@ -57,6 +58,9 @@ export interface IAppBulk {
     // The current time of the server. The user's time should not be trusted
     serverTime: number,
 
+    // The authorities object
+    authorities: IAuthorities,
+
     // The current version of the GUI
     guiVersion: string,
 
@@ -81,7 +85,7 @@ export interface IAppBulk {
     apiErrors: number,
 
     // The minimum score requirement for a KeyZone to issue an event
-    keyzoneEventScoreRequirement: number
+    keyzoneEventScoreRequirement: number,
 }
 
 

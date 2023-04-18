@@ -16,6 +16,7 @@ import {
     IServerDataBulk, 
     IServerResourcesBulk 
 } from "./interfaces";
+import { IAuthService } from "../auth";
 
 
 
@@ -24,6 +25,7 @@ import {
 export class BulkDataService implements IBulkDataService {
     // Inject dependencies
     @inject(SYMBOLS.DatabaseService)                private _db: IDatabaseService;
+    @inject(SYMBOLS.AuthService)                    private _auth: IAuthService;
     @inject(SYMBOLS.EpochService)                   private _epoch: IEpochService;
     @inject(SYMBOLS.PredictionService)              private _prediction: IPredictionService;
     @inject(SYMBOLS.KeyZonesStateService)           private _kz: IKeyZonesStateService;
@@ -69,6 +71,7 @@ export class BulkDataService implements IBulkDataService {
         // Finally, return the bulk
         return {
             serverTime: Date.now(),
+            authorities: this._auth.authorities,
             guiVersion: typeof this._guiVersion.activeVersion == "string" ? this._guiVersion.activeVersion: await this._guiVersion.get(),
             epoch: epoch,
             positions: this._position.getActivePositionHeadlines(),

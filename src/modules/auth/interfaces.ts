@@ -9,6 +9,9 @@ export type IUserRecord = UserRecord;
 
 // Service
 export interface IAuthService {
+    // Properties
+    authorities: IAuthorities,
+
     // Initialization
     initialize(): Promise<void>,
 

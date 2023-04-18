@@ -79,6 +79,7 @@ export interface ITableNames {
     regression_certificates: string,
     window_state_configuration: string,
     keyzones_configuration: string,
+    keyzones_events: string,
     trend_state_configuration: string,
     coins_configuration: string,
     coins: string,

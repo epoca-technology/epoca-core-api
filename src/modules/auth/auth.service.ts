@@ -26,7 +26,7 @@ export class AuthService implements IAuthService {
     @inject(SYMBOLS.ApiErrorService)                   private _apiError: IApiErrorService;
 
     // Authorities Object
-    private authorities: IAuthorities = {};
+    public authorities: IAuthorities = {};
 
 
     constructor() {}

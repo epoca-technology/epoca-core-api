@@ -25,7 +25,8 @@ import {
     ICoinsService,
     ICoinsSummary,
     IWindowStateService,
-    ITrendStateService
+    ITrendStateService,
+    IKeyZoneStateEvent
 } from "./interfaces";
 const _window: IWindowStateService = appContainer.get<IWindowStateService>(SYMBOLS.WindowStateService);
 const _vol: IVolumeStateService = appContainer.get<IVolumeStateService>(SYMBOLS.VolumeStateService);
@@ -277,6 +278,48 @@ MarketStateRoute.route("/calculateKeyZoneState").get(ultraLowRiskLimit, async (r
     }
 });
 
+
+
+
+
+
+
+
+
+/**
+* Retrieves the full keyzone state.
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @param startAt
+* @param endAt
+* @returns IAPIResponse<IKeyZoneStateEvent[]>
+*/
+MarketStateRoute.route("/listKeyZoneEvents").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["startAt", "endAt"], req.query);
+
+        // Retrieve the data
+        const data: IKeyZoneStateEvent[] = await _keyZones.listKeyZoneEvents(
+            Number(req.query.startAt),
+            Number(req.query.endAt)
+        );
+
+        // Return the response
+        res.send(_utils.apiResponse(data));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.listKeyZoneEvents", e, reqUid, ip, req.query);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
 
 
 
@@ -619,6 +662,36 @@ MarketStateRoute.route("/getCoinFullState").get(ultraLowRiskLimit, async (req: e
 });
 
 
+
+
+
+
+/**
+* Retrieves the compressed state for all the installed coins.
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @returns IAPIResponse<ICoinsCompressedState>
+*/
+MarketStateRoute.route("/getCoinsCompressedState").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+
+        // Return the response
+        res.send(_utils.apiResponse(_coins.getCoinsCompressedState()));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.getCoinsCompressedState", e, reqUid, ip);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
 
 
 

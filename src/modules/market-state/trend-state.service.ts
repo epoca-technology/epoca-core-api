@@ -450,7 +450,7 @@ export class TrendStateService implements ITrendStateService {
     private buildDefaultConfig(): ITrendStateConfiguration {
         return {
             requirement: 0.025,
-            strongRequirement: 0.35
+            strongRequirement: 1
         }
     }
 }

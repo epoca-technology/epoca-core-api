@@ -11,7 +11,7 @@ export interface IBinanceService {
     // Retrievers
     getBalances(): Promise<IBinanceBalance[]>,
     getActivePositions(): Promise<IBinanceActivePosition[]>,
-    getIncome(startAt: number, endAt: number): Promise<IBinanceIncomeRecord[]>,
+    getIncome(incomeType: IBinanceIncomeType, startAt: number, endAt: number): Promise<IBinanceIncomeRecord[]>,
 
     // Position Actions
     order(

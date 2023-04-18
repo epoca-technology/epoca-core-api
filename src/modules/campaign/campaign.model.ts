@@ -2,7 +2,7 @@ import {inject, injectable} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
 import { IUtilitiesService } from "../utilities";
-import { IAccountIncomeRecord, ICampaignModel } from "./interfaces";
+import { IAccountIncomeRecord, IAccountIncomeType, ICampaignModel } from "./interfaces";
 
 
 
@@ -92,10 +92,10 @@ export class CampaignModel implements ICampaignModel {
             for (let rec of records) {
                 await client.query({
                     text: `
-                        INSERT INTO ${this._db.tn.campaign_income_records}(id, t, v) 
-                        VALUES ($1, $2, $3)
+                        INSERT INTO ${this._db.tn.campaign_income_records}(id, t, s, it, v) 
+                        VALUES ($1, $2, $3, $4, $5)
                     `,
-                    values: [rec.id, rec.t, rec.v]
+                    values: [rec.id, rec.t, rec.s, rec.it, rec.v]
                 });
             }
 
@@ -115,15 +115,19 @@ export class CampaignModel implements ICampaignModel {
 
 
     /**
-     * Looks for the latest income record in the db. If none
+     * Looks for the latest income record by type in the db. If none
      * has been executed, it returns undefined.
+     * @param incomeType
      * @returns Promise<number|undefined>
      */
-    public async getLastIncomeRecordTimestamp(): Promise<number|undefined> {
+    public async getLastIncomeRecordTimestamp(incomeType: IAccountIncomeType): Promise<number|undefined> {
         // Retrieve the last trade's timestamp
         const {rows}: IQueryResult = await this._db.query({
-            text: `SELECT t FROM ${this._db.tn.campaign_income_records} ORDER BY t DESC LIMIT 1`,
-            values: []
+            text: `
+                SELECT t FROM ${this._db.tn.campaign_income_records} 
+                WHERE it = $1 ORDER BY t DESC LIMIT 1
+            `,
+            values: [ incomeType ]
         });
 
         // If no results were found, return undefined

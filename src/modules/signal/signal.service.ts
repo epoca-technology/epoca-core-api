@@ -64,7 +64,7 @@ export class SignalService implements ISignalService {
      * period of time in which no new signals will be issued.
      */
     private idleSymbols: {[symbol: string]: number} = {}; // Symbol: Idle Until
-    private readonly idleDurationMinutes: number = 5;
+    private readonly idleDurationMinutes: number = 15;
 
 
 

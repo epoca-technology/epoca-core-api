@@ -520,6 +520,10 @@
 
 27012: `The provided resistanceEventDurationSeconds (${config.resistanceEventDurationSeconds}) is invalid.`
 
+27013: `The provided eventPriceDistanceLimit (${config.eventPriceDistanceLimit}) is invalid.`
+
+27014: ``
+
 
 
 
@@ -600,9 +604,7 @@
 
 30016: `The reopen_if_better_duration_minutes must be a valid number ranging 1-720. Received: ${newStrategy.reopen_if_better_duration_minutes}`
 
-30017: ``
-
-30017: ``
+30017: `The reopen_if_better_price_adjustment must be a valid number ranging 0.01 - 10.`
 
 30018: ``
 
@@ -758,11 +760,17 @@
 
 38001: `The extracted USDT balance object is not complete. Available ${balances[0].availableBalance} | Balance: ${balances[0].balance}`
 
-38002: `The income cannot be synced because there isn't an active campaign.`
+38002: ``
 
-38003: ``
+38003: `The list of shareholders could not be retrieved because there are no users.`
 
 38004: ``
+
+38005: ``
+
+38006: ``
+
+38007: ``
 
 
 
@@ -774,7 +782,37 @@
 #
 ## Campaign Validations (39.000 - 39.999)
 
-39000: ``
+39000: `The campaign skeleton cannot be built because there is an active campaign.`
+
+39001: `The campaign skeleton cannot be built because the account balance is 0.`
+
+39002: `The campaign skeleton cannot be built because there is balance on active positions.`
+
+39003: `The campaign cannot be created because there is an active campaign.`
+
+39004: `The shareholders list is invalid, the uid ${existingShareHolders[i].uid} was not provided.`
+
+39005: `The campaign object did not contain the required data.`
+
+39006: `The provided performance object is invalid.`
+
+39007: `The provided name is invalid. Received: ${newCampaign.name}`
+
+39008: `The provided description is invalid. Received: ${newCampaign.description}`
+
+39009: `The provided start date is invalid.`
+
+39010: `The end of the campaign cannot exists as it has not even stated.`
+
+39011: `The provided max loss is invalid`
+
+39012: `The provided campaign id is invalid.`
+
+39013: ``
+
+39014: ``
+
+39015: ``
 
 
 

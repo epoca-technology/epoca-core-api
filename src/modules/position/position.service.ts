@@ -786,8 +786,19 @@ export class PositionService implements IPositionService {
 
         // If the position stop lossed and reopen_if_better_duration_minutes is enabled, store the data
         if (this.active[symbol].gain <= 0.1 && this.strategy.reopen_if_better_duration_minutes > 0) {
+            /**
+             * Alter the stop loss price based on the side in order to prevent
+             * position reopening on a losing range.
+             */
+            const adjPrice: number = <number>this._utils.alterNumberByPercentage(
+                this.active[symbol].stop_loss_price,
+                this.active[symbol].side == "LONG" ? 
+                    -(this.strategy.reopen_if_better_price_adjustment): this.strategy.reopen_if_better_price_adjustment
+            );
+
+            // Finally, store the data
             this.stopLossedPositions[this.active[symbol].side][symbol] = {
-                price: this.active[symbol].stop_loss_price,
+                price: adjPrice,
                 until: moment(this.active[symbol].close).add(this.strategy.reopen_if_better_duration_minutes, "minutes").valueOf()
             }
         }
@@ -1081,7 +1092,6 @@ export class PositionService implements IPositionService {
         } else {
             let msg: string = `Warning: The position ${symbol} ${side} was not opened because the price (${price}) `;
             msg += `is worse than the previous stop lossed position (${this.stopLossedPositions[side][symbol].price}).`
-            msg += `(${this.stopLossedPositions[side][symbol] ? this.stopLossedPositions[side][symbol].price: 'Unknown'}).`
             console.log(msg);
             this._apiError.log("PositionService.openPosition", msg);
         }
@@ -1239,12 +1249,13 @@ export class PositionService implements IPositionService {
             leverage: 70,
             position_size: 1,
             positions_limit: 1,
-            reopen_if_better_duration_minutes: 60,
             take_profit_1: { price_change_requirement: 0.35, activation_offset: 0.1,  max_gain_drawdown: -100 },
             take_profit_2: { price_change_requirement: 0.55, activation_offset: 0.1,  max_gain_drawdown: -35 },
             take_profit_3: { price_change_requirement: 0.9,  activation_offset: 0.1,  max_gain_drawdown: -15 },
-            take_profit_4: { price_change_requirement: 1.5,  activation_offset: 0.1,  max_gain_drawdown: -5 },
-            stop_loss: 0.15
+            take_profit_4: { price_change_requirement: 1.5,  activation_offset: 0.1,  max_gain_drawdown: -7.5 },
+            stop_loss: 0.15,
+            reopen_if_better_duration_minutes: 60,
+            reopen_if_better_price_adjustment: 0.25,
         }
     }
 }

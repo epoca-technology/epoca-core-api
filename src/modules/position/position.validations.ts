@@ -187,9 +187,13 @@ export class PositionValidations implements IPositionValidations {
         }
 
         // Validate the reopen if better restriction
-        if (typeof newStrategy.reopen_if_better_duration_minutes != "number" || !this._validations.numberValid(newStrategy.reopen_if_better_duration_minutes, 1, 720)) {
-            throw new Error(this._utils.buildApiError(`The reopen_if_better_duration_minutes must be a valid number ranging 1-720. 
+        if (typeof newStrategy.reopen_if_better_duration_minutes != "number" || !this._validations.numberValid(newStrategy.reopen_if_better_duration_minutes, 0, 720)) {
+            throw new Error(this._utils.buildApiError(`The reopen_if_better_duration_minutes must be a valid number ranging 0-720. 
             Received: ${newStrategy.reopen_if_better_duration_minutes}`, 30016));
+        }
+        if (typeof newStrategy.reopen_if_better_price_adjustment != "number" || !this._validations.numberValid(newStrategy.reopen_if_better_price_adjustment, 0.01, 10)) {
+            throw new Error(this._utils.buildApiError(`The reopen_if_better_price_adjustment must be a valid number ranging 0.01 - 10. 
+            Received: ${newStrategy.reopen_if_better_price_adjustment}`, 30017));
         }
 
         // Validate the take profit 1

@@ -278,6 +278,25 @@ export const TABLES: IRawTable[] = [
 
     
     /**
+     * KeyZones Events
+     * 
+     */
+    {
+        name: "keyzones_events",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                k        VARCHAR(10) NOT NULL,
+                kz       JSONB NOT NULL,
+                t        BIGINT NOT NULL,
+                e        BIGINT NOT NULL,
+                pl       NUMERIC(20,2) NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ${tableName}_t ON ${tableName}(t);`
+        }
+    },
+
+    
+    /**
      * Trend State Configuration
      * 
      */
@@ -438,11 +457,14 @@ export const TABLES: IRawTable[] = [
         name: "campaign_income_records",
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id          VARCHAR(100) NOT NULL PRIMARY KEY,
+                id          VARCHAR(100) NOT NULL,
                 t           BIGINT NOT NULL,
+                s           VARCHAR(20) NOT NULL,
+                it          VARCHAR(100) NOT NULL,
                 v           NUMERIC(20,2) NOT NULL
             );
-            CREATE INDEX IF NOT EXISTS ${tableName}_t ON ${tableName}(t);`
+            CREATE INDEX IF NOT EXISTS ${tableName}_t ON ${tableName}(t);
+            CREATE INDEX IF NOT EXISTS ${tableName}_it ON ${tableName}(it);`
         }
     },
 

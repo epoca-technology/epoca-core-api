@@ -25,7 +25,8 @@ import {
     IStateType,
     ICoinsScores,
     ICoinScore,
-    ICoinsConfiguration
+    ICoinsConfiguration,
+    ICoinsCompressedState
 } from "./interfaces";
 
 
@@ -820,6 +821,26 @@ export class CoinsService implements ICoinsService {
 
 
 
+    /**
+     * Retrieves the compressed state for all the installed coins.
+     * @returns ICoinsCompressedState
+     */
+    public getCoinsCompressedState(): ICoinsCompressedState {
+        let compressed: ICoinsCompressedState = {};
+        for (let symbol in this.states) {
+            compressed[symbol] = {
+                s: this.states[symbol].s,
+                ss: this.states[symbol].ss,
+                se: this.states[symbol].se
+            }
+        }
+        return compressed;
+    }
+
+
+
+
+
 
 
 
@@ -1190,7 +1211,7 @@ export class CoinsService implements ICoinsService {
         return {
             supportedCoinsIntervalHours: 8,
             priceWindowSize: 128,
-            priceIntervalSeconds: 30,
+            priceIntervalSeconds: 20,
             requirement: 0.015,
             strongRequirement: 0.25
         }

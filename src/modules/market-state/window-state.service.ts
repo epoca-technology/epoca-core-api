@@ -312,7 +312,7 @@ export class WindowStateService implements IWindowStateService {
     private buildDefaultConfig(): IWindowStateConfiguration {
         return {
             requirement: 0.025,
-            strongRequirement: 0.4
+            strongRequirement: 1
         }
     }
 }

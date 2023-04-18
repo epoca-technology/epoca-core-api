@@ -3,6 +3,15 @@ import { BigNumber } from "bignumber.js";
 import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IBinanceBalance, IBinanceIncomeRecord, IBinanceService} from "../binance";
+import { IAuthService, IUser } from "../auth";
+import { 
+    ICoinsService,
+    IKeyZonesStateService, 
+    ITrendStateService, 
+    IWindowStateService,
+} from "../market-state";
+import { IPositionService } from "../position";
+import { ISignalService } from "../signal";
 import { INotificationService } from "../notification";
 import { IApiErrorService } from "../api-error";
 import { IUtilitiesService } from "../utilities";
@@ -11,7 +20,11 @@ import {
     IAccountBalance,
     ICampaignRecord,
     ICampaignValidations,
-    ICampaignModel
+    ICampaignModel,
+    IAccountIncomeType,
+    ICampaignShareHolder,
+    ICampaignConfigurationsSnapshot,
+    IShareHoldersData
 } from "./interfaces";
 
 
@@ -23,6 +36,13 @@ export class CampaignService implements ICampaignService {
     @inject(SYMBOLS.CampaignValidations)        private _validations: ICampaignValidations;
     @inject(SYMBOLS.CampaignModel)              private _model: ICampaignModel;
     @inject(SYMBOLS.BinanceService)             private _binance: IBinanceService;
+    @inject(SYMBOLS.AuthService)                private _auth: IAuthService;
+    @inject(SYMBOLS.WindowStateService)         private _window: IWindowStateService;
+    @inject(SYMBOLS.KeyZonesStateService)       private _keyzones: IKeyZonesStateService;
+    @inject(SYMBOLS.TrendStateService)          private _trend: ITrendStateService;
+    @inject(SYMBOLS.CoinsService)               private _coins: ICoinsService;
+    @inject(SYMBOLS.PositionService)            private _position: IPositionService;
+    @inject(SYMBOLS.SignalService)              private _signal: ISignalService;
     @inject(SYMBOLS.NotificationService)        private _notification: INotificationService;
     @inject(SYMBOLS.ApiErrorService)            private _apiError: IApiErrorService;
     @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
@@ -37,18 +57,36 @@ export class CampaignService implements ICampaignService {
     private active: ICampaignRecord|undefined;
 
 
+    /**
+     * Futures Account Balance
+     * The balance is synced frequently and keeps the campaign's data updated.
+     */
+    public balance: IAccountBalance;
+    private balanceSyncInterval: any;
+    private readonly balanceIntervalMinutes: number = 20;
 
 
     /**
-     * Futures Account Balance
-     * In order for members to be trully involved, the balance is synced
-     * every futuresDataIntervalSeconds. Additionally, if there is an active
-     * campaign, it will also keep the income in sync.
+     * Futures Account Income
+     * The income is synced frequently whenever there is an active campaign and
+     * all records are stored in the db.
      */
-    public balance: IAccountBalance;
-    private incomeSyncCheckpoint: number|undefined = undefined;
-    private futuresDataSyncInterval: any;
-    private readonly futuresDataIntervalMinutes: number = 45;
+
+    // Income Checkpoints
+    private incomeSyncCheckpoints: {[incomeType: string]: number|undefined} = {
+        REALIZED_PNL: undefined,
+        COMMISSION: undefined,
+        FUNDING_FEE: undefined
+    }
+
+    // Income Interval
+    private incomeSyncInterval: any;
+    private readonly incomeIntervalMinutes: number = 45;
+
+
+    
+
+
 
 
 
@@ -86,12 +124,19 @@ export class CampaignService implements ICampaignService {
     public async initialize(): Promise<void> {
         // Initialize the default balance and the interval that will keep it synced
         this.setDefaultBalance();
-        this.futuresDataSyncInterval = setInterval(async () => {
-            try { await this.syncFuturesAccountData() } catch (e) { 
-                this._apiError.log("CampaignService.interval.syncFuturesAccountData", e);
-                this.setDefaultBalance();
+        this.balanceSyncInterval = setInterval(async () => {
+            try { await this.syncBalance() } catch (e) { 
+                this._apiError.log("CampaignService.interval.syncBalance", e);
             }
-        }, (this.futuresDataIntervalMinutes * 60) * 1000);
+        }, (this.balanceIntervalMinutes * 60) * 1000);
+
+        // Initialize the income interval
+        this.incomeSyncInterval = setInterval(async () => {
+            try { await this.syncIncome() } catch (e) { 
+                this._apiError.log("CampaignService.interval.syncIncome", e);
+            }
+        }, (this.incomeIntervalMinutes * 60) * 1000);
+
     }
 
 
@@ -104,8 +149,10 @@ export class CampaignService implements ICampaignService {
      * Stops the position module entirely.
      */
     public stop(): void { 
-        if (this.futuresDataSyncInterval) clearInterval(this.futuresDataSyncInterval);
-        this.futuresDataSyncInterval = undefined;
+        if (this.balanceSyncInterval) clearInterval(this.balanceSyncInterval);
+        this.balanceSyncInterval = undefined;
+        if (this.incomeSyncInterval) clearInterval(this.incomeSyncInterval);
+        this.incomeSyncInterval = undefined;
     }
 
 
@@ -123,37 +170,232 @@ export class CampaignService implements ICampaignService {
 
 
 
+    /*********************
+     * Campaign Creation *
+     *********************/
 
 
 
-
-
-
-
-
-    /************************
-     * Futures Account Data *
-     ************************/
-    
 
 
 
 
     /**
-     * Syncs the balance and the income if there is a 
-     * campaign running.
-     * @returns Promise<void>
+     * Builds the Campaign Skeleton that will be used to 
+     * initialize one.
+     * @returns Promise<ICampaignRecord>
      */
-    private async syncFuturesAccountData(): Promise<void> {
-        // Sync the balance
+    public async buildCampaignSkeleton(): Promise<ICampaignRecord> {
+        // Update the balance
         await this.syncBalance();
 
-        // Sync the income after a small delay if there is an active campaign
-        if (this.active) {
-            await this._utils.asyncDelay(10);
-            await this.syncIncome();
+        // Validate the request
+        this._validations.canCampaignSkeletonBeBuilt(this.active, this.balance);
+
+        // Retrieve the shareholders
+        const shareholders: ICampaignShareHolder[] = await this.listShareHolders();
+
+        // Build the shareholders' skeleton data
+        const shareholdersData: IShareHoldersData = await this.buildShareHoldersDataSkeleton(); // @TODO
+
+        // Finally, return the build
+        return {
+            id: this._utils.generateID(),
+            name: "",
+            description: "",
+            start: Date.now(),
+            end: undefined,
+            max_loss: -40,
+            performance: {
+                initial_balance: this.balance.total,
+                current_balance: this.balance.total,
+                roi: 0,
+                pnl: 0,
+                epoca_profit: 0
+            },
+            shareholders: shareholders,
+            shareholders_data: shareholdersData
         }
     }
+
+
+
+
+
+
+
+
+
+    /**
+     * Creates a brand new campaign which takes effect
+     * immediately.
+     * @param campaign 
+     * @returns Promise<void>
+     */
+    public async createCampaign(campaign: ICampaignRecord): Promise<void> {
+        // Update the balance
+        await this.syncBalance();
+
+        // Retrieve the shareholders & validate the request
+        const shareholders: ICampaignShareHolder[] = await this.listShareHolders();
+        this._validations.canCampaignBeCreated(this.active, this.balance, shareholders, campaign);
+
+        // Build the configs snapshot
+        const configsSnapshot: ICampaignConfigurationsSnapshot = this.buildConfigurationsSnapshot();
+
+        // Store the campaign and set it in the local property
+        // @TODO
+        this.active = campaign;
+
+        // Notify users
+        // @TODO
+    }
+
+
+
+
+
+
+
+
+
+
+    /* Campaign Creation Helpers */
+
+
+
+
+
+
+
+
+    /**
+     * Retrieves the list of Epoca Users and converts them into
+     * ShareHolder Format.
+     * @returns Promise<ICampaignShareHolder[]>
+     */
+    private async listShareHolders(): Promise<ICampaignShareHolder[]> {
+        // Retrieve all the users
+        const users: IUser[] = await this._auth.getAll();
+        if (!users.length) {
+            throw new Error(this._utils.buildApiError(`The list of shareholders could not be retrieved because there are no users.`, 38003));
+        }
+
+        // Finally, return the list
+        return users.map((u) => { return { uid: u.uid, nickname: this.fromEmailToNickname(u.email) } });
+    }
+    private fromEmailToNickname(email: string): string {
+        // Extract the raw nickname from the email
+        const rawNickname: string = email.split("@")[0];
+
+        // Init the size of the slice
+        const sliceSize: number = rawNickname.length > 4 ? 2: 1;
+
+        // Finally, put together the nickname
+        return `${rawNickname.slice(0, 2)}...${rawNickname.slice(-sliceSize)}`;
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Builds the shareholders' data skeleton based on the balance
+     * from the previous campaign (if any).
+     * @returns Promise<IShareHoldersData>
+     */
+    private async buildShareHoldersDataSkeleton(): Promise<IShareHoldersData> {
+        return {}// @TODO
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Builds the configurations snapshot that will be stored when
+     * a campaign is created.
+     * @returns ICampaignConfigurationsSnapshot
+     */
+    private buildConfigurationsSnapshot(): ICampaignConfigurationsSnapshot {
+        const { installed, supported, scores } = this._coins.getCoinsSummary();
+        return {
+            window: this._window.config,
+            keyzones: this._keyzones.config,
+            trend: this._trend.config,
+            coins: this._coins.config,
+            installed_coins: installed,
+            strategy: this._position.strategy,
+            signal_policies: this._signal.policies
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /***************************
+     * On Balance Update Event *
+     ***************************/
+
+
+
+
+
+    /**
+     * Whenever the balance is updated and there is an active
+     * campaign, it checks if it is healthy. Otherwise, it
+     * notifies users.
+     * @returns Promise<void>
+     */
+    private async onBalanceUpdate(): Promise<void> {
+        if (this.active) {
+
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -208,6 +450,9 @@ export class CampaignService implements ICampaignService {
             total: <number>this._utils.outputNumber(total),
             ts: balances[0].updateTime || Date.now()
         };
+
+        // Trigger the balance update event
+        this.onBalanceUpdate();
     }
 
 
@@ -236,6 +481,9 @@ export class CampaignService implements ICampaignService {
 
 
 
+
+
+
     /**************************
      * Futures Account Income *
      **************************/
@@ -246,29 +494,66 @@ export class CampaignService implements ICampaignService {
 
 
 
+    /**
+     * Syncs the income records by type if there is an active
+     * campaign.
+     * @returns Promise<void>
+     */
+    private async syncIncome(): Promise<void> {
+        if (this.active) {
+            // Initialize the current time
+            const ts: number = Date.now();
+
+            // Init the list of errors
+            let errors: string[] = [];
+
+            // Sync the REALIZED_PNL
+            try {
+                await this.syncIncomeByType("REALIZED_PNL", ts);
+            } catch (e) {
+                errors.push(e);
+            }
+            
+            // Sync the COMMISSION
+            await this._utils.asyncDelay(60);
+            try {
+                await this.syncIncomeByType("COMMISSION", ts);
+            } catch (e) {
+                errors.push(e);
+            }
+
+            // Sync the FUNDING_FEE
+            await this._utils.asyncDelay(60);
+            try {
+                await this.syncIncomeByType("FUNDING_FEE", ts);
+            } catch (e) {
+                errors.push(e);
+            }
+
+            // If there were any errors, rethrow them
+            if (errors.length) throw new Error(errors.join(" | "));
+        }
+    }
+
+
 
 
     /**
      * Syncs the futures account income. Keep in mind that if there 
      * isn't an active campaign it throws an error.
+     * @param incomeType
+     * @param currentTS
+     * @returns Promise<void>
      */
-    private async syncIncome(): Promise<void> {
-        // Ensure there is an active campaign before proceeding
-        if (!this.active) {
-            throw new Error(this._utils.buildApiError(`The income cannot be synced because there isn't an active campaign.`, 30004));
-        }
-
-        // Initialize the current time
-        const ts: number = Date.now();
-
+    private async syncIncomeByType(incomeType: IAccountIncomeType, currentTS: number): Promise<void> {
         /**
          * Initialize the starting point based on the active checkpoint.
          * If there is no checkpoint, compare the last stored income record vs the 
          * campaign's start. Whichever is greater should be the starting point.
          */
-        let startAt: number|undefined = this.incomeSyncCheckpoint;
+        let startAt: number|undefined = this.incomeSyncCheckpoints[incomeType];
         if (typeof startAt != "number") {
-            const lastTS: number|undefined = await this._model.getLastIncomeRecordTimestamp();
+            const lastTS: number|undefined = await this._model.getLastIncomeRecordTimestamp(incomeType);
             if (typeof lastTS == "number" && lastTS > this.active.start) {
                 startAt = lastTS + 1; // Increase it by 1ms in order to avoid duplicates
             } else {
@@ -281,10 +566,10 @@ export class CampaignService implements ICampaignService {
          * current time, use that value instead.
          */
         let endAt: number = moment(startAt).add(5, "days").valueOf();
-        if (endAt > ts) { endAt = ts }
+        if (endAt > currentTS) { endAt = currentTS }
 
         // Retrieve the latest records
-        const rawIncomeRecords: IBinanceIncomeRecord[] = await this._binance.getIncome(startAt, endAt);
+        const rawIncomeRecords: IBinanceIncomeRecord[] = await this._binance.getIncome(incomeType, startAt, endAt);
 
         // If there are any new trades, store them
         if (rawIncomeRecords.length) {
@@ -293,18 +578,20 @@ export class CampaignService implements ICampaignService {
                 return {
                     id: String(r.tranId),
                     t: r.time,
-                    v: <number>this._utils.outputNumber(r.income)
+                    s: r.symbol,
+                    it: <IAccountIncomeType>r.incomeType,
+                    v: <number>this._utils.outputNumber(r.income, {ru: true})
                 }
             }));
 
             // Unset the checkpoint
-            this.incomeSyncCheckpoint = undefined;
+            this.incomeSyncCheckpoints[incomeType] = undefined;
         }
 
         // If the list is empty, save the current end so the syncing can move on
-        else if (!rawIncomeRecords.length && endAt != ts) { this.incomeSyncCheckpoint = endAt }
+        else if (!rawIncomeRecords.length && endAt != currentTS) { this.incomeSyncCheckpoints[incomeType] = endAt }
 
         // Otherwise, just unset the checkpoint
-        else { this.incomeSyncCheckpoint = undefined }
+        else { this.incomeSyncCheckpoints[incomeType] = undefined }
     }
 }

@@ -84,6 +84,10 @@ export class VolumeStateService implements IVolumeStateService {
 
             // If it is stateful, set the timer
             if (state > 0) {
+                // If the state was increasing strongly, preserve it
+                state = state > this.state.s ? state: this.state.s;
+
+                // Activate the stateful timer
                 this.statefulUntil = moment().add(90, "seconds").valueOf();
             }
 
