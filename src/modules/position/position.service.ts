@@ -1255,7 +1255,7 @@ export class PositionService implements IPositionService {
             take_profit_4: { price_change_requirement: 1.5,  activation_offset: 0.1,  max_gain_drawdown: -7.5 },
             stop_loss: 0.15,
             reopen_if_better_duration_minutes: 60,
-            reopen_if_better_price_adjustment: 0.25,
+            reopen_if_better_price_adjustment: 0.35,
         }
     }
 }
