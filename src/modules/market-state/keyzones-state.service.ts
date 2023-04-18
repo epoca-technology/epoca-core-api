@@ -828,7 +828,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         const { rows } = await this._db.query({ 
             text: `
                 SELECT * FROM ${this._db.tn.keyzones_events}  
-                WHERE t BETWEEN $1 AND $2 ORDER BY t DESC;
+                WHERE t BETWEEN $1 AND $2 ORDER BY t ASC;
             `, 
             values: [startAt, endAt]
         });

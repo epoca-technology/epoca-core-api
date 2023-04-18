@@ -26,7 +26,8 @@ import {
     ICoinsScores,
     ICoinScore,
     ICoinsConfiguration,
-    ICoinsCompressedState
+    ICoinsCompressedState,
+    ICoinCompressedState
 } from "./interfaces";
 
 
@@ -826,15 +827,18 @@ export class CoinsService implements ICoinsService {
      * @returns ICoinsCompressedState
      */
     public getCoinsCompressedState(): ICoinsCompressedState {
-        let compressed: ICoinsCompressedState = {};
+        // Init the list of states as well as the compressed object
+        let states: IStateType[] = [];
+        let compressed: {[symbol: string]: ICoinCompressedState} = {};
         for (let symbol in this.states) {
+            states.push(this.states[symbol].s);
             compressed[symbol] = {
                 s: this.states[symbol].s,
                 ss: this.states[symbol].ss,
                 se: this.states[symbol].se
-            }
+            };
         }
-        return compressed;
+        return { csbs: compressed, cd: this._stateUtils.calculateAverageState(states)};
     }
 
 

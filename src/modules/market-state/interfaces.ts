@@ -946,17 +946,22 @@ export interface ICoinsState {
 
 
 // Compressed State
+export interface ICoinCompressedState {
+    // The state of the coin
+    s: IStateType,
+
+    // The split states payload
+    ss: ISplitStates,
+
+    // State Event
+    se: IStateType
+}
 export interface ICoinsCompressedState {
-    [symbol: string]: {
-        // The state of the coin
-        s: IStateType,
+    // Compressed states by symbol
+    csbs: {[symbol: string]: ICoinCompressedState},
 
-        // The split states payload
-        ss: ISplitStates,
-
-        // State Event
-        se: IStateType
-    }
+    // Coins Direction
+    cd: IStateType
 }
 
 
