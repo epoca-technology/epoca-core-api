@@ -469,6 +469,8 @@
 
 
 
+
+
 #
 ## Window State Service (25.000 - 25.999)
 
@@ -482,12 +484,33 @@
 
 
 
+
+
 #
-## Volume State Service (26.000 - 26.999)
+## Volume State Service (26.000 - 26.499)
 
 26000: ``
 
 26001: ``
+
+
+
+
+
+#
+## Liquidity State Service (26.500 - 26.999)
+
+26500: `The provided liquidity config object is invalid.`
+
+26501: `The provided max_peak_distance_from_price (${newConfiguration.max_peak_distance_from_price}) is invalid.`
+
+26502: `The provided intensity_weights config object is invalid.`
+
+26503: `One of the provided intensity weights is invalid.`
+
+26504: `The provided appbulk_stream_min_intensity (${newConfiguration.appbulk_stream_min_intensity}) is invalid.`
+
+
 
 
 

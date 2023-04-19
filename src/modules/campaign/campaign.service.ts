@@ -7,6 +7,7 @@ import { IAuthService, IUser } from "../auth";
 import { 
     ICoinsService,
     IKeyZonesStateService, 
+    ILiquidityStateService, 
     ITrendStateService, 
     IWindowStateService,
 } from "../market-state";
@@ -38,6 +39,7 @@ export class CampaignService implements ICampaignService {
     @inject(SYMBOLS.BinanceService)             private _binance: IBinanceService;
     @inject(SYMBOLS.AuthService)                private _auth: IAuthService;
     @inject(SYMBOLS.WindowStateService)         private _window: IWindowStateService;
+    @inject(SYMBOLS.LiquidityService)           private _liquidity: ILiquidityStateService;
     @inject(SYMBOLS.KeyZonesStateService)       private _keyzones: IKeyZonesStateService;
     @inject(SYMBOLS.TrendStateService)          private _trend: ITrendStateService;
     @inject(SYMBOLS.CoinsService)               private _coins: ICoinsService;
@@ -329,8 +331,9 @@ export class CampaignService implements ICampaignService {
         const { installed, supported, scores } = this._coins.getCoinsSummary();
         return {
             window: this._window.config,
-            keyzones: this._keyzones.config,
             trend: this._trend.config,
+            liquidity: this._liquidity.config,
+            keyzones: this._keyzones.config,
             coins: this._coins.config,
             installed_coins: installed,
             strategy: this._position.strategy,

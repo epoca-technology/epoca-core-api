@@ -3,7 +3,7 @@ import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { IEpochRecord, IEpochService } from "../epoch";
 import { IPredictionService } from "../prediction";
-import { IKeyZonesStateService, IMarketStateService } from "../market-state";
+import { IKeyZonesStateService, ILiquidityStateService, IMarketStateService } from "../market-state";
 import { IGuiVersionService } from "../gui-version";
 import { IServerService } from "../server";
 import { IPositionService } from "../position";
@@ -28,6 +28,7 @@ export class BulkDataService implements IBulkDataService {
     @inject(SYMBOLS.AuthService)                    private _auth: IAuthService;
     @inject(SYMBOLS.EpochService)                   private _epoch: IEpochService;
     @inject(SYMBOLS.PredictionService)              private _prediction: IPredictionService;
+    @inject(SYMBOLS.LiquidityService)               private _liquidity: ILiquidityStateService;
     @inject(SYMBOLS.KeyZonesStateService)           private _kz: IKeyZonesStateService;
     @inject(SYMBOLS.MarketStateService)             private _marketState: IMarketStateService;
     @inject(SYMBOLS.GuiVersionService)              private _guiVersion: IGuiVersionService;
@@ -134,6 +135,7 @@ export class BulkDataService implements IBulkDataService {
                         w: this._marketState.active.value.window.w.at(-1) || null
                     },
                     volume: this._marketState.active.value.volume,
+                    liquidity: this._liquidity.getMinifiedState(true),
                     keyzones: this._marketState.active.value.keyzones,
                     trend: {
                         s: this._marketState.active.value.trend.s,

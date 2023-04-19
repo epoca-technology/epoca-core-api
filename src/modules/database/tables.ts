@@ -263,6 +263,21 @@ export const TABLES: IRawTable[] = [
 
     
     /**
+     * Liquidity Configuration
+     * 
+     */
+    {
+        name: "liquidity_configuration",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id              SMALLINT NOT NULL PRIMARY KEY,
+                data            JSONB NOT NULL
+            );`
+        }
+    },
+
+    
+    /**
      * KeyZones Configuration
      * 
      */

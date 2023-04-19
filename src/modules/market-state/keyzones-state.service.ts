@@ -196,18 +196,36 @@ export class KeyZonesStateService implements IKeyZonesStateService {
     /**
      * Calculates the state based on the current price.
      * @param windowSplitStates? <- Must be provided unless calculating the full state
-     * @param fullState? 
+     * @param liquidityState? <- Must be provided unless calculating the full state
      * @returns IKeyZoneState|IKeyZoneFullState
      */
-    public calculateState(windowSplitStates?: ISplitStates, fullState?: boolean): IKeyZoneState|IKeyZoneFullState {
+    public calculateState(windowSplitStates?: ISplitStates, liquidityState?: ILiquidityState): IKeyZoneState|IKeyZoneFullState {
         // Firstly, update the price
         this.updatePrice();
 
         // Check if the price is currently in a keyzone
         const active: IKeyZone|undefined = this.zones.filter((z) => this.currentPrice >= z.s && this.currentPrice <= z.e)[0];
 
-        // Check if the full state payload should be calculated
-        if (fullState) {
+        // Check if the window & liquidity states have been provided
+        if (windowSplitStates && liquidityState) {
+            // Handle the state event
+            const event: IKeyZoneStateEvent|null = this.buildStateEvent(windowSplitStates);
+
+            // Init the state zones
+            const { above, below } = this.getStateKeyZonesFromCurrentPrice();
+
+            // Update the state and return it
+            this.state = {
+                event: event,
+                active: active ? this.minifyKeyZone(active, 0, 0): null,
+                above: this.buildStateKeyZones(above, liquidityState.a),
+                below: this.buildStateKeyZones(below, liquidityState.b),
+            }
+            return <IKeyZoneState>this.state;
+        }
+
+        // Otherwise, calculate the full state
+        else {
             return <IKeyZoneFullState>{
                 active: active || null,
                 above: this.getZonesFromPrice(this.currentPrice, true),
@@ -216,27 +234,6 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 idle: this.idleKeyZones,
                 build_ts: this.buildTS
             };
-        } 
-        
-        // Otherwise, calculate the active state
-        else {
-            // Handle the state event
-            const event: IKeyZoneStateEvent|null = this.buildStateEvent(windowSplitStates);
-
-            // Init the state zones
-            const { above, below } = this.getStateKeyZonesFromCurrentPrice();
-
-            // Retrieve the liquidity state
-            const liq: ILiquidityState = this._liquidity.calculateState(this.currentPrice);
-
-            // Update the state and return it
-            this.state = {
-                event: event,
-                active: active ? this.minifyKeyZone(active, 0, 0): null,
-                above: this.buildStateKeyZones(above, liq.a),
-                below: this.buildStateKeyZones(below, liq.b),
-            }
-            return <IKeyZoneState>this.state;
         }
     }
 
@@ -1360,7 +1357,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             supportEventDurationSeconds: 300,
             resistanceEventDurationSeconds: 300,
             eventPriceDistanceLimit: 0.35,
-            keyzoneIdleOnEventMinutes: 90,
+            keyzoneIdleOnEventMinutes: 180,
             eventScoreRequirement: 5
         }
     }

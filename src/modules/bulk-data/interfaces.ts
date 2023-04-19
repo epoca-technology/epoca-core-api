@@ -6,9 +6,9 @@ import {
     ICoinsState,
     IKeyZoneState,
     IMarketState, 
+    IMinifiedLiquidityState, 
     ISplitStates, 
     IStateType,
-    ITrendState, 
 } from "../market-state";
 import { IPositionHeadline } from "../position";
 import { ICandlestick } from "../candlestick";
@@ -119,6 +119,7 @@ export interface IAppBulkStream {
 export interface ICompressedMarketState {
     window: ICompressedWindowState,
     volume: IStateType,
+    liquidity: IMinifiedLiquidityState,
     keyzones: IKeyZoneState,
     trend: ICompressedTrendState,
     coins: ICoinsState

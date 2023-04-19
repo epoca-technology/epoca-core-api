@@ -2,6 +2,7 @@ import {
     ICoinsConfiguration, 
     ICoinsObject, 
     IKeyZonesConfiguration, 
+    ILiquidityConfiguration, 
     ITrendStateConfiguration, 
     IWindowStateConfiguration 
 } from "../market-state";
@@ -214,11 +215,14 @@ export interface ICampaignConfigurationsSnapshot {
     // Window Configuration
     window: IWindowStateConfiguration,
 
-    // KeyZones Configuration
-    keyzones: IKeyZonesConfiguration,
-
     // Trend Configuration
     trend: ITrendStateConfiguration,
+
+    // Liquidity Configuration
+    liquidity: ILiquidityConfiguration,
+
+    // KeyZones Configuration
+    keyzones: IKeyZonesConfiguration,
 
     // Coins Configuration
     coins: ICoinsConfiguration,

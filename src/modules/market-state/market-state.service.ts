@@ -17,6 +17,8 @@ import {
     ITrendStateService,
     ICoinsService,
     IKeyZoneState,
+    ILiquidityState,
+    ICoinsState,
 } from "./interfaces";
 
 
@@ -163,16 +165,23 @@ export class MarketStateService implements IMarketStateService {
 
         // Broadcast the new state as long as there are enough candlesticks
         if (window.length == this.windowSize) {
-            // Calculate the states
+            // Calculate the window state
             const windowState: IWindowState = this._windowState.calculateState(window);
+
+            // Calculate the liquidity state
+            const liqState: ILiquidityState = this._liquidity.calculateState(window.at(-1).c);
+
+            // Calculate the coins state
+            const coinsStates: ICoinsState = this._coins.calculateState();
 
             // Broadcast the states through the observables
             this.active.next({
                 window: windowState,
                 volume: this._volumeState.calculateState(),
-                keyzones: <IKeyZoneState>this._keyZones.calculateState(windowState.ss),
+                liquidity: this._liquidity.getMinifiedState(),
+                keyzones: <IKeyZoneState>this._keyZones.calculateState(windowState.ss, liqState),
                 trend: this._trend.state,
-                coins: this._coins.calculateState()
+                coins: coinsStates
             });
 
             // Check if there is a window state and if can be broadcasted
@@ -211,6 +220,7 @@ export class MarketStateService implements IMarketStateService {
         return {
             window: this._windowState.getDefaultState(),
             volume: this._volumeState.getDefaultState(),
+            liquidity: this._liquidity.getDefaultState(),
             keyzones: this._keyZones.getDefaultState(),
             trend: this._trend.getDefaultState(),
             coins: this._coins.getDefaultState()
