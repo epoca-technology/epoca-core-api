@@ -171,6 +171,9 @@ export class MarketStateService implements IMarketStateService {
             // Calculate the liquidity state
             const liqState: ILiquidityState = this._liquidity.calculateState(window.at(-1).c);
 
+            // Calculate the keyzones state
+            const kzState: IKeyZoneState = <IKeyZoneState>this._keyZones.calculateState(windowState.ss, liqState);
+
             // Calculate the coins state
             const coinsStates: ICoinsState = this._coins.calculateState();
 
@@ -178,8 +181,8 @@ export class MarketStateService implements IMarketStateService {
             this.active.next({
                 window: windowState,
                 volume: this._volumeState.calculateState(),
-                liquidity: this._liquidity.getMinifiedState(),
-                keyzones: <IKeyZoneState>this._keyZones.calculateState(windowState.ss, liqState),
+                liquidity: this._liquidity.getMinifiedState(true),
+                keyzones: kzState,
                 trend: this._trend.state,
                 coins: coinsStates
             });

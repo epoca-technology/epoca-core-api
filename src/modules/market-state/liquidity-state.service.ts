@@ -1,8 +1,10 @@
 import {injectable, inject} from "inversify";
+import { WebSocket } from "ws";
+import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IDatabaseService } from "../database";
 import { IApiErrorService } from "../api-error";
-import { IBinanceOrderBook, IBinanceService } from "../binance";
+import { IBinanceOrderBook, IBinanceService, IOrderBookStreamDataItem } from "../binance";
 import { IUtilitiesService, IValidationsService } from "../utilities";
 import { 
     ILiquidityPriceLevel,
@@ -18,8 +20,9 @@ import {
     ILiquidityIntensity,
     ILiquidityPeaksPriceRange,
     ILiquidityPeaksState,
-    ILiquidityProcessedOrders
+    ILiquidityRawOrders
 } from "./interfaces";
+import { INotificationService } from "../notification";
 
 
 
@@ -29,6 +32,7 @@ export class LiquidityStateService implements ILiquidityStateService {
     // Inject dependencies
     @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
+    @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.ValidationsService)                 private _val: IValidationsService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
@@ -42,15 +46,15 @@ export class LiquidityStateService implements ILiquidityStateService {
     public config: ILiquidityConfiguration;
 
 
+
     /**
-     * Price Levels
-     * The full lists of asks and bids extracted and processed directly from the
-     * order book. These values will be used to calculate the state. Note that
-     * if the price is greater than an ask, means the price level no longer exists.
-     * Same applies if the price is greater than a bid.
+     * Raw Orders
+     * The raw orders returned by the exchange. These values are updated 
+     * whenever the order book is synced and through the Websocket API.
      */
-    private asks: ILiquidityPriceLevel[] = [];
-    private bids: ILiquidityPriceLevel[] = [];
+    private rawAsks: ILiquidityRawOrders = {}; // {price: liquidity}
+    private rawBids: ILiquidityRawOrders = {}; // {price: liquidity}
+
 
 
     /**
@@ -67,18 +71,31 @@ export class LiquidityStateService implements ILiquidityStateService {
         ppr: { current: 0, lower: 0, upper: 0},
         r: { low: 0, medium: 0, high: 0, veryHigh: 0 },
         ts: 0
-    }
+    };
+    private nextRequirementsCalculation: number|undefined = undefined;
+    private readonly requirementsCalculationFrequencyMinutes: number = 2;
+
 
 
     /**
-     * Interval
-     * Every intervalSeconds, the order book will be retrieved and processed so
-     * the liquidity state can be calculated.
+     * Order Book Sync Interval
+     * Every syncIntervalSeconds, the order book will be fully synced straight
+     * from the exchange's REST API.
      */
-    private stateInterval: any;
-    private readonly intervalSeconds: number = 4.75; // 4.5 seconds gets the ip banned sometimes
+    private syncInterval: any;
+    private readonly syncIntervalSeconds: number = 5; // 4.5 seconds gets the ip banned sometimes on the testnet
 
 
+
+    /**
+     * Websocket
+     * Every wsIntervalSeconds, the system will make sure the websocket is in sync.
+     * Otherwise, it will notify the users and attempt to restart the subscription.
+     */
+    private wsInterval: any;
+    private readonly wsIntervalSeconds: number = 30;
+    private wsLastUpdate: number;
+    private ws: WebSocket;
 
 
 
@@ -113,16 +130,29 @@ export class LiquidityStateService implements ILiquidityStateService {
         // Initialize the configuration
         await this.initializeConfiguration();
 
-        // Build the liquidity and initialize the interval
-        await this.updateBuild();
-        this.stateInterval = setInterval(async () => {
+        /**
+         * The initialization process follows the following order:
+         * 1) Order Book is fully synced
+         * 2) Sync Interval is started
+         * 3) Websocket Connection is established
+         */
+        await this.syncOrderBook();
+        this.syncInterval = setInterval(async () => {
+            try { await this.syncOrderBook() } 
+            catch (e) {
+                console.log(e);
+                this._apiError.log("LiquidityState.syncOrderBook", e);
+            }
+        }, this.syncIntervalSeconds * 1000);
+        this.wsInterval = setInterval(async () => {
             try {
-                await this.updateBuild();
+                this.checkWebsocketStatus();
             } catch (e) {
                 console.log(e);
-                this._apiError.log("LiquidityState.updateBuild", e);
+                this._apiError.log("LiquidityState.checkWebsocketStatus", e);
             }
-        }, this.intervalSeconds * 1000);
+        }, this.wsIntervalSeconds * 1000);
+        this.initializeWebsocketSubscription();
     }
 
 
@@ -133,195 +163,17 @@ export class LiquidityStateService implements ILiquidityStateService {
      * Stops the network fee state interval.
      */
     public stop(): void {
-        if (this.stateInterval) clearInterval(this.stateInterval);
-        this.stateInterval = undefined;
+        if (this.syncInterval) clearInterval(this.syncInterval);
+        this.syncInterval = undefined;
+        if (this.wsInterval) clearInterval(this.wsInterval);
+        this.wsInterval = undefined;
+        this.stopWebsocketSubscription();
     }
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /********************
-     * Build Management *
-     ********************/
-
-    
-
-
-
-
-
-
-    /**
-     * Retrieves the order book from Binance's Spot API, processes it and
-     * builds the liquidity state.
-     * @returns Promise<void>
-     */
-    private async updateBuild(): Promise<void> {
-        // Firstly, retrieve the order book
-        const orderBook: IBinanceOrderBook = await this._binance.getOrderBook();
-
-        // Process the order book
-        const { requirements, asks, bids } = this.processOrderBook(orderBook.asks, orderBook.bids);
-
-        // Populate the local properties
-        this.asks = asks;
-        this.bids = bids;
-
-        // Update the full state
-        this.state.r = requirements;
-        this.state.ts = Date.now();
-    }
-
-
-
-
-
-
-    /**
-     * Builds the liquidity for both sides, calculates the intensity requirements
-     * and then inserts them into each level.
-     * @param askOrders 
-     * @param bidOrders 
-     * @returns ILiquidityProcessedOrders
-     */
-    private processOrderBook(askOrders: Array<[string, string]>, bidOrders: Array<[string, string]>): ILiquidityProcessedOrders {
-        // Extract the price levels
-        let asks: ILiquidityPriceLevel[] = this.buildPriceLevelsForSide(askOrders, "asks");
-        let bids: ILiquidityPriceLevel[] = this.buildPriceLevelsForSide(bidOrders, "bids");
-
-        // Calculate the requirements
-        const requirements: ILiquidityIntensityRequirements = this.calculateRequirements(asks.concat(bids));
-
-        // Finally, calculate the intensities per level and return the build
-        return {
-            requirements: requirements,
-            asks: asks.map((ask) => { return { ...ask, li: this.calculateIntesity(ask.l, requirements)} }),
-            bids: bids.map((bid) => { return { ...bid, li: this.calculateIntesity(bid.l, requirements)} })
-        }
-    }
-
-
-
-
-
-    
-
-    /**
-     * Builds the price levels for a side.
-     * @param rawOrders 
-     * @param side 
-     * @returns ILiquidityPriceLevel[]
-     */
-    private buildPriceLevelsForSide(rawOrders: Array<[string, string]>, side: ILiquiditySide): ILiquidityPriceLevel[] {
-        // Firstly, initialize the levels
-        let levels: ILiquidityPriceLevel[] = [];
-
-        // Iterate over the raw orders and build the levels based on units
-        for (let order of rawOrders) {
-            // Init the order values
-            const price: number = Math.floor(Number(order[0]));
-            const liquidity: number = Number(order[1]);
-
-            // Check if levels have already been aded
-            if (levels.length > 0) {
-                // If the current order's price is different to the last one, add the new level
-                if (levels.at(-1).p != price) { levels.push({ p: price, l: liquidity, li: 0 }) }
-
-                // Otherwise, increment the liquidity on the level
-                else { levels.at(-1).l += liquidity }
-            }
-
-            // Otherwise, set the level
-            else { levels.push({ p: price, l: liquidity, li: 0 }) }
-        }
-
-        // Asks are ordered by price from low to high
-        if (side == "asks") { levels.sort((a, b) => { return a.p - b.p }) }
-
-        // Bids are ordered by price from high to low
-        else { levels.sort((a, b) => { return b.p - a.p }) }
-
-        // Finally, return the levels
-        return levels;
-    }
-
-
-
-
-
-
-
-	/**
-	 * Calculates a level's intensity based on its liquidity and the
-	 * requirements.
-	 * @param liq 
-	 * @param requirements 
-	 * @returns ILiquidityIntensity
-	 */
-	private calculateIntesity(liq: number, requirements: ILiquidityIntensityRequirements): ILiquidityIntensity {
-		if 		(liq >= requirements.veryHigh) 	{ return 4 }
-		else if (liq >= requirements.high)  	{ return 3 }
-		else if (liq >= requirements.medium)  	{ return 2 }
-		else if (liq >= requirements.low)  		{ return 1 }
-		else 									{ return 0 }
-	}
-
-
-
-
-
-
-	/**
-	 * Calculates the intensity requirements for a side.
-	 * @param levels 
-	 * @returns ILiquidityIntensityRequirements
-	 */
-	private calculateRequirements(levels: ILiquidityPriceLevel[]): ILiquidityIntensityRequirements {
-		// Init values
-		let accum: number = 0;
-		let lowest: number = 0;
-		let highest: number = 0;
-
-		// Iterate over each level, populating the values
-		for (let level of levels) {
-			accum += level.l;
-			lowest = lowest == 0 || level.l < lowest ? level.l: lowest;
-			highest = level.l > highest ? level.l: highest;
-		}
-
-		// Calculate the requirements
-		const mean: number = <number>this._utils.outputNumber(accum / levels.length);
-		const meanLow: number = <number>this._utils.calculateAverage([mean, lowest]);
-		const meanVeryHigh: number = <number>this._utils.calculateAverage([mean, highest]);
-		const meanHigh: number = <number>this._utils.calculateAverage([mean, meanVeryHigh]);
-		const meanHighAdj: number = <number>this._utils.calculateAverage([mean, meanHigh]);
-		const meanMedium: number = <number>this._utils.calculateAverage([mean, meanHighAdj]);
-		const meanMediumAdj: number = <number>this._utils.calculateAverage([mean, meanMedium]);
-        const meanLowMedium: number = <number>this._utils.calculateAverage([meanLow, meanMediumAdj]);
-
-		// Finally, return the requirements
-		return {
-			low: meanLow,
-			medium: meanLowMedium,
-			high: meanMediumAdj,
-			veryHigh: meanHighAdj
-		}
-	}
 
 
 
@@ -360,9 +212,10 @@ export class LiquidityStateService implements ILiquidityStateService {
         // Firstly, calculate the state's price range
         this.state.ppr = this.calculatePeaksPriceRange(currentPrice);
 
-        // Build the liquidity for both sides
-        this.state.a = this.buildLiquidityForSide("asks");
-        this.state.b = this.buildLiquidityForSide("bids");
+        // Process the raw orders and build the liquidity by side
+        const { asks, bids } = this.processRawOrders();
+        this.state.a = this.buildLiquidityForSide(asks, "asks");
+        this.state.b = this.buildLiquidityForSide(bids, "bids");
 
         // Calculate the peaks state
         const { bidLiquidityPower, bidPeaks, askPeaks } = this.calculatePeaksState();
@@ -407,37 +260,37 @@ export class LiquidityStateService implements ILiquidityStateService {
      * Builds the liquidity object for a side. This build includes the total liquidity
      * as well as the levels. Note that price levels are picked based on the provided 
      * price.
-     * @param currentPrice 
+     * @param levels 
      * @param side 
      * @returns ILiquiditySideBuild
      */
-    private buildLiquidityForSide(side: ILiquiditySide): ILiquiditySideBuild {
+    private buildLiquidityForSide(levels: ILiquidityPriceLevel[], side: ILiquiditySide): ILiquiditySideBuild {
         // Init values
         let total: number = 0;
-        let levels: ILiquidityPriceLevel[] = [];
+        let finalLevels: ILiquidityPriceLevel[] = [];
 
         // Build the asks
         if (side == "asks") {
-            for (let ask of this.asks) {
+            for (let ask of levels) {
                 if (ask.p >= this.state.ppr.current) {
                     total += ask.l;
-                    levels.push(ask);
+                    finalLevels.push(ask);
                 }
             }
         }
 
         // Build the bids
         else {
-            for (let bid of this.bids) {
+            for (let bid of levels) {
                 if (bid.p <= this.state.ppr.current) {
                     total += bid.l;
-                    levels.push(bid);
+                    finalLevels.push(bid);
                 }
             }
         }
 
         // Finally, pack and return the build
-        return { t: total, l: levels}
+        return { t: total, l: finalLevels}
     }
 
 
@@ -556,6 +409,330 @@ export class LiquidityStateService implements ILiquidityStateService {
 
 
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /******************************
+     * Order Book Sync Management *
+     ******************************/
+
+    
+
+
+
+
+    /**
+     * Retrieves the full order book from the exchange and updates the
+     * local propeties.
+     * @returns Promise<void>
+     */
+    private async syncOrderBook(): Promise<void> {
+        // Firstly, retrieve the order book
+        const orderBook: IBinanceOrderBook = await this._binance.getOrderBook();
+
+        // Populate the local properties
+        this.rawAsks = Object.fromEntries(orderBook.asks);
+        this.rawBids = Object.fromEntries(orderBook.bids);
+
+        // Update the full state
+        this.state.ts = Date.now();
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Processes the raw orders straight from the order book and
+     * outputs the price level list per side.
+     * @returns { asks: ILiquidityPriceLevel[], bids: ILiquidityPriceLevel[] }
+     */
+    private processRawOrders(): { asks: ILiquidityPriceLevel[], bids: ILiquidityPriceLevel[] } {
+        // Extract the price levels for both sides
+        let asks: ILiquidityPriceLevel[] = this.buildPriceLevels("asks");
+        let bids: ILiquidityPriceLevel[] = this.buildPriceLevels("bids");
+
+        // Check if the requirements have to be calculated
+        if (!this.nextRequirementsCalculation || Date.now() >= this.nextRequirementsCalculation) {
+            this.state.r = this.calculateRequirements(asks.concat(bids));
+            this.nextRequirementsCalculation = moment().add(this.requirementsCalculationFrequencyMinutes, "minutes").valueOf();
+        }
+
+        // Finally, calculate the intensities per level and return the build
+        return {
+            asks: asks.map((ask) => { return { ...ask, li: this.calculateIntesity(ask.l, this.state.r)} }),
+            bids: bids.map((bid) => { return { ...bid, li: this.calculateIntesity(bid.l, this.state.r)} })
+        }
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Builds the price levels for a side based on the raw orders.
+     * @param side 
+     * @returns ILiquidityPriceLevel[]
+     */
+    private buildPriceLevels(side: ILiquiditySide): ILiquidityPriceLevel[] {
+        // Firstly, initialize the levels
+        let levels: ILiquidityPriceLevel[] = [];
+
+        // Iterate over the raw orders and build the levels based on units
+        const rawOrders: ILiquidityRawOrders = side == "asks" ? this.rawAsks: this.rawBids;
+        for (let rawPrice in rawOrders) {
+            // Init the order values
+            const price: number = Math.floor(Number(rawPrice));
+            const liquidity: number = Number(rawOrders[rawPrice]);
+
+            // Check if levels have already been aded
+            if (levels.length > 0) {
+                // If the current order's price is different to the last one, add the new level
+                if (levels.at(-1).p != price) { levels.push({ p: price, l: liquidity, li: 0 }) }
+
+                // Otherwise, increment the liquidity on the level
+                else { levels.at(-1).l += liquidity }
+            }
+
+            // Otherwise, set the level
+            else { levels.push({ p: price, l: liquidity, li: 0 }) }
+        }
+
+        // Asks are ordered by price from low to high
+        if (side == "asks") { levels.sort((a, b) => { return a.p - b.p }) }
+
+        // Bids are ordered by price from high to low
+        else { levels.sort((a, b) => { return b.p - a.p }) }
+
+        // Finally, return the levels
+        return levels;
+    }
+
+
+
+
+
+
+	/**
+	 * Calculates the intensity requirements for a side.
+	 * @param levels 
+	 * @returns ILiquidityIntensityRequirements
+	 */
+	private calculateRequirements(levels: ILiquidityPriceLevel[]): ILiquidityIntensityRequirements {
+		// Init values
+		let accum: number = 0;
+		let lowest: number = 0;
+		let highest: number = 0;
+
+		// Iterate over each level, populating the values
+		for (let level of levels) {
+			accum += level.l;
+			lowest = lowest == 0 || level.l < lowest ? level.l: lowest;
+			highest = level.l > highest ? level.l: highest;
+		}
+
+		// Calculate the requirements
+		const mean: number = <number>this._utils.outputNumber(accum / levels.length);
+		const meanLow: number = <number>this._utils.calculateAverage([mean, lowest]);
+		const meanVeryHigh: number = <number>this._utils.calculateAverage([mean, highest]);
+		const meanHigh: number = <number>this._utils.calculateAverage([mean, meanVeryHigh]);
+		const meanHighAdj: number = <number>this._utils.calculateAverage([mean, meanHigh]);
+		const meanMedium: number = <number>this._utils.calculateAverage([mean, meanHighAdj]);
+		const meanMediumAdj: number = <number>this._utils.calculateAverage([mean, meanMedium]);
+        const meanLowMedium: number = <number>this._utils.calculateAverage([meanLow, meanMediumAdj]);
+
+		// Finally, return the requirements
+		return {
+			low: meanLow,
+			medium: meanLowMedium,
+			high: meanMediumAdj,
+			veryHigh: meanHighAdj
+		}
+	}
+
+
+
+
+
+
+
+
+	/**
+	 * Calculates a level's intensity based on its liquidity and the
+	 * requirements.
+	 * @param liq 
+	 * @param requirements 
+	 * @returns ILiquidityIntensity
+	 */
+	private calculateIntesity(liq: number, requirements: ILiquidityIntensityRequirements): ILiquidityIntensity {
+		if 		(liq >= requirements.veryHigh) 	{ return 4 }
+		else if (liq >= requirements.high)  	{ return 3 }
+		else if (liq >= requirements.medium)  	{ return 2 }
+		else if (liq >= requirements.low)  		{ return 1 }
+		else 									{ return 0 }
+	}
+
+
+
+
+
+
+
+
+
+    /* Websocket Connection */
+
+
+
+
+    /**
+     * Initializes the websocket connection to the mark prices.
+     * If any issue arises, the system will attempt to fix it on
+     * its own, otherwise, users will be notified.
+     */
+    private initializeWebsocketSubscription(): void {
+        // Initialize the websocket instance
+        this.ws = new WebSocket("wss://stream.binance.com/ws/btcusdt@depth@100ms");
+
+        // Handle errors in the connection
+        this.ws.on("error", (e) => {
+            this._notification.liquidityWebsocketError(e);
+            this._apiError.log("LiquidityService.ws.error", e);
+        });
+
+        // Handle errors in the connection
+        this.ws.on("close", () => {
+            this._notification.liquidityWebsocketError("The websocket connection has been closed by Binance.");
+            this._apiError.log("LiquidityService.ws.error", "The websocket connection has been closed by Binance.");
+            this.restartWebsocketConnection();
+        });
+
+        // Handle new pieces of data
+        this.ws.on("message", (data?: string) => {
+            if (data) {
+                try {
+                    // Process the data
+                    const processedData: IOrderBookStreamDataItem = JSON.parse(data);
+
+                    // Ensure the data can be processed and the event took place after the last sync
+                    if (
+                        processedData && 
+                        processedData.E &&
+                        processedData.E >= this.state.ts &&
+                        this.state.ppr.current > 0 &&
+                        Array.isArray(processedData.a) &&
+                        Array.isArray(processedData.b)
+                    ) {
+                        // Update the timestamp
+                        this.wsLastUpdate = processedData.E;
+
+                        // Update the asks if the price is greater than or equals to the 
+                        for (let ask of processedData.a) {
+                            // Init the price so it matches the keys extracted from the REST endpoint
+                            const askPrice: string = <string>this._utils.outputNumber(ask[0], {dp: 2, of: "s"});
+
+                            // If the liquidity is zero, delete the level
+                            if (ask[1] == "0.00000000") {
+                                delete this.rawAsks[askPrice];
+                            } 
+                            
+                            // If the price is within the peaks' range, update the level
+                            else if (Number(askPrice) <= this.state.ppr.upper) {
+                                this.rawAsks[askPrice] = ask[1];
+                            }
+                        }
+
+                        // Update the bids
+                        for (let bid of processedData.b) {
+                            // Init the price so it matches the keys extracted from the REST endpoint
+                            const bidPrice: string = <string>this._utils.outputNumber(bid[0], {dp: 2, of: "s"});
+
+                            // If the liquidity is zero, delete the level
+                            if (bid[1] == "0.00000000") {
+                                delete this.rawBids[bidPrice];
+                            } 
+                            
+                            // If the price is within the peaks' range, update the level
+                            else if (Number(bidPrice) >= this.state.ppr.lower) {
+                                this.rawBids[bidPrice] = bid[1];
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log(e);
+                }
+            }
+        });
+    }
+
+
+
+    /**
+     * Stops the websocket connection entirely if it has been established.
+     */
+    private stopWebsocketSubscription(): void {
+        if (this.ws) {
+            try {
+                this.ws.terminate();
+            } catch (e) { 
+                console.log("Error when terminating the websocket connection.", e);
+            }
+            this.ws = undefined;
+        }
+    }
+
+
+
+
+
+    /**
+     * Stops the connection and attempts to start it again if possible.
+     */
+    private async restartWebsocketConnection(): Promise<void> {
+        this.stopWebsocketSubscription();
+        await this._utils.asyncDelay(5);
+        this.initializeWebsocketSubscription();
+    }
+
+
+
+
+
+    /**
+     * Ensures the websocket is fully connected and synced.
+     * Otherwise, notifies the users and attempts to reset
+     * the connection.
+     */
+    private async checkWebsocketStatus(): Promise<void> {
+        if (
+            typeof this.wsLastUpdate != "number" ||
+            this.wsLastUpdate < moment().subtract(1, "minute").valueOf()
+        ) {
+            this._notification.liquidityWebsocketConnectionIssue();
+            this.restartWebsocketConnection();
+        }
+    }
+
+
+
 
 
 
@@ -727,8 +904,8 @@ export class LiquidityStateService implements ILiquidityStateService {
      */
     private buildDefaultConfig(): ILiquidityConfiguration {
         return {
-            appbulk_stream_min_intensity: 2,
-            max_peak_distance_from_price: 0.5,
+            appbulk_stream_min_intensity: 3,
+            max_peak_distance_from_price: 0.4,
             intensity_weights: {
                 1: 1,
                 2: 3,

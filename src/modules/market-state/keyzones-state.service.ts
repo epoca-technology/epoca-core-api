@@ -350,12 +350,12 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              */
             if (
                 this.priceSnapshots[0].o > this.priceSnapshots.at(-1).c &&
-                windowSplitStates.s5.s <= 0 &&
+                //windowSplitStates.s5.s <= 0 &&
                 windowSplitStates.s2.s <= -1 &&
-                (
+                /*(
                     windowSplitStates.s100.s < 2 || windowSplitStates.s75.s < 2 || 
                     windowSplitStates.s50.s < 2 || windowSplitStates.s25.s < 2
-                ) &&
+                ) &&*/
                 this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
                 this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c
             ) {
@@ -393,12 +393,12 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              */
             else if (
                 this.priceSnapshots[0].o < this.priceSnapshots.at(-1).c &&
-                windowSplitStates.s5.s >= 0 &&
+                //windowSplitStates.s5.s >= 0 &&
                 windowSplitStates.s2.s >= 1 &&
-                (
+                /*(
                     windowSplitStates.s100.s > -2 || windowSplitStates.s75.s > -2 || 
                     windowSplitStates.s50.s > -2 || windowSplitStates.s25.s > -2
-                ) &&
+                ) &&*/
                 this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
                 this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c
             ) {
@@ -619,13 +619,13 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private calculateVolumeIntensityScore(volIntensity: IKeyZoneVolumeIntensity): number {
         // Init the score
-        let score: number = 0.35;
+        let score: number = 0.40;
 
         // Set the score accordingly
         if      (volIntensity == 4) { score = 1 }
-        else if (volIntensity == 3) { score = 0.80 }
-        else if (volIntensity == 2) { score = 0.65  }
-        else if (volIntensity == 1) { score = 0.50 }
+        else if (volIntensity == 3) { score = 0.85 }
+        else if (volIntensity == 2) { score = 0.70  }
+        else if (volIntensity == 1) { score = 0.55 }
 
         // Finally, return the local score multiplied by the weights
         return this.config.scoreWeights.volume_intensity * score;
@@ -646,35 +646,32 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         let score: number = 0.25;
 
         // Set the score accordingly
-        if      (liquidityShare >= 13.5)    { score = 1 }
-        else if (liquidityShare >= 13)      { score = 0.99 }
-        else if (liquidityShare >= 12.5)    { score = 0.98 }
-        else if (liquidityShare >= 12)      { score = 0.97 }
-        else if (liquidityShare >= 11.5)    { score = 0.96 }
-        else if (liquidityShare >= 11)      { score = 0.95 }
-        else if (liquidityShare >= 10.5)    { score = 0.94 }
-        else if (liquidityShare >= 10)      { score = 0.93 }
-        else if (liquidityShare >= 9.5)     { score = 0.92 }
-        else if (liquidityShare >= 9)       { score = 0.91 }
-        else if (liquidityShare >= 8.5)     { score = 0.90 }
-        else if (liquidityShare >= 8)       { score = 0.88 }
-        else if (liquidityShare >= 7.5)     { score = 0.86 }
-        else if (liquidityShare >= 7)       { score = 0.84 }
-        else if (liquidityShare >= 6.5)     { score = 0.82 }
-        else if (liquidityShare >= 6)       { score = 0.80 }
-        else if (liquidityShare >= 5.5)     { score = 0.77 }
-        else if (liquidityShare >= 5)       { score = 0.74 }
-        else if (liquidityShare >= 4.5)     { score = 0.71 }
-        else if (liquidityShare >= 4)       { score = 0.68 }
-        else if (liquidityShare >= 3.5)     { score = 0.65 }
-        else if (liquidityShare >= 3)       { score = 0.62 }
-        else if (liquidityShare >= 2.5)     { score = 0.59 }
-        else if (liquidityShare >= 2)       { score = 0.56 }
-        else if (liquidityShare >= 1.5)     { score = 0.52 }
-        else if (liquidityShare >= 1)       { score = 0.48 }
-        else if (liquidityShare >= 0.75)    { score = 0.43 }
-        else if (liquidityShare >= 0.4)     { score = 0.35 }
-        else if (liquidityShare >= 0.2)     { score = 0.28 }
+        if      (liquidityShare >= 12)      { score = 1 }
+        else if (liquidityShare >= 11.5)    { score = 0.99 }
+        else if (liquidityShare >= 11)      { score = 0.98 }
+        else if (liquidityShare >= 10.5)    { score = 0.97 }
+        else if (liquidityShare >= 10)      { score = 0.96 }
+        else if (liquidityShare >= 9.5)     { score = 0.95 }
+        else if (liquidityShare >= 9)       { score = 0.94 }
+        else if (liquidityShare >= 8.5)     { score = 0.93 }
+        else if (liquidityShare >= 8)       { score = 0.92 }
+        else if (liquidityShare >= 7.5)     { score = 0.91 }
+        else if (liquidityShare >= 7)       { score = 0.90 }
+        else if (liquidityShare >= 6.5)     { score = 0.87 }
+        else if (liquidityShare >= 6)       { score = 0.84 }
+        else if (liquidityShare >= 5.5)     { score = 0.81 }
+        else if (liquidityShare >= 5)       { score = 0.78 }
+        else if (liquidityShare >= 4.5)     { score = 0.75 }
+        else if (liquidityShare >= 4)       { score = 0.72 }
+        else if (liquidityShare >= 3.5)     { score = 0.69 }
+        else if (liquidityShare >= 3)       { score = 0.66 }
+        else if (liquidityShare >= 2.5)     { score = 0.63 }
+        else if (liquidityShare >= 2)       { score = 0.60 }
+        else if (liquidityShare >= 1.5)     { score = 0.57 }
+        else if (liquidityShare >= 1)       { score = 0.54 }
+        else if (liquidityShare >= 0.75)    { score = 0.49 }
+        else if (liquidityShare >= 0.4)     { score = 0.44 }
+        else if (liquidityShare >= 0.2)     { score = 0.35 }
 
         // Finally, return the local score multiplied by the weights
         return this.config.scoreWeights.liquidity_share * score;

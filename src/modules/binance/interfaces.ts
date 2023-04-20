@@ -516,3 +516,30 @@ export interface IBinanceOrderBook {
 
 
 
+/**
+ * Order Book Stream Data Item
+ * The object passed through the websocket when connecting to the 
+ * order book.
+ */
+export interface IOrderBookStreamDataItem {
+    // Event Type
+    e: string, // "depthUpdate"
+
+    // Event Time
+    E: number, // 1682021897950
+
+    // The symbol of the event
+    s: string, // "BTCUSDT"
+
+    // First update ID in event
+    U: number, // 36325997986
+
+    // Final update ID in event
+    u: number,
+
+    // Bids to be updated
+    b: Array<[string, string]>,
+
+    // Asks to be updated
+    a: Array<[string, string]>,
+}

@@ -388,6 +388,17 @@ export interface ILiquidityPeaksPriceRange {
 
 
 /**
+ * Liquidity Raw Orders
+ * The orders are managed in a local object that is updated when synced and by 
+ * the websocket connection.
+ */
+export interface ILiquidityRawOrders {[price: string]: string}; // price: liquidity
+
+
+
+
+
+/**
  * Liquidity Side
  * The order book is comprised by asks (Sell Orders) and bids (Buy Orders).
  * Asks are ordered by price from low to high while bids from high to low.
@@ -438,20 +449,7 @@ export interface ILiquiditySideBuild {
 
 
 
-/**
- * Liquidity Processed Orders
- * The exchange's raw order book is processed and converted into this object.
- */
-export interface ILiquidityProcessedOrders {
-    // The requirements derived from the orders
-    requirements: ILiquidityIntensityRequirements,
 
-    // The processed sell orders
-    asks: ILiquidityPriceLevel[],
-
-    // The processed buy orders
-    bids: ILiquidityPriceLevel[]
-}
 
 
 

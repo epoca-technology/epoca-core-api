@@ -175,8 +175,8 @@ export class PositionValidations implements IPositionValidations {
         }
 
         // Validate the position size
-        if (typeof newStrategy.position_size != "number" || !this._validations.numberValid(newStrategy.position_size, 1, 10000)) {
-            throw new Error(this._utils.buildApiError(`The position size must be a valid number ranging 1-10,000. 
+        if (typeof newStrategy.position_size != "number" || !this._validations.numberValid(newStrategy.position_size, 0.25, 10000)) {
+            throw new Error(this._utils.buildApiError(`The position size must be a valid number ranging 0.25-10,000. 
             Received: ${newStrategy.position_size}`, 30003));
         }
 

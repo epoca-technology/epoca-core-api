@@ -5,8 +5,13 @@ import { IPositionRecord } from "../position";
 
 // Service
 export interface INotificationService {
-    // Main Broadcaster
-    broadcast(notification: INotification): Promise<void>,
+    // Initializer
+    initialize(): Promise<void>,
+    stop(): void,
+
+    // Broadcaster
+    broadcast(notification: INotification): Promise<void>, // Adds the notification to the queue
+    _broadcast(notification: INotification): Promise<void>, // Sends the notification regardless of the queue
 
     /* NOTIFICATION FACTORY */
 
@@ -31,6 +36,10 @@ export interface INotificationService {
 
     // Market State Notifications
     windowState(state: IStateType, change: number, price: number): Promise<void>,
+
+    // Liquidity Notifications
+    liquidityWebsocketError(error: any): Promise<void>,
+    liquidityWebsocketConnectionIssue(): Promise<void>,
 
     // Coin Notifications
     coinNoLongerSupported(symbol: string): Promise<void>,
@@ -69,5 +78,6 @@ export type INotificationSender =
 "CANDLESTICK"|
 "PREDICTION"|
 "MARKET_STATE"|
+"LIQUIDITY"|
 "COIN"|
 "POSITION";

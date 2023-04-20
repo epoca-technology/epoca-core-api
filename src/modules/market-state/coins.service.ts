@@ -1213,11 +1213,11 @@ export class CoinsService implements ICoinsService {
      */
     private buildDefaultConfig(): ICoinsConfiguration {
         return {
-            supportedCoinsIntervalHours: 8,
+            supportedCoinsIntervalHours: 3,
             priceWindowSize: 128,
             priceIntervalSeconds: 20,
             requirement: 0.015,
-            strongRequirement: 0.25
+            strongRequirement: 0.2
         }
     }
 }

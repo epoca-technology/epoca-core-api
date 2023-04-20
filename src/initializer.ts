@@ -73,28 +73,30 @@ const _bulkData = appContainer.get<IBulkDataService>(SYMBOLS.BulkDataService);
  * Initializes the modules in the following order:
  * 1)  Database Module
  * 2)  Auth Module
- * 3)  Candlestick Module
- * 4)  Market State Module
- * 5)  Server Module
- * 6)  IP Blacklist Module
- * 7)  Epoch Module
- * 8)  Prediction Module
- * 9)  Signal Module
- * 10) Position Module
- * 11) Campaign Module
- * 12) Bulk Data Module
+ * 3)  Notification Module
+ * 4)  Candlestick Module
+ * 5)  Market State Module
+ * 6)  Server Module
+ * 7)  IP Blacklist Module
+ * 8)  Epoch Module
+ * 9)  Prediction Module
+ * 10)  Signal Module
+ * 11) Position Module
+ * 12) Campaign Module
+ * 13) Bulk Data Module
  * 
  * If any of the initialization actions triggers an error, it crashes the execution and
  * stop the following modules:
- * 1)  Candlestick Module
- * 2)  Market State Module
- * 3)  Server Module
- * 4)  Epoch Module
- * 5)  Prediction Module
- * 6)  Signal Module
- * 7)  Position Module
- * 8)  Campaign Module
- * 9)  Bulk Data Module
+ * 1)  Notification Module
+ * 2)  Candlestick Module
+ * 3)  Market State Module
+ * 4)  Server Module
+ * 5)  Epoch Module
+ * 6)  Prediction Module
+ * 7)  Signal Module
+ * 8)  Position Module
+ * 9)  Campaign Module
+ * 10)  Bulk Data Module
  */
 export async function init(): Promise<void> {
     try { await _init() }
@@ -151,6 +153,14 @@ async function _init(): Promise<void> {
                 await _auth.initialize();
             } catch (e) {
                 console.error("Error when initializing the Auth Module: ", e)
+                throw e;
+            }
+
+            // Initiaze the Notification Module
+            try {
+                await _notification.initialize();
+            } catch (e) {
+                console.error("Error when initializing the Notification Module: ", e)
                 throw e;
             }
 
@@ -243,6 +253,9 @@ async function _init(): Promise<void> {
         // API is ready to accept requests
         _guard.apiInitialized = true;
     } catch (e) {
+        // Stop the Notification Module
+        _notification.stop();
+
         // Stop the Candlestick Module
         _candlestick.stop();
 

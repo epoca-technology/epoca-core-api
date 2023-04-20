@@ -32,6 +32,13 @@ export class NotificationService implements INotificationService {
     private readonly messaging: Messaging = getMessaging();
     private readonly iconURL: string = "https://firebasestorage.googleapis.com/v0/b/projectplutus-prod.appspot.com/o/public%2Ffcm.png?alt=media&token=2fd0d0e1-ee6d-4f4f-b04d-891a4fa82bac";
 
+    // Broadcast Queue
+    private queue: INotification[] = [];
+    private readonly queueLimit: number = 5;
+    private readonly frequencySeconds: number = 10;
+    private broadcastInterval: any;
+
+
 
     constructor() {}
 
@@ -42,7 +49,65 @@ export class NotificationService implements INotificationService {
 
 
 
-    /* Main Broadcaster */
+
+
+    /**************
+     * Initiaizer *
+     **************/
+
+
+
+
+
+
+    /**
+     * Initializes the interval that will broadcast notifications
+     * from the queue. Once broadcasted, the queue is moved and
+     * prepares itself to broadcast the next notification.
+     * @returns Promise<void>
+     */
+    public async initialize(): Promise<void> {
+        this.broadcastInterval = setInterval(async () => {
+            if (this.queue.length) {
+                await this._broadcast(this.queue[0]);
+                this.queue = this.queue.slice(1, this.queueLimit + 1);
+            }
+        }, this.frequencySeconds * 1000);
+    }
+
+
+
+
+
+    /**
+     * Stops the network fee state interval.
+     */
+    public stop(): void {
+        if (this.broadcastInterval) clearInterval(this.broadcastInterval);
+        this.broadcastInterval = undefined;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /***************
+     * Broadcaster *
+     ***************/
 
 
 
@@ -61,6 +126,9 @@ export class NotificationService implements INotificationService {
      * @param notification 
      */
     public async broadcast(notification: INotification): Promise<void> {
+        if (this.queue.length < this.queueLimit) { this.queue.push(notification) }
+    }
+    public async _broadcast(notification: INotification): Promise<void> {
         // Attempt to send the notification through the priority channel
         try { 
             if (this.priorityChannel == "telegram") { await this.sendTelegram(notification) }
@@ -172,12 +240,13 @@ export class NotificationService implements INotificationService {
 
 
 
-    /**
-     * NOTIFICATION FACTORY
-     * Other modules can call these functions directly in order to simplify the 
-     * communication process.
-     */
 
+
+    /*****************************************************************************
+     * NOTIFICATION FACTORY                                                      *
+     * Other modules can call these functions directly in order to simplify the  *
+     * communication process.                                                    *
+     *****************************************************************************/
 
 
 
@@ -206,7 +275,7 @@ export class NotificationService implements INotificationService {
      * @returns Promise<void>
      */
     public apiInit(): Promise<void> {
-        return this.broadcast({
+        return this._broadcast({
             sender: "INITIALIZER",
             title: "Core API Initialized:",
             description: `The Core API has been initialized successfully and is ready to accept requests.`
@@ -224,7 +293,7 @@ export class NotificationService implements INotificationService {
      * @returns Promise<void>
      */
     public apiInitError(error: any): Promise<void> {
-        return this.broadcast({
+        return this._broadcast({
             sender: "INITIALIZER",
             title: "The API could not be initialized:",
             description: this._utils.getErrorMessage(error)
@@ -472,6 +541,46 @@ export class NotificationService implements INotificationService {
 
 
 
+
+
+
+
+    /***************************
+     * Liquidity Notifications *
+     ***************************/
+
+
+
+
+
+    /**
+     * Triggers when the websocket broadcasts an error.
+     * @param error
+     * @returns Promise<void>
+     */
+    public liquidityWebsocketError(error: any): Promise<void> {
+        return this.broadcast({
+            sender: "LIQUIDITY",
+            title: `Websocket Error:`,
+            description: this._utils.getErrorMessage(error)
+        });
+    }
+
+
+
+
+
+    /**
+     * Triggers when the websocket has not broadcasted data in an irregular period of time.
+     * @returns Promise<void>
+     */
+    public liquidityWebsocketConnectionIssue(): Promise<void> {
+        return this.broadcast({
+            sender: "LIQUIDITY",
+            title: `Websocket Connection:`,
+            description: "The websocket has not broadcasted data in an irregular period of time. The system will attempt to restore the connection in a few seconds."
+        });
+    }
 
 
 
