@@ -29,7 +29,8 @@ import {
     IKeyZoneStateEvent,
     IKeyZoneFullState,
     IReversalService,
-    IReversalState
+    IReversalState,
+    IReversalCoinsStates
 } from "./interfaces";
 const _window: IWindowStateService = appContainer.get<IWindowStateService>(SYMBOLS.WindowStateService);
 const _vol: IVolumeStateService = appContainer.get<IVolumeStateService>(SYMBOLS.VolumeStateService);
@@ -923,6 +924,40 @@ MarketStateRoute.route("/getReversalState").get(ultraLowRiskLimit, async (req: e
     }
 });
 
+
+
+
+
+/**
+* Retrieves the reversal's coins states by id
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @param id
+* @returns IAPIResponse<IReversalCoinsStates>
+*/
+MarketStateRoute.route("/getReversalCoinsStates").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, [ "id" ], req.query);
+
+        // Retrieve the data
+        const data: IReversalCoinsStates = await _reversal.getReversalCoinsStates(Number(req.query.id));
+
+        // Return the response
+        res.send(_utils.apiResponse(data));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.getReversalCoinsStates", e, reqUid, ip, req.query);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
 
 
 

@@ -403,6 +403,21 @@ export const TABLES: IRawTable[] = [
     },
 
 
+    /**
+     * Reversal Coins States
+     * 
+     */
+    {
+        name: "reversal_coins_states",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id       BIGINT NOT NULL PRIMARY KEY,
+                data     JSONB NOT NULL
+            );`
+        }
+    },
+
+
 
     /**
      * Signal Records

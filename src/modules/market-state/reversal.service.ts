@@ -1,13 +1,14 @@
 import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { ICandlestick, ICandlestickService } from "../candlestick";
-import { IDatabaseService } from "../database";
+import { IDatabaseService, IPoolClient } from "../database";
 import { IUtilitiesService, IValidationsService } from "../utilities";
 import {
     ICoinsCompressedState,
     IKeyZoneState,
     ILiquidityState,
     IMinifiedReversalState,
+    IReversalCoinsStates,
     IReversalConfiguration,
     IReversalService,
     IReversalState,
@@ -46,6 +47,7 @@ export class ReversalService implements IReversalService {
      * The full state object that constantly evaluates active KeyZone Events.
      */
     private state: IReversalState;
+    private coinsStates: IReversalCoinsStates;
     private activeCandlestick: ICandlestick|undefined;
 
     /**
@@ -84,6 +86,7 @@ export class ReversalService implements IReversalService {
 
         // Build the default state
         this.state = this.getDefaultFullState();
+        this.coinsStates = this.getDefaultCoinsStates();
     }
 
 
@@ -132,8 +135,17 @@ export class ReversalService implements IReversalService {
      * @returns IMinifiedReversalState
      */
     public calculateState(keyzones: IKeyZoneState, liquidity: ILiquidityState, coins: ICoinsCompressedState): IMinifiedReversalState {
+        /**
+         * If there was an active state but a new keyzone event was generated, 
+         * close the active and initialize the new one.
+         */
+        if (this.state.id != 0 && keyzones.event && this.state.id != keyzones.event.t) {
+            this.onKeyZoneEventEnd(coins);
+            this.onKeyZoneContactEvent(keyzones, coins);
+        }
+
         // If there is a KeyZone Event but not a local reversal one, initialize it
-        if (this.state.id == 0 && keyzones.event) {
+        else if (this.state.id == 0 && keyzones.event) {
             this.onKeyZoneContactEvent(keyzones, coins);
         }
 
@@ -187,12 +199,14 @@ export class ReversalService implements IReversalService {
             kze: keyzones.event,
             av: 0,
             vg: this._volume.state.mh,
-            ics: coins,
-            ecs: null,
-            fcs: null,
             scr: { g: [], v: [], l: [], c: [] },
             e: null
         };
+        this.coinsStates = {
+            initial: coins,
+            event: null,
+            final: null
+        }
 
         // Set the active candlestick
         this.activeCandlestick = this._candlestick.predictionLookback.at(-1);
@@ -212,13 +226,14 @@ export class ReversalService implements IReversalService {
     private onKeyZoneEventEnd(coins: ICoinsCompressedState): void {
         // Firstly, set the end and the final coins' states
         this.state.end = Date.now();
-        this.state.fcs = coins;
+        this.coinsStates.final = coins;
 
         // Store the state in the db
-        this.saveState(this.state);
+        this.saveState(this.state, this.coinsStates);
 
         // Reset the values
         this.state = this.getDefaultFullState();
+        this.coinsStates = this.getDefaultCoinsStates();
         this.activeCandlestick = undefined;
     }
 
@@ -255,6 +270,7 @@ export class ReversalService implements IReversalService {
         currentScore += coinsScore;
 
         // Set the new scores on the state
+        currentScore = <number>this._utils.outputNumber(currentScore);
         this.state.av = accumulatedVol;
         this.state.scr.g.push(currentScore);
         this.state.scr.v.push(volScore);
@@ -275,7 +291,7 @@ export class ReversalService implements IReversalService {
                 }
 
                 // Store the state of all the coins
-                this.state.ecs = coins;
+                this.coinsStates.event = coins;
             }
         }
     }
@@ -328,18 +344,26 @@ export class ReversalService implements IReversalService {
             this.activeCandlestick = marketCandlestick;
         }
 
-        // Calculate the share that has been accumulated
-        const accumulatedVolShare: number = <number>this._utils.calculatePercentageOutOfTotal(
-            accumulatedVol,
-            this.state.vg
-        );
+        // If the volume accumulation goal has been reached, return the final score
+        if (accumulatedVol >= this.state.vg) {
+            return { accumulatedVol: accumulatedVol, volScore: this.config.score_weights.volume };
+        }
 
-        // Finally, return the new accumulation and the score
-        return { 
-            accumulatedVol: accumulatedVol, 
-            volScore: <number>this._utils.outputNumber(
-                (accumulatedVolShare / 100) * this.config.score_weights.volume
-            )
+        // Otherwise, calculate the score
+        else {
+            // Calculate the share that has been accumulated
+            const accumulatedVolShare: number = <number>this._utils.calculatePercentageOutOfTotal(
+                accumulatedVol,
+                this.state.vg
+            );
+
+            // Finally, return the new accumulation and the score
+            return { 
+                accumulatedVol: accumulatedVol, 
+                volScore: <number>this._utils.outputNumber(
+                    (accumulatedVolShare / 100) * this.config.score_weights.volume
+                )
+            }
         }
     }
 
@@ -447,7 +471,7 @@ export class ReversalService implements IReversalService {
         const pointsShare: number = <number>this._utils.calculatePercentageOutOfTotal(points, maxPoints);
 
         // Finally, return the score
-        return <number>this._utils.outputNumber((pointsShare / 100) * this.config.score_weights.volume);
+        return <number>this._utils.outputNumber((pointsShare / 100) * this.config.score_weights.coins);
     }
 
 
@@ -496,13 +520,13 @@ export class ReversalService implements IReversalService {
         let symbols: string[] = [];
 
         // Iterate over each symbol
-        for (let symbol in this.state.ics) {
+        for (let symbol in this.coinsStates.initial) {
             /**
              * If the reversal originated from a support contact, include
              * the symbols which states increased.
              */
             if (this.state.k == 1) {
-                if (coins.csbs[symbol].s > this.state.ics.csbs[symbol].s) {
+                if (coins.csbs[symbol].s > this.coinsStates.initial.csbs[symbol].s) {
                     symbols.push(symbol);
                 }
             }
@@ -512,7 +536,7 @@ export class ReversalService implements IReversalService {
              * the symbols which states decreased.
              */
             else {
-                if (coins.csbs[symbol].s < this.state.ics.csbs[symbol].s) {
+                if (coins.csbs[symbol].s < this.coinsStates.initial.csbs[symbol].s) {
                     symbols.push(symbol);
                 }
             }
@@ -553,14 +577,26 @@ export class ReversalService implements IReversalService {
             kze: null,
             av: 0,
             vg: 0,
-            ics: { csbs: {}, cd: 0},
-            ecs: null,
-            fcs: null,
             scr: { g: [], v: [], l: [], c: [] },
             e: null
         }
     }
 
+
+
+
+
+    /**
+     * Builds the default coins states object.
+     * @returns 
+     */
+    private getDefaultCoinsStates(): IReversalCoinsStates {
+        return {
+            initial: {csbs: {}, cd: 0},
+            event: null,
+            final: null
+         }
+    }
 
     
 
@@ -651,17 +687,81 @@ export class ReversalService implements IReversalService {
 
 
 
+    /**
+     * Retrieves a reversal coins states by ID. Checks the active state before
+     * querying the db. Notice that if the state is not found, it will
+     * throw an error.
+     * @param id 
+     * @returns Promise<IReversalCoinsStates>
+     */
+    public async getReversalCoinsStates(id: number): Promise<IReversalCoinsStates> {
+        // Validate the request
+        if (!this._val.numberValid(id)) {
+            throw new Error(this._utils.buildApiError(`The provided reversal id (${id}) is invalid.`, 37505));
+        }
+
+        // Check if the queried state is active
+        if (this.state.id == id) { return this.coinsStates }
+
+        // Otherwise, check the db
+        else {
+            // Retrieve the state
+            const { rows } = await this._db.query({
+                text: `SELECT data FROM  ${this._db.tn.reversal_coins_states} WHERE id = $1`,
+                values: [ id ]
+            });
+
+            // Ensure it was found
+            if (!rows.length) {
+                throw new Error(this._utils.buildApiError(`The provided reversal id (${id}) was not found in the database.`, 37506));
+            }
+
+            // Return the state
+            return rows[0].data;
+        }
+    }
+
+
+
+
+
+
+
 
     /**
-     * Saves a reversal state into the db.
+     * Saves a reversal and the coins state into the db.
      * @param state 
+     * @param coinsStates 
      * @returns Promise<void>
      */
-    private async saveState(state: IReversalState): Promise<void> {
-        await this._db.query({
-            text: `INSERT INTO ${this._db.tn.reversal_states}(id, data) VALUES($1, $2)`,
-            values: [ state.id, state ]
-        });
+    private async saveState(state: IReversalState, coinsStates: IReversalCoinsStates): Promise<void> {
+        // Initialize the client
+        const client: IPoolClient = await this._db.pool.connect();
+        try {
+            // Begin the transaction
+            await client.query({text: "BEGIN"});
+
+            // Save the state
+            await client.query({
+                text: `INSERT INTO ${this._db.tn.reversal_states}(id, data) VALUES($1, $2)`,
+                values: [ state.id, state ]
+            });
+
+            // Save the coins' state
+            await client.query({
+                text: `INSERT INTO ${this._db.tn.reversal_coins_states}(id, data) VALUES($1, $2)`,
+                values: [ state.id, coinsStates ]
+            });
+
+            // Finally, commit the writes
+            await client.query({text: "COMMIT"});
+        } catch (e) {
+            // Rollback and rethrow the error
+            await client.query("ROLLBACK");
+            throw e;
+        } finally {
+            client.release();
+        }
     }
 
 
