@@ -142,7 +142,8 @@ export class BulkDataService implements IBulkDataService {
                         ss: this._marketState.active.value.trend.ss,
                         w: this._marketState.active.value.trend.w.at(-1) || null
                     },
-                    coins: this._marketState.active.value.coins
+                    coins: this._marketState.active.value.coins,
+                    reversal: this._marketState.active.value.reversal
                 },
                 apiErrors: this._apiError.count
             });

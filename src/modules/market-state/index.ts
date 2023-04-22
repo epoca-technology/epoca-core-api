@@ -7,6 +7,7 @@ import { LiquidityStateService } from "./liquidity-state.service";
 import { KeyZonesStateService } from "./keyzones-state.service";
 import { TrendStateService } from "./trend-state.service";
 import { CoinsService } from "./coins.service";
+import { ReversalService } from "./reversal.service";
 import { StateUtilitiesService } from "./state-utilities.service";
 import { 
     IMarketStateService, 
@@ -16,7 +17,8 @@ import {
     IKeyZonesStateService,
     IStateUtilitiesService,
     ITrendStateService,
-    ICoinsService
+    ICoinsService,
+    IReversalService
 } from "./interfaces";
 
 export const marketStateModule: ContainerModule = new ContainerModule((bind: interfaces.Bind, unbind: interfaces.Unbind) => {
@@ -27,6 +29,7 @@ export const marketStateModule: ContainerModule = new ContainerModule((bind: int
     bind<IKeyZonesStateService>(SYMBOLS.KeyZonesStateService).to(KeyZonesStateService);
     bind<ITrendStateService>(SYMBOLS.TrendStateService).to(TrendStateService);
     bind<ICoinsService>(SYMBOLS.CoinsService).to(CoinsService);
+    bind<IReversalService>(SYMBOLS.ReversalService).to(ReversalService);
     bind<IStateUtilitiesService>(SYMBOLS.StateUtilitiesService).to(StateUtilitiesService);
 });
 

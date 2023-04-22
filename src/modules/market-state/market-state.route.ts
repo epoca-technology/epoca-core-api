@@ -27,7 +27,9 @@ import {
     IWindowStateService,
     ITrendStateService,
     IKeyZoneStateEvent,
-    IKeyZoneFullState
+    IKeyZoneFullState,
+    IReversalService,
+    IReversalState
 } from "./interfaces";
 const _window: IWindowStateService = appContainer.get<IWindowStateService>(SYMBOLS.WindowStateService);
 const _vol: IVolumeStateService = appContainer.get<IVolumeStateService>(SYMBOLS.VolumeStateService);
@@ -35,6 +37,7 @@ const _liquidity: ILiquidityStateService = appContainer.get<ILiquidityStateServi
 const _keyZones: IKeyZonesStateService = appContainer.get<IKeyZonesStateService>(SYMBOLS.KeyZonesStateService);
 const _trend: ITrendStateService = appContainer.get<ITrendStateService>(SYMBOLS.TrendStateService);
 const _coins: ICoinsService = appContainer.get<ICoinsService>(SYMBOLS.CoinsService);
+const _reversal: IReversalService = appContainer.get<IReversalService>(SYMBOLS.ReversalService);
 
 
 // Init Route
@@ -862,6 +865,139 @@ MarketStateRoute.route("/updateCoinsConfiguration").post(highRiskLimit, async (r
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/***********************
+ * Reversal Management *
+ ***********************/
+
+
+
+
+
+
+/**
+* Retrieves the reversal's state by id
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @param id
+* @returns IAPIResponse<IReversalState>
+*/
+MarketStateRoute.route("/getReversalState").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, [ "id" ], req.query);
+
+        // Retrieve the data
+        const data: IReversalState = await _reversal.getReversalState(Number(req.query.id));
+
+        // Return the response
+        res.send(_utils.apiResponse(data));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.getReversalState", e, reqUid, ip, req.query);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+/**
+* Retrieves the reversal's configuration
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @returns IAPIResponse<IReversalConfiguration>
+*/
+MarketStateRoute.route("/getReversalConfiguration").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+
+        // Return the response
+        res.send(_utils.apiResponse(_reversal.config));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.getReversalConfiguration", e, reqUid, ip);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+/**
+* Updates the configuration of the Reversal.
+* @requires id-token
+* @requires api-secret
+* @requires otp
+* @requires authority: 4
+* @param newConfiguration
+* @returns IAPIResponse<void>
+*/
+MarketStateRoute.route("/updateReversalConfiguration").post(highRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["newConfiguration"], req.body, otp || "");
+
+        // Perform Action
+        await _reversal.updateConfiguration(req.body.newConfiguration);
+
+        // Return the response
+        res.send(_utils.apiResponse());
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.updateReversalConfiguration", e, reqUid, ip, req.body);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
 
 
 

@@ -7,6 +7,7 @@ import {
     IKeyZoneState,
     IMarketState, 
     IMinifiedLiquidityState, 
+    IMinifiedReversalState, 
     ISplitStates, 
     IStateType,
 } from "../market-state";
@@ -122,7 +123,8 @@ export interface ICompressedMarketState {
     liquidity: IMinifiedLiquidityState,
     keyzones: IKeyZoneState,
     trend: ICompressedTrendState,
-    coins: ICoinsState
+    coins: ICoinsState,
+    reversal: IMinifiedReversalState
 }
 
 export interface ICompressedWindowState {

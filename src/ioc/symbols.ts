@@ -66,6 +66,7 @@
     LiquidityService: Symbol.for("LiquidityService"),
     TrendStateService: Symbol.for("TrendStateService"),
     CoinsService: Symbol.for("CoinsService"),
+    ReversalService: Symbol.for("ReversalService"),
     StateUtilitiesService: Symbol.for("StateUtilitiesService"),
 
     // Notifications
@@ -157,6 +158,7 @@ export interface ISymbols {
     LiquidityService: symbol,
     TrendStateService: symbol,
     CoinsService: symbol,
+    ReversalService: symbol,
     StateUtilitiesService: symbol,
 
 

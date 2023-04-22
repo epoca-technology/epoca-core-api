@@ -19,6 +19,7 @@ import {
     IKeyZoneState,
     ILiquidityState,
     ICoinsState,
+    IReversalService,
 } from "./interfaces";
 
 
@@ -34,6 +35,7 @@ export class MarketStateService implements IMarketStateService {
     @inject(SYMBOLS.KeyZonesStateService)               private _keyZones: IKeyZonesStateService;
     @inject(SYMBOLS.TrendStateService)                  private _trend: ITrendStateService;
     @inject(SYMBOLS.CoinsService)                       private _coins: ICoinsService;
+    @inject(SYMBOLS.ReversalService)                    private _reversal: IReversalService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
@@ -112,6 +114,9 @@ export class MarketStateService implements IMarketStateService {
         // Initialize the coins state
         await this._coins.initialize();
 
+        // Initialize the reversals
+        await this._reversal.initialize();
+
         // Calculate the state and initialize the interval
         await this.calculateState();
         this.candlestickStreamSub = this._candlestick.stream.subscribe(async (stream: ICandlestickStream) => {
@@ -136,6 +141,7 @@ export class MarketStateService implements IMarketStateService {
         this._keyZones.stop();
         this._trend.stop();
         this._coins.stop();
+        this._reversal.stop();
     }
 
 
@@ -184,7 +190,8 @@ export class MarketStateService implements IMarketStateService {
                 liquidity: this._liquidity.getMinifiedState(true),
                 keyzones: kzState,
                 trend: this._trend.state,
-                coins: coinsStates
+                coins: coinsStates,
+                reversal: this._reversal.calculateState(kzState, liqState, this._coins.getCoinsCompressedState())
             });
 
             // Check if there is a window state and if can be broadcasted
@@ -226,7 +233,8 @@ export class MarketStateService implements IMarketStateService {
             liquidity: this._liquidity.getDefaultState(),
             keyzones: this._keyZones.getDefaultState(),
             trend: this._trend.getDefaultState(),
-            coins: this._coins.getDefaultState()
+            coins: this._coins.getDefaultState(),
+            reversal: this._reversal.getDefaultState()
         }
     }
 }

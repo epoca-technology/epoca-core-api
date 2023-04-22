@@ -1,8 +1,11 @@
 import {inject, injectable} from "inversify";
 import { BehaviorSubject, Subscription } from "rxjs";
+import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { 
+    ICoinsState, 
+    IKeyZoneStateEvent, 
     IKeyZoneStateEventKind, 
     IMarketState, 
     IMarketStateService, 
@@ -54,14 +57,14 @@ export class SignalService implements ISignalService {
     private msSub: Subscription;
 
 
-    /**
-     * Last Reversal ID
-     * The reversal module maintains the state until the KeyZone Event fades away.
-     * Therefore, the signal module must ensure that the signal is only emitted 
-     * once.
-     */
-    private lastReversalID: number|undefined;
 
+    /**
+     * Idle Symbols
+     * Whenever a signal is generated for a symbol, it enters idle state for a
+     * period of time in which no new signals will be issued.
+     */
+    private idleSymbols: {[symbol: string]: number} = {}; // Symbol: Idle Until
+    private readonly idleDurationMinutes: number = 5;
 
 
 
@@ -163,19 +166,29 @@ export class SignalService implements ISignalService {
         if (
             ds.keyzoneStateEvent &&
             (ds.keyzoneStateEvent.k == "s" || ds.keyzoneStateEvent.k == "r") &&
-            (ds.reversalState.e && ds.reversalState.id != this.lastReversalID) &&
+            this.isVolumeStateCompliying(ds.keyzoneStateEvent.k, ds.volumeState) &&
             !this.isWindowStateCancelling(ds.keyzoneStateEvent.k, ds.windowState) &&
-            !this.isTrendCancelling(ds.keyzoneStateEvent.k, ds.trendSum, ds.trendState)
+            !this.isTrendCancelling(ds.keyzoneStateEvent.k, ds.trendSum, ds.trendState) &&
+            !this.isCoinsDirectionCancelling(ds.keyzoneStateEvent.k, ds.coinsState.cd)
         ) {
-            // Build the signal record
-            record = {
-                t: Date.now(),
-                r: ds.keyzoneStateEvent.k == "s" ? 1: -1,
-                s: ds.reversalState.e.s
-            };
+            // Init the time
+            const ts: number = Date.now();
 
-            // Save the ID of the reversal temporarily
-            this.lastReversalID = ds.reversalState.id;
+            // Retrieve the signal symbols
+            const symbols: string[] = this.getSignalSymbols(ds.keyzoneStateEvent, ds.coinsState, ts);
+
+            // Check if symbols were found
+            if (symbols.length) {
+                // Build the signal record
+                record = {
+                    t: ts,
+                    r: ds.keyzoneStateEvent.k == "s" ? 1: -1,
+                    s: symbols
+                };
+
+                // Activate the idle state on the signal symbols
+                this.activateIdle(symbols);
+            }
         }
 
         // Broadcast the signal
@@ -200,8 +213,83 @@ export class SignalService implements ISignalService {
 
 
 
+    /**
+     * Evaluates if the volume state is complying.
+     * @param kind 
+     * @param volumeState 
+     * @returns boolean
+     */
+    private isVolumeStateCompliying(kind: IKeyZoneStateEventKind, volumeState: IStateType): boolean {
+        // Check if the Volume State is complying for a long
+        if (kind == "s") {
+            // Firstly, ensure the policy's requirement is not 0
+            if (this.policies.long.issuance.keyzone_reversal.volume_state != 0) {
+                return volumeState >= this.policies.long.issuance.keyzone_reversal.volume_state;
+            }
+
+            // If the policy requirement is 0, the volume state is always complying
+            else { return true }
+        }
+
+        // Check if the Volume State is complying for a short
+        else {
+            // Firstly, ensure the policy's requirement is not 0
+            if (this.policies.short.issuance.keyzone_reversal.volume_state != 0) {
+                return volumeState >= this.policies.short.issuance.keyzone_reversal.volume_state;
+            }
+
+            // If the policy requirement is 0, the volume state is always complying
+            else { return true }
+        }
+    }
 
 
+
+
+
+
+
+
+
+    /**
+     * Retrieves the symbols that comply with the keyzone event
+     * and the market state. It also ensures none of the symbols
+     * are idle.
+     * @param kzEvent 
+     * @param coinsState 
+     * @param currentTime 
+     * @returns string[]
+     */
+    private getSignalSymbols(kzEvent: IKeyZoneStateEvent, coinsState: ICoinsState, currentTime: number): string[] {
+        // Init the symbols
+        let symbols: string[] = [];
+
+        // Iterate over each coin
+        for (let symbol in coinsState.sbs) {
+            // Check if a long should be opened for the symbol
+            if (
+                kzEvent.k == "s" &&
+                coinsState.sbs[symbol].se <= this.policies.long.issuance.keyzone_reversal.coin_state_event &&
+                kzEvent.t < coinsState.sbs[symbol].set &&
+                !this.isIdle(symbol, currentTime)
+            ) {
+                symbols.push(symbol);
+            }
+
+            // Check if a short should be opened for the symbol
+            else if (
+                kzEvent.k == "r" &&
+                coinsState.sbs[symbol].se >= this.policies.short.issuance.keyzone_reversal.coin_state_event &&
+                kzEvent.t < coinsState.sbs[symbol].set &&
+                !this.isIdle(symbol, currentTime)
+            ) {
+                symbols.push(symbol);
+            }
+        }
+
+        // Finally, return the signal symbols
+        return symbols;
+    }
 
 
 
@@ -291,6 +379,87 @@ export class SignalService implements ISignalService {
 
 
 
+    /**
+     * Evaluates if the coins direction policy is currently cancelling
+     * the KeyZone Event Kind.
+     * @param kind 
+     * @param currentState 
+     * @returns boolean
+     */
+    private isCoinsDirectionCancelling(kind: IKeyZoneStateEventKind, currentState: IStateType): boolean {
+        // Evaluate if a long should be cancelled
+        if (
+            kind == "s" &&
+            this.policies.long.cancellation.coins_direction.enabled &&
+            currentState <= this.policies.long.cancellation.coins_direction.coins_direction
+        ) {
+            return true;
+        }
+
+        // Evaluate if a short should be cancelled
+        else if (
+            kind == "r" &&
+            this.policies.short.cancellation.coins_direction.enabled &&
+            currentState >= this.policies.short.cancellation.coins_direction.coins_direction
+        ) {
+            return true;
+        }
+
+        // Otherwise, the window state policy is not cancelling
+        else { return false }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* Idle State Helpers */
+
+
+
+
+    /**
+     * Activates the idle for a list of symbols.
+     * @param symbols 
+     */
+    private activateIdle(symbols: string[]): void {
+        symbols.forEach((s) => {
+            this.idleSymbols[s] = moment().add(this.idleDurationMinutes, "minutes").valueOf();
+        });
+    }
+
+
+
+
+    /**
+     * Checks if a symbol is currently idle.
+     * @param symbol 
+     * @param currentTime 
+     * @returns boolean
+     */
+    private isIdle(symbol: string, currentTime: number): boolean {
+        return typeof this.idleSymbols[symbol] == "number" && currentTime <= this.idleSymbols[symbol];
+    }
+
+
+
+
+
+
+
 
 
 
@@ -317,19 +486,11 @@ export class SignalService implements ISignalService {
             trendSum: trendSum,
             trendState: ms.trend.s,
             windowState: ms.window.s,
-            keyzoneStateEvent: ms.keyzones.event ? ms.keyzones.event: undefined,
-            reversalState: ms.reversal
+            volumeState: ms.volume,
+            coinsState: ms.coins,
+            keyzoneStateEvent: ms.keyzones.event ? ms.keyzones.event: undefined
         }
     }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -411,7 +572,9 @@ export class SignalService implements ISignalService {
             long: {
                 issuance: {
                     keyzone_reversal: {
-                        enabled: true, // Cannot be disabled
+                        enabled: true,
+                        coin_state_event: -1, // Cannot be disabled
+                        volume_state: 0
                     }
                 },
                 cancellation: {
@@ -423,13 +586,19 @@ export class SignalService implements ISignalService {
                         enabled: true,
                         trend_sum: -1,
                         trend_state: 0
+                    },
+                    coins_direction: {
+                        enabled: true,
+                        coins_direction: -2
                     }
                 }
             },
             short: {
                 issuance: {
                     keyzone_reversal: {
-                        enabled: true, // Cannot be disabled
+                        enabled: true,
+                        coin_state_event: 1, // Cannot be disabled
+                        volume_state: 0
                     }
                 },
                 cancellation: {
@@ -441,6 +610,10 @@ export class SignalService implements ISignalService {
                         enabled: true,
                         trend_sum: 1,
                         trend_state: 0
+                    },
+                    coins_direction: {
+                        enabled: true,
+                        coins_direction: 2
                     }
                 }
             }

@@ -84,6 +84,8 @@ export interface ITableNames {
     trend_state_configuration: string,
     coins_configuration: string,
     coins: string,
+    reversal_configuration: string,
+    reversal_states: string,
     signal_policies: string,
     signal_records: string,
     position_strategy: string,

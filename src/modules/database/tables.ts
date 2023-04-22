@@ -371,6 +371,39 @@ export const TABLES: IRawTable[] = [
     },
 
 
+
+    
+    /**
+     * Reversal Configuration
+     * 
+     */
+    {
+        name: "reversal_configuration",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id        SMALLINT NOT NULL PRIMARY KEY,
+                data      JSONB NOT NULL
+            );`
+        }
+    },
+
+
+    /**
+     * Reversal States
+     * 
+     */
+    {
+        name: "reversal_states",
+        sql: (tableName: string): string => {
+            return `CREATE TABLE IF NOT EXISTS ${tableName} (
+                id       BIGINT NOT NULL PRIMARY KEY,
+                data     JSONB NOT NULL
+            );`
+        }
+    },
+
+
+
     /**
      * Signal Records
      * 
