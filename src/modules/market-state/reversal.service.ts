@@ -520,7 +520,7 @@ export class ReversalService implements IReversalService {
         let symbols: string[] = [];
 
         // Iterate over each symbol
-        for (let symbol in this.coinsStates.initial) {
+        for (let symbol in this.coinsStates.initial.csbs) {
             /**
              * If the reversal originated from a support contact, include
              * the symbols which states increased.
