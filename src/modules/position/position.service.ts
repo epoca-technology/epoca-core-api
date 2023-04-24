@@ -115,7 +115,9 @@ export class PositionService implements IPositionService {
      * If the strategy.bitcoin_only property is false, the system will trade any altcoin
      * that is not in the lowVolatilitySymbols list.
      */
-    private readonly lowVolatilitySymbols: string[] = ["BTCUSDT", "ADAUSDT", "BCHUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT", "TRXUSDT"];
+    private readonly lowVolatilitySymbols: string[] = [
+        "BTCUSDT", "BNBUSDT", "ADAUSDT", "BCHUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT", "TRXUSDT", "SOLUSDT"
+    ];
 
 
 
