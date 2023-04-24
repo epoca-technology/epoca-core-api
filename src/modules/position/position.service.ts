@@ -110,6 +110,13 @@ export class PositionService implements IPositionService {
 
 
 
+    /**
+     * Low Volatility Symbols
+     * If the strategy.bitcoin_only property is false, the system will trade any altcoin
+     * that is not in the lowVolatilitySymbols list.
+     */
+    private readonly lowVolatilitySymbols: string[] = ["BTCUSDT", "ADAUSDT", "BCHUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT", "TRXUSDT"];
+
 
 
 
@@ -238,7 +245,9 @@ export class PositionService implements IPositionService {
 
             // Otherwise, the multicoin system is enabled
             else if (!this.strategy.bitcoin_only) {
-                tradeableSymbols = signal.s.filter((s) => !this.active[s]).slice(0, availableSlots);
+                tradeableSymbols = 
+                    signal.s.filter((s) => !this.active[s] && !this.lowVolatilitySymbols.includes(s))
+                            .slice(0, availableSlots);
             }
 
             // Ensure there are tradeable symbols before proceeding
