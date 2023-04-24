@@ -4,9 +4,9 @@ import { SYMBOLS } from "../../ioc";
 import { ICandlestick, ICandlestickService } from "../candlestick";
 import { IUtilitiesService } from "../utilities";
 import { 
-    IStateType,
     IVolumeState,
     IVolumeStateService,
+    IVolumeStateIntensity
 } from "./interfaces";
 
 
@@ -23,6 +23,7 @@ export class VolumeStateService implements IVolumeStateService {
      * recalculated every hour.
      */
     private mean: number;
+    private meanMedium: number;
     private meanHigh: number;
     private nextRequirementCalculation: number;
 
@@ -50,16 +51,16 @@ export class VolumeStateService implements IVolumeStateService {
 
     /**
      * Calculates the volume state for the current window.
-     * @returns IStateType
+     * @returns IVolumeStateIntensity
      */
-    public calculateState(): IStateType {
+    public calculateState(): IVolumeStateIntensity {
         // Make sure the candlesticks lookback has been initialized
         if (this._candlestick.lookback.length) {
             // Init the current candlestick
             const current: ICandlestick = this._candlestick.lookback.at(-1);
 
             // Check if the requirements need to be recalculated
-            if (!this.mean || !this.meanHigh || !this.nextRequirementCalculation || current.ot >= this.nextRequirementCalculation) {
+            if (!this.mean || !this.nextRequirementCalculation || current.ot >= this.nextRequirementCalculation) {
                 // Iterate over each candlestick, accumulate its values and identify the highest
                 let accum: number = 0;
                 let highest: number = 0;
@@ -72,15 +73,17 @@ export class VolumeStateService implements IVolumeStateService {
                 this.mean = <number>this._utils.outputNumber(accum / this._candlestick.lookback.length);
                 const meanHigh: number = <number>this._utils.calculateAverage([this.mean, highest]);
                 this.meanHigh = <number>this._utils.calculateAverage([this.mean, meanHigh]);
+                this.meanMedium = <number>this._utils.calculateAverage([this.mean, this.meanHigh]);
 
                 // Set the next calculation time
                 this.nextRequirementCalculation = moment().add(1, "hour").valueOf();
             }
 
             // Calculate the state of the volume
-            let state: IStateType = 0;
-            if (current.v >= this.meanHigh) { state = 2 }
-            else if (current.v >= this.mean) { state = 1 }
+            let state: IVolumeStateIntensity = 0;
+            if      (current.v >= this.meanHigh)    { state = 3 }
+            else if (current.v >= this.meanMedium)  { state = 2 }
+            else if (current.v >= this.mean)        { state = 1 }
 
             // If it is stateful, set the timer
             if (state > 0) {
@@ -100,6 +103,7 @@ export class VolumeStateService implements IVolumeStateService {
             this.state = {
                 s: state,
                 m: this.mean,
+                mm: this.meanMedium,
                 mh: this.meanHigh,
                 v: current.v
             };
@@ -133,6 +137,7 @@ export class VolumeStateService implements IVolumeStateService {
         return {
             s: 0,
             m: 0,
+            mm: 0,
             mh: 0,
             v: 0
         }
@@ -145,7 +150,7 @@ export class VolumeStateService implements IVolumeStateService {
 
     /**
      * Retrieves the module's default state.
-     * @returns IStateType
+     * @returns IVolumeStateIntensity
      */
-    public getDefaultState(): IStateType { return 0 }
+    public getDefaultState(): IVolumeStateIntensity { return 0 }
 }

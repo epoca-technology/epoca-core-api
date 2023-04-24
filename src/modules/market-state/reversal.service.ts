@@ -1,6 +1,5 @@
 import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../ioc";
-import { ICandlestick, ICandlestickService } from "../candlestick";
 import { IDatabaseService, IPoolClient } from "../database";
 import { IUtilitiesService, IValidationsService } from "../utilities";
 import {
@@ -14,8 +13,7 @@ import {
     IReversalState,
     ISplitStateID,
     IStateType,
-    IStateUtilitiesService,
-    IVolumeStateService,
+    IVolumeStateIntensity,
 } from "./interfaces";
 
 
@@ -25,9 +23,6 @@ import {
 export class ReversalService implements IReversalService {
     // Inject dependencies
     @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
-    @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
-    @inject(SYMBOLS.VolumeStateService)                 private _volume: IVolumeStateService;
-    @inject(SYMBOLS.StateUtilitiesService)              private _stateUtils: IStateUtilitiesService;
     @inject(SYMBOLS.ValidationsService)                 private _val: IValidationsService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
@@ -48,7 +43,6 @@ export class ReversalService implements IReversalService {
      */
     private state: IReversalState;
     private coinsStates: IReversalCoinsStates;
-    private activeCandlestick: ICandlestick|undefined;
 
     /**
      * Coin State Splits
@@ -129,12 +123,18 @@ export class ReversalService implements IReversalService {
      * Calculates the reversal state based on the KeyZone Event. If there is none,
      * it will return the default state. If there was an event but faded away,
      * the reversal state is stored in the db.
+     * @param volume
      * @param keyzones
      * @param liquidity
      * @param coins
      * @returns IMinifiedReversalState
      */
-    public calculateState(keyzones: IKeyZoneState, liquidity: ILiquidityState, coins: ICoinsCompressedState): IMinifiedReversalState {
+    public calculateState(
+        volume: IVolumeStateIntensity,
+        keyzones: IKeyZoneState, 
+        liquidity: ILiquidityState, 
+        coins: ICoinsCompressedState
+    ): IMinifiedReversalState {
         /**
          * If there was an active state but a new keyzone event was generated, 
          * close the active and initialize the new one.
@@ -156,7 +156,7 @@ export class ReversalService implements IReversalService {
 
         // If there is a state, update it with the latest data
         if (this.state.id != 0) {
-            this.onMarketStateChanges(liquidity, coins);
+            this.onMarketStateChanges(volume, liquidity, coins);
         }
 
         // Finally, return the minified state
@@ -197,8 +197,6 @@ export class ReversalService implements IReversalService {
             end: undefined,
             k: keyzones.event.k == "s" ? 1: -1,
             kze: keyzones.event,
-            av: 0,
-            vg: this._volume.state.mh,
             scr: { g: [], v: [], l: [], c: [] },
             e: null
         };
@@ -207,9 +205,6 @@ export class ReversalService implements IReversalService {
             event: null,
             final: null
         }
-
-        // Set the active candlestick
-        this.activeCandlestick = this._candlestick.predictionLookback.at(-1);
     }
 
 
@@ -234,7 +229,6 @@ export class ReversalService implements IReversalService {
         // Reset the values
         this.state = this.getDefaultFullState();
         this.coinsStates = this.getDefaultCoinsStates();
-        this.activeCandlestick = undefined;
     }
 
 
@@ -250,15 +244,16 @@ export class ReversalService implements IReversalService {
      * Triggers whenever there is an active state and the market state
      * has changed. Updates the state and can issue signals if the 
      * configured requirements are met.
+     * @param volume 
      * @param liquidity 
      * @param coins 
      */
-    private onMarketStateChanges(liquidity: ILiquidityState, coins: ICoinsCompressedState): void {
+    private onMarketStateChanges(volume: IVolumeStateIntensity, liquidity: ILiquidityState, coins: ICoinsCompressedState): void {
         // Initialize the current score
         let currentScore: number = 0;
 
         // Calculate the volume score
-        const { accumulatedVol,  volScore } = this.calculateVolumeScore();
+        const volScore: number = this.calculateVolumeScore(volume);
         currentScore += volScore;
 
         // Calculate the liquidity score
@@ -271,7 +266,6 @@ export class ReversalService implements IReversalService {
 
         // Set the new scores on the state
         currentScore = <number>this._utils.outputNumber(currentScore);
-        this.state.av = accumulatedVol;
         this.state.scr.g.push(currentScore);
         this.state.scr.v.push(volScore);
         this.state.scr.l.push(liqScore);
@@ -311,60 +305,14 @@ export class ReversalService implements IReversalService {
 
 
     /**
-     * Calculates the currently accumulated volume as well as the 
-     * score.
-     * @returns {accumulatedVol: number, volScore: number}
+     * Calculates the volume's score based on its state.
+     * @returns number
      */
-    private calculateVolumeScore(): {accumulatedVol: number, volScore: number} {
-        // Init the accumulated volume
-        let accumulatedVol: number = this.state.av;
-
-        // Init the active market candlestick
-        const marketCandlestick: ICandlestick = this._candlestick.predictionLookback.at(-1);
-
-        // If the candlestick has been set, update the current accumulation
-        if (this.activeCandlestick) {
-
-            // If it is the same candlestick, add the volume difference to the accumulation
-            if (this.activeCandlestick.ot == marketCandlestick.ot) {
-                accumulatedVol += marketCandlestick.v - this.activeCandlestick.v;
-            }
-
-            // If it is a new candlestick, add the entire volume to the accumulation
-            else {
-                accumulatedVol += marketCandlestick.v;
-            }
-
-            // Update the active candlestick
-            this.activeCandlestick = marketCandlestick;
-        }
-
-        // If the candlestick has not yet been set, do so
-        else {
-            this.activeCandlestick = marketCandlestick;
-        }
-
-        // If the volume accumulation goal has been reached, return the final score
-        if (accumulatedVol >= this.state.vg) {
-            return { accumulatedVol: accumulatedVol, volScore: this.config.score_weights.volume };
-        }
-
-        // Otherwise, calculate the score
-        else {
-            // Calculate the share that has been accumulated
-            const accumulatedVolShare: number = <number>this._utils.calculatePercentageOutOfTotal(
-                accumulatedVol,
-                this.state.vg
-            );
-
-            // Finally, return the new accumulation and the score
-            return { 
-                accumulatedVol: accumulatedVol, 
-                volScore: <number>this._utils.outputNumber(
-                    (accumulatedVolShare / 100) * this.config.score_weights.volume
-                )
-            }
-        }
+    private calculateVolumeScore(volumeState: IVolumeStateIntensity): number {
+        if      (volumeState == 3) { return this.config.score_weights.volume }
+        else if (volumeState == 2) { return <number>this._utils.outputNumber(this.config.score_weights.volume * 0.85) }
+        else if (volumeState == 1) { return <number>this._utils.outputNumber(this.config.score_weights.volume * 0.6) }
+        else                       { return 0 }
     }
 
 
@@ -575,8 +523,6 @@ export class ReversalService implements IReversalService {
             end: undefined,
             k: 0,
             kze: null,
-            av: 0,
-            vg: 0,
             scr: { g: [], v: [], l: [], c: [] },
             e: null
         }

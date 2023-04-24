@@ -20,6 +20,8 @@ import {
     ILiquidityState,
     ICoinsState,
     IReversalService,
+    IStateType,
+    IVolumeStateIntensity
 } from "./interfaces";
 
 
@@ -174,6 +176,9 @@ export class MarketStateService implements IMarketStateService {
             // Calculate the window state
             const windowState: IWindowState = this._windowState.calculateState(window);
 
+            // Calculate the volume state
+            const volumeState: IVolumeStateIntensity = this._volumeState.calculateState();
+
             // Calculate the liquidity state
             const liqState: ILiquidityState = this._liquidity.calculateState(window.at(-1).c);
 
@@ -186,12 +191,17 @@ export class MarketStateService implements IMarketStateService {
             // Broadcast the states through the observables
             this.active.next({
                 window: windowState,
-                volume: this._volumeState.calculateState(),
+                volume: volumeState,
                 liquidity: this._liquidity.getMinifiedState(true),
                 keyzones: kzState,
                 trend: this._trend.state,
                 coins: coinsStates,
-                reversal: this._reversal.calculateState(kzState, liqState, this._coins.getCoinsCompressedState())
+                reversal: this._reversal.calculateState(
+                    volumeState, 
+                    kzState, 
+                    liqState, 
+                    this._coins.getCoinsCompressedState()
+                )
             });
 
             // Check if there is a window state and if can be broadcasted
