@@ -31,6 +31,7 @@ import {
     IPositionValidations,
     IStopLossedPositions,
 } from "./interfaces";
+import { ICandlestickService } from "../candlestick";
 
 
 
@@ -38,9 +39,10 @@ import {
 @injectable()
 export class PositionService implements IPositionService {
     // Inject dependencies
-    @inject(SYMBOLS.BinanceService)             private _binance: IBinanceService;
     @inject(SYMBOLS.PositionValidations)        private _validations: IPositionValidations;
     @inject(SYMBOLS.PositionModel)              private _model: IPositionModel;
+    @inject(SYMBOLS.BinanceService)             private _binance: IBinanceService;
+    @inject(SYMBOLS.CandlestickService)         private _candlestick: ICandlestickService;
     @inject(SYMBOLS.SignalService)              private _signal: ISignalService;
     @inject(SYMBOLS.CoinsService)               private _coin: ICoinsService;
     @inject(SYMBOLS.NotificationService)        private _notification: INotificationService;
@@ -103,8 +105,8 @@ export class PositionService implements IPositionService {
      * positions can be reopened based on the side.
      */
     private stopLossedPositions: IStopLossedPositions = {
-        LONG: {},
-        SHORT: {}
+        LONG:  { price: 0, until: 0 },
+        SHORT: { price: 0, until: 0 }
     }
 
 
@@ -234,35 +236,78 @@ export class PositionService implements IPositionService {
             activeNum < this.strategy.positions_limit &&
             ((signal.r == 1 && this.strategy.long_status) || (signal.r == -1 && this.strategy.short_status))
         ) {
-            // Calculate the number of positions that can be opened
-            const availableSlots: number = this.strategy.positions_limit - activeNum;
+            // Init the side
+            const side: IBinancePositionSide = signal.r == 1 ? "LONG": "SHORT";
+            let currentPrice: number = 0;
 
-            // Init the list of tradeable symbols
-            let tradeableSymbols: string[] = [];
+            // Evaluate if the position can be opened
+            let canBeOpened: boolean = true;
+            if (
+                this.strategy.reopen_if_better_duration_minutes > 0 &&
+                this.stopLossedPositions[side].price != 0 &&
+                Date.now() <= this.stopLossedPositions[side].until
+            ) {
+                // Init the current price
+                currentPrice = this._candlestick.predictionLookback.at(-1).c;
 
-            // If the Bitcoin Only Strategy is enabled, check if a signal was issued
-            if (this.strategy.bitcoin_only && signal.s.includes(this.btcSymbol) && !this.active[this.btcSymbol]) {
-                tradeableSymbols = [ this.btcSymbol ];
+                // In the case of a long, the new position's price must be lower than the previous one
+                if (side == "LONG") {
+                    canBeOpened = currentPrice < this.stopLossedPositions[side].price;
+                }
+
+                // In the case of a short, the new position's price must be higher than the previous one
+                else {
+                    canBeOpened = currentPrice > this.stopLossedPositions[side].price;
+                }
             }
 
-            // Otherwise, the multicoin system is enabled
-            else if (!this.strategy.bitcoin_only) {
-                tradeableSymbols = 
-                    signal.s.filter((s) => !this.active[s] && !this.lowVolatilitySymbols.includes(s))
-                            .slice(0, availableSlots);
-            }
+            // If the position can be opened, proceed
+            if (canBeOpened) {
+                // Calculate the number of positions that can be opened
+                const availableSlots: number = this.strategy.positions_limit - activeNum;
 
-            // Ensure there are tradeable symbols before proceeding
-            if (tradeableSymbols.length) {
-                // Increment the queued positions
-                this.queuedPositions += tradeableSymbols.length;
+                // Init the list of tradeable symbols
+                let tradeableSymbols: string[] = [];
 
-                // Execute the position opening for all the tradeable symbols
-                await Promise.all(
-                    tradeableSymbols.map(
-                        (symbol) => this.openPositionFactory(signal.r == 1 ? "LONG": "SHORT", symbol)()
-                    )
-                );
+                // If the Bitcoin Only Strategy is enabled, check if a signal was issued
+                if (this.strategy.bitcoin_only && signal.s.includes(this.btcSymbol) && !this.active[this.btcSymbol]) {
+                    tradeableSymbols = [ this.btcSymbol ];
+                }
+
+                // Otherwise, the multicoin system is enabled
+                else if (!this.strategy.bitcoin_only) {
+                    tradeableSymbols = 
+                        signal.s.filter((s) => !this.active[s] && !this.lowVolatilitySymbols.includes(s))
+                                .slice(0, availableSlots);
+                }
+
+                // Ensure there are tradeable symbols before proceeding
+                if (tradeableSymbols.length) {
+                    /**
+                     * The multi-position flow now only allows opening 1 position at a time even though
+                     * multiple can be managed simultaneously.
+                     */
+                    /*// Increment the queued positions
+                    this.queuedPositions += tradeableSymbols.length;
+
+                    // Execute the position opening for all the tradeable symbols
+                    await Promise.all(
+                        tradeableSymbols.map(
+                            (symbol) => this.openPositionFactory(signal.r == 1 ? "LONG": "SHORT", symbol)()
+                        )
+                    );*/
+                    
+                    // Increment the queued positions
+                    this.queuedPositions += 1;
+
+                    // Open a position for the symbol placed in the first index
+                    await this.openPosition(side, tradeableSymbols[0]);
+                }
+            } else {
+                let msg: string = `Warning: The ${side} Position was not opened because the price (${currentPrice}) `;
+                msg += `is worse than the previous stop lossed position (${this.stopLossedPositions[side].price}).`
+                console.log(msg);
+                this._apiError.log("PositionService.onNewSignal", msg);
             }
         }
     }
@@ -398,8 +443,8 @@ export class PositionService implements IPositionService {
             this.active[pos.symbol].gain_drawdown
         );
 
-        // Attempt to create the stop-loss order @TODO
-        try {
+        // Attempt to create the stop-loss order @EVALUATE
+        /*try {
             this.active[pos.symbol].stop_loss_order = await this.createStopMarketOrder(
                 pos.symbol,
                 this.active[pos.symbol].side,
@@ -409,7 +454,7 @@ export class PositionService implements IPositionService {
         } catch (e) {
             console.log(e);
             this._apiError.log("PositionService.onNewPosition.createStopMarketOrder", e);
-        }
+        }*/
 
         // Notify users if the leverage is missconfigured
         if (this.active[pos.symbol].leverage != this.strategy.leverage) {
@@ -802,13 +847,13 @@ export class PositionService implements IPositionService {
              * position reopening on a losing range.
              */
             const adjPrice: number = <number>this._utils.alterNumberByPercentage(
-                this.active[symbol].stop_loss_price,
+                this._candlestick.predictionLookback.at(-1).c,
                 this.active[symbol].side == "LONG" ? 
                     -(this.strategy.reopen_if_better_price_adjustment): this.strategy.reopen_if_better_price_adjustment
             );
 
             // Finally, store the data
-            this.stopLossedPositions[this.active[symbol].side][symbol] = {
+            this.stopLossedPositions[this.active[symbol].side] = {
                 price: adjPrice,
                 until: moment(this.active[symbol].close).add(this.strategy.reopen_if_better_duration_minutes, "minutes").valueOf()
             }
@@ -1063,48 +1108,22 @@ export class PositionService implements IPositionService {
         // Firstly, retrieve the coin and the price
         const { coin, price } = this._coin.getInstalledCoinAndPrice(symbol);
 
-        // Evaluate if the position can be opened
-        let canBeOpened: boolean = true;
-        if (
-            this.strategy.reopen_if_better_duration_minutes > 0 &&
-            this.stopLossedPositions[side][symbol] &&
-            Date.now() <= this.stopLossedPositions[side][symbol].until
-        ) {
-            // In the case of a long, the new position's price must be lower than the previous one
-            if (side == "LONG") {
-                canBeOpened = price < this.stopLossedPositions[side][symbol].price;
-            }
+        // Calculate the notional size
+        const notional: BigNumber = new BigNumber(this.strategy.position_size).times(this.strategy.leverage);
 
-            // In the case of a short, the new position's price must be higher than the previous one
-            else {
-                canBeOpened = price > this.stopLossedPositions[side][symbol].price;
-            }
-        }
+        // Convert the notional into the coin, resulting in the leveraged position amount
+        const amount: number = <number>this._utils.outputNumber(notional.dividedBy(price), {dp: coin.quantityPrecision, ru: false});
 
-        // If the position can be opened, proceed
-        if (canBeOpened) {
-            // Calculate the notional size
-            const notional: BigNumber = new BigNumber(this.strategy.position_size).times(this.strategy.leverage);
+        // Execute the trade
+        const payload: IBinanceTradeExecutionPayload|undefined = await this._binance.order(
+            symbol,
+            side == "LONG" ? "BUY": "SELL",
+            amount
+        );
 
-            // Convert the notional into the coin, resulting in the leveraged position amount
-            const amount: number = <number>this._utils.outputNumber(notional.dividedBy(price), {dp: coin.quantityPrecision, ru: false});
-
-            // Execute the trade
-            const payload: IBinanceTradeExecutionPayload|undefined = await this._binance.order(
-                symbol,
-                side == "LONG" ? "BUY": "SELL",
-                amount
-            );
-
-            // Store the payload if provided
-            if (payload && typeof payload == "object") {
-                await this._model.savePositionActionPayload("POSITION_OPEN", symbol, side, payload);
-            }
-        } else {
-            let msg: string = `Warning: The position ${symbol} ${side} was not opened because the price (${price}) `;
-            msg += `is worse than the previous stop lossed position (${this.stopLossedPositions[side][symbol].price}).`
-            console.log(msg);
-            this._apiError.log("PositionService.openPosition", msg);
+        // Store the payload if provided
+        if (payload && typeof payload == "object") {
+            await this._model.savePositionActionPayload("POSITION_OPEN", symbol, side, payload);
         }
     }
 

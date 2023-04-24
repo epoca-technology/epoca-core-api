@@ -267,8 +267,8 @@ export interface IPositionGainState {
  * better.
  */
 export interface IStopLossedPositions {
-    LONG: {[symbol: string]: IStopLossedPositionBySide},
-    SHORT: {[symbol: string]: IStopLossedPositionBySide},
+    LONG: IStopLossedPositionBySide,
+    SHORT: IStopLossedPositionBySide,
 }
 export interface IStopLossedPositionBySide {
     // The price at which the position stop lossed
