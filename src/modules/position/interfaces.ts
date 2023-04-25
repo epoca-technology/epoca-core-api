@@ -261,20 +261,20 @@ export interface IPositionGainState {
 
 
 /**
- * Stop Lossed Positions
- * When a position looses, it stores the essential data in order to ensure
- * that if a position for the side was to be re-opened, the price must be 
+ * Position Interactions
+ * When a position is opened, it stores the essential data in order to ensure
+ * that if another position for the side was to be opened, the price must be 
  * better.
  */
-export interface IStopLossedPositions {
-    LONG: IStopLossedPositionBySide,
-    SHORT: IStopLossedPositionBySide,
+export interface IPositionInteractions {
+    LONG: ISidePositionInteraction,
+    SHORT: ISidePositionInteraction,
 }
-export interface IStopLossedPositionBySide {
-    // The price at which the position stop lossed
+export interface ISidePositionInteraction {
+    // The price that needs to be improved by another position to be opened
     price: number,
 
-    // The time at which the stop lossed position fades away
+    // The time at which the interaction fades away
     until: number
 }
 

@@ -29,7 +29,7 @@ import {
     IPositionService,
     IPositionStrategy,
     IPositionValidations,
-    IStopLossedPositions,
+    IPositionInteractions,
 } from "./interfaces";
 import { ICandlestickService } from "../candlestick";
 
@@ -99,12 +99,12 @@ export class PositionService implements IPositionService {
 
 
     /**
-     * Stop Lossed Positions
+     * Position Interactions
      * If strategy.reopen_if_better_duration_minutes is greater than 0, whenever a position
-     * looses, it stores the stop loss price as well as the time in which only "better"
-     * positions can be reopened based on the side.
+     * is opened, it stores the price that needs to be bettered, as well as the time in which only 
+     * "better" positions can be reopened based on the side.
      */
-    private stopLossedPositions: IStopLossedPositions = {
+    private positionInteractions: IPositionInteractions = {
         LONG:  { price: 0, until: 0 },
         SHORT: { price: 0, until: 0 }
     }
@@ -244,20 +244,20 @@ export class PositionService implements IPositionService {
             let canBeOpened: boolean = true;
             if (
                 this.strategy.reopen_if_better_duration_minutes > 0 &&
-                this.stopLossedPositions[side].price != 0 &&
-                Date.now() <= this.stopLossedPositions[side].until
+                this.positionInteractions[side].price != 0 &&
+                Date.now() <= this.positionInteractions[side].until
             ) {
                 // Init the current price
                 currentPrice = this._candlestick.predictionLookback.at(-1).c;
 
                 // In the case of a long, the new position's price must be lower than the previous one
                 if (side == "LONG") {
-                    canBeOpened = currentPrice < this.stopLossedPositions[side].price;
+                    canBeOpened = currentPrice < this.positionInteractions[side].price;
                 }
 
                 // In the case of a short, the new position's price must be higher than the previous one
                 else {
-                    canBeOpened = currentPrice > this.stopLossedPositions[side].price;
+                    canBeOpened = currentPrice > this.positionInteractions[side].price;
                 }
             }
 
@@ -305,7 +305,7 @@ export class PositionService implements IPositionService {
                 }
             } else {
                 let msg: string = `Warning: The ${side} Position was not opened because the price (${currentPrice}) `;
-                msg += `is worse than the previous stop lossed position (${this.stopLossedPositions[side].price}).`
+                msg += `is worse than the previous stop lossed position (${this.positionInteractions[side].price}).`
                 console.log(msg);
                 this._apiError.log("PositionService.onNewSignal", msg);
             }
@@ -455,6 +455,25 @@ export class PositionService implements IPositionService {
             console.log(e);
             this._apiError.log("PositionService.onNewPosition.createStopMarketOrder", e);
         }*/
+
+        // If reopen_if_better_duration_minutes is enabled, store the interaction data
+        if (this.strategy.reopen_if_better_duration_minutes > 0) {
+            /**
+             * Alter the stop loss price based on the side in order to prevent
+             * position reopening on a losing range.
+             */
+            const adjPrice: number = <number>this._utils.alterNumberByPercentage(
+                this._candlestick.predictionLookback.at(-1).c,
+                this.active[pos.symbol].side == "LONG" ? 
+                    -(this.strategy.reopen_if_better_price_adjustment): this.strategy.reopen_if_better_price_adjustment
+            );
+
+            // Finally, store the data
+            this.positionInteractions[this.active[pos.symbol].side] = {
+                price: adjPrice,
+                until: moment().add(this.strategy.reopen_if_better_duration_minutes, "minutes").valueOf()
+            }
+        }
 
         // Notify users if the leverage is missconfigured
         if (this.active[pos.symbol].leverage != this.strategy.leverage) {
@@ -839,25 +858,6 @@ export class PositionService implements IPositionService {
 
         // Store the position the db
         await this._model.savePosition(this.active[symbol]);
-
-        // If the position stop lossed and reopen_if_better_duration_minutes is enabled, store the data
-        if (this.active[symbol].gain <= 0.1 && this.strategy.reopen_if_better_duration_minutes > 0) {
-            /**
-             * Alter the stop loss price based on the side in order to prevent
-             * position reopening on a losing range.
-             */
-            const adjPrice: number = <number>this._utils.alterNumberByPercentage(
-                this._candlestick.predictionLookback.at(-1).c,
-                this.active[symbol].side == "LONG" ? 
-                    -(this.strategy.reopen_if_better_price_adjustment): this.strategy.reopen_if_better_price_adjustment
-            );
-
-            // Finally, store the data
-            this.stopLossedPositions[this.active[symbol].side] = {
-                price: adjPrice,
-                until: moment(this.active[symbol].close).add(this.strategy.reopen_if_better_duration_minutes, "minutes").valueOf()
-            }
-        }
 
         // Notify the users
         this._notification.positionHasBeenClosed(this.active[symbol]);
