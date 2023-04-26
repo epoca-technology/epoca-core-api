@@ -5,7 +5,6 @@ import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { 
     IBinanceActivePosition, 
-    IBinancePositionActionSide, 
     IBinancePositionSide, 
     IBinanceService,
     IBinanceTradeExecutionPayload, 
@@ -107,19 +106,7 @@ export class PositionService implements IPositionService {
     private positionInteractions: IPositionInteractions = {
         LONG:  { price: 0, until: 0 },
         SHORT: { price: 0, until: 0 }
-    }
-
-
-
-
-    /**
-     * Low Volatility Symbols
-     * If the strategy.bitcoin_only property is false, the system will trade any altcoin
-     * that is not in the lowVolatilitySymbols list.
-     */
-    private readonly lowVolatilitySymbols: string[] = [
-        "BTCUSDT", "BNBUSDT", "ADAUSDT", "BCHUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT", "TRXUSDT", "SOLUSDT"
-    ];
+    };
 
 
 
@@ -277,7 +264,7 @@ export class PositionService implements IPositionService {
                 // Otherwise, the multicoin system is enabled
                 else if (!this.strategy.bitcoin_only) {
                     tradeableSymbols = 
-                        signal.s.filter((s) => !this.active[s] && !this.lowVolatilitySymbols.includes(s))
+                        signal.s.filter((s) => !this.active[s] && !this.strategy.low_volatility_coins.includes(s))
                                 .slice(0, availableSlots);
                 }
 
@@ -305,7 +292,7 @@ export class PositionService implements IPositionService {
                 }
             } else {
                 let msg: string = `Warning: The ${side} Position was not opened because the price (${currentPrice}) `;
-                msg += `is worse than the previous stop lossed position (${this.positionInteractions[side].price}).`
+                msg += `is worse than the previous position (${this.positionInteractions[side].price}).`
                 console.log(msg);
                 this._apiError.log("PositionService.onNewSignal", msg);
             }
@@ -443,7 +430,7 @@ export class PositionService implements IPositionService {
             this.active[pos.symbol].gain_drawdown
         );
 
-        // Attempt to create the stop-loss order @EVALUATE
+        // Attempt to create the stop-loss order @DEPRECATED
         /*try {
             this.active[pos.symbol].stop_loss_order = await this.createStopMarketOrder(
                 pos.symbol,
@@ -537,6 +524,7 @@ export class PositionService implements IPositionService {
             take_profit_price_2: exit.take_profit_price_2,
             take_profit_price_3: exit.take_profit_price_3,
             take_profit_price_4: exit.take_profit_price_4,
+            take_profit_price_5: exit.take_profit_price_5,
             stop_loss_price: exit.stop_loss_price,
             stop_loss_order: undefined,
 
@@ -581,6 +569,11 @@ export class PositionService implements IPositionService {
             take_profit_price_4: <number>this._utils.alterNumberByPercentage(
                 entryPrice, 
                 side == "LONG" ? this.strategy.take_profit_4.price_change_requirement: -(this.strategy.take_profit_4.price_change_requirement),
+                { dp: pricePrecision }
+            ),
+            take_profit_price_5: <number>this._utils.alterNumberByPercentage(
+                entryPrice, 
+                side == "LONG" ? this.strategy.take_profit_5.price_change_requirement: -(this.strategy.take_profit_5.price_change_requirement),
                 { dp: pricePrecision }
             ),
             stop_loss_price: <number>this._utils.alterNumberByPercentage(
@@ -755,6 +748,10 @@ export class PositionService implements IPositionService {
         (
             currentGain < this.strategy.take_profit_4.price_change_requirement && 
             highestGain >= (this.strategy.take_profit_4.price_change_requirement + this.strategy.take_profit_4.activation_offset)
+        ) ||
+        (
+            currentGain < this.strategy.take_profit_5.price_change_requirement && 
+            highestGain >= (this.strategy.take_profit_5.price_change_requirement + this.strategy.take_profit_5.activation_offset)
         );
     }
 
@@ -791,8 +788,15 @@ export class PositionService implements IPositionService {
         }
 
         // Level 4
-        else if (gain >= this.strategy.take_profit_4.price_change_requirement) {
+        else if (
+            gain >= this.strategy.take_profit_4.price_change_requirement && gain < this.strategy.take_profit_5.price_change_requirement
+        ) {
             return this.strategy.take_profit_4.max_gain_drawdown;
+        }
+
+        // Level 5
+        else if (gain >= this.strategy.take_profit_5.price_change_requirement) {
+            return this.strategy.take_profit_5.max_gain_drawdown;
         }
 
         // No level is active
@@ -1101,9 +1105,9 @@ export class PositionService implements IPositionService {
      * @param symbol 
      * @returns Promise<void>
      */
-    private openPositionFactory(side: IBinancePositionSide, symbol: string): () => Promise<void> {
+    /*private openPositionFactory(side: IBinancePositionSide, symbol: string): () => Promise<void> {
         return () => this.openPosition(side, symbol);
-    }
+    }*/
     private async openPosition(side: IBinancePositionSide, symbol: string): Promise<void> {
         // Firstly, retrieve the coin and the price
         const { coin, price } = this._coin.getInstalledCoinAndPrice(symbol);
@@ -1173,7 +1177,7 @@ export class PositionService implements IPositionService {
      * @param stopPrice 
      * @returns Promise<IBinanceTradeExecutionPayload|undefined>
      */
-    private async createStopMarketOrder(
+    /*private async createStopMarketOrder(
         symbol: string, 
         side: IBinancePositionSide, 
         quantity: number,
@@ -1199,7 +1203,7 @@ export class PositionService implements IPositionService {
                 }
             }
         }
-    }
+    }*/
 
 
 
@@ -1276,16 +1280,20 @@ export class PositionService implements IPositionService {
             long_status: false,
             short_status: false,
             bitcoin_only: true,
-            leverage: 70,
+            leverage: 40,
             position_size: 1,
             positions_limit: 1,
-            take_profit_1: { price_change_requirement: 0.35, activation_offset: 0.1,  max_gain_drawdown: -100 },
-            take_profit_2: { price_change_requirement: 0.55, activation_offset: 0.1,  max_gain_drawdown: -35 },
-            take_profit_3: { price_change_requirement: 0.9,  activation_offset: 0.1,  max_gain_drawdown: -15 },
-            take_profit_4: { price_change_requirement: 1.5,  activation_offset: 0.1,  max_gain_drawdown: -7.5 },
-            stop_loss: 0.15,
-            reopen_if_better_duration_minutes: 60,
+            take_profit_1: { price_change_requirement: 0.25, activation_offset: 0.15,   max_gain_drawdown: -100 },
+            take_profit_2: { price_change_requirement: 0.50, activation_offset: 0.10,   max_gain_drawdown: -100 },
+            take_profit_3: { price_change_requirement: 0.75, activation_offset: 0.075,  max_gain_drawdown: -15 },
+            take_profit_4: { price_change_requirement: 1.00, activation_offset: 0.05,   max_gain_drawdown: -7.5 },
+            take_profit_5: { price_change_requirement: 1.50, activation_offset: 0.025,  max_gain_drawdown: -5 },
+            stop_loss: 2.1, // Est. Liquiditation at x40
+            reopen_if_better_duration_minutes: 180,
             reopen_if_better_price_adjustment: 0.35,
+            low_volatility_coins: [
+                "BTCUSDT", "BNBUSDT", "ADAUSDT", "BCHUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT", "TRXUSDT", "SOLUSDT"
+            ]
         }
     }
 }

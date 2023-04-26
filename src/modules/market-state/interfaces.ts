@@ -1240,9 +1240,16 @@ export interface IReversalScoreWeights {
  * Configuration
  * The Reversal's Module Configuration that can be managed from the GUI.
  */
+export type IReversalEventSortFunction = "SHUFFLE"|"CHANGE_SUM";
 export interface IReversalConfiguration {
     // The minimum score required for a resistance event to be issued
     min_event_score: number,
+
+    /**
+     * The sorting mechanism that will be used to order the symbols that are
+     * compliant with the kind of reversal.
+     */
+    event_sort_func: IReversalEventSortFunction,
 
     // The weights by module that will be used to calculate the score
     score_weights: IReversalScoreWeights

@@ -181,6 +181,7 @@ export interface IPositionStrategy {
     take_profit_2: ITakeProfitLevel,
     take_profit_3: ITakeProfitLevel,
     take_profit_4: ITakeProfitLevel,
+    take_profit_5: ITakeProfitLevel,
 
     /**
      * Loss Optimization Strategy
@@ -215,6 +216,13 @@ export interface IPositionStrategy {
      * On the other hand, when a short looses, the price is increased by 0.25%.
      */
     reopen_if_better_price_adjustment: number,
+
+    /**
+     * Low Volatility Coins
+     * If the strategy.bitcoin_only property is false, the system will trade any altcoin
+     * that is not in the low_volatility_coins (symbols) list.
+     */
+    low_volatility_coins: string[]
 }
 
 
@@ -229,6 +237,7 @@ export interface IPositionExitStrategy {
     take_profit_price_2: number,
     take_profit_price_3: number,
     take_profit_price_4: number,
+    take_profit_price_5: number,
 
     // Stop Loss
     stop_loss_price: number
@@ -370,6 +379,7 @@ export interface IPositionRecord {
     take_profit_price_2: number,
     take_profit_price_3: number,
     take_profit_price_4: number,
+    take_profit_price_5: number,
 
     // The price in which the position is labeled as "unsuccessful" and is ready to be closed.
     stop_loss_price: number,

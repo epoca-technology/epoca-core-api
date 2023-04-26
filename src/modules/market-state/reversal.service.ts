@@ -458,14 +458,14 @@ export class ReversalService implements IReversalService {
     /**
      * When the score requirement is met and the event is being 
      * built, the list of symbols that reacted in favor of 
-     * the reversal is built in order to be used by the signals
-     * module.
+     * the reversal is built with the symbols sorted based on
+     * the configuration.
      * @param coins
      * @returns string[]
      */
     private getEventCompliantSymbols(coins: ICoinsCompressedState): string[] {
-        // Init the symbols
-        let symbols: string[] = [];
+        // Init the coins
+        let compliantCoins: Array<{symbol: string, changeSum: number}> = [];
 
         // Iterate over each symbol
         for (let symbol in this.coinsStates.initial.csbs) {
@@ -475,7 +475,12 @@ export class ReversalService implements IReversalService {
              */
             if (this.state.k == 1) {
                 if (coins.csbs[symbol].s > this.coinsStates.initial.csbs[symbol].s) {
-                    symbols.push(symbol);
+                    compliantCoins.push({
+                        symbol: symbol,
+                        changeSum: <number>this._utils.calculateSum(
+                            this.stateSplits.map((ss) => this.coinsStates.initial.csbs[symbol].ss[ss].c)
+                        )
+                    });
                 }
             }
 
@@ -485,15 +490,59 @@ export class ReversalService implements IReversalService {
              */
             else {
                 if (coins.csbs[symbol].s < this.coinsStates.initial.csbs[symbol].s) {
-                    symbols.push(symbol);
+                    compliantCoins.push({
+                        symbol: symbol,
+                        changeSum: <number>this._utils.calculateSum(
+                            this.stateSplits.map((ss) => this.coinsStates.initial.csbs[symbol].ss[ss].c)
+                        )
+                    });
                 }
             }
         }
 
-        // Finally, return the shuffled list of compliant symbols
-        return symbols.map(value => ({ value, sort: Math.random() }))
-                      .sort((a, b) => a.sort - b.sort)
-                      .map(({ value }) => value);
+        // If compliant coins were listed, sort them based on the configuration
+        if (compliantCoins.length) {
+            /**
+             * Shuffle Sort Function
+             * Sorts the compliant symbols in a fully random way.
+             */
+            if (this.config.event_sort_func == "SHUFFLE") {
+                return compliantCoins.map(value => ({ value, sort: Math.random() }))
+                                .sort((a, b) => a.sort - b.sort)
+                                .map(({ value }) => value.symbol);
+            }
+
+            /**
+             * Change Sum Sort Function
+             * Sorts the compliant symbols based on the kind of reversal that is
+             * taking place, as well as the change sum within the short dataset
+             * splits.
+             */
+            else if (this.config.event_sort_func == "CHANGE_SUM") {
+                // If it is reversing from a support, the higher the change sum the better
+                if (this.state.k == 1) {
+                    compliantCoins.sort((a, b) => (a.changeSum < b.changeSum) ? 1 : -1);
+                }
+
+                // If it is reversing from a resistance, the lower the change sum the better
+                else {
+                    compliantCoins.sort((a, b) => (a.changeSum > b.changeSum) ? 1 : -1);
+                }
+
+                // Finally, return the symbols
+                return compliantCoins.map((c) => c.symbol);
+            }
+
+            // Otherwise, something is wrong
+            else {
+                console.log(this.config);
+                throw new Error(this._utils.buildApiError(`The reversal compliant symbols could not be sorted because the function
+                (${this.config.event_sort_func}) is invalid.`, 37508));
+            }
+        }
+
+        // Otherwise, there should not be a reversal event
+        else { return [] }
     }
 
 
@@ -783,6 +832,9 @@ export class ReversalService implements IReversalService {
         if (!this._val.numberValid(newConfiguration.min_event_score, 10, 100)) {
             throw new Error(this._utils.buildApiError(`The provided min_event_score (${newConfiguration.min_event_score}) is invalid.`, 37501));
         }
+        if (newConfiguration.event_sort_func != "CHANGE_SUM" && newConfiguration.event_sort_func != "SHUFFLE") {
+            throw new Error(this._utils.buildApiError(`The provided event_sort_func (${newConfiguration.event_sort_func}) is invalid.`, 37507));
+        }
         if (!newConfiguration.score_weights || typeof newConfiguration.score_weights != "object") {
             console.log(newConfiguration);
             throw new Error(this._utils.buildApiError(`The provided reversal score_weights object is invalid.`, 37502));
@@ -888,6 +940,7 @@ export class ReversalService implements IReversalService {
     private buildDefaultConfig(): IReversalConfiguration {
         return {
             min_event_score: 70,
+            event_sort_func: "CHANGE_SUM",
             score_weights: {
                 volume: 10,
                 liquidity: 30,

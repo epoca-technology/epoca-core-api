@@ -6,6 +6,7 @@ import {
     IPositionStrategy,
     IPositionValidations
 } from "./interfaces";
+import { ICoinsService } from "../market-state";
 
 
 
@@ -13,6 +14,7 @@ import {
 @injectable()
 export class PositionValidations implements IPositionValidations {
     // Inject dependencies
+    @inject(SYMBOLS.CoinsService)               private _coins: ICoinsService;
     @inject(SYMBOLS.ValidationsService)          private _validations: IValidationsService;
     @inject(SYMBOLS.UtilitiesService)            private _utils: IUtilitiesService;
 
@@ -244,13 +246,24 @@ export class PositionValidations implements IPositionValidations {
             requirement, activation offset & the max gain drawdown.`, 30008));
         }
 
-
+        // Validate the take profit 5
+        if (
+            typeof newStrategy.take_profit_5 != "object" || 
+            !this._validations.numberValid(newStrategy.take_profit_5.price_change_requirement, 0.05, 10) ||
+            !this._validations.numberValid(newStrategy.take_profit_5.activation_offset, 0.01, 5) ||
+            !this._validations.numberValid(newStrategy.take_profit_5.max_gain_drawdown, -100, -0.01)
+        ) {
+            console.log(newStrategy.take_profit_5);
+            throw new Error(this._utils.buildApiError(`The take profit 5 must be a valid object containing the price change 
+            requirement, activation offset & the max gain drawdown.`, 30008));
+        }
 
         // Ensure the take profit levels are in ascending order
         const ascendingTakeProfits: boolean = 
             newStrategy.take_profit_2.price_change_requirement > newStrategy.take_profit_1.price_change_requirement &&
             newStrategy.take_profit_3.price_change_requirement > newStrategy.take_profit_2.price_change_requirement &&
-            newStrategy.take_profit_4.price_change_requirement > newStrategy.take_profit_3.price_change_requirement;
+            newStrategy.take_profit_4.price_change_requirement > newStrategy.take_profit_3.price_change_requirement &&
+            newStrategy.take_profit_5.price_change_requirement > newStrategy.take_profit_4.price_change_requirement;
         if (!ascendingTakeProfits) {
             console.log(newStrategy);
             throw new Error(this._utils.buildApiError(`The price change requirements in the take profits must be provided
@@ -261,6 +274,19 @@ export class PositionValidations implements IPositionValidations {
         if (typeof newStrategy.stop_loss != "number" || !this._validations.numberValid(newStrategy.stop_loss, 0.1, 20)) {
             throw new Error(this._utils.buildApiError(`The stop loss must be a valid number ranging 0.1-20. 
             Received: ${newStrategy.stop_loss}`, 30002));
+        }
+
+        // Validate the low volatility coins
+        if (!Array.isArray(newStrategy.low_volatility_coins) || !newStrategy.low_volatility_coins.length) {
+            console.log(newStrategy.low_volatility_coins);
+            throw new Error(this._utils.buildApiError(`The low volatility coins list provided is invalid.`, 30019));
+        }
+        const { installed, supported, scores } = this._coins.getCoinsSummary();
+        for (let symbol of newStrategy.low_volatility_coins) {
+            if (!supported[symbol]) {
+                throw new Error(this._utils.buildApiError(`The symbol ${symbol} cannot be in the low volatility list as it 
+                is not supported by the exchange.`, 30018));
+            }
         }
     }
 

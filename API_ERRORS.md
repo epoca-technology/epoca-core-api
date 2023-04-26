@@ -629,9 +629,9 @@
 
 30017: `The reopen_if_better_price_adjustment must be a valid number ranging 0.01 - 10.`
 
-30018: ``
+30018: `The symbol ${symbol} cannot be in the low volatility list as it has not yet been installed.`
 
-30019: ``
+30019: `The low volatility coins list provided is invalid.`
 
 30020: ``
 
@@ -790,9 +790,9 @@
 
 37506: `The provided reversal id (${id}) was not found in the database.`
 
-37507: ``
+37507: `The provided event_sort_func (${newConfiguration.event_sort_func}) is invalid.`
 
-37508: ``
+37508: `The reversal compliant symbols could not be sorted because the function is invalid.`
 
 
 
