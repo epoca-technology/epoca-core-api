@@ -140,7 +140,6 @@ export class CampaignService implements ICampaignService {
                 this._apiError.log("CampaignService.interval.syncIncome", e);
             }
         }, (this.incomeIntervalMinutes * 60) * 1000);
-
     }
 
 
