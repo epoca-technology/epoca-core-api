@@ -99,7 +99,8 @@ export interface ISignalSidePolicies {
     },
     cancellation: {
         window_state: IWindowStateCancellationPolicy,
-        trend: ITrendCancellationPolicy
+        trend_sum: ITrendSumCancellationPolicy,
+        trend_state: ITrendStateCancellationPolicy
     }
 }
 
@@ -143,18 +144,26 @@ export interface IWindowStateCancellationPolicy extends ISignalPolicy {
 
 
 /**
- * Trend Cancellation Policy
- * Cancellation Policy based on the trend sum & state. The purpose of the 
+ * Trend Sum Cancellation Policy
+ * Cancellation Policy based on the trend sum. The purpose of the 
  * Prediction Model is to always prepare us for what may come next. This 
  * policy will help avoid positions that strongly contradict the trend. 
  */
-export interface ITrendCancellationPolicy extends ISignalPolicy {
+export interface ITrendSumCancellationPolicy extends ISignalPolicy {
     trend_sum: number,
-    trend_state: IStateType,
 }
 
 
 
+/**
+ * Trend State Cancellation Policy
+ * Cancellation Policy based on the trend state. The purpose of the 
+ * Prediction Model is to always prepare us for what may come next. This 
+ * policy will help avoid positions that strongly contradict the trend. 
+ */
+export interface ITrendStateCancellationPolicy extends ISignalPolicy {
+    trend_state: IStateType,
+}
 
 
 

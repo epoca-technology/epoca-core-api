@@ -3,6 +3,7 @@ import {
     ICoinsObject, 
     IKeyZonesConfiguration, 
     ILiquidityConfiguration, 
+    IReversalConfiguration, 
     ITrendStateConfiguration, 
     IWindowStateConfiguration 
 } from "../market-state";
@@ -227,6 +228,9 @@ export interface ICampaignConfigurationsSnapshot {
     // Coins Configuration
     coins: ICoinsConfiguration,
     installed_coins: ICoinsObject,
+
+    // Reversal Configuration
+    reversal: IReversalConfiguration,
 
     // Position Strategy Configuration
     strategy: IPositionStrategy,

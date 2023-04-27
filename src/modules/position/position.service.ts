@@ -1288,7 +1288,7 @@ export class PositionService implements IPositionService {
             take_profit_3: { price_change_requirement: 0.75, activation_offset: 0.075,  max_gain_drawdown: -15 },
             take_profit_4: { price_change_requirement: 1.00, activation_offset: 0.05,   max_gain_drawdown: -7.5 },
             take_profit_5: { price_change_requirement: 1.50, activation_offset: 0.025,  max_gain_drawdown: -5 },
-            stop_loss: 2.1, // Est. Liquiditation at x40
+            stop_loss: 2.2, // Est. Liquiditation at x40
             reopen_if_better_duration_minutes: 180,
             reopen_if_better_price_adjustment: 0.35,
             low_volatility_coins: [

@@ -165,7 +165,8 @@ export class SignalService implements ISignalService {
             (ds.keyzoneStateEvent.k == "s" || ds.keyzoneStateEvent.k == "r") &&
             (ds.reversalState.e && ds.reversalState.id != this.lastReversalID) &&
             !this.isWindowStateCancelling(ds.keyzoneStateEvent.k, ds.windowState) &&
-            !this.isTrendCancelling(ds.keyzoneStateEvent.k, ds.trendSum, ds.trendState)
+            !this.isTrendSumCancelling(ds.keyzoneStateEvent.k, ds.trendSum) &&
+            !this.isTrendStateCancelling(ds.keyzoneStateEvent.k, ds.trendState)
         ) {
             // Build the signal record
             record = {
@@ -252,20 +253,18 @@ export class SignalService implements ISignalService {
 
 
     /**
-     * Evaluates if the trend policy is currently cancelling
+     * Evaluates if the trend sum policy is currently cancelling
      * the KeyZone Event Kind.
      * @param kind 
      * @param trendSum 
-     * @param trendState 
      * @returns boolean
      */
-    private isTrendCancelling(kind: IKeyZoneStateEventKind, trendSum: number, trendState: IStateType): boolean {
+    private isTrendSumCancelling(kind: IKeyZoneStateEventKind, trendSum: number): boolean {
         // Evaluate if a long should be cancelled
         if (
             kind == "s" &&
-            this.policies.long.cancellation.trend.enabled &&
-            (this.policies.long.cancellation.trend.trend_sum == 0 || trendSum <= this.policies.long.cancellation.trend.trend_sum) &&
-            (this.policies.long.cancellation.trend.trend_state == 0 || trendState <= this.policies.long.cancellation.trend.trend_state)
+            this.policies.long.cancellation.trend_sum.enabled &&
+            trendSum <= this.policies.long.cancellation.trend_sum.trend_sum
         ) {
             return true;
         }
@@ -273,9 +272,8 @@ export class SignalService implements ISignalService {
         // Evaluate if a short should be cancelled
         else if (
             kind == "r" &&
-            this.policies.short.cancellation.trend.enabled &&
-            (this.policies.short.cancellation.trend.trend_sum == 0 || trendSum >= this.policies.short.cancellation.trend.trend_sum) &&
-            (this.policies.short.cancellation.trend.trend_state == 0 || trendState >= this.policies.short.cancellation.trend.trend_state)
+            this.policies.short.cancellation.trend_sum.enabled &&
+            trendSum >= this.policies.short.cancellation.trend_sum.trend_sum
         ) {
             return true;
         }
@@ -284,6 +282,42 @@ export class SignalService implements ISignalService {
         else { return false }
     }
 
+
+
+
+
+
+
+
+    /**
+     * Evaluates if the trend state policy is currently cancelling
+     * the KeyZone Event Kind.
+     * @param kind 
+     * @param trendState 
+     * @returns boolean
+     */
+    private isTrendStateCancelling(kind: IKeyZoneStateEventKind, trendState: IStateType): boolean {
+        // Evaluate if a long should be cancelled
+        if (
+            kind == "s" &&
+            this.policies.long.cancellation.trend_state.enabled &&
+            trendState <= this.policies.long.cancellation.trend_state.trend_state
+        ) {
+            return true;
+        }
+
+        // Evaluate if a short should be cancelled
+        else if (
+            kind == "r" &&
+            this.policies.short.cancellation.trend_state.enabled &&
+            trendState >= this.policies.short.cancellation.trend_state.trend_state
+        ) {
+            return true;
+        }
+
+        // Otherwise, the trend state policy is not cancelling
+        else { return false }
+    }
 
 
 
@@ -419,10 +453,13 @@ export class SignalService implements ISignalService {
                         enabled: true,
                         window_state: -2
                     },
-                    trend: {
+                    trend_sum: {
                         enabled: true,
-                        trend_sum: -1,
-                        trend_state: 0
+                        trend_sum: -1
+                    },
+                    trend_state: {
+                        enabled: true,
+                        trend_state: -2
                     }
                 }
             },
@@ -437,10 +474,13 @@ export class SignalService implements ISignalService {
                         enabled: true,
                         window_state: 2
                     },
-                    trend: {
+                    trend_sum: {
                         enabled: true,
-                        trend_sum: 1,
-                        trend_state: 0
+                        trend_sum: 1
+                    },
+                    trend_state: {
+                        enabled: true,
+                        trend_state: 2
                     }
                 }
             }

@@ -8,6 +8,7 @@ import {
     ICoinsService,
     IKeyZonesStateService, 
     ILiquidityStateService, 
+    IReversalService, 
     ITrendStateService, 
     IWindowStateService,
 } from "../market-state";
@@ -43,6 +44,7 @@ export class CampaignService implements ICampaignService {
     @inject(SYMBOLS.KeyZonesStateService)       private _keyzones: IKeyZonesStateService;
     @inject(SYMBOLS.TrendStateService)          private _trend: ITrendStateService;
     @inject(SYMBOLS.CoinsService)               private _coins: ICoinsService;
+    @inject(SYMBOLS.ReversalService)            private _reversal: IReversalService;
     @inject(SYMBOLS.PositionService)            private _position: IPositionService;
     @inject(SYMBOLS.SignalService)              private _signal: ISignalService;
     @inject(SYMBOLS.NotificationService)        private _notification: INotificationService;
@@ -335,6 +337,7 @@ export class CampaignService implements ICampaignService {
             liquidity: this._liquidity.config,
             keyzones: this._keyzones.config,
             coins: this._coins.config,
+            reversal: this._reversal.config,
             installed_coins: installed,
             strategy: this._position.strategy,
             signal_policies: this._signal.policies

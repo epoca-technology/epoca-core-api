@@ -701,7 +701,7 @@
 
 35504: `The provided long issuance.enabled is invalid.`
 
-35505: ``
+35505: `The provided long trend_state.enabled is invalid.`
 
 35506: ``
 
@@ -717,7 +717,7 @@
 
 35512: `The provided long trend.trend_sum is invalid.`
 
-35513: `The provided long trend cancellation policy is invalid. The sum or the state must be active.`
+35513: ``
 
 35514: `The provided short trend.trend_sum is invalid.`
 
