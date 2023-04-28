@@ -233,6 +233,7 @@ export class PositionService implements IPositionService {
              */
             let canBeOpened: boolean = Object.values(this.active).filter((p) => p.side == side).length == 0;
             if (
+                canBeOpened &&
                 this.strategy.reopen_if_better_duration_minutes > 0 &&
                 this.positionInteractions[side].price != 0 &&
                 Date.now() <= this.positionInteractions[side].until
