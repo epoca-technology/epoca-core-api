@@ -151,12 +151,37 @@ export interface ICampaignShareHolder {
 
 
 /**
+ * ShareHolder Transaction
+ * When a campaign is created, shareholders can generate transactions that
+ * alter their balance for the new coming campaign.
+ */
+export interface IShareHolderTransaction {
+    // The USDT amount of the transaction
+    amount: number,
+
+    // Brief description of the income/outcome
+    description: string
+}
+
+
+
+
+/**
  * ShareHolder Data
  * The object containing all the essential information for the shareholders. 
  */
 export interface IShareHoldersData {[uid: string]: IShareHolderData};
 export interface IShareHolderData {
-    // The original balance the user had when the campaign was created
+    // The balance the user had when the previous campaign ended
+    previous_balance: number,
+
+    // 
+    deposit: IShareHolderTransaction,
+
+    //
+    withdraw: IShareHolderTransaction,
+
+    //
     original_balance: number,
 
     /**

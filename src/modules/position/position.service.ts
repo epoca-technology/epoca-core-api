@@ -227,8 +227,11 @@ export class PositionService implements IPositionService {
             const side: IBinancePositionSide = signal.r == 1 ? "LONG": "SHORT";
             let currentPrice: number = 0;
 
-            // Evaluate if the position can be opened
-            let canBeOpened: boolean = true;
+            /**
+             * Evaluate if the position can be opened based on the availability of 
+             * the side as well as the last interacted price
+             */
+            let canBeOpened: boolean = Object.values(this.active).filter((p) => p.side == side).length == 0;
             if (
                 this.strategy.reopen_if_better_duration_minutes > 0 &&
                 this.positionInteractions[side].price != 0 &&
