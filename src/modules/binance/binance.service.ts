@@ -20,7 +20,8 @@ import {
     IBinanceExchangeInformation,
     IBinanceCoinTicker,
     IBinanceIncomeRecord,
-    IBinanceIncomeType
+    IBinanceIncomeType,
+    IBinancePositionSide
 } from "./interfaces";
 
 
@@ -260,6 +261,7 @@ export class BinanceService implements IBinanceService {
     /**
      * Creates, increases or closes a position.
      * @param symbol
+     * @param positionSide
      * @param actionSide
      * @param quantity
      * @param stopPrice?
@@ -267,6 +269,7 @@ export class BinanceService implements IBinanceService {
      */
      public async order(
         symbol: string,
+        positionSide: IBinancePositionSide, 
         actionSide: IBinancePositionActionSide, 
         quantity: number,
         stopPrice?: number,
@@ -275,7 +278,7 @@ export class BinanceService implements IBinanceService {
         let rawParams: {[key: string]: string|number} = {
             symbol: symbol,
             side: actionSide,
-            positionSide: "BOTH",
+            positionSide: positionSide,
             quantity: quantity
         };
 

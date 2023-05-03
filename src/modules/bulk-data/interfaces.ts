@@ -12,7 +12,7 @@ import {
     IStateType,
     IVolumeStateIntensity,
 } from "../market-state";
-import { IPositionHeadline } from "../position";
+import { IActivePositionHeadlines } from "../position";
 import { ICandlestick } from "../candlestick";
 import { IPredictionCandlestick } from "../prediction";
 import { IAuthorities } from "../auth";
@@ -78,7 +78,7 @@ export interface IAppBulk {
     prediction: IPrediction|undefined,
 
     // The list of active position headlines
-    positions: IPositionHeadline[],
+    positions: IActivePositionHeadlines,
 
     // The active market state.
     marketState: IMarketState,
@@ -103,7 +103,7 @@ export interface IAppBulkStream {
     prediction: IPrediction|undefined,
 
     // The list of active position headlines
-    positions: IPositionHeadline[],
+    positions: IActivePositionHeadlines,
 
     // The active market state.
     marketState: ICompressedMarketState,

@@ -182,12 +182,6 @@ export class PositionValidations implements IPositionValidations {
             Received: ${newStrategy.position_size}`, 30003));
         }
 
-        // Validate the positions limit
-        if (typeof newStrategy.positions_limit != "number" || !this._validations.numberValid(newStrategy.positions_limit, 1, 9)) {
-            throw new Error(this._utils.buildApiError(`The positions limit must be a valid number ranging 1-9. 
-            Received: ${newStrategy.positions_limit}`, 30005));
-        }
-
         // Validate the reopen if better restriction
         if (typeof newStrategy.reopen_if_better_duration_minutes != "number" || !this._validations.numberValid(newStrategy.reopen_if_better_duration_minutes, 0, 720)) {
             throw new Error(this._utils.buildApiError(`The reopen_if_better_duration_minutes must be a valid number ranging 0-720. 
@@ -203,11 +197,12 @@ export class PositionValidations implements IPositionValidations {
             typeof newStrategy.take_profit_1 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_1.price_change_requirement, 0.05, 10) ||
             !this._validations.numberValid(newStrategy.take_profit_1.activation_offset, 0.01, 5) ||
-            !this._validations.numberValid(newStrategy.take_profit_1.max_gain_drawdown, -100, -0.01)
+            !this._validations.numberValid(newStrategy.take_profit_1.max_gain_drawdown, -100, -0.01) ||
+            !this._validations.numberValid(newStrategy.take_profit_1.reduction_size_on_contact, 0, 1)
         ) {
             console.log(newStrategy.take_profit_1);
             throw new Error(this._utils.buildApiError(`The take profit 1 must be a valid object containing the price change 
-            requirement, activation offset & the max gain drawdown.`, 30008));
+            requirement, activation offset, the max gain drawdown & the reduction_size_on_contact.`, 30008));
         }
 
         // Validate the take profit 2
@@ -215,11 +210,12 @@ export class PositionValidations implements IPositionValidations {
             typeof newStrategy.take_profit_2 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_2.price_change_requirement, 0.05, 10) ||
             !this._validations.numberValid(newStrategy.take_profit_2.activation_offset, 0.01, 5) ||
-            !this._validations.numberValid(newStrategy.take_profit_2.max_gain_drawdown, -100, -0.01)
+            !this._validations.numberValid(newStrategy.take_profit_2.max_gain_drawdown, -100, -0.01) ||
+            !this._validations.numberValid(newStrategy.take_profit_2.reduction_size_on_contact, 0, 1)
         ) {
             console.log(newStrategy.take_profit_2);
             throw new Error(this._utils.buildApiError(`The take profit 2 must be a valid object containing the price change 
-            requirement, activation offset & the max gain drawdown.`, 30008));
+            requirement, activation offset, the max gain drawdown & the reduction_size_on_contact.`, 30008));
         }
 
         // Validate the take profit 3
@@ -227,11 +223,12 @@ export class PositionValidations implements IPositionValidations {
             typeof newStrategy.take_profit_3 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_3.price_change_requirement, 0.05, 10) ||
             !this._validations.numberValid(newStrategy.take_profit_3.activation_offset, 0.01, 5) ||
-            !this._validations.numberValid(newStrategy.take_profit_3.max_gain_drawdown, -100, -0.01)
+            !this._validations.numberValid(newStrategy.take_profit_3.max_gain_drawdown, -100, -0.01) ||
+            !this._validations.numberValid(newStrategy.take_profit_3.reduction_size_on_contact, 0, 1)
         ) {
             console.log(newStrategy.take_profit_3);
             throw new Error(this._utils.buildApiError(`The take profit 3 must be a valid object containing the price change 
-            requirement, activation offset & the max gain drawdown.`, 30008));
+            requirement, activation offset, the max gain drawdown & the reduction_size_on_contact.`, 30008));
         }
 
         // Validate the take profit 4
@@ -239,11 +236,12 @@ export class PositionValidations implements IPositionValidations {
             typeof newStrategy.take_profit_4 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_4.price_change_requirement, 0.05, 10) ||
             !this._validations.numberValid(newStrategy.take_profit_4.activation_offset, 0.01, 5) ||
-            !this._validations.numberValid(newStrategy.take_profit_4.max_gain_drawdown, -100, -0.01)
+            !this._validations.numberValid(newStrategy.take_profit_4.max_gain_drawdown, -100, -0.01) ||
+            !this._validations.numberValid(newStrategy.take_profit_4.reduction_size_on_contact, 0, 1)
         ) {
             console.log(newStrategy.take_profit_4);
             throw new Error(this._utils.buildApiError(`The take profit 4 must be a valid object containing the price change 
-            requirement, activation offset & the max gain drawdown.`, 30008));
+            requirement, activation offset, the max gain drawdown & the reduction_size_on_contact.`, 30008));
         }
 
         // Validate the take profit 5
@@ -251,11 +249,12 @@ export class PositionValidations implements IPositionValidations {
             typeof newStrategy.take_profit_5 != "object" || 
             !this._validations.numberValid(newStrategy.take_profit_5.price_change_requirement, 0.05, 10) ||
             !this._validations.numberValid(newStrategy.take_profit_5.activation_offset, 0.01, 5) ||
-            !this._validations.numberValid(newStrategy.take_profit_5.max_gain_drawdown, -100, -0.01)
+            !this._validations.numberValid(newStrategy.take_profit_5.max_gain_drawdown, -100, -0.01) ||
+            !this._validations.numberValid(newStrategy.take_profit_5.reduction_size_on_contact, 0, 1)
         ) {
             console.log(newStrategy.take_profit_5);
             throw new Error(this._utils.buildApiError(`The take profit 5 must be a valid object containing the price change 
-            requirement, activation offset & the max gain drawdown.`, 30008));
+            requirement, activation offset, the max gain drawdown & the reduction_size_on_contact.`, 30008));
         }
 
         // Ensure the take profit levels are in ascending order

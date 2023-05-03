@@ -184,7 +184,7 @@ PositionRoute.route("/listPositionActionPayloads").get(lowRiskLimit, async (req:
  * @requires api-secret
  * @requires otp
  * @requires authority: 4
- * @param symbol
+ * @param side
  * @returns IAPIResponse<void>
 */
 PositionRoute.route("/closePosition").post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
@@ -197,10 +197,10 @@ PositionRoute.route("/closePosition").post(ultraHighRiskLimit, async (req: expre
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["symbol"], req.body, otp || "");
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["side"], req.body, otp || "");
 
         // Perform Action
-        await _position.closePosition(req.body.symbol);
+        await _position.closePosition(req.body.side);
 
         // Return the response
         res.send(_utils.apiResponse());

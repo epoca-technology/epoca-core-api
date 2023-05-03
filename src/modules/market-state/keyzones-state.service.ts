@@ -356,7 +356,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                     windowSplitStates.s100.s < 2 || windowSplitStates.s75.s < 2 || 
                     windowSplitStates.s50.s < 2 || windowSplitStates.s25.s < 2
                 ) &&*/
-                this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
+                //this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
                 this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c
             ) {
                 /**
@@ -399,7 +399,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                     windowSplitStates.s100.s > -2 || windowSplitStates.s75.s > -2 || 
                     windowSplitStates.s50.s > -2 || windowSplitStates.s25.s > -2
                 ) &&*/
-                this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
+                //this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
                 this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c
             ) {
                 /**
@@ -1351,8 +1351,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             },
             stateLimit: 10,
             priceSnapshotsLimit: 5, // ~15 seconds worth
-            supportEventDurationSeconds: 600,
-            resistanceEventDurationSeconds: 600,
+            supportEventDurationSeconds: 900,
+            resistanceEventDurationSeconds: 900,
             eventPriceDistanceLimit: 0.5,
             keyzoneIdleOnEventMinutes: 60,
             eventScoreRequirement: 5

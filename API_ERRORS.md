@@ -574,13 +574,13 @@
 #
 ## Position Service (29.000 - 29.999)
 
-29000: ``
+29000: `The ${side} position cannot be closed because there isnt an active one.`
 
 29001: ``
 
 29002: ``
 
-29003: `The position cannot be closed because ${symbol} does not have an active one.`
+29003: ``
 
 29004: ``
 
@@ -603,7 +603,7 @@
 
 30004: `The provided strategy is not a valid object.`
 
-30005: `The positions limit must be a valid number ranging 1-9. Received: ${newStrategy.positions_limit}`
+30005: ``
 
 30006: `The price change requirements in the take profits must be provided in ascending order.`
 

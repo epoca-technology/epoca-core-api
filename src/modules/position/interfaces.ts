@@ -19,7 +19,7 @@ export interface IPositionService {
     stop(): void,
 
     // Retrievers
-    getActivePositionHeadlines(): IPositionHeadline[],
+    getActivePositionHeadlines(): IActivePositionHeadlines,
     getPositionRecord(id: string): Promise<IPositionRecord>,
     listPositionHeadlines(startAt: number, endAt: number): Promise<IPositionHeadline[]>,
     listPositionActionPayloads(
@@ -29,7 +29,7 @@ export interface IPositionService {
     ): Promise<IPositionActionRecord[]>,
 
     // Position Actions
-    closePosition(symbol: string): Promise<void>,
+    closePosition(side: IBinancePositionSide, chunkSize?: number): Promise<void>,
 
     // Position Strategy
     updateStrategy(newStrategy: IPositionStrategy): Promise<void>,
@@ -118,13 +118,19 @@ export interface ITakeProfitLevel {
      * take profit level can only be broken and trigger a position close when
      * it has been locked. 
      */
-    activation_offset: number
+    activation_offset: number,
 
     /**
      * The maximum Gain Drawdown% allowed in the level. If this requirement is not met, 
      * the position is closed.
      */
-    max_gain_drawdown: number
+    max_gain_drawdown: number,
+
+    /**
+     * The size of the chunk that will be closed once the take profit level is hit. 
+     * This functionality can be disabled on a level by setting 0.
+     */
+    reduction_size_on_contact: number
 }
 
 
@@ -163,13 +169,6 @@ export interface IPositionStrategy {
      * the position cannot be opened.
      */
     position_size: number,
-
-    /**
-     * Positions Limit
-     * The system can handle up to 9 simultaneous positions. However, this limit can
-     * be changed by the user at any time.
-     */
-    positions_limit: number,
 
     /**
      * Profit Optimization Strategy
@@ -292,6 +291,22 @@ export interface ISidePositionInteraction {
 
 
 
+/**
+ * Active Positions
+ * The system can manage 1 position per side at a time and is stored in memory
+ * until the positions is closed and then stored in the db.
+ */
+export interface IActivePositions {
+    LONG: IPositionRecord|null,
+    SHORT: IPositionRecord|null,
+}
+export interface IActivePositionHeadlines {
+    LONG: IPositionHeadline|null,
+    SHORT: IPositionHeadline|null,
+}
+
+
+
 
 
 
@@ -380,6 +395,15 @@ export interface IPositionRecord {
     take_profit_price_3: number,
     take_profit_price_4: number,
     take_profit_price_5: number,
+
+    // The reductions that have been applied to the position
+    reductions: {
+        take_profit_1: boolean,
+        take_profit_2: boolean,
+        take_profit_3: boolean,
+        take_profit_4: boolean,
+        take_profit_5: boolean,
+    }
 
     // The price in which the position is labeled as "unsuccessful" and is ready to be closed.
     stop_loss_price: number,

@@ -29,6 +29,8 @@ import {
     IPositionStrategy,
     IPositionValidations,
     IPositionInteractions,
+    IActivePositions,
+    IActivePositionHeadlines
 } from "./interfaces";
 import { ICandlestickService } from "../candlestick";
 
@@ -76,10 +78,9 @@ export class PositionService implements IPositionService {
      * record and headline format.
      */
     private readonly btcSymbol: string = "BTCUSDT";
-    private active: {[symbol: string]: IPositionRecord} = {};
-    private queuedPositions: number = 0;
+    private active: IActivePositions = { LONG: null, SHORT: null };
     private activePositionsSyncInterval: any;
-    private readonly activePositionsIntervalSeconds: number = 2; // Every ~2 seconds
+    private readonly activePositionsIntervalSeconds: number = 1.6;
 
 
 
@@ -92,8 +93,11 @@ export class PositionService implements IPositionService {
      * 1 -> Gain%
      * 2 -> Gain Drawdown%
      */
-    private activeCandlestick: {[symbol: string]: IActivePositionCandlestick} = {};
-    private readonly candlestickIntervalSeconds: number = 600; // ~10 minutes
+    private activeCandlestick: {[side: string]: IActivePositionCandlestick|null} = {
+        LONG: null,
+        SHORT: null
+    };
+    private readonly candlestickIntervalSeconds: number = 900; // ~15 minutes
 
 
 
@@ -209,31 +213,33 @@ export class PositionService implements IPositionService {
 
     /**
      * Triggers whenever there is a new signal. Based on the active 
-     * positions and the strategy, determines if the given positions
+     * positions and the strategy, determines if the given position
      * should be opened.
      * @param signal 
      * @returns Promise<void>
      */
     private async onNewSignal(signal: ISignalRecord): Promise<void> {
-        // Calculate the number of active positions
-        const activeNum: number = Object.keys(this.active).length + this.queuedPositions;
+        // Init the side
+        const side: IBinancePositionSide = signal.r == 1 ? "LONG": "SHORT";
 
-        // Only proceed if position slots are available and the trading strategy allows it
+        /**
+         * Only proceed if the following is met:
+         * 1) Trading is enabled for the side.
+         * 2) There isn't an active position for the side.
+         */
         if (
-            activeNum < this.strategy.positions_limit &&
-            ((signal.r == 1 && this.strategy.long_status) || (signal.r == -1 && this.strategy.short_status))
+            (side == "LONG" && this.strategy.long_status && !this.active["LONG"]) || 
+            (side == "SHORT" && this.strategy.short_status && !this.active["SHORT"])
         ) {
-            // Init the side
-            const side: IBinancePositionSide = signal.r == 1 ? "LONG": "SHORT";
+            // Init the current price
             let currentPrice: number = 0;
 
             /**
              * Evaluate if the position can be opened based on the availability of 
              * the side as well as the last interacted price
              */
-            let canBeOpened: boolean = Object.values(this.active).filter((p) => p.side == side).length == 0;
+            let canBeOpened: boolean = true;
             if (
-                canBeOpened &&
                 this.strategy.reopen_if_better_duration_minutes > 0 &&
                 this.positionInteractions[side].price != 0 &&
                 Date.now() <= this.positionInteractions[side].until
@@ -254,46 +260,21 @@ export class PositionService implements IPositionService {
 
             // If the position can be opened, proceed
             if (canBeOpened) {
-                // Calculate the number of positions that can be opened
-                const availableSlots: number = this.strategy.positions_limit - activeNum;
-
                 // Init the list of tradeable symbols
                 let tradeableSymbols: string[] = [];
 
                 // If the Bitcoin Only Strategy is enabled, check if a signal was issued
-                if (this.strategy.bitcoin_only && signal.s.includes(this.btcSymbol) && !this.active[this.btcSymbol]) {
+                if (this.strategy.bitcoin_only && signal.s.includes(this.btcSymbol)) {
                     tradeableSymbols = [ this.btcSymbol ];
                 }
 
                 // Otherwise, the multicoin system is enabled
                 else if (!this.strategy.bitcoin_only) {
-                    tradeableSymbols = 
-                        signal.s.filter((s) => !this.active[s] && !this.strategy.low_volatility_coins.includes(s))
-                                .slice(0, availableSlots);
+                    tradeableSymbols = signal.s.filter((s) => !this.strategy.low_volatility_coins.includes(s));
                 }
 
-                // Ensure there are tradeable symbols before proceeding
-                if (tradeableSymbols.length) {
-                    /**
-                     * The multi-position flow now only allows opening 1 position at a time even though
-                     * multiple can be managed simultaneously.
-                     */
-                    /*// Increment the queued positions
-                    this.queuedPositions += tradeableSymbols.length;
-
-                    // Execute the position opening for all the tradeable symbols
-                    await Promise.all(
-                        tradeableSymbols.map(
-                            (symbol) => this.openPositionFactory(signal.r == 1 ? "LONG": "SHORT", symbol)()
-                        )
-                    );*/
-                    
-                    // Increment the queued positions
-                    this.queuedPositions += 1;
-
-                    // Open a position for the symbol placed in the first index
-                    await this.openPosition(side, tradeableSymbols[0]);
-                }
+                // If possible, open a position for the symbol placed in the first index
+                if (tradeableSymbols.length) await this.openPosition(side, tradeableSymbols[0]);
             } else {
                 let msg: string = `Warning: The ${side} Position was not opened because the price (${currentPrice}) `;
                 msg += `is worse than the previous position (${this.positionInteractions[side].price}).`
@@ -347,18 +328,18 @@ export class PositionService implements IPositionService {
         // Init the position event lists
         let newPositions: IBinanceActivePosition[] = [];
         let changedPositions: IBinanceActivePosition[] = [];
-        let activeSymbols: string[] = [];
+        let activeSides: IBinancePositionSide[] = [];
 
         // Iterate over each position and populate the lists accordingly
         for (let pos of positions) {
             // Check if it is a position change event
-            if (this.active[pos.symbol]) { changedPositions.push(pos) }
+            if (this.active[pos.positionSide]) { changedPositions.push(pos) }
 
             // Check if it is a new position event
-            else if (!this.active[pos.symbol]) { newPositions.push(pos) }
+            else if (!this.active[pos.positionSide]) { newPositions.push(pos) }
 
-            // Add the symbol to the active list
-            activeSymbols.push(pos.symbol);
+            // Add the side to the active list
+            activeSides.push(pos.positionSide);
         }
 
         // Trigger the position changes event (if any)
@@ -382,18 +363,17 @@ export class PositionService implements IPositionService {
         }
 
         // Trigger the position closed event if applies
-        const closedPositionSymbols: string[] = Object.keys(this.active).filter(x => !activeSymbols.includes(x));
-        if (closedPositionSymbols.length) {
+        let closedSides: IBinancePositionSide[] = [];
+        if (this.active.LONG && !activeSides.includes("LONG")) { closedSides.push("LONG") }
+        if (this.active.SHORT && !activeSides.includes("SHORT")) { closedSides.push("SHORT") }
+        if (closedSides.length) {
             try {
-                await Promise.all(closedPositionSymbols.map((symbol) => this.onPositionCloseFactory(symbol)()));
+                await Promise.all(closedSides.map((side) => this.onPositionCloseFactory(side)()));
             } catch (e) {
                 console.log(e);
                 errors.push(this._utils.getErrorMessage(e));
             }
         }
-
-        // Reset the queued positions
-        this.queuedPositions = 0;
 
         // Re-throw the errors (if any)
         if (errors.length) { throw new Error(errors.join(" | ")) }
@@ -424,17 +404,17 @@ export class PositionService implements IPositionService {
     }
     private async onNewPosition(pos: IBinanceActivePosition): Promise<void> {
         // Build the position record
-        this.active[pos.symbol] = this.buildNewPositionRecord(pos);
+        this.active[pos.positionSide] = this.buildNewPositionRecord(pos);
 
         // Initialize the active candlestick
-        this.activeCandlestick[pos.symbol] = this.buildNewActiveCandlestick(
-            this.active[pos.symbol].open,
-            this.active[pos.symbol].mark_price,
-            this.active[pos.symbol].gain,
-            this.active[pos.symbol].gain_drawdown
+        this.activeCandlestick[pos.positionSide] = this.buildNewActiveCandlestick(
+            this.active[pos.positionSide].open,
+            this.active[pos.positionSide].mark_price,
+            this.active[pos.positionSide].gain,
+            this.active[pos.positionSide].gain_drawdown
         );
 
-        // Attempt to create the stop-loss order @DEPRECATED
+        // Attempt to create the stop-loss order
         /*try {
             this.active[pos.symbol].stop_loss_order = await this.createStopMarketOrder(
                 pos.symbol,
@@ -455,29 +435,29 @@ export class PositionService implements IPositionService {
              */
             const adjPrice: number = <number>this._utils.alterNumberByPercentage(
                 this._candlestick.predictionLookback.at(-1).c,
-                this.active[pos.symbol].side == "LONG" ? 
+                this.active[pos.positionSide].side == "LONG" ? 
                     -(this.strategy.reopen_if_better_price_adjustment): this.strategy.reopen_if_better_price_adjustment
             );
 
             // Finally, store the data
-            this.positionInteractions[this.active[pos.symbol].side] = {
+            this.positionInteractions[this.active[pos.positionSide].side] = {
                 price: adjPrice,
                 until: moment().add(this.strategy.reopen_if_better_duration_minutes, "minutes").valueOf()
             }
         }
 
         // Notify users if the leverage is missconfigured
-        if (this.active[pos.symbol].leverage != this.strategy.leverage) {
-            this._notification.positionHasBeenOpenedWithInvalidLeverage(this.active[pos.symbol], this.strategy.leverage);
+        if (this.active[pos.positionSide].leverage != this.strategy.leverage) {
+            this._notification.positionHasBeenOpenedWithInvalidLeverage(this.active[pos.positionSide], this.strategy.leverage);
         }
 
         // Notify users if the margin type is missconfigured
-        if (this.active[pos.symbol].margin_type != "isolated") {
-            this._notification.positionHasBeenOpenedWithInvalidMarginType(this.active[pos.symbol], "isolated");
+        if (this.active[pos.positionSide].margin_type != "isolated") {
+            this._notification.positionHasBeenOpenedWithInvalidMarginType(this.active[pos.positionSide], "isolated");
         }
 
         // Notify the users about the new position
-        this._notification.positionHasBeenOpened(this.active[pos.symbol]);
+        this._notification.positionHasBeenOpened(this.active[pos.positionSide]);
     }
 
 
@@ -497,12 +477,9 @@ export class PositionService implements IPositionService {
         // Initialize the position amount
         const positionAmount: number = <number>this._utils.outputNumber(pos.positionAmt, { dp: coin.quantityPrecision });
 
-        // Initialize the side of the position
-        const side: IBinancePositionSide = positionAmount > 0 ? "LONG": "SHORT";
-
         // Initialize the entry price and put the exit prices strategy together
         const entryPrice: number = <number>this._utils.outputNumber(pos.entryPrice, {dp: coin.pricePrecision});
-        const exit: IPositionExitStrategy = this.calculatePositionExitStrategy(side, entryPrice, coin.pricePrecision);
+        const exit: IPositionExitStrategy = this.calculatePositionExitStrategy(pos.positionSide, entryPrice, coin.pricePrecision);
 
         // Finally, return the build
         return {
@@ -511,7 +488,7 @@ export class PositionService implements IPositionService {
             open: Date.now(),
             close: undefined,
             coin: coin,
-            side: side,
+            side: pos.positionSide,
             leverage: Number(pos.leverage),
             margin_type: pos.marginType,
             mark_price: <number>this._utils.outputNumber(pos.markPrice, {dp: coin.pricePrecision}),
@@ -529,6 +506,13 @@ export class PositionService implements IPositionService {
             take_profit_price_3: exit.take_profit_price_3,
             take_profit_price_4: exit.take_profit_price_4,
             take_profit_price_5: exit.take_profit_price_5,
+            reductions: {
+                take_profit_1: false,
+                take_profit_2: false,
+                take_profit_3: false,
+                take_profit_4: false,
+                take_profit_5: false,
+            },
             stop_loss_price: exit.stop_loss_price,
             stop_loss_order: undefined,
 
@@ -618,61 +602,105 @@ export class PositionService implements IPositionService {
     }
     private async onPositionChanges(pos: IBinanceActivePosition): Promise<void> {
         // Initialize the Mark Price
-        const markPrice: number = <number>this._utils.outputNumber(pos.markPrice, {dp: this.active[pos.symbol].coin.pricePrecision});
+        const markPrice: number = <number>this._utils.outputNumber(pos.markPrice, {dp: this.active[pos.positionSide].coin.pricePrecision});
 
         /* Update Position Data */
 
         // Update general data
-        this.active[pos.symbol].mark_price = markPrice;
-        this.active[pos.symbol].liquidation_price = <number>this._utils.outputNumber(pos.liquidationPrice, {dp: this.active[pos.symbol].coin.pricePrecision});
-        this.active[pos.symbol].unrealized_pnl = <number>this._utils.outputNumber(pos.unRealizedProfit);
-        this.active[pos.symbol].isolated_wallet = <number>this._utils.outputNumber(pos.isolatedWallet);
-        this.active[pos.symbol].isolated_margin = <number>this._utils.outputNumber(pos.isolatedMargin);
-        this.active[pos.symbol].position_amount = <number>this._utils.outputNumber(pos.positionAmt, { dp: this.active[pos.symbol].coin.quantityPrecision });
-        this.active[pos.symbol].notional = <number>this._utils.outputNumber(pos.notional);
+        this.active[pos.positionSide].mark_price = markPrice;
+        this.active[pos.positionSide].liquidation_price = <number>this._utils.outputNumber(pos.liquidationPrice, {dp: this.active[pos.positionSide].coin.pricePrecision});
+        this.active[pos.positionSide].unrealized_pnl = <number>this._utils.outputNumber(pos.unRealizedProfit);
+        this.active[pos.positionSide].isolated_wallet = <number>this._utils.outputNumber(pos.isolatedWallet);
+        this.active[pos.positionSide].isolated_margin = <number>this._utils.outputNumber(pos.isolatedMargin);
+        this.active[pos.positionSide].position_amount = <number>this._utils.outputNumber(pos.positionAmt, { dp: this.active[pos.positionSide].coin.quantityPrecision });
+        this.active[pos.positionSide].notional = <number>this._utils.outputNumber(pos.notional);
 
         // Update gain data
         const gs: IPositionGainState = this.calculateGainState(
-            this.active[pos.symbol].side,
-            this.active[pos.symbol].entry_price,
-            this.active[pos.symbol].mark_price,
-            this.active[pos.symbol].highest_gain
+            this.active[pos.positionSide].side,
+            this.active[pos.positionSide].entry_price,
+            this.active[pos.positionSide].mark_price,
+            this.active[pos.positionSide].highest_gain
         );
-        this.active[pos.symbol].gain = gs.gain;
-        this.active[pos.symbol].highest_gain = gs.highest_gain;
-        this.active[pos.symbol].gain_drawdown = gs.gain_drawdown;
+        this.active[pos.positionSide].gain = gs.gain;
+        this.active[pos.positionSide].highest_gain = gs.highest_gain;
+        this.active[pos.positionSide].gain_drawdown = gs.gain_drawdown;
 
         // Update history data
         const current_ts: number = Date.now();
-        this.activeCandlestick[pos.symbol].markPrice = this.buildUpdatedCandlestickItem(markPrice, this.activeCandlestick[pos.symbol].markPrice);
-        this.activeCandlestick[pos.symbol].gain = this.buildUpdatedCandlestickItem(gs.gain, this.activeCandlestick[pos.symbol].gain);
-        this.activeCandlestick[pos.symbol].gainDrawdown = this.buildUpdatedCandlestickItem(gs.gain_drawdown, this.activeCandlestick[pos.symbol].gainDrawdown);
-        if (current_ts >= this.activeCandlestick[pos.symbol].ct) {
-            this.active[pos.symbol].history.push(this.buildCandlestickRecord(this.activeCandlestick[pos.symbol]));
-            delete this.activeCandlestick[pos.symbol];
-            this.activeCandlestick[pos.symbol] = this.buildNewActiveCandlestick(current_ts, markPrice, gs.gain, gs.gain_drawdown);
+        this.activeCandlestick[pos.positionSide].markPrice = this.buildUpdatedCandlestickItem(markPrice, this.activeCandlestick[pos.positionSide].markPrice);
+        this.activeCandlestick[pos.positionSide].gain = this.buildUpdatedCandlestickItem(gs.gain, this.activeCandlestick[pos.positionSide].gain);
+        this.activeCandlestick[pos.positionSide].gainDrawdown = this.buildUpdatedCandlestickItem(gs.gain_drawdown, this.activeCandlestick[pos.positionSide].gainDrawdown);
+        if (current_ts >= this.activeCandlestick[pos.positionSide].ct) {
+            this.active[pos.positionSide].history.push(this.buildCandlestickRecord(this.activeCandlestick[pos.positionSide]));
+            delete this.activeCandlestick[pos.positionSide];
+            this.activeCandlestick[pos.positionSide] = this.buildNewActiveCandlestick(current_ts, markPrice, gs.gain, gs.gain_drawdown);
         }
 
         /* Check if the position should be closed */
         
         // If the stop loss has been hit, close the position
         if (
-            (this.active[pos.symbol].side == "LONG" && markPrice <= this.active[pos.symbol].stop_loss_price) ||
-            (this.active[pos.symbol].side == "SHORT" && markPrice >= this.active[pos.symbol].stop_loss_price)
+            (this.active[pos.positionSide].side == "LONG" && markPrice <= this.active[pos.positionSide].stop_loss_price) ||
+            (this.active[pos.positionSide].side == "SHORT" && markPrice >= this.active[pos.positionSide].stop_loss_price)
         ) {
-            await this.closePosition(pos.symbol);
+            await this.closePosition(pos.positionSide);
         }
 
         // If any take profit level has been broken, close the position
         else if (this.hasBrokenTakeProfitLevel(gs.gain, gs.highest_gain)) {
-            await this.closePosition(pos.symbol);
+            await this.closePosition(pos.positionSide);
         }
 
         // If the take profit level's gain drawdown% limit has been exceeded, close the position
         else if (gs.gain_drawdown <= this.calculateMaxGainDrawdown(gs.gain)) {
-            await this.closePosition(pos.symbol);
+            await this.closePosition(pos.positionSide);
+        }
+
+        // Evaluate if the position should be reduced
+        else if (
+            this.strategy.take_profit_1.reduction_size_on_contact > 0 &&
+            !this.active[pos.positionSide].reductions.take_profit_1 &&
+            (gs.gain >= this.strategy.take_profit_1.price_change_requirement && gs.gain < this.strategy.take_profit_2.price_change_requirement)
+        ) { 
+            this.active[pos.positionSide].reductions.take_profit_1 = true;
+            await this.closePosition(pos.positionSide, this.strategy.take_profit_1.reduction_size_on_contact);
+        }
+        else if (
+            this.strategy.take_profit_2.reduction_size_on_contact > 0 &&
+            !this.active[pos.positionSide].reductions.take_profit_2 &&
+            (gs.gain >= this.strategy.take_profit_2.price_change_requirement && gs.gain < this.strategy.take_profit_3.price_change_requirement)
+        ) { 
+            this.active[pos.positionSide].reductions.take_profit_2 = true;
+            await this.closePosition(pos.positionSide, this.strategy.take_profit_2.reduction_size_on_contact);
+        }
+        else if (
+            this.strategy.take_profit_3.reduction_size_on_contact > 0 &&
+            !this.active[pos.positionSide].reductions.take_profit_3 &&
+            (gs.gain >= this.strategy.take_profit_3.price_change_requirement && gs.gain < this.strategy.take_profit_4.price_change_requirement)
+        ) { 
+            this.active[pos.positionSide].reductions.take_profit_3 = true;
+            await this.closePosition(pos.positionSide, this.strategy.take_profit_3.reduction_size_on_contact);
+        }
+        else if (
+            this.strategy.take_profit_4.reduction_size_on_contact > 0 &&
+            !this.active[pos.positionSide].reductions.take_profit_4 &&
+            (gs.gain >= this.strategy.take_profit_4.price_change_requirement && gs.gain < this.strategy.take_profit_5.price_change_requirement)
+        ) { 
+            this.active[pos.positionSide].reductions.take_profit_4 = true;
+            await this.closePosition(pos.positionSide, this.strategy.take_profit_4.reduction_size_on_contact);
+        }
+        else if (
+            this.strategy.take_profit_5.reduction_size_on_contact > 0 &&
+            !this.active[pos.positionSide].reductions.take_profit_5 &&
+            gs.gain >= this.strategy.take_profit_5.price_change_requirement
+        ) { 
+            this.active[pos.positionSide].reductions.take_profit_5 = true;
+            await this.closePosition(pos.positionSide, this.strategy.take_profit_5.reduction_size_on_contact);
         }
     }
+
+
 
 
 
@@ -851,28 +879,28 @@ export class PositionService implements IPositionService {
      * headline.
      * 2) Notifies the users providing basic information regarding the outcome.
      * 3) Unsets the position in the local properties.
-     * @param symbol 
+     * @param side 
      * @returns Promise<void>
      */
-    private onPositionCloseFactory(symbol: string): () => Promise<void> {
-        return () => this.onPositionClose(symbol);
+    private onPositionCloseFactory(side: IBinancePositionSide): () => Promise<void> {
+        return () => this.onPositionClose(side);
     }
-    private async onPositionClose(symbol: string): Promise<void> {
+    private async onPositionClose(side: IBinancePositionSide): Promise<void> {
         // Firstly, set the close time on the record
-        this.active[symbol].close = Date.now();
+        this.active[side].close = Date.now();
 
         // Add the active candlestick to the history
-        this.active[symbol].history.push(this.buildCandlestickRecord(this.activeCandlestick[symbol]));
+        this.active[side].history.push(this.buildCandlestickRecord(this.activeCandlestick[side]));
 
         // Store the position the db
-        await this._model.savePosition(this.active[symbol]);
+        await this._model.savePosition(this.active[side]);
 
         // Notify the users
-        this._notification.positionHasBeenClosed(this.active[symbol]);
+        this._notification.positionHasBeenClosed(this.active[side]);
 
         // Finally, clean the position from the local properties
-        delete this.active[symbol];
-        delete this.activeCandlestick[symbol];
+        this.active[side] = null;
+        this.activeCandlestick[side] = null;
     }
 
 
@@ -979,20 +1007,29 @@ export class PositionService implements IPositionService {
 
     /**
      * Builds a list with the active position headlines.
-     * @returns IPositionHeadline[]
+     * @returns IActivePositionHeadlines
      */
-    public getActivePositionHeadlines(): IPositionHeadline[] {
-        return Object.values(this.active).map((position: IPositionRecord) => {
-            return {
-                id: position.id, 
-                o: position.open,
-                s: position.coin.symbol, 
-                sd: position.side,
-                g: position.gain,
-                gd: position.gain_drawdown,
-                slo: position.stop_loss_order && typeof position.stop_loss_order == "object" ? true: false
-            };
-        });
+    public getActivePositionHeadlines(): IActivePositionHeadlines {
+        return {
+            LONG: this.active.LONG ? {
+                id: this.active.LONG.id, 
+                o: this.active.LONG.open,
+                s: this.active.LONG.coin.symbol, 
+                sd: this.active.LONG.side,
+                g: this.active.LONG.gain,
+                gd: this.active.LONG.gain_drawdown,
+                slo: this.active.LONG.stop_loss_order && typeof this.active.LONG.stop_loss_order == "object" ? true: false
+            }: null,
+            SHORT: this.active.SHORT ? {
+                id: this.active.SHORT.id, 
+                o: this.active.SHORT.open,
+                s: this.active.SHORT.coin.symbol, 
+                sd: this.active.SHORT.side,
+                g: this.active.SHORT.gain,
+                gd: this.active.SHORT.gain_drawdown,
+                slo: this.active.SHORT.stop_loss_order && typeof this.active.SHORT.stop_loss_order == "object" ? true: false
+            }: null,
+        };
     }
 
 
@@ -1015,13 +1052,15 @@ export class PositionService implements IPositionService {
         this._validations.canPositionRecordBeRetrieved(id);
 
         // Initialize the record by filtering the active ones
-        let record: IPositionRecord|undefined = Object.values(this.active).filter((p) => p.id == id)[0];
+        let record: IPositionRecord|undefined = undefined;
+        if (this.active.LONG && this.active.LONG.id == id) { record = this.active.LONG }
+        else if (this.active.SHORT && this.active.SHORT.id == id) { record = this.active.SHORT }
 
         // If the position is active, add the current candlestick to the history
         if (record) {
             // Clone the record prior to adding the candlestick
             let localRecord: IPositionRecord = JSON.parse(JSON.stringify(record));
-            localRecord.history.push(this.buildCandlestickRecord(this.activeCandlestick[record.coin.symbol]));
+            localRecord.history.push(this.buildCandlestickRecord(this.activeCandlestick[record.side]));
             return localRecord;
         }
 
@@ -1125,6 +1164,7 @@ export class PositionService implements IPositionService {
         // Execute the trade
         const payload: IBinanceTradeExecutionPayload|undefined = await this._binance.order(
             symbol,
+            side,
             side == "LONG" ? "BUY": "SELL",
             amount
         );
@@ -1143,26 +1183,42 @@ export class PositionService implements IPositionService {
 
 
     /**
-     * Closes an active position based on the given symbol.
-     * @param symbol 
+     * Closes an active position based on the given side.
+     * @param side 
+     * @param chunkSize 
      * @returns Promise<void>
      */
-    public async closePosition(symbol: string): Promise<void> {
-        // Firstly, make sure there is an active position for the given symbol
-        if (!this.active[symbol]) {
-            throw new Error(this._utils.buildApiError(`The position cannot be closed because ${symbol} does not have an active one.`, 29003));
+    public async closePosition(side: IBinancePositionSide, chunkSize?: number): Promise<void> {
+        // Firstly, make sure there is an active position for the given side
+        if (!this.active[side]) {
+            throw new Error(this._utils.buildApiError(`The ${side} position cannot be closed because there isnt an active one.`, 29000));
         }
+
+        // Initialize the chunk size in case it wasn't provided
+        chunkSize = typeof chunkSize == "number" ? chunkSize: 1;
+
+        // Calculate the position amount
+        const positionAmount: number = <number>this._utils.outputNumber(
+            new BigNumber(Math.abs(this.active[side].position_amount)).times(chunkSize),
+            { dp: this.active[side].coin.quantityPrecision, ru: false}
+        );
 
         // Execute the trade
         const payload: IBinanceTradeExecutionPayload|undefined = await this._binance.order(
-            symbol,
-            this.active[symbol].side == "LONG" ? "SELL": "BUY",
-            Math.abs(this.active[symbol].position_amount)
+            this.active[side].coin.symbol,
+            side,
+            side == "LONG" ? "SELL": "BUY",
+            positionAmount
         );
 
-        // Do something with the payload if provided @TODO
+        // Store the position action payload
         if (payload && typeof payload == "object") {
-            await this._model.savePositionActionPayload("POSITION_CLOSE", symbol, this.active[symbol].side, payload);
+            await this._model.savePositionActionPayload(
+                "POSITION_CLOSE", 
+                this.active[side].coin.symbol, 
+                side, 
+                payload
+            );
         }
     }
 
@@ -1284,19 +1340,18 @@ export class PositionService implements IPositionService {
             long_status: false,
             short_status: false,
             bitcoin_only: true,
-            leverage: 40,
-            position_size: 1,
-            positions_limit: 1,
-            take_profit_1: { price_change_requirement: 0.25, activation_offset: 0.15,   max_gain_drawdown: -100 },
-            take_profit_2: { price_change_requirement: 0.50, activation_offset: 0.10,   max_gain_drawdown: -100 },
-            take_profit_3: { price_change_requirement: 0.75, activation_offset: 0.075,  max_gain_drawdown: -15 },
-            take_profit_4: { price_change_requirement: 1.00, activation_offset: 0.05,   max_gain_drawdown: -7.5 },
-            take_profit_5: { price_change_requirement: 1.50, activation_offset: 0.025,  max_gain_drawdown: -5 },
-            stop_loss: 2.2, // Est. Liquiditation at x40
+            leverage: 110,
+            position_size: 5,
+            take_profit_1: { price_change_requirement: 0.30, activation_offset: 0.15,   max_gain_drawdown: -100, reduction_size_on_contact: 0 },
+            take_profit_2: { price_change_requirement: 0.55, activation_offset: 0.125,  max_gain_drawdown: -100, reduction_size_on_contact: 0 },
+            take_profit_3: { price_change_requirement: 0.75, activation_offset: 0.10,   max_gain_drawdown: -100, reduction_size_on_contact: 0.15 },
+            take_profit_4: { price_change_requirement: 0.90, activation_offset: 0.075,  max_gain_drawdown: -15,  reduction_size_on_contact: 0.20 },
+            take_profit_5: { price_change_requirement: 1.25, activation_offset: 0.05,   max_gain_drawdown: -5,   reduction_size_on_contact: 0.25 },
+            stop_loss: 0.6,
             reopen_if_better_duration_minutes: 180,
             reopen_if_better_price_adjustment: 0.35,
             low_volatility_coins: [
-                "BTCUSDT", "BNBUSDT", "ADAUSDT", "BCHUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT", "TRXUSDT", "SOLUSDT"
+                "BTCUSDT", "BNBUSDT", "ADAUSDT", "BCHUSDT", "ETHUSDT", "XRPUSDT", "TRXUSDT", "SOLUSDT"
             ]
         }
     }

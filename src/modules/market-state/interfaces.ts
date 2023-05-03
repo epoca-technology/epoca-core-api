@@ -1086,25 +1086,6 @@ export interface ICoinState {
     // The split states payload
     ss: ISplitStates,
 
-    /**
-     * State Event
-     * This event refers to a coin's price starting a reversal. When the price is dropping
-     * and suddently starts rising, it is known as a "Support Reversal". On the contrary, 
-     * when the price has been rising and starts dropping, it is known as a "Resistance Reversal".
-     * Moreover, when an event is detected, it also has an intensity based on how hard the price
-     * had decreased/increased prior to reversing. 
-     * Support Reversals can be -2 (reversal occurred after a strong crash) or a -1.
-     * Resistance Reversals can be 2 (reversal occurred after a strong increase) or 1.
-     * If the state event of a coin is 0, means there is no event at all.
-     */
-    se: IStateType,
-
-    /**
-     * State Event Time
-     * The time at which the event was first issued. It is null if there is no event.
-     */
-    set: number|null,
-
     // The coin prices within the window
     w: ISplitStateSeriesItem[]
 }
@@ -1114,12 +1095,6 @@ export interface ICoinState {
 export interface IMinifiedCoinState {
     // The state of the coin
     s: IStateType,
-
-    // The state event
-    se: IStateType,
-
-    // The state event time
-    set: number|null,
 }
 
 
@@ -1143,9 +1118,6 @@ export interface ICoinCompressedState {
 
     // The split states payload
     ss: ISplitStates,
-
-    // State Event
-    se: IStateType
 }
 export interface ICoinsCompressedState {
     // Compressed states by symbol

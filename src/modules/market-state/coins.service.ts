@@ -21,7 +21,6 @@ import {
     ICoinsObject,
     ICoin,
     IStateUtilitiesService,
-    ISplitStates,
     IStateType,
     ICoinsScores,
     ICoinScore,
@@ -676,7 +675,7 @@ export class CoinsService implements ICoinsService {
             this.calculateCoinState(symbol);
 
             // Insert the result into the minified state
-            state.sbs[symbol] = { s: this.states[symbol].s, se: this.states[symbol].se, set: this.states[symbol].set };
+            state.sbs[symbol] = { s: this.states[symbol].s };
 
             // Append the coin state to the list
             coinStates.push(this.states[symbol].s);
@@ -709,30 +708,9 @@ export class CoinsService implements ICoinsService {
             const { averageState, splitStates } = 
                 this._stateUtils.calculateCurrentState(this.states[symbol].w, this.config.requirement, this.config.strongRequirement);
 
-            /**
-             * State Event
-             * This event has the power to open positions. Therefore, if there is one, 
-             * the integrity must be verified by validating the last price update.
-             * If the coin's price window is not perfectly synced, the state is replaced
-             * with 0.
-             */
-            let stateEvent: IStateType = this.calculateStateEvent(splitStates);
-            let stateEventTime: number|null = this.states[symbol].set;
-            if (stateEvent != 0) {
-                // Make sure the price is properly synced
-                if (this.states[symbol].w.at(-1).x <= moment().subtract(this.config.priceIntervalSeconds + 10, "seconds").valueOf()) {
-                    stateEvent = 0;
-                }
-
-                // If there is still an event and it is fresh, set the time
-                if (stateEvent != 0 && stateEvent != this.states[symbol].se) stateEventTime = Date.now();
-            }
-
             // Update the coin's state
             this.states[symbol].s = averageState;
             this.states[symbol].ss = splitStates;
-            this.states[symbol].se = stateEvent;
-            this.states[symbol].set = stateEvent != 0 ? stateEventTime: null;
         }
 
         // If the state is not in the object, initialize it
@@ -746,46 +724,7 @@ export class CoinsService implements ICoinsService {
 
 
 
-    /**
-     * Calculates the state event for a coin based on its split states.
-     * @param splitStates 
-     * @returns IStateType
-     */
-    private calculateStateEvent(splitStates: ISplitStates): IStateType {
-        // Init the state
-        let stateEvent: IStateType = 0;
 
-        // Check if a support reversal took place
-        if (
-            splitStates.s100.s <= -1 &&
-            splitStates.s75.s <= -1 &&
-            splitStates.s50.s <= -1 &&
-            splitStates.s25.s <= -1 &&
-            splitStates.s15.s <= -1 &&
-            splitStates.s10.s <= -1 &&
-            splitStates.s5.s >= 1 &&
-            splitStates.s2.s >= 1
-        ) { 
-            stateEvent = splitStates.s2.s >= 2 || splitStates.s5.s >= 2 ? -2: -1; 
-        }
-
-        // Check if a resistance reversal took place
-        else if (
-            splitStates.s100.s >= 1 &&
-            splitStates.s75.s >= 1 &&
-            splitStates.s50.s >= 1 &&
-            splitStates.s25.s >= 1 &&
-            splitStates.s15.s >= 1 &&
-            splitStates.s10.s >= 1 &&
-            splitStates.s5.s <= -1 &&
-            splitStates.s2.s <= -1
-        ) { 
-            stateEvent = splitStates.s2.s <= -2 || splitStates.s5.s <= -2 ? 2: 1;
-        }
-
-        // Finally, return the event
-        return stateEvent;
-    }
 
 
 
@@ -834,8 +773,7 @@ export class CoinsService implements ICoinsService {
             states.push(this.states[symbol].s);
             compressed[symbol] = {
                 s: this.states[symbol].s,
-                ss: this.states[symbol].ss,
-                se: this.states[symbol].se
+                ss: this.states[symbol].ss
             };
         }
         return { csbs: compressed, cd: this._stateUtils.calculateAverageState(states)};
@@ -1032,8 +970,6 @@ export class CoinsService implements ICoinsService {
                 s5: {s: 0, c: 0},
                 s2: {s: 0, c: 0},
             },
-            se: 0,
-            set: null,
             w: []
         }
     }

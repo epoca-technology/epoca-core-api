@@ -16,6 +16,7 @@ export interface IBinanceService {
     // Position Actions
     order(
         symbol: string,
+        positionSide: IBinancePositionSide, 
         actionSide: IBinancePositionActionSide, 
         quantity: number,
         stopPrice?: number,
@@ -112,8 +113,8 @@ export interface IBinanceActivePosition {
     // @TODO -> If used, the value returned is a boolean in string format "true"|"false".
     isAutoAddMargin: string,
 
-    // @TODO ?
-    positionSide: "BOTH",
+    // The side of the position
+    positionSide: IBinancePositionSide,
 
     // The size of the position in USDT with leverage included.
     notional: string,
