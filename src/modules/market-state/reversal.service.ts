@@ -127,13 +127,15 @@ export class ReversalService implements IReversalService {
      * @param keyzones
      * @param liquidity
      * @param coins
+     * @param coinsBTC
      * @returns IMinifiedReversalState
      */
     public calculateState(
         volume: IVolumeStateIntensity,
         keyzones: IKeyZoneState, 
         liquidity: ILiquidityState, 
-        coins: ICoinsCompressedState
+        coins: ICoinsCompressedState,
+        coinsBTC: ICoinsCompressedState
     ): IMinifiedReversalState {
         /**
          * If there was an active state but a new keyzone event was generated, 
@@ -156,7 +158,7 @@ export class ReversalService implements IReversalService {
 
         // If there is a state, update it with the latest data
         if (this.state.id != 0) {
-            this.onMarketStateChanges(volume, liquidity, coins);
+            this.onMarketStateChanges(volume, liquidity, coins, coinsBTC);
         }
 
         // Finally, return the minified state
@@ -197,7 +199,7 @@ export class ReversalService implements IReversalService {
             end: undefined,
             k: keyzones.event.k == "s" ? 1: -1,
             kze: keyzones.event,
-            scr: { g: [], v: [], l: [], c: [] },
+            scr: { g: [], v: [], l: [], c: [], cb: [] },
             e: null
         };
         this.coinsStates = {
@@ -247,8 +249,14 @@ export class ReversalService implements IReversalService {
      * @param volume 
      * @param liquidity 
      * @param coins 
+     * @param coinsBTC 
      */
-    private onMarketStateChanges(volume: IVolumeStateIntensity, liquidity: ILiquidityState, coins: ICoinsCompressedState): void {
+    private onMarketStateChanges(
+        volume: IVolumeStateIntensity, 
+        liquidity: ILiquidityState, 
+        coins: ICoinsCompressedState,
+        coinsBTC: ICoinsCompressedState
+    ): void {
         // Initialize the current score
         let currentScore: number = 0;
 
@@ -264,12 +272,17 @@ export class ReversalService implements IReversalService {
         const coinsScore: number = this.calculateCoinsScore(coins);
         currentScore += coinsScore;
 
+        // Calculate the coins' BTC score
+        const coinsBTCScore: number = this.calculateCoinsScore(coinsBTC);
+        currentScore += coinsBTCScore;
+
         // Set the new scores on the state
         currentScore = <number>this._utils.outputNumber(currentScore);
         this.state.scr.g.push(currentScore);
         this.state.scr.v.push(volScore);
         this.state.scr.l.push(liqScore);
         this.state.scr.c.push(coinsScore);
+        this.state.scr.cb.push(coinsBTCScore);
 
         // If an event hasn't been issued and the score has met the requirements, issue it
         if (!this.state.e && currentScore >= this.config.min_event_score) {
@@ -572,7 +585,7 @@ export class ReversalService implements IReversalService {
             end: undefined,
             k: 0,
             kze: null,
-            scr: { g: [], v: [], l: [], c: [] },
+            scr: { g: [], v: [], l: [], c: [], cb: [] },
             e: null
         }
     }
@@ -842,12 +855,17 @@ export class ReversalService implements IReversalService {
         if (
             !this._val.numberValid(newConfiguration.score_weights.volume, 1, 100) ||
             !this._val.numberValid(newConfiguration.score_weights.liquidity, 1, 100) ||
-            !this._val.numberValid(newConfiguration.score_weights.coins, 1, 100)
+            !this._val.numberValid(newConfiguration.score_weights.coins, 1, 100) ||
+            !this._val.numberValid(newConfiguration.score_weights.coins_btc, 1, 100)
         ) {
             console.log(newConfiguration);
             throw new Error(this._utils.buildApiError(`The provided score weights object must contain valid numbers randing 1-100.`, 37503));
         }
-        const weightsSum: number = newConfiguration.score_weights.volume + newConfiguration.score_weights.liquidity + newConfiguration.score_weights.coins;
+        const weightsSum: number = 
+            newConfiguration.score_weights.volume + 
+            newConfiguration.score_weights.liquidity + 
+            newConfiguration.score_weights.coins +
+            newConfiguration.score_weights.coins_btc;
         if (weightsSum != 100) {
             throw new Error(this._utils.buildApiError(`The sum of the weights must be equals to 100. Received: ${weightsSum}.`, 37504));
         }
@@ -944,7 +962,8 @@ export class ReversalService implements IReversalService {
             score_weights: {
                 volume: 10,
                 liquidity: 30,
-                coins: 60
+                coins: 35,
+                coins_btc: 25
             }
         }
     }

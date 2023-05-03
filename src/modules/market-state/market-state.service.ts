@@ -18,9 +18,7 @@ import {
     ICoinsService,
     IKeyZoneState,
     ILiquidityState,
-    ICoinsState,
     IReversalService,
-    IStateType,
     IVolumeStateIntensity
 } from "./interfaces";
 
@@ -186,7 +184,7 @@ export class MarketStateService implements IMarketStateService {
             const kzState: IKeyZoneState = <IKeyZoneState>this._keyZones.calculateState(windowState.ss, liqState);
 
             // Calculate the coins state
-            const coinsStates: ICoinsState = this._coins.calculateState();
+            const {coins, coinsBTC} = this._coins.calculateState();
 
             // Broadcast the states through the observables
             this.active.next({
@@ -195,12 +193,14 @@ export class MarketStateService implements IMarketStateService {
                 liquidity: this._liquidity.getMinifiedState(true),
                 keyzones: kzState,
                 trend: this._trend.state,
-                coins: coinsStates,
+                coins: coins,
+                coinsBTC: coinsBTC,
                 reversal: this._reversal.calculateState(
                     volumeState, 
                     kzState, 
                     liqState, 
-                    this._coins.getCoinsCompressedState()
+                    this._coins.getCoinsCompressedState(),
+                    this._coins.getCoinsBTCCompressedState()
                 )
             });
 
@@ -237,13 +237,15 @@ export class MarketStateService implements IMarketStateService {
      * @returns IMarketState
      */
      private getDefaultState(): IMarketState {
+        const { coins, coinsBTC } = this._coins.getDefaultState();
         return {
             window: this._windowState.getDefaultState(),
             volume: this._volumeState.getDefaultState(),
             liquidity: this._liquidity.getDefaultState(),
             keyzones: this._keyZones.getDefaultState(),
             trend: this._trend.getDefaultState(),
-            coins: this._coins.getDefaultState(),
+            coins: coins,
+            coinsBTC: coinsBTC,
             reversal: this._reversal.getDefaultState()
         }
     }

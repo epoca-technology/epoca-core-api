@@ -125,6 +125,7 @@ export interface ICompressedMarketState {
     keyzones: IKeyZoneState,
     trend: ICompressedTrendState,
     coins: ICoinsState,
+    coinsBTC: ICoinsState,
     reversal: IMinifiedReversalState
 }
 

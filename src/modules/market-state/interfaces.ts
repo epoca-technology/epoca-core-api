@@ -997,10 +997,11 @@ export interface ICoinsService {
     uninstallCoin(symbol: string): Promise<ICoinsSummary>,
 
     // State Calculations
-    calculateState(): ICoinsState,
-    getCoinFullState(symbol: string): ICoinState,
+    calculateState(): { coins: ICoinsState, coinsBTC: ICoinsState },
+    getCoinFullState(symbol: string, btcPrice?: boolean|string): ICoinState,
     getCoinsCompressedState(): ICoinsCompressedState,
-    getDefaultState(): ICoinsState,
+    getCoinsBTCCompressedState(): ICoinsCompressedState,
+    getDefaultState(): { coins: ICoinsState, coinsBTC: ICoinsState },
 
     // Configuration Management
     updateConfiguration(newConfiguration: ICoinsConfiguration): Promise<void>
@@ -1163,7 +1164,8 @@ export interface IReversalService {
         volume: IVolumeStateIntensity,
         keyzones: IKeyZoneState, 
         liquidity: ILiquidityState, 
-        coins: ICoinsCompressedState
+        coins: ICoinsCompressedState,
+        coinsBTC: ICoinsCompressedState
     ): IMinifiedReversalState,
     getDefaultState(): IMinifiedReversalState,
 
@@ -1203,7 +1205,10 @@ export interface IReversalScoreWeights {
     liquidity: number,
 
     // The maximum score that can be obtained by the coins module
-    coins: number
+    coins: number,
+
+    // The maximum score that can be obtained by the coins btc module
+    coins_btc: number
 }
 
 
@@ -1246,7 +1251,10 @@ export interface IReversalScoreHistory {
     l: number[],
 
     // Coins' Score
-    c: number[]
+    c: number[],
+
+    // Coins' BTC Score
+    cb: number[]
 }
 
 
@@ -1382,5 +1390,6 @@ export interface IMarketState {
     keyzones: IKeyZoneState,
     trend: ITrendState,
     coins: ICoinsState,
+    coinsBTC: ICoinsState,
     reversal: IMinifiedReversalState
 }

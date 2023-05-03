@@ -738,6 +738,7 @@ MarketStateRoute.route("/uninstallCoin").post(highRiskLimit, async (req: express
 * @requires api-secret
 * @requires authority: 1
 * @param symbol
+* @param btcPrice
 * @returns IAPIResponse<ICoinState>
 */
 MarketStateRoute.route("/getCoinFullState").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
@@ -749,10 +750,10 @@ MarketStateRoute.route("/getCoinFullState").get(ultraLowRiskLimit, async (req: e
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["symbol"], req.query);
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1, ["symbol", "btcPrice"], req.query);
 
         // Return the response
-        res.send(_utils.apiResponse(_coins.getCoinFullState(<string>req.query.symbol)));
+        res.send(_utils.apiResponse(_coins.getCoinFullState(<string>req.query.symbol, <string>req.query.btcPrice)));
     } catch (e) {
 		console.log(e);
         _apiError.log("MarketStateRoute.getCoinFullState", e, reqUid, ip, req.query);
@@ -792,6 +793,38 @@ MarketStateRoute.route("/getCoinsCompressedState").get(ultraLowRiskLimit, async 
     }
 });
 
+
+
+
+
+
+
+/**
+* Retrieves the compressed state for all the installed coins on BTC Price.
+* @requires id-token
+* @requires api-secret
+* @requires authority: 1
+* @returns IAPIResponse<ICoinsCompressedState>
+*/
+MarketStateRoute.route("/getCoinsBTCCompressedState").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
+
+        // Return the response
+        res.send(_utils.apiResponse(_coins.getCoinsBTCCompressedState()));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("MarketStateRoute.getCoinsBTCCompressedState", e, reqUid, ip);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
 
 
 

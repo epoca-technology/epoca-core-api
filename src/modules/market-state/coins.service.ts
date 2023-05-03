@@ -1,6 +1,7 @@
 import {injectable, inject} from "inversify";
 import { WebSocket } from "ws";
 import * as moment from "moment";
+import { BigNumber } from "bignumber.js";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
 import { 
@@ -26,8 +27,10 @@ import {
     ICoinScore,
     ICoinsConfiguration,
     ICoinsCompressedState,
-    ICoinCompressedState
+    ICoinCompressedState,
+    ISplitStates
 } from "./interfaces";
+import { ICandlestickService } from "../candlestick";
 
 
 
@@ -37,10 +40,11 @@ export class CoinsService implements ICoinsService {
     // Inject dependencies
     @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
     @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
+    @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
     @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
     @inject(SYMBOLS.StateUtilitiesService)              private _stateUtils: IStateUtilitiesService;
-    @inject(SYMBOLS.ValidationsService)                   private _val: IValidationsService;
+    @inject(SYMBOLS.ValidationsService)                 private _val: IValidationsService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
 
@@ -50,6 +54,13 @@ export class CoinsService implements ICoinsService {
      * their states.
      */
     public config: ICoinsConfiguration;
+
+
+    /**
+     * BTC Symbol
+     * The symbol that identifies Bitcoin.
+     */
+    private readonly btcSymbol: string = "BTCUSDT";
 
 
     /**
@@ -85,6 +96,7 @@ export class CoinsService implements ICoinsService {
     private wsLastUpdate: number;
     private ws: WebSocket;
     private states: {[symbol: string]: ICoinState} = {};
+    private statesBTC: {[symbol: string]: ICoinState} = {};
 
 
 
@@ -277,6 +289,7 @@ export class CoinsService implements ICoinsService {
         // Install the coin
         this.installed[symbol] = this.supported[symbol];
         this.states[symbol] = this.getDefaultFullCoinState();
+        if (symbol != this.btcSymbol) this.statesBTC[symbol] = this.getDefaultFullCoinState();
         await this.updateInstalledCoins(this.installed);
 
         // Finally, return the summary of the coins
@@ -302,6 +315,7 @@ export class CoinsService implements ICoinsService {
         // Delete the symbol accordingly
         delete this.installed[symbol];
         delete this.states[symbol];
+        if (symbol != this.btcSymbol) delete this.statesBTC[symbol];
         await this.updateInstalledCoins(this.installed);
 
         // Finally, return the summary of the coins
@@ -341,8 +355,10 @@ export class CoinsService implements ICoinsService {
 
         // Initialize the states
         this.states = {};
+        this.statesBTC = {};
         for (let coinSymbol in this.installed) {
             this.states[coinSymbol] = this.getDefaultFullCoinState();
+            if (coinSymbol != this.btcSymbol)  this.statesBTC[coinSymbol] = this.getDefaultFullCoinState();
         }
     }
 
@@ -662,30 +678,37 @@ export class CoinsService implements ICoinsService {
     /**
      * Calculates the up-to-date state for all the coins and
      * returns the minified version.
-     * @returns ICoinsState
+     * @returns { coins: ICoinsState, coinsBTC: ICoinsState }
      */
-    public calculateState(): ICoinsState {
+    public calculateState(): { coins: ICoinsState, coinsBTC: ICoinsState } {
         // Init values
         let state: ICoinsState = { sbs: {}, cd: 0 };
+        let stateBTC: ICoinsState = { sbs: {}, cd: 0 };
         let coinStates: IStateType[] = [];
+        let coinStatesBTC: IStateType[] = [];
 
         // Iterate over each installed symbol
         for (let symbol in this.installed) { 
             // Calculate the full coin state
             this.calculateCoinState(symbol);
 
-            // Insert the result into the minified state
+            // Insert the result into the minified state and add it to the list
             state.sbs[symbol] = { s: this.states[symbol].s };
-
-            // Append the coin state to the list
             coinStates.push(this.states[symbol].s);
+
+            // Calculate the state for the BTC Based
+            if (symbol != this.btcSymbol) {
+                stateBTC.sbs[symbol] = { s: this.statesBTC[symbol].s };
+                coinStatesBTC.push(this.statesBTC[symbol].s);
+            }
         }
 
         // Calculate the coins direction
         state.cd = this._stateUtils.calculateAverageState(coinStates);
+        stateBTC.cd = this._stateUtils.calculateAverageState(coinStatesBTC);
 
         // Finally, return the state
-        return state;
+        return { coins: state, coinsBTC: stateBTC};
     }
 
 
@@ -704,18 +727,25 @@ export class CoinsService implements ICoinsService {
          * calculate the state.
          */
         if (this.states[symbol] && this.states[symbol].w.length == this.config.priceWindowSize) {
-            // Calculate the state
-            const { averageState, splitStates } = 
+            // Calculate and update the state based on USDT
+            const usdtState: { averageState: IStateType, splitStates: ISplitStates } = 
                 this._stateUtils.calculateCurrentState(this.states[symbol].w, this.config.requirement, this.config.strongRequirement);
+            this.states[symbol].s = usdtState.averageState;
+            this.states[symbol].ss = usdtState.splitStates;
 
-            // Update the coin's state
-            this.states[symbol].s = averageState;
-            this.states[symbol].ss = splitStates;
+            // Calculate and update the state based on BTC if applies
+            if (symbol != this.btcSymbol) {
+                const btcState: { averageState: IStateType, splitStates: ISplitStates } = 
+                    this._stateUtils.calculateCurrentState(this.statesBTC[symbol].w, this.config.requirement, this.config.strongRequirement);
+                this.statesBTC[symbol].s = btcState.averageState;
+                this.statesBTC[symbol].ss = btcState.splitStates;
+            }
         }
 
         // If the state is not in the object, initialize it
         else if (!this.states[symbol]) {
             this.states[symbol] = this.getDefaultFullCoinState();
+            if (symbol != this.btcSymbol) this.statesBTC[symbol] = this.getDefaultFullCoinState();
         }
     }
 
@@ -739,17 +769,20 @@ export class CoinsService implements ICoinsService {
     /**
      * Retrieves a coin's full state based on its symbol.
      * @param symbol 
+     * @param btcPrice?
      * @returns ICoinState
      */
-    public getCoinFullState(symbol: string): ICoinState {
+    public getCoinFullState(symbol: string, btcPrice?: boolean|string): ICoinState {
         // Validate the request
         this.validateSymbol(symbol);
         if (!this.installed[symbol]) {
             throw new Error(this._utils.buildApiError(`The full state of the coin cannot be retrieved because ${symbol} is not installed.`, 37000));
         }
-
+        
         // Finally, return the state if it exists
-        if (this.states[symbol]) { return this.states[symbol] }
+        if (this.states[symbol]) { 
+            return btcPrice === true || btcPrice === "true" ? this.statesBTC[symbol]: this.states[symbol];
+        }
 
         // Otherwise, return the default build
         else { return this.getDefaultFullCoinState() }
@@ -774,6 +807,28 @@ export class CoinsService implements ICoinsService {
             compressed[symbol] = {
                 s: this.states[symbol].s,
                 ss: this.states[symbol].ss
+            };
+        }
+        return { csbs: compressed, cd: this._stateUtils.calculateAverageState(states)};
+    }
+
+
+
+
+    /**
+     * Retrieves the compressed state for all the installed coins based
+     * on their BTC price.
+     * @returns ICoinsCompressedState
+     */
+    public getCoinsBTCCompressedState(): ICoinsCompressedState {
+        // Init the list of states as well as the compressed object
+        let states: IStateType[] = [];
+        let compressed: {[symbol: string]: ICoinCompressedState} = {};
+        for (let symbol in this.statesBTC) {
+            states.push(this.statesBTC[symbol].s);
+            compressed[symbol] = {
+                s: this.statesBTC[symbol].s,
+                ss: this.statesBTC[symbol].ss
             };
         }
         return { csbs: compressed, cd: this._stateUtils.calculateAverageState(states)};
@@ -829,6 +884,9 @@ export class CoinsService implements ICoinsService {
 
                     // Ensure there are items in the list
                     if (Array.isArray(processedData) && processedData.length) {
+                        // Init the current price of Bitcoin
+                        const btcPrice: number = this._candlestick.predictionLookback.at(-1).c;
+
                         // Iterate over each item
                         processedData.forEach((item: IMarkPriceStreamDataItem) => {
                             // Handle installed symbols
@@ -837,7 +895,10 @@ export class CoinsService implements ICoinsService {
                                 const markPrice: number = <number>this._utils.outputNumber(item.p, {dp: this.installed[item.s].pricePrecision});
 
                                 // Set the state in case it hasn't been
-                                if (!this.states[item.s]) this.states[item.s] = this.getDefaultFullCoinState();
+                                if (!this.states[item.s]) {
+                                    this.states[item.s] = this.getDefaultFullCoinState();
+                                    if (item.s != this.btcSymbol) this.statesBTC[item.s] = this.getDefaultFullCoinState();
+                                }
 
                                 // Handle a state that already has prices in the window
                                 if (this.states[item.s].w.length) {
@@ -850,14 +911,28 @@ export class CoinsService implements ICoinsService {
                                     if (currentTS > periodClose) {
                                         this.states[item.s].w.push({ x: item.E, y: markPrice});
                                         this.states[item.s].w = this.states[item.s].w.slice(-this.config.priceWindowSize);
+                                        if (item.s != this.btcSymbol) {
+                                            this.statesBTC[item.s].w.push({ x: item.E, y: this.calculatePriceInBTC(btcPrice, markPrice)});
+                                            this.statesBTC[item.s].w = this.statesBTC[item.s].w.slice(-this.config.priceWindowSize);
+                                        }
                                     }
 
                                     // Otherwise, update the current price
-                                    else { this.states[item.s].w.at(-1).y = markPrice }
+                                    else { 
+                                        this.states[item.s].w.at(-1).y = markPrice;
+                                        if (item.s != this.btcSymbol) {
+                                            this.statesBTC[item.s].w.at(-1).y = this.calculatePriceInBTC(btcPrice, markPrice);
+                                        }
+                                    }
                                 }
 
                                 // Otherwise, initialize the list with the current values
-                                else { this.states[item.s].w.push({ x: item.E, y: markPrice}) }
+                                else { 
+                                    this.states[item.s].w.push({ x: item.E, y: markPrice});
+                                    if (item.s != this.btcSymbol) {
+                                        this.statesBTC[item.s].w.push({ x: item.E, y: this.calculatePriceInBTC(btcPrice, markPrice)});
+                                    }
+                                }
                             }
                         });
 
@@ -870,6 +945,22 @@ export class CoinsService implements ICoinsService {
             }
         });
     }
+
+
+
+
+    /**
+     * Calculates the current price of a coin in BTC.
+     * @param btcPrice 
+     * @param coinPrice 
+     * @returns number
+     */
+    private calculatePriceInBTC(btcPrice: number, coinPrice: number): number {
+        return <number>this._utils.outputNumber(new BigNumber(coinPrice).dividedBy(btcPrice), {dp: 12, ru: true});
+    }
+
+
+
 
 
 
@@ -941,10 +1032,10 @@ export class CoinsService implements ICoinsService {
     /**
      * Retrieves the default state of the coins that is 
      * inserted into the market state.
-     * @returns ICoinsState
+     * @returns { coins: ICoinsState, coinsBTC: ICoinsState }
      */
-    public getDefaultState(): ICoinsState {
-        return { sbs: {}, cd: 0 }
+    public getDefaultState(): { coins: ICoinsState, coinsBTC: ICoinsState } {
+        return { coins: { sbs: {}, cd: 0 }, coinsBTC: { sbs: {}, cd: 0 }}
     }
 
 
