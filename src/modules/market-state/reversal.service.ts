@@ -269,11 +269,11 @@ export class ReversalService implements IReversalService {
         currentScore += liqScore;
 
         // Calculate the coins' score
-        const coinsScore: number = this.calculateCoinsScore(coins);
+        const coinsScore: number = this.calculateCoinsScore(coins, this.config.score_weights.coins);
         currentScore += coinsScore;
 
         // Calculate the coins' BTC score
-        const coinsBTCScore: number = this.calculateCoinsScore(coinsBTC);
+        const coinsBTCScore: number = this.calculateCoinsScore(coinsBTC, this.config.score_weights.coins_btc);
         currentScore += coinsBTCScore;
 
         // Set the new scores on the state
@@ -409,9 +409,10 @@ export class ReversalService implements IReversalService {
      * Calculates the coins score based on the kind of reversal 
      * taking place.
      * @param coins 
+     * @param weight 
      * @returns number
      */
-    private calculateCoinsScore(coins: ICoinsCompressedState): number {
+    private calculateCoinsScore(coins: ICoinsCompressedState, weight: number): number {
         // Init the list of symbols
         const symbols: string[] = Object.keys(coins.csbs);
 
@@ -432,7 +433,7 @@ export class ReversalService implements IReversalService {
         const pointsShare: number = <number>this._utils.calculatePercentageOutOfTotal(points, maxPoints);
 
         // Finally, return the score
-        return <number>this._utils.outputNumber((pointsShare / 100) * this.config.score_weights.coins);
+        return <number>this._utils.outputNumber((pointsShare / 100) * weight);
     }
 
 
