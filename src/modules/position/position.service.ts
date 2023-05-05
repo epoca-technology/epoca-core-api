@@ -5,6 +5,7 @@ import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { 
     IBinanceActivePosition, 
+    IBinancePositionActionSide, 
     IBinancePositionSide, 
     IBinanceService,
     IBinanceTradeExecutionPayload, 
@@ -415,17 +416,17 @@ export class PositionService implements IPositionService {
         );
 
         // Attempt to create the stop-loss order
-        /*try {
-            this.active[pos.symbol].stop_loss_order = await this.createStopMarketOrder(
+        try {
+            this.active[pos.positionSide].stop_loss_order = await this.createStopMarketOrder(
                 pos.symbol,
-                this.active[pos.symbol].side,
-                Math.abs(this.active[pos.symbol].position_amount),
-                this.active[pos.symbol].stop_loss_price
+                pos.positionSide,
+                Math.abs(this.active[pos.positionSide].position_amount),
+                this.active[pos.positionSide].stop_loss_price
             );
         } catch (e) {
             console.log(e);
             this._apiError.log("PositionService.onNewPosition.createStopMarketOrder", e);
-        }*/
+        }
 
         // If reopen_if_better_duration_minutes is enabled, store the interaction data
         if (this.strategy.reopen_if_better_duration_minutes > 0) {
@@ -1237,7 +1238,7 @@ export class PositionService implements IPositionService {
      * @param stopPrice 
      * @returns Promise<IBinanceTradeExecutionPayload|undefined>
      */
-    /*private async createStopMarketOrder(
+    private async createStopMarketOrder(
         symbol: string, 
         side: IBinancePositionSide, 
         quantity: number,
@@ -1247,23 +1248,23 @@ export class PositionService implements IPositionService {
         let actionSide: IBinancePositionActionSide = side == "LONG" ? "SELL": "BUY";
 
         // Attempt to create the stop loss order in a persistant way
-        try { return await this._binance.order(symbol, actionSide, quantity, stopPrice) }
+        try { return await this._binance.order(symbol, side, actionSide, quantity, stopPrice) }
         catch (e) {
             console.log(`1/3 ) Error when creating STOP_MARKET order for ${symbol}: `, e);
             await this._utils.asyncDelay(3);
-            try { return await this._binance.order(symbol, actionSide, quantity, stopPrice) }
+            try { return await this._binance.order(symbol, side, actionSide, quantity, stopPrice) }
             catch (e) {
                 console.log(`2/3 ) Error when creating STOP_MARKET order for ${symbol}: `, e);
                 await this._utils.asyncDelay(5);
-                try { return await this._binance.order(symbol, actionSide, quantity, stopPrice) }
+                try { return await this._binance.order(symbol, side, actionSide, quantity, stopPrice) }
                 catch (e) {
                     console.log(`3/3 ) Error when creating STOP_MARKET order for ${symbol}: `, e);
                     await this._utils.asyncDelay(7);
-                    return await this._binance.order(symbol, actionSide, quantity, stopPrice);
+                    return await this._binance.order(symbol, side, actionSide, quantity, stopPrice);
                 }
             }
         }
-    }*/
+    }
 
 
 
