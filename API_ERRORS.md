@@ -857,11 +857,27 @@
 
 39012: `The provided campaign id is invalid.`
 
-39013: ``
+39013: `The campaign skeleton cannot be built because there is an active position.`
 
-39014: ``
+39014: `The provided trading_disabled is invalid.`
 
-39015: ``
+39015: `The campaign cannot be created because there are less than 10 USDT in the account.`
+
+39016: `The provided campaign id is invalid.`
+
+39017: `The provided note title is invalid.`
+
+39018: `The provided note description is invalid.`
+
+39019: ``
+
+39020: ``
+
+39021: ``
+
+39022: ``
+
+39023: ``
 
 
 
@@ -873,4 +889,14 @@
 #
 ## Campaign Model (40.000 - 40.999)
 
-40000: ``
+40000: `The configs snapshot for the campaign ${campaignID} was not found in the database.`
+
+40001: `The record for the campaign ${campaignID} was not found in the database.`
+
+40002: ``
+
+40003: ``
+
+40004: ``
+
+40005: ``

@@ -6,9 +6,10 @@ import { IUtilitiesService } from "../utilities";
 import { IAuthService } from "../auth";
 import { IApiErrorService } from "../api-error";
 import { IStateType } from "../market-state";
-import { INotificationService, INotification, INotificationChannel } from "./interfaces";
 import { IPositionRecord } from "../position";
 import { IBinanceMarginType } from "../binance";
+import { ICampaignRecord } from "../campaign";
+import { INotificationService, INotification, INotificationChannel } from "./interfaces";
 
 
 
@@ -842,6 +843,87 @@ export class NotificationService implements INotificationService {
         return this.broadcast({
             sender: "POSITION",
             title: `${pos.coin.symbol} ${pos.side} Closed:`,
+            description: desc
+        });
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    /**************************
+     * Campaign Notifications *
+     **************************/
+
+
+
+
+
+
+
+    /**
+     * This function is invoked when a campaign is created.
+     * @param campaign 
+     * @returns Promise<void>
+     */
+    public campaignStarted(campaign: ICampaignRecord): Promise<void> {
+        let desc: string = `The campaign ${campaign.name} has begun with a budget of `;
+        desc += `$${this._utils.formatNumber(campaign.performance.initial_balance)}.`;
+        desc += `If there is a loss equals or greater than ${campaign.max_loss}%, trading will be stopped automatically.`;
+        return this.broadcast({
+            sender: "CAMPAIGN",
+            title: `${campaign.name} Started`,
+            description: desc
+        });
+    }
+
+
+
+
+
+
+
+    /**
+     * This function is invoked when a campaign is stopped.
+     * @param campaign 
+     * @returns Promise<void>
+     */
+    public campaignEnded(campaign: ICampaignRecord): Promise<void> {
+        let desc: string = `The campaign ${campaign.name} has ended with a PNL (ROI%) of `;
+        desc += `${campaign.performance.pnl > 0 ? "+": ""}${this._utils.formatNumber(campaign.performance.pnl)} `;
+        desc += `${campaign.performance.roi > 0 ? "+": ""}${campaign.performance.roi}%.`;
+        return this.broadcast({
+            sender: "CAMPAIGN",
+            title: `${campaign.name} Ended`,
+            description: desc
+        });
+    }
+
+
+
+
+
+    /**
+     * This function is invoked when a campaign has reached the
+     * maximum loss and trading has been halted.
+     * @returns Promise<void>
+     */
+    public campaignReachedMaximumLoss(campaign: ICampaignRecord): Promise<void> {
+        let desc: string = `The campaign ${campaign.name} has exceeded the maximum loss at ${campaign.performance.roi}% `;
+        desc += ` and trading has been disabled in order to avoid further losses.`;
+        return this.broadcast({
+            sender: "CAMPAIGN",
+            title: `${campaign.name} Defaulted`,
             description: desc
         });
     }

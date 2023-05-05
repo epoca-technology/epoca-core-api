@@ -7,7 +7,7 @@ import {
     ITrendStateConfiguration, 
     IWindowStateConfiguration 
 } from "../market-state";
-import { IPositionStrategy } from "../position";
+import { IPositionHeadline, IPositionStrategy } from "../position";
 import { ISignalPolicies } from "../signal";
 
 
@@ -27,8 +27,18 @@ export interface ICampaignService {
     buildCampaignSkeleton(): Promise<ICampaignRecord>,
     createCampaign(campaign: ICampaignRecord): Promise<void>,
 
+    // Campaign Ending
+    endCampaign(campaignID: string): Promise<void>,
+
+    // Campaign Notes Management
+    saveNote(campaignID: string, title: string, description: string): Promise<ICampaignNote[]>,
+    listNotes(campaignID: string): Promise<ICampaignNote[]>,
+
     // Futures Account Balance
     syncBalance(): Promise<void>,
+
+    // Futures Account Income
+    syncIncome(): Promise<void>
 }
 
 
@@ -43,9 +53,14 @@ export interface ICampaignValidations {
         active: ICampaignRecord|undefined, 
         balance: IAccountBalance, 
         existingShareHolders: ICampaignShareHolder[],
+        lastCampaign: ICampaignRecord|undefined,
         newCampaign: ICampaignRecord
     ): void,
     validateBalanceBasicProperties(balance: IAccountBalance): void,
+
+    // Campaign Notes Management
+    canNoteBeSaved(campaignID: string, title: string, description: string): Promise<void>,
+    canNotesBeListed(campaignID: string): void
 }
 
 
@@ -55,12 +70,53 @@ export interface ICampaignValidations {
 
 // Model
 export interface ICampaignModel {
-    
+    // Campaign Retrievers
+    getLastCampaign(): Promise<ICampaignRecord|undefined>,
+    getCampaignSummary(campaignID: string): Promise<ICampaignSummary>,
+    getCampaignRecord(campaignID: string): Promise<ICampaignRecord>,
+    getConfigsSnapshot(campaignID: string): Promise<ICampaignConfigurationsSnapshot>,
+
+    // Campaign Record Management
+    createCampaign(
+        campaign: ICampaignRecord,
+        configsSnapshot: ICampaignConfigurationsSnapshot
+    ): Promise<void>,
+    updateCampaign(campaign: ICampaignRecord): Promise<void>,
+    endCampaign(
+        campaign: ICampaignRecord, 
+        headline: ICampaignHeadline,
+        shareholdersTXS: IShareHolderTransaction[]
+    ): Promise<void>,
+
+    // Campaign Notes Management
+    saveNote(note: ICampaignNote): Promise<void>,
+    listCampaignNotes(campaignID: string): Promise<ICampaignNote[]>,
 
     // Income Records Management
     saveIncomeRecords(records: IAccountIncomeRecord[]): Promise<void>,
     getLastIncomeRecordTimestamp(incomeType: IAccountIncomeType): Promise<number|undefined>,
 }
+
+
+
+
+
+// Utilities
+export interface ICampaignUtilities {
+    // Campaign Creation Helpers
+    listShareHolders(): Promise<ICampaignShareHolder[]>,
+    buildShareHoldersDataSkeleton(
+        shareholders: ICampaignShareHolder[], 
+        lastCampaign: ICampaignRecord|undefined,
+        totalBalance: number
+    ): IShareHoldersData,
+    buildConfigurationsSnapshot(): ICampaignConfigurationsSnapshot,
+
+    // Campaign Calculators
+    calculateShares(campaignBudget: number, shareholderBalance: number): number
+}
+
+
 
 
 
@@ -72,6 +128,27 @@ export interface ICampaignModel {
 /************
  * Campaign *
  ************/
+
+
+
+
+/**
+ * Campaign Summary
+ * The object containing all the data regarding the campaign and its 
+ * performance
+ */
+export interface ICampaignSummary {
+    // The main campaign record
+    record: ICampaignRecord,
+
+    // The list of income records generated within the campaign
+    income: IAccountIncomeRecord[],
+
+    // The list of positions executed during the campaign
+    position_headlines: IPositionHeadline[]
+}
+
+
 
 
 
@@ -96,6 +173,9 @@ export interface ICampaignRecord {
 
     // The maximum loss% allowed before disabling trading (This value must be a negative number)
     max_loss: number,
+
+    // When the campaign's loss reaches the maximum loss%, trading is halted and this property becomes true
+    trading_disabled: boolean,
 
     // The snapshot of the futures account balance when the camapaign was started
     performance: ICampaignPerformance,
@@ -175,13 +255,13 @@ export interface IShareHolderData {
     // The balance the user had when the previous campaign ended
     previous_balance: number,
 
-    // 
+    // The transaction that will be added to the previous_balance in order to calculate the original balance
     deposit: IShareHolderTransaction,
 
-    //
+    // The transaction that will be deducted from the previous_balance in order to calculate the original balance
     withdraw: IShareHolderTransaction,
 
-    //
+    // The balance the shareholder had when the campaign started
     original_balance: number,
 
     /**
@@ -206,6 +286,44 @@ export interface IShareHolderData {
 
 
 
+/**
+ * ShareHolder Transaction
+ * Whenever a campaign is closed, a transaction is generated for each shareholder
+ * so they can visualize their investment individually.
+ */
+export interface IShareHolderTransaction {
+    // The user's ID
+    uid: string,
+
+    // The time in which the TX was generated (when the campaign was closed)
+    t: number, // Timestamp
+
+    // Campaign Essentials
+    cid: string, // Campaign ID
+    cn: string, // Campaign Name
+
+    // The profit split assigned to the user at the creation of the campaign
+    ps: number, // Profit Split
+
+    // The number of campaign shares the user had during the campaign.
+    s: number, // Shares
+
+    // The balance the shareholder had when the campaign started
+    ob: number, // Original Balance
+
+    // The accumulated ROI% during the campaign
+    r: number, // ROI
+
+    // The accumulated PNL during the campaign
+    p: number, // PNL
+
+    // The original balance + the PNL
+    b: number, // Balance
+}
+
+
+
+
 
 
 
@@ -218,12 +336,45 @@ export interface ICampaignHeadline {
     id: string,
 
     // Date Range
-    start: number,
-    end: number|undefined,
+    s: number, // Start
+    e: number|undefined, // End
+
+    // The name of the campaign
+    n: string, // Name
+
+    // When the campaign's loss reaches the maximum loss%, trading is halted and this property becomes true
+    td: boolean, // Trading Disabled
+
+    // The accumulated ROI%. This value changes until the campaign is closed
+    r: number, // ROI
+
+    // The accumulated PNL. This value changes until the campaign is closed
+    p: number, // PNL
 }
 
 
 
+
+
+
+/**
+ * Campaign Note
+ * A campaign can have any number of notes. Moreover, they can attached
+ * wether the campaign is running or not.
+ */
+export interface ICampaignNote {
+    // The campaign's ID
+    cid: string,
+
+    // The time at which the note was created
+    t: number, // Timestamp
+
+    // The note's title
+    ti: string, // Title
+
+    // The note's description
+    d: string // Description
+}
 
 
 

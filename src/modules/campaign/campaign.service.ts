@@ -3,17 +3,6 @@ import { BigNumber } from "bignumber.js";
 import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { IBinanceBalance, IBinanceIncomeRecord, IBinanceService} from "../binance";
-import { IAuthService, IUser } from "../auth";
-import { 
-    ICoinsService,
-    IKeyZonesStateService, 
-    ILiquidityStateService, 
-    IReversalService, 
-    ITrendStateService, 
-    IWindowStateService,
-} from "../market-state";
-import { IPositionService } from "../position";
-import { ISignalService } from "../signal";
 import { INotificationService } from "../notification";
 import { IApiErrorService } from "../api-error";
 import { IUtilitiesService } from "../utilities";
@@ -26,7 +15,9 @@ import {
     IAccountIncomeType,
     ICampaignShareHolder,
     ICampaignConfigurationsSnapshot,
-    IShareHoldersData
+    IShareHoldersData,
+    ICampaignUtilities,
+    ICampaignNote
 } from "./interfaces";
 
 
@@ -37,16 +28,8 @@ export class CampaignService implements ICampaignService {
     // Inject dependencies
     @inject(SYMBOLS.CampaignValidations)        private _validations: ICampaignValidations;
     @inject(SYMBOLS.CampaignModel)              private _model: ICampaignModel;
+    @inject(SYMBOLS.CampaignUtilities)          private _campaignUtils: ICampaignUtilities;
     @inject(SYMBOLS.BinanceService)             private _binance: IBinanceService;
-    @inject(SYMBOLS.AuthService)                private _auth: IAuthService;
-    @inject(SYMBOLS.WindowStateService)         private _window: IWindowStateService;
-    @inject(SYMBOLS.LiquidityService)           private _liquidity: ILiquidityStateService;
-    @inject(SYMBOLS.KeyZonesStateService)       private _keyzones: IKeyZonesStateService;
-    @inject(SYMBOLS.TrendStateService)          private _trend: ITrendStateService;
-    @inject(SYMBOLS.CoinsService)               private _coins: ICoinsService;
-    @inject(SYMBOLS.ReversalService)            private _reversal: IReversalService;
-    @inject(SYMBOLS.PositionService)            private _position: IPositionService;
-    @inject(SYMBOLS.SignalService)              private _signal: ISignalService;
     @inject(SYMBOLS.NotificationService)        private _notification: INotificationService;
     @inject(SYMBOLS.ApiErrorService)            private _apiError: IApiErrorService;
     @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
@@ -195,11 +178,18 @@ export class CampaignService implements ICampaignService {
         // Validate the request
         this._validations.canCampaignSkeletonBeBuilt(this.active, this.balance);
 
-        // Retrieve the shareholders
-        const shareholders: ICampaignShareHolder[] = await this.listShareHolders();
+        // Retrieve the shareholders & the last campaign
+        const values: [ICampaignShareHolder[], ICampaignRecord|undefined] = await Promise.all([
+            this._campaignUtils.listShareHolders(),
+            this._model.getLastCampaign()
+        ]);
 
         // Build the shareholders' skeleton data
-        const shareholdersData: IShareHoldersData = await this.buildShareHoldersDataSkeleton(); // @TODO
+        const shareholdersData: IShareHoldersData = this._campaignUtils.buildShareHoldersDataSkeleton(
+            values[0], 
+            values[1], 
+            this.balance.total
+        );
 
         // Finally, return the build
         return {
@@ -209,6 +199,7 @@ export class CampaignService implements ICampaignService {
             start: Date.now(),
             end: undefined,
             max_loss: -40,
+            trading_disabled: false,
             performance: {
                 initial_balance: this.balance.total,
                 current_balance: this.balance.total,
@@ -216,7 +207,7 @@ export class CampaignService implements ICampaignService {
                 pnl: 0,
                 epoca_profit: 0
             },
-            shareholders: shareholders,
+            shareholders: values[0],
             shareholders_data: shareholdersData
         }
     }
@@ -239,109 +230,54 @@ export class CampaignService implements ICampaignService {
         // Update the balance
         await this.syncBalance();
 
+        // Retrieve the shareholders & the last campaign
+        const values: [ICampaignShareHolder[], ICampaignRecord|undefined] = await Promise.all([
+            this._campaignUtils.listShareHolders(),
+            this._model.getLastCampaign()
+        ]);
+
         // Retrieve the shareholders & validate the request
-        const shareholders: ICampaignShareHolder[] = await this.listShareHolders();
-        this._validations.canCampaignBeCreated(this.active, this.balance, shareholders, campaign);
+        this._validations.canCampaignBeCreated(this.active, this.balance, values[0], values[1], campaign);
 
         // Build the configs snapshot
-        const configsSnapshot: ICampaignConfigurationsSnapshot = this.buildConfigurationsSnapshot();
+        const configsSnapshot: ICampaignConfigurationsSnapshot = this._campaignUtils.buildConfigurationsSnapshot();
 
         // Store the campaign and set it in the local property
         // @TODO
         this.active = campaign;
 
         // Notify users
+        this._notification.campaignStarted(this.active);
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /*******************
+     * Campaign Ending *
+     *******************/
+
+
+
+
+
+    /**
+     * Ends an active campaign based on its ID.
+     * @param campaignID 
+     * @returns Promise<void>
+     */
+    public async endCampaign(campaignID: string): Promise<void> {
         // @TODO
     }
 
 
-
-
-
-
-
-
-
-
-    /* Campaign Creation Helpers */
-
-
-
-
-
-
-
-
-    /**
-     * Retrieves the list of Epoca Users and converts them into
-     * ShareHolder Format.
-     * @returns Promise<ICampaignShareHolder[]>
-     */
-    private async listShareHolders(): Promise<ICampaignShareHolder[]> {
-        // Retrieve all the users
-        const users: IUser[] = await this._auth.getAll();
-        if (!users.length) {
-            throw new Error(this._utils.buildApiError(`The list of shareholders could not be retrieved because there are no users.`, 38003));
-        }
-
-        // Finally, return the list
-        return users.map((u) => { return { uid: u.uid, nickname: this.fromEmailToNickname(u.email) } });
-    }
-    private fromEmailToNickname(email: string): string {
-        // Extract the raw nickname from the email
-        const rawNickname: string = email.split("@")[0];
-
-        // Init the size of the slice
-        const sliceSize: number = rawNickname.length > 4 ? 2: 1;
-
-        // Finally, put together the nickname
-        return `${rawNickname.slice(0, 2)}...${rawNickname.slice(-sliceSize)}`;
-    }
-
-
-
-
-
-
-
-
-    /**
-     * Builds the shareholders' data skeleton based on the balance
-     * from the previous campaign (if any).
-     * @returns Promise<IShareHoldersData>
-     */
-    private async buildShareHoldersDataSkeleton(): Promise<IShareHoldersData> {
-        return {}// @TODO
-    }
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Builds the configurations snapshot that will be stored when
-     * a campaign is created.
-     * @returns ICampaignConfigurationsSnapshot
-     */
-    private buildConfigurationsSnapshot(): ICampaignConfigurationsSnapshot {
-        const { installed, supported, scores } = this._coins.getCoinsSummary();
-        return {
-            window: this._window.config,
-            trend: this._trend.config,
-            liquidity: this._liquidity.config,
-            keyzones: this._keyzones.config,
-            coins: this._coins.config,
-            reversal: this._reversal.config,
-            installed_coins: installed,
-            strategy: this._position.strategy,
-            signal_policies: this._signal.policies
-        }
-    }
 
 
 
@@ -395,8 +331,57 @@ export class CampaignService implements ICampaignService {
 
 
 
+    /*****************************
+     * Campaign Notes Management *
+     *****************************/
 
 
+
+
+
+
+
+
+    /**
+     * Saves a note into the database. Once the process is complete,
+     * it returns the full refreshed list of notes.
+     * @param campaignID 
+     * @param title 
+     * @param description 
+     * @returns Promise<ICampaignNote[]>
+     */
+    public async saveNote(campaignID: string, title: string, description: string): Promise<ICampaignNote[]> {
+        // Validate the request
+        await this._validations.canNoteBeSaved(campaignID, title, description);
+
+        // Save the record
+        await this._model.saveNote({
+            cid: campaignID,
+            t: Date.now(),
+            ti: title,
+            d: description
+        });
+
+        // Finally, return the updated list
+        return this._model.listCampaignNotes(campaignID);
+    }
+
+
+
+
+
+    /**
+     * Lists all the notes for a given campaign.
+     * @param campaignID 
+     * @returns Promise<ICampaignNote[]>
+     */
+    public async listNotes(campaignID: string): Promise<ICampaignNote[]> {
+        // Validate the request
+        this._validations.canNotesBeListed(campaignID);
+
+        // Finally, return the list
+        return this._model.listCampaignNotes(campaignID);
+    }
 
 
 
@@ -504,7 +489,7 @@ export class CampaignService implements ICampaignService {
      * campaign.
      * @returns Promise<void>
      */
-    private async syncIncome(): Promise<void> {
+    public async syncIncome(): Promise<void> {
         if (this.active) {
             // Initialize the current time
             const ts: number = Date.now();

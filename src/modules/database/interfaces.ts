@@ -93,6 +93,11 @@ export interface ITableNames {
     position_action_payloads: string,
     position_records: string,
     position_headlines: string,
+    campaign_records: string,
+    campaign_notes: string,
+    campaign_configurations_snapshots: string,
+    campaign_headlines: string,
+    campaign_shareholders_transactions: string,
     campaign_income_records: string,
 }
 

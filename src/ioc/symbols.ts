@@ -22,6 +22,7 @@
     CampaignService: Symbol.for("CampaignService"),
     CampaignModel: Symbol.for("CampaignModel"),
     CampaignValidations: Symbol.for("CampaignValidations"),
+    CampaignUtilities: Symbol.for("CampaignUtilities"),
 
     // Candlestick
     CandlestickService: Symbol.for("CandlestickService"),
@@ -114,6 +115,7 @@ export interface ISymbols {
     CampaignService: symbol,
     CampaignModel: symbol,
     CampaignValidations: symbol,
+    CampaignUtilities: symbol,
 
 
     CandlestickService: symbol,

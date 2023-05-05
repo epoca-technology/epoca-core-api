@@ -2,7 +2,18 @@ import {inject, injectable} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
 import { IUtilitiesService } from "../utilities";
-import { IAccountIncomeRecord, IAccountIncomeType, ICampaignModel } from "./interfaces";
+import { 
+    IAccountIncomeRecord, 
+    IAccountIncomeType, 
+    ICampaignConfigurationsSnapshot, 
+    ICampaignHeadline, 
+    ICampaignModel, 
+    ICampaignNote, 
+    ICampaignRecord, 
+    ICampaignSummary, 
+    IShareHolderTransaction 
+} from "./interfaces";
+import { IPositionHeadline, IPositionService } from "../position";
 
 
 
@@ -10,7 +21,8 @@ import { IAccountIncomeRecord, IAccountIncomeType, ICampaignModel } from "./inte
 @injectable()
 export class CampaignModel implements ICampaignModel {
     // Inject dependencies
-    @inject(SYMBOLS.DatabaseService)             private _db: IDatabaseService;
+    @inject(SYMBOLS.DatabaseService)            private _db: IDatabaseService;
+    @inject(SYMBOLS.PositionService)            private _position: IPositionService;
     @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
 
 
@@ -24,6 +36,254 @@ export class CampaignModel implements ICampaignModel {
 
 
 
+
+
+
+
+
+
+    /***********************
+     * Campaign Retrievers *
+     ***********************/
+
+
+
+
+    /**
+     * Retrieves the last campaign that took place. If none has, it returns
+     * undefined.
+     * @returns Promise<ICampaignRecord|undefined>
+     */
+    public async getLastCampaign(): Promise<ICampaignRecord|undefined> {
+        // Retrieve the last record
+        const {rows}: IQueryResult = await this._db.query({
+            text: `SELECT data FROM ${this._db.tn.campaign_records} ORDER BY start DESC LIMIT 1`,
+            values: [  ]
+        });
+
+        // If no results were found, return undefined
+        return rows.length > 0 ? rows[0].data: undefined;
+    }
+
+
+
+
+
+
+    /**
+     * Retrieves the entire campaign summary. Note that an error will
+     * be thrown if the campaign is not found.
+     * @param campaignID 
+     * @returns Promise<ICampaignSummary>
+     */
+    public async getCampaignSummary(campaignID: string): Promise<ICampaignSummary> {
+        // Firstly, retrieve the campaign record
+        const record: ICampaignRecord = await this.getCampaignRecord(campaignID);
+
+        // Set the end of the range based on the status of the campaign
+        const endAt: number = record.end ? record.end: Date.now();
+
+        // Retrieve the income and the position headlines
+        const values: [IAccountIncomeRecord[], IPositionHeadline[]] = await Promise.all([
+            this.listIncomeRecords(record.start, endAt),
+            this._position.listPositionHeadlines(record.start, endAt)
+        ]);
+
+        // Finally, return the summary
+        return { record: record, income: values[0], position_headlines: values[1] };
+    }
+
+
+
+
+
+
+    /**
+     * Retrieves the campaign record for a given ID. Notice that
+     * it throws an error if the campaign is not found.
+     * @param campaignID 
+     * @returns Promise<ICampaignRecord>
+     */
+    public async getCampaignRecord(campaignID: string): Promise<ICampaignRecord> {
+        // Retrieve the last trade's timestamp
+        const {rows}: IQueryResult = await this._db.query({
+            text: `
+                SELECT data FROM ${this._db.tn.campaign_records} 
+                WHERE id = $1
+            `,
+            values: [ campaignID ]
+        });
+
+        // Ensure the record was found
+        if (!rows.length) {
+            throw new Error(this._utils.buildApiError(`The record for the campaign ${campaignID} was not found in the database.`, 40001));
+        }
+
+        // Return the snapshot
+        return rows[0].data;
+    }
+
+
+
+
+
+
+
+    /**
+     * Retrieves the configs snapshots for a given campaign ID. Notice that
+     * it throws an error if the campaign is not found.
+     * @param campaignID 
+     * @returns Promise<ICampaignConfigurationsSnapshot>
+     */
+    public async getConfigsSnapshot(campaignID: string): Promise<ICampaignConfigurationsSnapshot> {
+        // Retrieve the last trade's timestamp
+        const {rows}: IQueryResult = await this._db.query({
+            text: `
+                SELECT data FROM ${this._db.tn.campaign_configurations_snapshots} 
+                WHERE id = $1
+            `,
+            values: [ campaignID ]
+        });
+
+        // Ensure the snapshot was found
+        if (!rows.length) {
+            throw new Error(this._utils.buildApiError(`The configs snapshot for the campaign ${campaignID} was not found in the database.`, 40000));
+        }
+
+        // Return the snapshot
+        return rows[0].data;
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /******************************
+     * Campaign Record Management *
+     ******************************/
+
+
+
+
+
+
+
+
+    /**
+     * Creates a campaign record as well as the configurations snapshot.
+     * @param campaign 
+     * @param configsSnapshot 
+     * @returns Promise<void>
+     */
+    public async createCampaign(
+        campaign: ICampaignRecord,
+        configsSnapshot: ICampaignConfigurationsSnapshot
+    ): Promise<void> {
+        // @TODO 
+    }
+
+
+
+
+
+    /**
+     * Triggers whenever the balance is updated and the active campaign is
+     * recalculated.
+     * @param campaign 
+     * @returns Promise<void>
+     */
+    public async updateCampaign(campaign: ICampaignRecord): Promise<void> {
+        // @TODO
+    }
+
+
+
+
+
+
+
+    /**
+     * Stops an active campaign, saves the record, the headline and
+     * the users' transactions.
+     * @param campaign 
+     * @param headline 
+     * @param shareholdersTXS 
+     * @returns Promise<void>
+     */
+    public async endCampaign(
+        campaign: ICampaignRecord, 
+        headline: ICampaignHeadline,
+        shareholdersTXS: IShareHolderTransaction[]
+    ): Promise<void> {
+        // @TODO 
+        
+        /**
+         * REMEMBER TO MANAGE THE HEADLINE BOOLEAN ACCORDINGLY AS POSTGRES SUPPORTS IT 
+         * AS A STRING. EXAMPLE:
+         * const slo: string = position.stop_loss_order && typeof position.stop_loss_order == "object" ? "true": "false";
+         */
+    }
+
+
+
+
+
+
+
+
+
+    /*****************************
+     * Campaign Notes Management *
+     *****************************/
+
+
+
+
+
+
+    /**
+     * Saves a campaign note in to the database.
+     * @param note 
+     * @returns Promise<void>
+     */
+    public async saveNote(note: ICampaignNote): Promise<void> {
+        await this._db.query({
+            text: `
+                INSERT INTO ${this._db.tn.campaign_notes}(cid, t, ti, d) 
+                VALUES ($1, $2, $3, $4)
+            `,
+            values: [note.cid, note.t, note.ti, note.d]
+        });
+    }
+
+
+
+
+
+    /**
+     * Retrieves all the notes for a campaign in descending order.
+     * @param campaignID
+     * @returns Promise<ICampaignNote[]>
+     */
+    public async listCampaignNotes(campaignID: string): Promise<ICampaignNote[]> {
+        // Retrieve the trades
+        const {rows}: IQueryResult = await this._db.query({
+            text: `
+                SELECT * FROM ${this._db.tn.campaign_notes} 
+                WHERE cid = $1 ORDER BY t DESC;
+            `, 
+            values: [campaignID]
+        });
+
+        // Finally, return them
+        return rows;
+    }
 
 
 
@@ -56,7 +316,7 @@ export class CampaignModel implements ICampaignModel {
      * @param endAt 
      * @returns Promise<IAccountIncomeRecord[]>
      */
-    /*public async listIncomeRecords(startAt: number, endAt: number): Promise<IAccountIncomeRecord[]> {
+    private async listIncomeRecords(startAt: number, endAt: number): Promise<IAccountIncomeRecord[]> {
         // Retrieve the trades
         const {rows}: IQueryResult = await this._db.query({
             text: `
@@ -68,7 +328,7 @@ export class CampaignModel implements ICampaignModel {
 
         // Finally, return them
         return rows;
-    }*/
+    }
 
 
 

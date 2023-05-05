@@ -3,6 +3,7 @@ import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService, IValidationsService } from "../utilities";
 import { 
     IAccountBalance, 
+    ICampaignModel, 
     ICampaignRecord, 
     ICampaignShareHolder, 
     ICampaignValidations 
@@ -14,6 +15,7 @@ import {
 @injectable()
 export class CampaignValidations implements ICampaignValidations {
     // Inject dependencies
+    @inject(SYMBOLS.CampaignModel)              private _model: ICampaignModel;
     @inject(SYMBOLS.ValidationsService)         private _val: IValidationsService;
     @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
 
@@ -54,6 +56,11 @@ export class CampaignValidations implements ICampaignValidations {
 
         // Validate the balance
         this.validateBalanceBasicProperties(balance);
+
+        // Ensure there are no active positions
+        if (balance.on_positions > 0) {
+            throw new Error(this._utils.buildApiError(`The campaign skeleton cannot be built because there is an active position.`, 39013));
+        }
     }
 
 
@@ -72,7 +79,8 @@ export class CampaignValidations implements ICampaignValidations {
         active: ICampaignRecord|undefined, 
         balance: IAccountBalance, 
         existingShareHolders: ICampaignShareHolder[],
-        newCampaign: ICampaignRecord
+        lastCampaign: ICampaignRecord|undefined,
+        newCampaign: ICampaignRecord,
     ): void {
         // Make sure there isn't an active campaign
         if (active) {
@@ -82,6 +90,11 @@ export class CampaignValidations implements ICampaignValidations {
 
         // Validate the balance
         this.validateBalanceBasicProperties(balance);
+
+        // Ensure there are no active positions
+        if (balance.on_positions > 0) {
+            throw new Error(this._utils.buildApiError(`The campaign skeleton cannot be built because there is an active position.`, 39013));
+        }
 
         // Ensure the new campaign is a properly formed object
         if (
@@ -120,6 +133,11 @@ export class CampaignValidations implements ICampaignValidations {
             throw new Error(this._utils.buildApiError(`The provided max loss is invalid.`, 39011));
         }
 
+        // Validate the trading_disabled
+        if (newCampaign.trading_disabled !== false) {
+            throw new Error(this._utils.buildApiError(`The provided trading_disabled is invalid.`, 39014));
+        }
+
         // Validate the performance
         if (
             newCampaign.performance.initial_balance != balance.total ||
@@ -130,6 +148,11 @@ export class CampaignValidations implements ICampaignValidations {
         ) {
             console.log(newCampaign.performance);
             throw new Error(this._utils.buildApiError(`The provided performance object is invalid.`, 39006));
+        }
+
+        // Ensure there are at least $10 in the account
+        if (newCampaign.performance.initial_balance < 0) {
+            throw new Error(this._utils.buildApiError(`The campaign cannot be created because there are less than 10 USDT in the account.`, 39015));
         }
 
         // Iterate over each shareholder and validate their properties
@@ -176,4 +199,53 @@ export class CampaignValidations implements ICampaignValidations {
 
 
 
+
+
+    /*****************************
+     * Campaign Notes Management *
+     *****************************/
+
+
+
+
+    /**
+     * Verifies if a given note can be stored in the db.
+     * @param campaignID 
+     * @param title 
+     * @param description 
+     * @returns Promise<void>
+     */
+    public async canNoteBeSaved(campaignID: string, title: string, description: string): Promise<void> {
+        // Validate the id
+        if (!this._val.uuidValid(campaignID)) {
+            throw new Error(this._utils.buildApiError(`The provided campaign id is invalid.`, 39016));
+        }
+
+        // Validate the name & the description
+        if (typeof title != "string" || title.length < 5 || title.length > 300) {
+            throw new Error(this._utils.buildApiError(`The provided note title is invalid.`, 39017));
+        }
+        if (typeof description != "string" || description.length < 20 || description.length > 1000000) {
+            throw new Error(this._utils.buildApiError(`The provided note description is invalid.`, 39018));
+        }
+
+        // Ensure the campaign record exists
+        const record: ICampaignRecord = await this._model.getCampaignRecord(campaignID);
+    }
+
+
+
+
+
+
+    /**
+     * Verifies if the notes for a campaign can be listed.
+     * @param campaignID 
+     */
+    public canNotesBeListed(campaignID: string): void {
+        // Validate the id
+        if (!this._val.uuidValid(campaignID)) {
+            throw new Error(this._utils.buildApiError(`The provided campaign id is invalid.`, 39016));
+        }
+    }
 }

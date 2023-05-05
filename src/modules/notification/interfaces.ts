@@ -1,4 +1,5 @@
 import { IBinanceMarginType } from "../binance";
+import { ICampaignRecord } from "../campaign";
 import { IStateType } from "../market-state";
 import { IPositionRecord } from "../position";
 
@@ -55,6 +56,12 @@ export interface INotificationService {
     positionHasBeenOpenedWithInvalidLeverage(pos: IPositionRecord, correctLeverage: number): Promise<void>,
     positionHasBeenOpenedWithInvalidMarginType(pos: IPositionRecord, correctMarginType: IBinanceMarginType): Promise<void>,
     positionHasBeenClosed(pos: IPositionRecord): Promise<void>,
+
+    // Campaign Notifications
+    campaignStarted(campaign: ICampaignRecord): Promise<void>,
+    campaignEnded(campaign: ICampaignRecord): Promise<void>,
+    campaignReachedMaximumLoss(campaign: ICampaignRecord): Promise<void>,
+
 }
 
 
@@ -80,4 +87,5 @@ export type INotificationSender =
 "MARKET_STATE"|
 "LIQUIDITY"|
 "COIN"|
-"POSITION";
+"POSITION"|
+"CAMPAIGN";
