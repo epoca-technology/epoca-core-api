@@ -50,7 +50,7 @@ const CandlestickRoute = express.Router();
  * @param intervalMinutes 
  * @returns IAPIResponse<ICandlestick[]>
 */
-CandlestickRoute.route(`/getForPeriod`).get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
+CandlestickRoute.route("/getForPeriod").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
     // Init values
     const idToken: string = req.get("id-token");
     const apiSecret: string = req.get("api-secret");

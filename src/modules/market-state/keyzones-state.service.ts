@@ -342,21 +342,15 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         if (this.priceSnapshots.length == this.config.priceSnapshotsLimit) {
             /**
              * Support Event Requirements:
-             * 1) The initial price snapshot must be greater than the current (Decreased)
-             * 2) The window split states for the 2% and 5% of the dataset must be decreasing
-             * 3) At least one of the large window splits must have a state different to strongly increasing
-             * 4) The low and the close from the current 15-minute-interval candlestick must 
-             * be lower than the previous one.
+             * 1) There cannot be an active resistance event
+             * 2) The initial price snapshot must be greater than the current (Decreased)
+             * 3) The window split state for the 2% of the dataset must be decreasing
+             * 4) The close from the current 15-minute-interval candlestick must be lower than the previous one.
              */
             if (
+                (!evt || evt.k != "r") &&
                 this.priceSnapshots[0].o > this.priceSnapshots.at(-1).c &&
-                //windowSplitStates.s5.s <= 0 &&
                 windowSplitStates.s2.s <= -1 &&
-                /*(
-                    windowSplitStates.s100.s < 2 || windowSplitStates.s75.s < 2 || 
-                    windowSplitStates.s50.s < 2 || windowSplitStates.s25.s < 2
-                ) &&*/
-                //this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
                 this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c
             ) {
                 /**
@@ -385,21 +379,15 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
             /**
              * Resistance Event Requirements:
-             * 1) The initial price snapshot must be lower than the current(Increased)
-             * 2) The window split states for the 2% and 5% of the dataset must be increasing
-             * 3) At least one of the large window splits must have a state different to strongly decreasing 
-             * 3) The high and the close from the current 15-minute-interval candlestick must 
-             * be higher than the previous one.
+             * 1) There cannot be an active support event
+             * 2) The initial price snapshot must be lower than the current(Increased)
+             * 3) The window split state for the 2% of the dataset must be increasing
+             * 4) The close from the current 15-minute-interval candlestick must be higher than the previous one.
              */
             else if (
+                (!evt || evt.k != "s") &&
                 this.priceSnapshots[0].o < this.priceSnapshots.at(-1).c &&
-                //windowSplitStates.s5.s >= 0 &&
                 windowSplitStates.s2.s >= 1 &&
-                /*(
-                    windowSplitStates.s100.s > -2 || windowSplitStates.s75.s > -2 || 
-                    windowSplitStates.s50.s > -2 || windowSplitStates.s25.s > -2
-                ) &&*/
-                //this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
                 this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c
             ) {
                 /**
@@ -1351,8 +1339,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             },
             stateLimit: 10,
             priceSnapshotsLimit: 5, // ~15 seconds worth
-            supportEventDurationSeconds: 900,
-            resistanceEventDurationSeconds: 900,
+            supportEventDurationSeconds: 1200,      // ~20 mins
+            resistanceEventDurationSeconds: 1200,   // ~20 mins
             eventPriceDistanceLimit: 0.5,
             keyzoneIdleOnEventMinutes: 30,
             eventScoreRequirement: 5

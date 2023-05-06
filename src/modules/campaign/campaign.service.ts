@@ -17,7 +17,10 @@ import {
     ICampaignConfigurationsSnapshot,
     IShareHoldersData,
     ICampaignUtilities,
-    ICampaignNote
+    ICampaignNote,
+    ICampaignSummary,
+    ICampaignHeadline,
+    IShareHolderTransaction
 } from "./interfaces";
 
 
@@ -294,49 +297,9 @@ export class CampaignService implements ICampaignService {
 
 
 
-
-
-
-
-
-    /***************************
-     * On Balance Update Event *
-     ***************************/
-
-
-
-
-
-    /**
-     * Whenever the balance is updated and there is an active
-     * campaign, it checks if it is healthy. Otherwise, it
-     * notifies users.
-     * @returns Promise<void>
-     */
-    private async onBalanceUpdate(): Promise<void> {
-        if (this.active) {
-
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
     /*****************************
      * Campaign Notes Management *
      *****************************/
-
-
-
 
 
 
@@ -381,6 +344,156 @@ export class CampaignService implements ICampaignService {
 
         // Finally, return the list
         return this._model.listCampaignNotes(campaignID);
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /**********************
+     * General Retrievers *
+     **********************/
+
+
+
+
+
+
+
+    /**
+     * Retrieves the full summary for a campaign.
+     * @param campaignID 
+     * @returns Promise<ICampaignSummary>
+     */
+    public async getCampaignSummary(campaignID: string): Promise<ICampaignSummary> {
+        // Validate the request
+        this._validations.canCampaignSummaryBeRetrieved(campaignID);
+
+        // Finally, return the summary
+        return await this._model.getCampaignSummary(campaignID);
+    }
+
+    
+
+
+
+
+
+
+
+    /**
+     * Retrieves the configurations snapshot for a campaign.
+     * @param campaignID 
+     * @returns Promise<ICampaignConfigurationsSnapshot>
+     */
+    public async getConfigurationsSnapshot(campaignID: string): Promise<ICampaignConfigurationsSnapshot> {
+        // Validate the request
+        await this._validations.canConfigurationsSnapshotBeRetrieved(campaignID);
+
+        // Finally, return the config
+        return await this._model.getConfigsSnapshot(campaignID);
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Retrieves the list of campaign headlines for a given date range.
+     * @param startAt
+     * @param endAt
+     * @returns Promise<ICampaignHeadline[]>
+     */
+    public async listHeadlines(startAt: number, endAt: number): Promise<ICampaignHeadline[]> {
+        // Validate the request
+        this._validations.validateDateRange(startAt, endAt);
+
+        // Retrieve the headlines
+        let headlines: ICampaignHeadline[] = await this._model.listHeadlines(startAt, endAt);
+
+        // If there is an active campaign, add it to the list
+        if (this.active) {
+            // @TODO
+        }
+
+        // Finally, return the headlines
+        return headlines;
+    }
+
+
+
+
+
+
+
+    /**
+     * Lists the shareholders transactions for a given date range.
+     * @param uid 
+     * @param startAt 
+     * @param endAt 
+     * @returns Promise<IShareHolderTransaction[]>
+     */
+    public async listShareHolderTransactions(
+        uid: string, 
+        startAt: number, 
+        endAt: number
+    ): Promise<IShareHolderTransaction[]> {
+        // Validate the date range
+        this._validations.validateDateRange(startAt, endAt);
+
+        // Retrieve the txs
+        let txs: IShareHolderTransaction[] = await this._model.listShareHolderTransactions(uid, startAt, endAt)
+
+        // If there is an active campaign, add it to the list
+        if (this.active) {
+            // @TODO
+        }
+
+        // Return the TXS
+        return txs;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /***************************
+     * On Balance Update Event *
+     ***************************/
+
+
+
+
+
+    /**
+     * Whenever the balance is updated and there is an active
+     * campaign, it checks if it is healthy. Otherwise, it
+     * notifies users.
+     * @returns Promise<void>
+     */
+    private async onBalanceUpdate(): Promise<void> {
+        if (this.active) {
+
+        }
     }
 
 

@@ -162,6 +162,38 @@ export class CampaignModel implements ICampaignModel {
 
 
 
+    /**
+     * Retrieves the list of campaign headlines in descending order. Note that 
+     * if there is an active campaign, it should be appended to this list.
+     * @param startAt 
+     * @param endAt 
+     * @returns Promise<ICampaignHeadline[]>
+     */
+    public async listHeadlines(startAt: number, endAt: number): Promise<ICampaignHeadline[]> {
+        // Retrieve the income records
+        const {rows}: IQueryResult = await this._db.query({
+            text: `
+                SELECT * FROM ${this._db.tn.campaign_headlines} 
+                WHERE s BETWEEN $1 AND $2 ORDER BY s DESC;
+            `, 
+            values: [startAt, endAt]
+        });
+
+        // Finally, return them
+        return rows;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     /******************************
@@ -238,6 +270,10 @@ export class CampaignModel implements ICampaignModel {
 
 
 
+
+
+
+
     /*****************************
      * Campaign Notes Management *
      *****************************/
@@ -292,6 +328,51 @@ export class CampaignModel implements ICampaignModel {
 
 
 
+    
+
+
+
+    /****************************
+     * ShareHolder Transactions *
+     ****************************/
+
+
+
+
+
+
+    /**
+     * Retrieves the list of shareholder transactions for a user for a 
+     * given date range.
+     * @param uid 
+     * @param startAt 
+     * @param endAt 
+     * @returns Promise<IShareHolderTransaction[]>
+     */
+    public async listShareHolderTransactions(
+        uid: string, 
+        startAt: number, 
+        endAt: number
+    ): Promise<IShareHolderTransaction[]> {
+        // Retrieve the income records
+        const {rows}: IQueryResult = await this._db.query({
+            text: `
+                SELECT * FROM ${this._db.tn.campaign_shareholders_transactions} 
+                WHERE uid = $1 AND t BETWEEN $2 AND $3 ORDER BY t DESC;
+            `, 
+            values: [uid, startAt, endAt]
+        });
+
+        // Finally, return them
+        return rows;
+    }
+
+
+
+
+
+
+
 
 
 
@@ -317,7 +398,7 @@ export class CampaignModel implements ICampaignModel {
      * @returns Promise<IAccountIncomeRecord[]>
      */
     private async listIncomeRecords(startAt: number, endAt: number): Promise<IAccountIncomeRecord[]> {
-        // Retrieve the trades
+        // Retrieve the income records
         const {rows}: IQueryResult = await this._db.query({
             text: `
                 SELECT * FROM ${this._db.tn.campaign_income_records} 

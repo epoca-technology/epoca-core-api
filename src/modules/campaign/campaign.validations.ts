@@ -248,4 +248,79 @@ export class CampaignValidations implements ICampaignValidations {
             throw new Error(this._utils.buildApiError(`The provided campaign id is invalid.`, 39016));
         }
     }
+
+
+
+
+
+
+
+
+
+
+    /**********************
+     * General Retrievers *
+     **********************/
+
+
+
+    /**
+     * Verifies if the campaign summary can be retrieved for
+     * a campaign.
+     * @param campaignID 
+     * @returns Promise<void>
+     */
+    public async canCampaignSummaryBeRetrieved(campaignID: string): Promise<void> {
+        // Validate the id
+        if (!this._val.uuidValid(campaignID)) {
+            throw new Error(this._utils.buildApiError(`The provided campaign id is invalid.`, 39016));
+        }
+    }
+
+
+
+
+
+
+
+    /**
+     * Verifies if the configurations snapshot can be retrieved for
+     * a campaign.
+     * @param campaignID 
+     * @returns Promise<void>
+     */
+    public async canConfigurationsSnapshotBeRetrieved(campaignID: string): Promise<void> {
+        // Validate the id
+        if (!this._val.uuidValid(campaignID)) {
+            throw new Error(this._utils.buildApiError(`The provided campaign id is invalid.`, 39016));
+        }
+
+        // Ensure the campaign record exists
+        const record: ICampaignRecord = await this._model.getCampaignRecord(campaignID);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Ensures a given date range is valid for db queries.
+     * @param startAt 
+     * @param endAt 
+     */
+    public validateDateRange(startAt: number, endAt: number): void {
+        if (typeof startAt != "number" || typeof endAt != "number") {
+            throw new Error(this._utils.buildApiError(`The provided date range is invalid.`, 39019));
+        }
+        if (endAt <= startAt) {
+            throw new Error(this._utils.buildApiError(`The end of the query must be greater than the beginning.`, 39020));
+        }
+    }
 }

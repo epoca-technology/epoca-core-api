@@ -34,6 +34,16 @@ export interface ICampaignService {
     saveNote(campaignID: string, title: string, description: string): Promise<ICampaignNote[]>,
     listNotes(campaignID: string): Promise<ICampaignNote[]>,
 
+    // General Retrievers
+    getCampaignSummary(campaignID: string): Promise<ICampaignSummary>,
+    getConfigurationsSnapshot(campaignID: string): Promise<ICampaignConfigurationsSnapshot>,
+    listHeadlines(startAt: number, endAt: number): Promise<ICampaignHeadline[]>,
+    listShareHolderTransactions(
+        uid: string, 
+        startAt: number, 
+        endAt: number
+    ): Promise<IShareHolderTransaction[]>,
+
     // Futures Account Balance
     syncBalance(): Promise<void>,
 
@@ -60,7 +70,12 @@ export interface ICampaignValidations {
 
     // Campaign Notes Management
     canNoteBeSaved(campaignID: string, title: string, description: string): Promise<void>,
-    canNotesBeListed(campaignID: string): void
+    canNotesBeListed(campaignID: string): void,
+
+    // General Retrievers
+    canCampaignSummaryBeRetrieved(campaignID: string): Promise<void>,
+    canConfigurationsSnapshotBeRetrieved(campaignID: string): Promise<void>,
+    validateDateRange(startAt: number, endAt: number): void
 }
 
 
@@ -75,6 +90,7 @@ export interface ICampaignModel {
     getCampaignSummary(campaignID: string): Promise<ICampaignSummary>,
     getCampaignRecord(campaignID: string): Promise<ICampaignRecord>,
     getConfigsSnapshot(campaignID: string): Promise<ICampaignConfigurationsSnapshot>,
+    listHeadlines(startAt: number, endAt: number): Promise<ICampaignHeadline[]>,
 
     // Campaign Record Management
     createCampaign(
@@ -91,6 +107,13 @@ export interface ICampaignModel {
     // Campaign Notes Management
     saveNote(note: ICampaignNote): Promise<void>,
     listCampaignNotes(campaignID: string): Promise<ICampaignNote[]>,
+
+    // ShareHolder Transactions
+    listShareHolderTransactions(
+        uid: string, 
+        startAt: number, 
+        endAt: number
+    ): Promise<IShareHolderTransaction[]>,
 
     // Income Records Management
     saveIncomeRecords(records: IAccountIncomeRecord[]): Promise<void>,

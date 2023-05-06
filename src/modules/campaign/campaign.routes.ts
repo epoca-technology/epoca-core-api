@@ -17,13 +17,201 @@ import {IUtilitiesService} from "../utilities";
 const _utils: IUtilitiesService = appContainer.get<IUtilitiesService>(SYMBOLS.UtilitiesService);
 
 // Campaign Service
-import {ICampaignNote, ICampaignService} from "../campaign";
+import {
+    ICampaignConfigurationsSnapshot,
+    ICampaignHeadline,
+    ICampaignNote, 
+    ICampaignService, 
+    ICampaignSummary,
+    IShareHolderTransaction
+} from "../campaign";
 const _campaign: ICampaignService = appContainer.get<ICampaignService>(SYMBOLS.CampaignService);
 
 
 
 // Init Route
 const CampaignRoute = express.Router();
+
+
+
+
+
+
+
+
+
+
+
+
+/**********************
+ * General Retrievers *
+ **********************/
+
+
+
+
+
+
+/**
+ * Retrieves all the notes belonging to a campaign based on its id.
+ * @requires id-token
+ * @requires api-secret
+ * @requires authority: 2
+ * @param campaignID
+ * @returns IAPIResponse<ICampaignSummary>
+*/
+CampaignRoute.route("/getCampaignSummary").get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 2, ["campaignID"], req.query);
+
+        // Retrieve the data
+        const data: ICampaignSummary = await _campaign.getCampaignSummary(<string>req.query.campaignID);
+
+        // Return the response
+        res.send(_utils.apiResponse(data));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("CampaignRoute.getCampaignSummary", e, reqUid, ip, req.query);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+/**
+ * Retrieves the configurations snapshot for a campaign.
+ * @requires id-token
+ * @requires api-secret
+ * @requires authority: 2
+ * @param campaignID
+ * @returns IAPIResponse<ICampaignConfigurationsSnapshot>
+*/
+CampaignRoute.route("/getConfigurationsSnapshot").get(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 2, ["campaignID"], req.query);
+
+        // Retrieve the data
+        const data: ICampaignConfigurationsSnapshot = await _campaign.getConfigurationsSnapshot(<string>req.query.campaignID);
+
+        // Return the response
+        res.send(_utils.apiResponse(data));
+    } catch (e) {
+		console.log(e);
+        _apiError.log("CampaignRoute.getConfigurationsSnapshot", e, reqUid, ip, req.query);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+/**
+ * Retrieves the list of campaign headlines.
+ * @requires id-token
+ * @requires api-secret
+ * @requires authority: 2
+ * @param start 
+ * @param end 
+ * @returns IAPIResponse<ICampaignHeadline[]>
+*/
+CampaignRoute.route("/listHeadlines").get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 2, ["start", "end"], req.query);
+
+        // Retrieve the data
+        const data: ICampaignHeadline[] = await _campaign.listHeadlines(
+            Number(req.query.start), 
+            Number(req.query.end)
+        );
+
+        // Return the response
+        res.send(_utils.apiResponse(data));
+    } catch (e) {
+		console.log(e);
+        _apiError.log('CampaignRoute.listHeadlines', e, reqUid, ip, req.query);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+/**
+ * Retrieves the list of campaign headlines.
+ * @requires id-token
+ * @requires api-secret
+ * @requires authority: 2
+ * @param start 
+ * @param end 
+ * @returns IAPIResponse<IShareHolderTransaction[]>
+*/
+CampaignRoute.route("/listShareHolderTransactions").get(lowRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 2, ["start", "end"], req.query);
+
+        // Retrieve the data
+        const data: IShareHolderTransaction[] = await _campaign.listShareHolderTransactions(
+            reqUid,
+            Number(req.query.start), 
+            Number(req.query.end)
+        );
+
+        // Return the response
+        res.send(_utils.apiResponse(data));
+    } catch (e) {
+		console.log(e);
+        _apiError.log('CampaignRoute.listShareHolderTransactions', e, reqUid, ip, req.query);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -92,7 +280,7 @@ CampaignRoute.route("/saveNote").post(ultraHighRiskLimit, async (req: express.Re
  * Retrieves all the notes belonging to a campaign based on its id.
  * @requires id-token
  * @requires api-secret
- * @requires authority: 3
+ * @requires authority: 2
  * @param campaignID
  * @returns IAPIResponse<ICampaignNote[]>
 */
@@ -105,7 +293,7 @@ CampaignRoute.route("/listNotes").get(lowRiskLimit, async (req: express.Request,
 
     try {
         // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 3, ["campaignID"], req.query);
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 2, ["campaignID"], req.query);
 
         // Retrieve the data
         const data: ICampaignNote[] = await _campaign.listNotes(<string>req.query.campaignID);
@@ -114,10 +302,13 @@ CampaignRoute.route("/listNotes").get(lowRiskLimit, async (req: express.Request,
         res.send(_utils.apiResponse(data));
     } catch (e) {
 		console.log(e);
-        _apiError.log("PositionRoute.listNotes", e, reqUid, ip, req.query);
+        _apiError.log("CampaignRoute.listNotes", e, reqUid, ip, req.query);
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
+
 
 
 
@@ -211,6 +402,12 @@ CampaignRoute.route("/getBalance").get(mediumRiskLimit, async (req: express.Requ
         res.send(_utils.apiResponse(undefined, e));
     }
 });
+
+
+
+
+
+
 
 
 

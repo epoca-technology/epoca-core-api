@@ -869,15 +869,23 @@
 
 39018: `The provided note description is invalid.`
 
-39019: ``
+39019: `The provided date range is invalid.`
 
-39020: ``
+39020: `The end of the query must be greater than the beginning.`
 
 39021: ``
 
 39022: ``
 
 39023: ``
+
+39024: ``
+
+39025: ``
+
+39026: ``
+
+39027: ``
 
 
 
