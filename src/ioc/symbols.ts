@@ -75,6 +75,7 @@
 
     // Position
     PositionService: Symbol.for("PositionService"),
+    PositionUtilities: Symbol.for("PositionUtilities"),
     PositionValidations: Symbol.for("PositionValidations"),
     PositionModel: Symbol.for("PositionModel"),
 
@@ -168,6 +169,7 @@ export interface ISymbols {
 
 
     PositionService: symbol,
+    PositionUtilities: symbol,
     PositionValidations: symbol,
     PositionModel: symbol,
 

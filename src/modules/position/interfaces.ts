@@ -1,5 +1,6 @@
 import { ICoin } from "../market-state";
 import { 
+    IBinanceActivePosition,
     IBinanceMarginType, 
     IBinancePositionSide, 
     IBinanceTradeExecutionPayload 
@@ -34,6 +35,60 @@ export interface IPositionService {
     // Position Strategy
     updateStrategy(newStrategy: IPositionStrategy): Promise<void>,
 }
+
+
+
+// Utilities
+export interface IPositionUtilities {
+    // Position Management Helpers
+
+    calculateGainState(
+        side: IBinancePositionSide, 
+        entryPrice: number,
+        markPrice: number,
+        highestGain: number,
+    ): IPositionGainState,
+
+    // Position Build
+    buildNewPositionRecord(pos: IBinanceActivePosition): IPositionRecord
+
+    // Position Candlesticks Helpers
+    buildUpdatedCandlestickItem(currentValue: number, item: Partial<IPositionCandlestick>): Partial<IPositionCandlestick>,
+    buildCandlestickRecord(active: IActivePositionCandlestick): IPositionCandlestickRecord,
+    buildNewActiveCandlestick(
+        openTime: number, 
+        markPrice: number, 
+        gain: number, 
+        gainDrawdown: number,
+        intervalSeconds: number
+    ): IActivePositionCandlestick,
+
+
+    // Position Actions
+    openPosition(
+        side: IBinancePositionSide, 
+        symbol: string,
+        positionSize: number,
+        leverage: number
+    ): Promise<void>,
+    closePosition(position: IPositionRecord, chunkSize?: number): Promise<void>,
+    createStopMarketOrder(
+        symbol: string, 
+        side: IBinancePositionSide, 
+        quantity: number,
+        stopPrice: number
+    ): Promise<IBinanceTradeExecutionPayload|undefined>,
+
+    // Active Position Headlines Helper
+    buildActivePositionHeadlines(long: IPositionRecord|null, short: IPositionRecord|null): IActivePositionHeadlines,
+
+    // Trading Strategy Helpers
+    strategyChanged(newStrategy: IPositionStrategy): void,
+    buildDefaultStrategy(): IPositionStrategy,
+}
+
+
+
 
 
 

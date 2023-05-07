@@ -572,9 +572,9 @@
 
 
 #
-## Position Service (29.000 - 29.999)
+## Position Service (29.000 - 29.499)
 
-29000: `The ${side} position cannot be closed because there isnt an active one.`
+29000: ``
 
 29001: ``
 
@@ -587,6 +587,21 @@
 29005: ``
 
 29006: ``
+
+
+
+
+#
+## Position Utilities (29.500 - 29.999)
+
+29500: `The position cannot be closed because there isnt an active one.`
+
+29501: ``
+
+29501: ``
+
+29501: ``
+
 
 
 
