@@ -209,8 +209,8 @@ export class PositionUtilities implements IPositionUtilities {
         const remaining: number = 
             <number>this._utils.calculatePercentageOutOfTotal(positionAmountNotional, originalNotional);
 
-        // If there is less than 20% of the position remaining, close the whole thing
-        if (remaining <= 20) { return 1 }
+        // If there is less than 40% of the position remaining, close the whole thing
+        if (remaining <= 40) { return 1 }
 
         // Otherwise, calculate 
         else {
