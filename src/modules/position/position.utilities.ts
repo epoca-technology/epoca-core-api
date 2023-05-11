@@ -67,7 +67,7 @@ export class PositionUtilities implements IPositionUtilities {
      * Exchanges restrict the minimum amount that can be executed on a 
      * single trade. 
      */
-    private readonly minReductionAmount: number = 0.001;
+    private readonly minReductionAmount: number = 0.0015;
 
 
 
@@ -209,10 +209,10 @@ export class PositionUtilities implements IPositionUtilities {
         const remaining: number = 
             <number>this._utils.calculatePercentageOutOfTotal(positionAmountNotional, originalNotional);
 
-        // If there is less than 40% of the position remaining, close the whole thing
-        if (remaining <= 40) { return 1 }
+        // If there is less than 30% of the position remaining, close the whole thing
+        if (remaining <= 30) { return 1 }
 
-        // Otherwise, calculate 
+        // Otherwise, calculate the size of the chunk that will be reduced
         else {
             // Calculate the minimum notional that can be traded
             const minNotional: number = <number>this._utils.outputNumber(
@@ -232,7 +232,7 @@ export class PositionUtilities implements IPositionUtilities {
             else { 
                 // Calculate the % represented by the min reduction size compared to the full size
                 const minReductionPercent: BigNumber = 
-                    <BigNumber>this._utils.calculatePercentageOutOfTotal(minNotional, originalNotional, {of: "bn"});
+                    <BigNumber>this._utils.calculatePercentageOutOfTotal(minNotional, originalNotional, {of: "bn", dp: 2, ru: true});
                 
                 // Finally, convert the min reduction % into a chunk size
                 return <number>this._utils.outputNumber(minReductionPercent.dividedBy(100), {dp: 2, ru: true});
@@ -725,16 +725,16 @@ export class PositionUtilities implements IPositionUtilities {
             long_status: false,
             short_status: false,
             bitcoin_only: true,
-            leverage: 100,
-            position_size: 5,
+            leverage: 10,
+            position_size: 50,
             take_profit_1: { price_change_requirement: 0.30, reduction_size: 0.05,   reduction_interval_minutes: 30.0 },
             take_profit_2: { price_change_requirement: 0.55, reduction_size: 0.10,   reduction_interval_minutes: 15.0 },
             take_profit_3: { price_change_requirement: 0.75, reduction_size: 0.15,   reduction_interval_minutes: 10.0 },
             take_profit_4: { price_change_requirement: 1.00, reduction_size: 0.20,   reduction_interval_minutes:  7.5 },
             take_profit_5: { price_change_requirement: 1.50, reduction_size: 0.25,   reduction_interval_minutes:  5.0 },
-            stop_loss: 0.275,
-            reopen_if_better_duration_minutes: 180,
-            reopen_if_better_price_adjustment: 0.35,
+            stop_loss: 0.5,
+            reopen_if_better_duration_minutes: 300,
+            reopen_if_better_price_adjustment: 0.5,
             low_volatility_coins: [
                 "BTCUSDT", "BNBUSDT", "ADAUSDT", "BCHUSDT", "ETHUSDT", "XRPUSDT", "TRXUSDT", "SOLUSDT"
             ]
