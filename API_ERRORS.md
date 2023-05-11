@@ -624,7 +624,7 @@
 
 30007: `The provided position id is invalid: ${id}.`
 
-30008: `The take profit 'n' must be a valid object containing the price change requirement & the max gain drawdown.`
+30008: `The provided take profit 1 object does not contain all the required properties.`
 
 30009: `The positions date range is invalid. Received: ${startAt} - ${endAt}.`
 

@@ -41,13 +41,17 @@ export interface IPositionService {
 // Utilities
 export interface IPositionUtilities {
     // Position Management Helpers
-
     calculateGainState(
         side: IBinancePositionSide, 
         entryPrice: number,
         markPrice: number,
         highestGain: number,
     ): IPositionGainState,
+    calculateReductionChunkSize(
+        currentPrice: number,
+        positionAmount: number, 
+        activeLevel: ITakeProfitLevelID
+    ): number,
 
     // Position Build
     buildNewPositionRecord(pos: IBinanceActivePosition): IPositionRecord
@@ -59,7 +63,6 @@ export interface IPositionUtilities {
         openTime: number, 
         markPrice: number, 
         gain: number, 
-        gainDrawdown: number,
         intervalSeconds: number
     ): IActivePositionCandlestick,
 
@@ -161,31 +164,22 @@ export interface IPositionModel {
 
 /**
  * Take Profit Level
- * The trading strategy makes use of 3 take profit levels that have different
- * characteristics.
+ * The trading strategy makes use of 5 take profit levels that have different
+ * characteristics that vary based on the accumulated gain.
  */
+export type ITakeProfitLevelID = "take_profit_1"|"take_profit_2"|"take_profit_3"|"take_profit_4"|"take_profit_5";
 export interface ITakeProfitLevel {
     // The price percentage change from the entry price for the level to be active
     price_change_requirement: number,
 
     /**
-     * The additional %  requirement for the level to be officially "locked". A 
-     * take profit level can only be broken and trigger a position close when
-     * it has been locked. 
+     * The size of the chunk that will be reduced from the position whenever
+     * the conditions apply. 
      */
-    activation_offset: number,
+    reduction_size: number,
 
-    /**
-     * The maximum Gain Drawdown% allowed in the level. If this requirement is not met, 
-     * the position is closed.
-     */
-    max_gain_drawdown: number,
-
-    /**
-     * The size of the chunk that will be closed once the take profit level is hit. 
-     * This functionality can be disabled on a level by setting 0.
-     */
-    reduction_size_on_contact: number
+    // The frequency at which reductions can be executed
+    reduction_interval_minutes: number
 }
 
 
@@ -311,12 +305,8 @@ export interface IPositionGainState {
     // Highest Gain%
     highest_gain: number,
 
-    /**
-     * The percentual difference between highest_gain and gain. If 
-     * gain is less than take_profit_1.price_change_requirement, this
-     * value will be 0. Otherwise, it will always be a negative number.
-     */
-    gain_drawdown: number
+    // The take profit that is currently active (if any)
+    active_tp_level: ITakeProfitLevelID|undefined
 }
 
 
@@ -453,11 +443,11 @@ export interface IPositionRecord {
 
     // The reductions that have been applied to the position
     reductions: {
-        take_profit_1: boolean,
-        take_profit_2: boolean,
-        take_profit_3: boolean,
-        take_profit_4: boolean,
-        take_profit_5: boolean,
+        take_profit_1: IPositionReduction[],
+        take_profit_2: IPositionReduction[],
+        take_profit_3: IPositionReduction[],
+        take_profit_4: IPositionReduction[],
+        take_profit_5: IPositionReduction[],
     }
 
     // The price in which the position is labeled as "unsuccessful" and is ready to be closed.
@@ -465,19 +455,16 @@ export interface IPositionRecord {
 
     /**
      * The stop-loss order currently shielding the position. If it hasn't been created, this value will 
-     * be undefined.
+     * be undefined and the system will take over the stop-loss flow.
      */
     stop_loss_order: IBinanceTradeExecutionPayload|undefined,
 
-    // The % the price has moved in favor or against. If losing, the value will be a negative number
-    gain: number,
-
     /**
-     * The highest gain recorded as well as the drawdown from that point. These values will be 0 
-     * if no TP level has been activated
+     * The % the price has moved in favor or against. If losing, the value will be a negative number.
+     * The system also keeps track of the highest gain that has been recorded.
      */
+    gain: number,
     highest_gain: number,
-    gain_drawdown: number,
 
 
 
@@ -487,6 +474,33 @@ export interface IPositionRecord {
     // The list of packed candlesticks that detail the position's history
     history: IPositionCandlestickRecord[]
 }
+
+
+
+/**
+ * Position Reduction
+ * The record containing all the information regarding a reduction triggered
+ * by the profit optimization strategy.
+ */
+export interface IPositionReduction {
+    // The time at which the reduction took place
+    t: number, // Timestamp
+
+    // The time at which the next reduction can take place
+    nr: number, // Next Reduction
+
+    // The size of the chunk that was reduced
+    rcz: number, // Reduction Chunk Size
+
+    // The gain the position had accumulated when the reduction took place
+    g: number, // Gain
+}
+
+
+
+
+
+
 
 
 
@@ -513,9 +527,6 @@ export interface IPositionHeadline {
     // The gain% the price has moved in favor or against. If losing, the value will be a negative number
     g: number,
 
-    // The gain drawdown% from the highest gain
-    gd: number,
-
     // Stop Loss Order - If the position has one, this value will be true
     slo: boolean
 }
@@ -539,16 +550,16 @@ export interface IPositionCandlestick {
     // Open Timestamp: the time in which the candlestick was first built
     ot: number,
 
-    // Open: the Mark Price|Gain%|Gain Drawdown% when the candlestick was first built
+    // Open: the Mark Price|Gain% when the candlestick was first built
     o: number,
 
-    // High: the highest Mark Price|Gain%|Gain Drawdown% in the candlestick
+    // High: the highest Mark Price|Gain% in the candlestick
     h: number,
 
-    // Low: the lowest Mark Price|Gain%|Gain Drawdown% in the candlestick
+    // Low: the lowest Mark Price|Gain% in the candlestick
     l: number,
 
-    // Close: the last Mark Price|Gain%|Gain Drawdown% in the candlestick 
+    // Close: the last Mark Price|Gain% in the candlestick 
     c: number
 }
 
@@ -576,10 +587,7 @@ export interface IActivePositionCandlestick {
     markPrice: Partial<IPositionCandlestick>,
 
     // The candlestick containing the Gain% history within the interval
-    gain: Partial<IPositionCandlestick>,
-
-    // The candlestick containing the Gain Drawdown% history within the interval
-    gainDrawdown: Partial<IPositionCandlestick>
+    gain: Partial<IPositionCandlestick>
 }
 
 
@@ -602,17 +610,17 @@ export interface IPositionCandlestickRecord {
 
     // The candlesticks' data
     d: {
-        // Open Value:  Mark Price, Gain%, Gain Drawdown%
-        o: [number, number, number],
+        // Open Value:  Mark Price, Gain%
+        o: [number, number],
 
-        // High Value:  Mark Price, Gain%, Gain Drawdown%
-        h: [number, number, number],
+        // High Value:  Mark Price, Gain%
+        h: [number, number],
 
-        // Low Value:   Mark Price, Gain%, Gain Drawdown%
-        l: [number, number, number],
+        // Low Value:   Mark Price, Gain%
+        l: [number, number],
 
-        // Close Value: Mark Price, Gain%, Gain Drawdown%
-        c: [number, number, number]
+        // Close Value: Mark Price, Gain%
+        c: [number, number]
     }
 }
 

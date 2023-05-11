@@ -30,7 +30,8 @@ import {
     IPositionValidations,
     IPositionInteractions,
     IActivePositions,
-    IActivePositionHeadlines
+    IActivePositionHeadlines,
+    ITakeProfitLevelID
 } from "./interfaces";
 import { ICandlestickService } from "../candlestick";
 
@@ -61,9 +62,31 @@ export class PositionUtilities implements IPositionUtilities {
 
 
 
+    /**
+     * Minimum Reduction Amount
+     * Exchanges restrict the minimum amount that can be executed on a 
+     * single trade. 
+     */
+    private readonly minReductionAmount: number = 0.001;
+
+
 
 
     constructor() {}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -96,7 +119,6 @@ export class PositionUtilities implements IPositionUtilities {
         // Init values
         let gain: number = 0;
         let highest_gain: number = highestGain;
-        let gain_drawdown: number = 0;
 
         // Calculate the current gain based on a long position
         if (side == "LONG") {
@@ -112,8 +134,119 @@ export class PositionUtilities implements IPositionUtilities {
         highest_gain = gain > highest_gain ? gain: highest_gain;
 
         // Finally, return the state
-        return { gain: gain, highest_gain: highest_gain, gain_drawdown: gain_drawdown }
+        return { gain: gain, highest_gain: highest_gain, active_tp_level: this.getActiveTakeProfitLevelID(gain) }
     }
+
+
+
+
+
+
+
+
+    /**
+     * Retrieves the active take profit level id based on the 
+     * current accumulated gain. If no take profit level is 
+     * active, it returns undefined.
+     * @param gain 
+     * @returns ITakeProfitLevelID|undefined
+     */
+    private getActiveTakeProfitLevelID(gain: number): ITakeProfitLevelID|undefined {
+        // Level 1 is active
+        if (gain >= this.strategy.take_profit_1.price_change_requirement && gain < this.strategy.take_profit_2.price_change_requirement) {
+            return "take_profit_1";
+        }
+
+        // Level 2 is active
+        else if (gain >= this.strategy.take_profit_2.price_change_requirement && gain < this.strategy.take_profit_3.price_change_requirement) {
+            return "take_profit_2";
+        }
+
+        // Level 3 is active
+        else if (gain >= this.strategy.take_profit_3.price_change_requirement && gain < this.strategy.take_profit_4.price_change_requirement) {
+            return "take_profit_3";
+        }
+
+        // Level 4 is active
+        else if (gain >= this.strategy.take_profit_4.price_change_requirement && gain < this.strategy.take_profit_5.price_change_requirement) {
+            return "take_profit_4";
+        }
+
+        // Level 5 is active
+        else if (gain >= this.strategy.take_profit_5.price_change_requirement) {
+            return "take_profit_5";
+        }
+
+        // No Level is active
+        else { return undefined } 
+    } 
+
+
+
+
+
+
+
+    /**
+     * Calculates the chunk size of a reduction based on the 
+     * take profit level and the remaining capital in the 
+     * position.
+     * @param currentPrice 
+     * @param positionAmountNotional 
+     * @param activeLevel 
+     * @returns number
+     */
+    public calculateReductionChunkSize(
+        currentPrice: number,
+        positionAmountNotional: number, 
+        activeLevel: ITakeProfitLevelID
+    ): number {
+        // Calculate the notional all positions start with
+        const originalNotional: BigNumber = 
+            new BigNumber(this.strategy.position_size).times(this.strategy.leverage);
+
+        // Calculate the position's remaining amount
+        const remaining: number = 
+            <number>this._utils.calculatePercentageOutOfTotal(positionAmountNotional, originalNotional);
+
+        // If there is less than 20% of the position remaining, close the whole thing
+        if (remaining <= 20) { return 1 }
+
+        // Otherwise, calculate 
+        else {
+            // Calculate the minimum notional that can be traded
+            const minNotional: number = <number>this._utils.outputNumber(
+                new BigNumber(this.minReductionAmount).times(currentPrice), {ru: true}
+            );
+
+            // Calculate the reduction size based on the active tp level
+            const rawReductionSize: BigNumber = 
+                new BigNumber(positionAmountNotional).times(this.strategy[activeLevel].reduction_size);
+
+            // If the reduction size is greater than the minimum, return it
+            if (rawReductionSize.isGreaterThan(minNotional)) {
+                return this.strategy[activeLevel].reduction_size;
+            }
+
+            // Otherwise, calculate the min chunk size that can be closed
+            else { 
+                // Calculate the % represented by the min reduction size compared to the full size
+                const minReductionPercent: BigNumber = 
+                    <BigNumber>this._utils.calculatePercentageOutOfTotal(minNotional, originalNotional, {of: "bn"});
+                
+                // Finally, convert the min reduction % into a chunk size
+                return <number>this._utils.outputNumber(minReductionPercent.dividedBy(100), {dp: 2, ru: true});
+            }
+        }
+    }
+
+
+
+
+
+
+
+
 
 
 
@@ -176,11 +309,11 @@ export class PositionUtilities implements IPositionUtilities {
             take_profit_price_4: exit.take_profit_price_4,
             take_profit_price_5: exit.take_profit_price_5,
             reductions: {
-                take_profit_1: false,
-                take_profit_2: false,
-                take_profit_3: false,
-                take_profit_4: false,
-                take_profit_5: false,
+                take_profit_1: [],
+                take_profit_2: [],
+                take_profit_3: [],
+                take_profit_4: [],
+                take_profit_5: [],
             },
             stop_loss_price: exit.stop_loss_price,
             stop_loss_order: undefined,
@@ -188,7 +321,6 @@ export class PositionUtilities implements IPositionUtilities {
             // Gain Data
             gain: 0,
             highest_gain: 0,
-            gain_drawdown: 0,
 
             // History
             history: []
@@ -297,10 +429,10 @@ export class PositionUtilities implements IPositionUtilities {
         return {
             ot: active.ot,
             d: {
-                o: [ active.markPrice.o, active.gain.o, active.gainDrawdown.o ],
-                h: [ active.markPrice.h, active.gain.h, active.gainDrawdown.h ],
-                l: [ active.markPrice.l, active.gain.l, active.gainDrawdown.l ],
-                c: [ active.markPrice.c, active.gain.c, active.gainDrawdown.c ],
+                o: [ active.markPrice.o, active.gain.o ],
+                h: [ active.markPrice.h, active.gain.h ],
+                l: [ active.markPrice.l, active.gain.l ],
+                c: [ active.markPrice.c, active.gain.c ],
             }
         }
     }
@@ -316,14 +448,13 @@ export class PositionUtilities implements IPositionUtilities {
      * @param openTime 
      * @param markPrice 
      * @param gain 
-     * @param gainDrawdown 
+     * @param intervalSeconds 
      * @returns IActivePositionCandlestick
      */
     public buildNewActiveCandlestick(
         openTime: number, 
         markPrice: number, 
         gain: number, 
-        gainDrawdown: number,
         intervalSeconds: number
     ): IActivePositionCandlestick {
         return {
@@ -331,9 +462,13 @@ export class PositionUtilities implements IPositionUtilities {
             ct: moment(openTime).add(intervalSeconds, "seconds").valueOf() - 1,
             markPrice: { o: markPrice, h: markPrice, l: markPrice, c: markPrice},
             gain: { o: gain, h: gain, l: gain, c: gain},
-            gainDrawdown: { o: gainDrawdown, h: gainDrawdown, l: gainDrawdown, c: gainDrawdown},
         }
     }
+
+
+
+
+
 
 
 
@@ -500,6 +635,14 @@ export class PositionUtilities implements IPositionUtilities {
 
 
 
+
+
+
+
+
+
+
+
     /************************************
      * Active Position Headlines Helper *
      ************************************/
@@ -522,7 +665,6 @@ export class PositionUtilities implements IPositionUtilities {
                 s: long.coin.symbol, 
                 sd: long.side,
                 g: long.gain,
-                gd: long.gain_drawdown,
                 slo: long.stop_loss_order && typeof long.stop_loss_order == "object" ? true: false
             }: null,
             SHORT: short ? {
@@ -531,11 +673,14 @@ export class PositionUtilities implements IPositionUtilities {
                 s: short.coin.symbol, 
                 sd: short.side,
                 g: short.gain,
-                gd: short.gain_drawdown,
                 slo: short.stop_loss_order && typeof short.stop_loss_order == "object" ? true: false
             }: null,
         };
     }
+
+
+
+
 
 
 
@@ -582,11 +727,11 @@ export class PositionUtilities implements IPositionUtilities {
             bitcoin_only: true,
             leverage: 100,
             position_size: 5,
-            take_profit_1: { price_change_requirement: 0.30, activation_offset: 0.15,   max_gain_drawdown: -100, reduction_size_on_contact: 0 },
-            take_profit_2: { price_change_requirement: 0.55, activation_offset: 0.125,  max_gain_drawdown: -100, reduction_size_on_contact: 0 },
-            take_profit_3: { price_change_requirement: 0.75, activation_offset: 0.10,   max_gain_drawdown: -100, reduction_size_on_contact: 0.15 },
-            take_profit_4: { price_change_requirement: 0.90, activation_offset: 0.075,  max_gain_drawdown: -15,  reduction_size_on_contact: 0.20 },
-            take_profit_5: { price_change_requirement: 1.25, activation_offset: 0.05,   max_gain_drawdown: -5,   reduction_size_on_contact: 0.25 },
+            take_profit_1: { price_change_requirement: 0.30, reduction_size: 0.05,   reduction_interval_minutes: 30.0 },
+            take_profit_2: { price_change_requirement: 0.55, reduction_size: 0.10,   reduction_interval_minutes: 15.0 },
+            take_profit_3: { price_change_requirement: 0.75, reduction_size: 0.15,   reduction_interval_minutes: 10.0 },
+            take_profit_4: { price_change_requirement: 1.00, reduction_size: 0.20,   reduction_interval_minutes:  7.5 },
+            take_profit_5: { price_change_requirement: 1.50, reduction_size: 0.25,   reduction_interval_minutes:  5.0 },
             stop_loss: 0.275,
             reopen_if_better_duration_minutes: 180,
             reopen_if_better_price_adjustment: 0.35,

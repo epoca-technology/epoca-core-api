@@ -8,7 +8,7 @@ import {
     IBinanceService,
 } from "../binance";
 import { ISignalRecord, ISignalService } from "../signal";
-import { IMarketState, IMarketStateService } from "../market-state";
+import { IMarketState, IMarketStateService, IStateType } from "../market-state";
 import { INotificationService } from "../notification";
 import { IApiErrorService } from "../api-error";
 import { IUtilitiesService } from "../utilities";
@@ -70,6 +70,7 @@ export class PositionService implements IPositionService {
      * can be used to reduce positions.
      */
     private currentPrice: number;
+    private windowState: IStateType;
     private ms: IMarketState;
     private marketStateSub: Subscription;
 
@@ -171,6 +172,7 @@ export class PositionService implements IPositionService {
         this.marketStateSub = this._ms.active.subscribe(async (ms: IMarketState) => {
             this.ms = ms;
             this.currentPrice = this.ms.window.w.length ? this.ms.window.w.at(-1).c: 0;
+            this.windowState = this.ms.window.ss.s2.s;
         });
 
         // Initialize the intervals
@@ -427,7 +429,6 @@ export class PositionService implements IPositionService {
             this.active[pos.positionSide].open,
             this.active[pos.positionSide].mark_price,
             this.active[pos.positionSide].gain,
-            this.active[pos.positionSide].gain_drawdown,
             this.candlestickIntervalSeconds
         );
 
@@ -447,7 +448,7 @@ export class PositionService implements IPositionService {
         // If reopen_if_better_duration_minutes is enabled, store the interaction data
         if (this.strategy.reopen_if_better_duration_minutes > 0) {
             /**
-             * Alter the stop loss price based on the side in order to prevent
+             * Alter the current price based on the side in order to prevent
              * position reopening on a losing range.
              */
             const adjPrice: number = <number>this._utils.alterNumberByPercentage(
@@ -524,17 +525,15 @@ export class PositionService implements IPositionService {
         );
         this.active[pos.positionSide].gain = gs.gain;
         this.active[pos.positionSide].highest_gain = gs.highest_gain;
-        this.active[pos.positionSide].gain_drawdown = gs.gain_drawdown;
 
         // Update history data
         const current_ts: number = Date.now();
         this.activeCandlestick[pos.positionSide].markPrice = this._positionUtils.buildUpdatedCandlestickItem(markPrice, this.activeCandlestick[pos.positionSide].markPrice);
         this.activeCandlestick[pos.positionSide].gain = this._positionUtils.buildUpdatedCandlestickItem(gs.gain, this.activeCandlestick[pos.positionSide].gain);
-        this.activeCandlestick[pos.positionSide].gainDrawdown = this._positionUtils.buildUpdatedCandlestickItem(gs.gain_drawdown, this.activeCandlestick[pos.positionSide].gainDrawdown);
         if (current_ts >= this.activeCandlestick[pos.positionSide].ct) {
             this.active[pos.positionSide].history.push(this._positionUtils.buildCandlestickRecord(this.activeCandlestick[pos.positionSide]));
             delete this.activeCandlestick[pos.positionSide];
-            this.activeCandlestick[pos.positionSide] = this._positionUtils.buildNewActiveCandlestick(current_ts, markPrice, gs.gain, gs.gain_drawdown, this.candlestickIntervalSeconds);
+            this.activeCandlestick[pos.positionSide] = this._positionUtils.buildNewActiveCandlestick(current_ts, markPrice, gs.gain, this.candlestickIntervalSeconds);
         }
 
         /* Check if the position should be closed */
@@ -547,155 +546,43 @@ export class PositionService implements IPositionService {
             await this.closePosition(pos.positionSide);
         }
 
-        // If any take profit level has been broken, close the position
-        else if (this.hasBrokenTakeProfitLevel(gs.gain, gs.highest_gain)) {
-            await this.closePosition(pos.positionSide);
-        }
+        /**
+         * Otherwise, check if a position should be reduced based on
+         * the current gain & window states.
+         * 1) There must be an active take profit level
+         * 2) The window state must be increasing for a LONG or decreasing for a SHORT.
+         * 3) The current time must be greater than the next reduction timestamp set by the level.
+         */
+        else if (
+            gs.active_tp_level !== undefined &&
+            (
+                (pos.positionSide == "LONG" && this.windowState > 0) ||
+                (pos.positionSide == "SHORT" && this.windowState < 0)
+            ) &&
+            (
+                !this.active[pos.positionSide].reductions[gs.active_tp_level].length || 
+                current_ts >= this.active[pos.positionSide].reductions[gs.active_tp_level].at(-1).nr
+            )
+        ) { 
+            // Calculate the size of the chunk that will be reduced
+            const reductionChunkSize: number = this._positionUtils.calculateReductionChunkSize(
+                this.currentPrice,
+                Math.abs(this.active[pos.positionSide].notional),
+                gs.active_tp_level
+            );
 
-        // If the take profit level's gain drawdown% limit has been exceeded, close the position
-        else if (gs.gain_drawdown <= this.calculateMaxGainDrawdown(gs.gain)) {
-            await this.closePosition(pos.positionSide);
-        }
+            // Append the reduction record to the list
+            this.active[pos.positionSide].reductions[gs.active_tp_level].push({
+                t: current_ts,
+                nr: moment().add(this.strategy[gs.active_tp_level].reduction_interval_minutes, "minutes").valueOf(),
+                rcz: reductionChunkSize,
+                g: gs.gain
+            });
 
-        // Evaluate if the position should be reduced
-        else if (
-            this.strategy.take_profit_1.reduction_size_on_contact > 0 &&
-            !this.active[pos.positionSide].reductions.take_profit_1 &&
-            (gs.gain >= this.strategy.take_profit_1.price_change_requirement && gs.gain < this.strategy.take_profit_2.price_change_requirement)
-        ) { 
-            this.active[pos.positionSide].reductions.take_profit_1 = true;
-            await this.closePosition(pos.positionSide, this.strategy.take_profit_1.reduction_size_on_contact);
-        }
-        else if (
-            this.strategy.take_profit_2.reduction_size_on_contact > 0 &&
-            !this.active[pos.positionSide].reductions.take_profit_2 &&
-            (gs.gain >= this.strategy.take_profit_2.price_change_requirement && gs.gain < this.strategy.take_profit_3.price_change_requirement)
-        ) { 
-            this.active[pos.positionSide].reductions.take_profit_2 = true;
-            await this.closePosition(pos.positionSide, this.strategy.take_profit_2.reduction_size_on_contact);
-        }
-        else if (
-            this.strategy.take_profit_3.reduction_size_on_contact > 0 &&
-            !this.active[pos.positionSide].reductions.take_profit_3 &&
-            (gs.gain >= this.strategy.take_profit_3.price_change_requirement && gs.gain < this.strategy.take_profit_4.price_change_requirement)
-        ) { 
-            this.active[pos.positionSide].reductions.take_profit_3 = true;
-            await this.closePosition(pos.positionSide, this.strategy.take_profit_3.reduction_size_on_contact);
-        }
-        else if (
-            this.strategy.take_profit_4.reduction_size_on_contact > 0 &&
-            !this.active[pos.positionSide].reductions.take_profit_4 &&
-            (gs.gain >= this.strategy.take_profit_4.price_change_requirement && gs.gain < this.strategy.take_profit_5.price_change_requirement)
-        ) { 
-            this.active[pos.positionSide].reductions.take_profit_4 = true;
-            await this.closePosition(pos.positionSide, this.strategy.take_profit_4.reduction_size_on_contact);
-        }
-        else if (
-            this.strategy.take_profit_5.reduction_size_on_contact > 0 &&
-            !this.active[pos.positionSide].reductions.take_profit_5 &&
-            gs.gain >= this.strategy.take_profit_5.price_change_requirement
-        ) { 
-            this.active[pos.positionSide].reductions.take_profit_5 = true;
-            await this.closePosition(pos.positionSide, this.strategy.take_profit_5.reduction_size_on_contact);
+            // Execute the reduction
+            await this.closePosition(pos.positionSide, reductionChunkSize);
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Based on the current and highest gain, it will determine if any of the
-     * take profit levels have been broken.
-     * @param currentGain 
-     * @param highestGain 
-     * @returns boolean
-     */
-    private hasBrokenTakeProfitLevel(currentGain: number, highestGain: number): boolean {
-        return (
-            currentGain < this.strategy.take_profit_1.price_change_requirement && 
-            highestGain >= (this.strategy.take_profit_1.price_change_requirement + this.strategy.take_profit_1.activation_offset)
-        ) ||
-        (
-            currentGain < this.strategy.take_profit_2.price_change_requirement && 
-            highestGain >= (this.strategy.take_profit_2.price_change_requirement + this.strategy.take_profit_2.activation_offset)
-        ) ||
-        (
-            currentGain < this.strategy.take_profit_3.price_change_requirement && 
-            highestGain >= (this.strategy.take_profit_3.price_change_requirement + this.strategy.take_profit_3.activation_offset)
-        ) ||
-        (
-            currentGain < this.strategy.take_profit_4.price_change_requirement && 
-            highestGain >= (this.strategy.take_profit_4.price_change_requirement + this.strategy.take_profit_4.activation_offset)
-        ) ||
-        (
-            currentGain < this.strategy.take_profit_5.price_change_requirement && 
-            highestGain >= (this.strategy.take_profit_5.price_change_requirement + this.strategy.take_profit_5.activation_offset)
-        );
-    }
-
-
-
-
-
-
-    /**
-     * Calculates the gain drawdown% limit based on the position's gain.
-     * @param gain 
-     * @returns number
-     */
-    private calculateMaxGainDrawdown(gain: number): number {
-        // Level 1
-        if (
-            gain >= this.strategy.take_profit_1.price_change_requirement && gain < this.strategy.take_profit_2.price_change_requirement
-        ) {
-            return this.strategy.take_profit_1.max_gain_drawdown;
-        }
-
-        // Level 2
-        else if (
-            gain >= this.strategy.take_profit_2.price_change_requirement && gain < this.strategy.take_profit_3.price_change_requirement
-        ) {
-            return this.strategy.take_profit_2.max_gain_drawdown;
-        }
-
-        // Level 3
-        else if (
-            gain >= this.strategy.take_profit_3.price_change_requirement && gain < this.strategy.take_profit_4.price_change_requirement
-        ) {
-            return this.strategy.take_profit_3.max_gain_drawdown;
-        }
-
-        // Level 4
-        else if (
-            gain >= this.strategy.take_profit_4.price_change_requirement && gain < this.strategy.take_profit_5.price_change_requirement
-        ) {
-            return this.strategy.take_profit_4.max_gain_drawdown;
-        }
-
-        // Level 5
-        else if (gain >= this.strategy.take_profit_5.price_change_requirement) {
-            return this.strategy.take_profit_5.max_gain_drawdown;
-        }
-
-        // No level is active
-        else { return -100 }
-    }
-
-
-
-
-
 
 
 

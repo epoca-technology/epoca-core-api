@@ -71,10 +71,10 @@ export class PositionModel implements IPositionModel {
             const slo: string = position.stop_loss_order && typeof position.stop_loss_order == "object" ? "true": "false";
             await client.query({
                 text: `
-                    INSERT INTO ${this._db.tn.position_headlines}(id, o, s, sd, g, gd, slo) 
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    INSERT INTO ${this._db.tn.position_headlines}(id, o, s, sd, g, slo) 
+                    VALUES ($1, $2, $3, $4, $5, $6)
                 `,
-                values: [position.id, position.open, position.coin.symbol, position.side, position.gain, position.gain_drawdown, slo]
+                values: [position.id, position.open, position.coin.symbol, position.side, position.gain, slo]
             });
 
             // Finally, commit the writes
@@ -136,7 +136,7 @@ export class PositionModel implements IPositionModel {
         // Execute the query
         const { rows } = await this._db.query({ 
             text: `
-                SELECT id, o, s, sd, g, gd, slo FROM ${this._db.tn.position_headlines} 
+                SELECT id, o, s, sd, g, slo FROM ${this._db.tn.position_headlines} 
                 WHERE o BETWEEN $1 AND $2 ORDER BY o ASC;
             `, 
             values: [startAt, endAt]
