@@ -67,7 +67,7 @@ export class PositionUtilities implements IPositionUtilities {
      * Exchanges restrict the minimum amount that can be executed on a 
      * single trade. 
      */
-    private readonly minReductionAmount: number = 0.002;
+    private readonly minReductionAmount: number = 0.0015;
 
 
 
@@ -229,13 +229,16 @@ export class PositionUtilities implements IPositionUtilities {
             }
 
             // Otherwise, calculate the min chunk size that can be closed
-            else { 
+            else {
                 // Calculate the % represented by the min reduction size compared to the full size
                 const minReductionPercent: BigNumber = 
-                    <BigNumber>this._utils.calculatePercentageOutOfTotal(minNotional, originalNotional, {of: "bn", dp: 2, ru: true});
+                    <BigNumber>this._utils.calculatePercentageOutOfTotal(minNotional, positionAmountNotional, {of: "bn", dp: 2, ru: true});
                 
-                // Finally, convert the min reduction % into a chunk size
-                return <number>this._utils.outputNumber(minReductionPercent.dividedBy(100), {dp: 2, ru: true});
+                // Convert the min reduction % into a chunk size
+                const chunkSize: number = <number>this._utils.outputNumber(minReductionPercent.dividedBy(100), {dp: 2, ru: true});
+
+                // Finally, return it
+                return chunkSize;
             }
         }
     }
