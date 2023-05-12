@@ -67,7 +67,7 @@ export class PositionUtilities implements IPositionUtilities {
      * Exchanges restrict the minimum amount that can be executed on a 
      * single trade. 
      */
-    private readonly minReductionAmount: number = 0.0015;
+    private readonly minReductionAmount: number = 0.002;
 
 
 
