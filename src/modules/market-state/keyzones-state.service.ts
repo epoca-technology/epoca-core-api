@@ -346,12 +346,17 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              * 2) The initial price snapshot must be greater than the current (Decreased)
              * 3) The window split state for the 2% of the dataset must be decreasing
              * 4) The close from the current 15-minute-interval candlestick must be lower than the previous one.
+             * 5) One of the long window states must be less than "Increasing Strongly".
              */
             if (
                 (!evt || evt.k != "r") &&
                 this.priceSnapshots[0].o > this.priceSnapshots.at(-1).c &&
                 windowSplitStates.s2.s <= -1 &&
-                this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c
+                this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c &&
+                (
+                    windowSplitStates.s100.s < 2 || windowSplitStates.s75.s < 2 || 
+                    windowSplitStates.s50.s < 2 || windowSplitStates.s25.s < 2
+                ) 
             ) {
                 /**
                  * Retrieve the active KeyZone from below (if any). A Support KeyZone is active if:
@@ -383,12 +388,17 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              * 2) The initial price snapshot must be lower than the current(Increased)
              * 3) The window split state for the 2% of the dataset must be increasing
              * 4) The close from the current 15-minute-interval candlestick must be higher than the previous one.
+             * 5) One of the long window states must be greater than "Decreasing Strongly".
              */
             else if (
                 (!evt || evt.k != "s") &&
                 this.priceSnapshots[0].o < this.priceSnapshots.at(-1).c &&
                 windowSplitStates.s2.s >= 1 &&
-                this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c
+                this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c &&
+                (
+                    windowSplitStates.s100.s > -2 || windowSplitStates.s75.s > -2 || 
+                    windowSplitStates.s50.s > -2 || windowSplitStates.s25.s > -2
+                )
             ) {
                 /**
                  * Retrieve the active KeyZone from above (if any). A Resistance KeyZone is active if:
