@@ -58,7 +58,7 @@ export class CampaignModel implements ICampaignModel {
         // Retrieve the last record
         const {rows}: IQueryResult = await this._db.query({
             text: `SELECT data FROM ${this._db.tn.campaign_records} ORDER BY start DESC LIMIT 1`,
-            values: [  ]
+            values: []
         });
 
         // If no results were found, return undefined

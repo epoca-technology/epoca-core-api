@@ -23,10 +23,10 @@ import {
     IPositionService,
     IPositionStrategy,
     IPositionValidations,
-    IPositionInteractions,
     IActivePositions,
     IActivePositionHeadlines,
-    IPositionUtilities
+    IPositionUtilities,
+    IPositionExitStrategy
 } from "./interfaces";
 
 
@@ -78,11 +78,8 @@ export class PositionService implements IPositionService {
 
     /**
      * Active Positions
-     * Epoca is capable of managing up to 9 simultaneous positions. Once 
-     * a new position comes into existance, the system builds all the 
-     * necessary information, creates a stop-loss order in the exchange
-     * and monitors it. When is closed, the payload is stored in both,
-     * record and headline format.
+     * Epoca is capable of managing up to 2 positions (1 per side) simultaneous.
+     * Additionally, it can increase or close them accordingly.
      */
     private readonly btcSymbol: string = "BTCUSDT";
     private active: IActivePositions = { LONG: null, SHORT: null };
@@ -98,26 +95,12 @@ export class PositionService implements IPositionService {
      * record contains the following data:
      * 0 -> Mark Price
      * 1 -> Gain%
-     * 2 -> Gain Drawdown%
      */
     private activeCandlestick: {[side: string]: IActivePositionCandlestick|null} = {
         LONG: null,
         SHORT: null
     };
-    private readonly candlestickIntervalSeconds: number = 900; // ~15 minutes
-
-
-
-    /**
-     * Position Interactions
-     * If strategy.reopen_if_better_duration_minutes is greater than 0, whenever a position
-     * is opened, it stores the price that needs to be bettered, as well as the time in which only 
-     * "better" positions can be reopened based on the side.
-     */
-    private positionInteractions: IPositionInteractions = {
-        LONG:  { price: 0, until: 0 },
-        SHORT: { price: 0, until: 0 }
-    };
+    private readonly candlestickIntervalMinutes: number = 60; // ~1 hour
 
 
 
@@ -239,64 +222,28 @@ export class PositionService implements IPositionService {
 
         /**
          * Only proceed if the following is met:
-         * 1) Trading is enabled for the side.
-         * 2) There isn't an active position for the side.
+         * 1) The signal must contain the BTC Symbol.
+         * 2) Trading is enabled for the side.
+         * 3) There isn't an active position for the side or the position
+         * is inreaseable.
          */
         if (
-            (side == "LONG" && this.strategy.long_status && !this.active["LONG"]) || 
-            (side == "SHORT" && this.strategy.short_status && !this.active["SHORT"])
+            signal.s.includes(this.btcSymbol) &&
+            (
+                (side == "LONG" && this.strategy.long_status) ||
+                (side == "SHORT" && this.strategy.short_status)
+            ) &&
+            (
+                !this.active[side] || 
+                this._positionUtils.canSideBeIncreased(
+                    side, 
+                    this.active[side].entry_price, 
+                    this.currentPrice,
+                    this.active[side].notional
+                )
+            )
         ) {
-            /**
-             * Evaluate if the position can be opened based on the availability of 
-             * the side as well as the last interacted price
-             */
-            let canBeOpened: boolean = true;
-            if (
-                this.strategy.reopen_if_better_duration_minutes > 0 &&
-                this.positionInteractions[side].price != 0 &&
-                Date.now() <= this.positionInteractions[side].until
-            ) {
-                // In the case of a long, the new position's price must be lower than the previous one
-                if (side == "LONG") {
-                    canBeOpened = this.currentPrice < this.positionInteractions[side].price;
-                }
-
-                // In the case of a short, the new position's price must be higher than the previous one
-                else {
-                    canBeOpened = this.currentPrice > this.positionInteractions[side].price;
-                }
-            }
-
-            // If the position can be opened, proceed
-            if (canBeOpened) {
-                // Init the list of tradeable symbols
-                let tradeableSymbols: string[] = [];
-
-                // If the Bitcoin Only Strategy is enabled, check if a signal was issued
-                if (this.strategy.bitcoin_only && signal.s.includes(this.btcSymbol)) {
-                    tradeableSymbols = [ this.btcSymbol ];
-                }
-
-                // Otherwise, the multicoin system is enabled
-                else if (!this.strategy.bitcoin_only) {
-                    tradeableSymbols = signal.s.filter((s) => !this.strategy.low_volatility_coins.includes(s));
-                }
-
-                // If possible, open a position for the symbol placed in the first index
-                if (tradeableSymbols.length) {
-                    await this._positionUtils.openPosition(
-                        side, 
-                        tradeableSymbols[0],
-                        this.strategy.position_size,
-                        this.strategy.leverage
-                    );
-                }
-            } else {
-                let msg: string = `Warning: The ${side} Position was not opened because the price (${this.currentPrice}) `;
-                msg += `is worse than the previous position (${this.positionInteractions[side].price}).`
-                console.log(msg);
-                this._apiError.log("PositionService.onNewSignal", msg);
-            }
+            await this._positionUtils.openPosition(side, this.btcSymbol);
         }
     }
 
@@ -429,40 +376,8 @@ export class PositionService implements IPositionService {
             this.active[pos.positionSide].open,
             this.active[pos.positionSide].mark_price,
             this.active[pos.positionSide].gain,
-            this.candlestickIntervalSeconds
+            this.candlestickIntervalMinutes
         );
-
-        // Attempt to create the stop-loss order
-        try {
-            this.active[pos.positionSide].stop_loss_order = await this._positionUtils.createStopMarketOrder(
-                pos.symbol,
-                pos.positionSide,
-                Math.abs(this.active[pos.positionSide].position_amount),
-                this.active[pos.positionSide].stop_loss_price
-            );
-        } catch (e) {
-            console.log(e);
-            this._apiError.log("PositionService.onNewPosition.createStopMarketOrder", e);
-        }
-
-        // If reopen_if_better_duration_minutes is enabled, store the interaction data
-        if (this.strategy.reopen_if_better_duration_minutes > 0) {
-            /**
-             * Alter the current price based on the side in order to prevent
-             * position reopening on a losing range.
-             */
-            const adjPrice: number = <number>this._utils.alterNumberByPercentage(
-                this.currentPrice,
-                this.active[pos.positionSide].side == "LONG" ? 
-                    -(this.strategy.reopen_if_better_price_adjustment): this.strategy.reopen_if_better_price_adjustment
-            );
-
-            // Finally, store the data
-            this.positionInteractions[this.active[pos.positionSide].side] = {
-                price: adjPrice,
-                until: moment().add(this.strategy.reopen_if_better_duration_minutes, "minutes").valueOf()
-            }
-        }
 
         // Notify users if the leverage is missconfigured
         if (this.active[pos.positionSide].leverage != this.strategy.leverage) {
@@ -509,12 +424,25 @@ export class PositionService implements IPositionService {
 
         // Update general data
         this.active[pos.positionSide].mark_price = markPrice;
+        this.active[pos.positionSide].entry_price = <number>this._utils.outputNumber(pos.entryPrice, {dp: this.active[pos.positionSide].coin.pricePrecision});
         this.active[pos.positionSide].liquidation_price = <number>this._utils.outputNumber(pos.liquidationPrice, {dp: this.active[pos.positionSide].coin.pricePrecision});
         this.active[pos.positionSide].unrealized_pnl = <number>this._utils.outputNumber(pos.unRealizedProfit);
         this.active[pos.positionSide].isolated_wallet = <number>this._utils.outputNumber(pos.isolatedWallet);
         this.active[pos.positionSide].isolated_margin = <number>this._utils.outputNumber(pos.isolatedMargin);
         this.active[pos.positionSide].position_amount = <number>this._utils.outputNumber(pos.positionAmt, { dp: this.active[pos.positionSide].coin.quantityPrecision });
         this.active[pos.positionSide].notional = <number>this._utils.outputNumber(pos.notional);
+
+        // Update the exit strategy
+        const exit: IPositionExitStrategy = this._positionUtils.calculatePositionExitStrategy(
+            pos.positionSide, 
+            this.active[pos.positionSide].entry_price, 
+            this.active[pos.positionSide].coin.pricePrecision
+        );
+        this.active[pos.positionSide].take_profit_price_1 = exit.take_profit_price_1;
+        this.active[pos.positionSide].take_profit_price_2 = exit.take_profit_price_2;
+        this.active[pos.positionSide].take_profit_price_3 = exit.take_profit_price_3;
+        this.active[pos.positionSide].take_profit_price_4 = exit.take_profit_price_4;
+        this.active[pos.positionSide].take_profit_price_5 = exit.take_profit_price_5;
 
         // Update gain data
         const gs: IPositionGainState = this._positionUtils.calculateGainState(
@@ -533,27 +461,17 @@ export class PositionService implements IPositionService {
         if (current_ts >= this.activeCandlestick[pos.positionSide].ct) {
             this.active[pos.positionSide].history.push(this._positionUtils.buildCandlestickRecord(this.activeCandlestick[pos.positionSide]));
             delete this.activeCandlestick[pos.positionSide];
-            this.activeCandlestick[pos.positionSide] = this._positionUtils.buildNewActiveCandlestick(current_ts, markPrice, gs.gain, this.candlestickIntervalSeconds);
+            this.activeCandlestick[pos.positionSide] = this._positionUtils.buildNewActiveCandlestick(current_ts, markPrice, gs.gain, this.candlestickIntervalMinutes);
         }
 
-        /* Check if the position should be closed */
-        
-        // If the stop loss has been hit, close the position
-        if (
-            (this.active[pos.positionSide].side == "LONG" && markPrice <= this.active[pos.positionSide].stop_loss_price) ||
-            (this.active[pos.positionSide].side == "SHORT" && markPrice >= this.active[pos.positionSide].stop_loss_price)
-        ) {
-            await this.closePosition(pos.positionSide);
-        }
 
         /**
-         * Otherwise, check if a position should be reduced based on
-         * the current gain & window states.
+         * Check if a position should be reduced based on the current gain & window states.
          * 1) There must be an active take profit level
          * 2) The window state must be increasing for a LONG or decreasing for a SHORT.
          * 3) The current time must be greater than the next reduction timestamp set by the level.
          */
-        else if (
+        if (
             gs.active_tp_level !== undefined &&
             (
                 (pos.positionSide == "LONG" && this.windowState > 0) ||

@@ -182,14 +182,24 @@ export class PositionValidations implements IPositionValidations {
             Received: ${newStrategy.position_size}`, 30003));
         }
 
-        // Validate the reopen if better restriction
-        if (typeof newStrategy.reopen_if_better_duration_minutes != "number" || !this._validations.numberValid(newStrategy.reopen_if_better_duration_minutes, 0, 720)) {
-            throw new Error(this._utils.buildApiError(`The reopen_if_better_duration_minutes must be a valid number ranging 0-720. 
-            Received: ${newStrategy.reopen_if_better_duration_minutes}`, 30016));
+        // Validate the increase price improvement requirement
+        if (
+            typeof newStrategy.increase_side_on_price_improvement != "number" || 
+            !this._validations.numberValid(newStrategy.increase_side_on_price_improvement, 0.1, 100)) {
+            throw new Error(this._utils.buildApiError(`The position size must be a valid number ranging 0.1-100. 
+            Received: ${newStrategy.increase_side_on_price_improvement}`, 30002));
         }
-        if (typeof newStrategy.reopen_if_better_price_adjustment != "number" || !this._validations.numberValid(newStrategy.reopen_if_better_price_adjustment, 0.01, 10)) {
-            throw new Error(this._utils.buildApiError(`The reopen_if_better_price_adjustment must be a valid number ranging 0.01 - 10. 
-            Received: ${newStrategy.reopen_if_better_price_adjustment}`, 30017));
+
+        // Validate the side increase limit
+        if (typeof newStrategy.side_increase_limit != "number" || !this._validations.numberValid(newStrategy.side_increase_limit, 1, 1000)) {
+            throw new Error(this._utils.buildApiError(`The side_increase_limit must be a valid number ranging 1-1,000. 
+            Received: ${newStrategy.side_increase_limit}`, 30016));
+        }
+
+        // Validate the side min percentage
+        if (typeof newStrategy.side_min_percentage != "number" || !this._validations.numberValid(newStrategy.side_min_percentage, 1, 100)) {
+            throw new Error(this._utils.buildApiError(`The side_min_percentage must be a valid number ranging 1-100. 
+            Received: ${newStrategy.side_min_percentage}`, 30017));
         }
 
         // Validate the take profit 1
@@ -257,25 +267,6 @@ export class PositionValidations implements IPositionValidations {
             console.log(newStrategy);
             throw new Error(this._utils.buildApiError(`The price change requirements in the take profits must be provided
             in ascending order.`, 30006));
-        }
-
-        // Validate the stop loss
-        if (typeof newStrategy.stop_loss != "number" || !this._validations.numberValid(newStrategy.stop_loss, 0.1, 20)) {
-            throw new Error(this._utils.buildApiError(`The stop loss must be a valid number ranging 0.1-20. 
-            Received: ${newStrategy.stop_loss}`, 30002));
-        }
-
-        // Validate the low volatility coins
-        if (!Array.isArray(newStrategy.low_volatility_coins) || !newStrategy.low_volatility_coins.length) {
-            console.log(newStrategy.low_volatility_coins);
-            throw new Error(this._utils.buildApiError(`The low volatility coins list provided is invalid.`, 30019));
-        }
-        const { installed, supported, scores } = this._coins.getCoinsSummary();
-        for (let symbol of newStrategy.low_volatility_coins) {
-            if (!supported[symbol]) {
-                throw new Error(this._utils.buildApiError(`The symbol ${symbol} cannot be in the low volatility list as it 
-                is not supported by the exchange.`, 30018));
-            }
         }
     }
 

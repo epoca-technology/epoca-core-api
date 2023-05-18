@@ -612,7 +612,7 @@
 
 30001: `The leverage must be a valid number ranging 2-20. Received: ${newStrategy.leverage}`
 
-30002: `The stop loss must be a valid number ranging 0.5-10. Received: ${newStrategy.stop_loss}`
+30002: `The position size must be a valid number ranging 0.1-100. Received: ${newStrategy.increase_side_on_price_improvement}`
 
 30003: `The position size must be a valid number ranging 25-10,000. Received: ${newStrategy.position_size}`
 
@@ -640,13 +640,13 @@
 
 30015: `The pos. action payloads query is larger than the permitted data limit. Limit: ${dataLimit}, Received: ${difference}`
 
-30016: `The reopen_if_better_duration_minutes must be a valid number ranging 1-720. Received: ${newStrategy.reopen_if_better_duration_minutes}`
+30016: `The side_increase_limit must be a valid number ranging 1-1,000. Received: ${newStrategy.side_increase_limit}`
 
-30017: `The reopen_if_better_price_adjustment must be a valid number ranging 0.01 - 10.`
+30017: `The side_min_percentage must be a valid number ranging 1-100. Received: ${newStrategy.side_min_percentage}`
 
-30018: `The symbol ${symbol} cannot be in the low volatility list as it has not yet been installed.`
+30018: ``
 
-30019: `The low volatility coins list provided is invalid.`
+30019: ``
 
 30020: ``
 

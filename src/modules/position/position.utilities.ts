@@ -1,11 +1,9 @@
 import {inject, injectable} from "inversify";
 import { BigNumber } from "bignumber.js";
-import { Subscription } from "rxjs";
 import * as moment from "moment";
 import { SYMBOLS } from "../../ioc";
 import { 
     IBinanceActivePosition, 
-    IBinancePositionActionSide, 
     IBinancePositionSide, 
     IBinanceService,
     IBinanceTradeExecutionPayload, 
@@ -16,20 +14,14 @@ import { IApiErrorService } from "../api-error";
 import { IUtilitiesService } from "../utilities";
 import { 
     IActivePositionCandlestick,
-    IPositionActionKind,
-    IPositionActionRecord,
     IPositionCandlestick,
     IPositionCandlestickRecord,
     IPositionExitStrategy,
     IPositionGainState,
-    IPositionHeadline,
     IPositionModel,
     IPositionRecord,
     IPositionUtilities,
     IPositionStrategy,
-    IPositionValidations,
-    IPositionInteractions,
-    IActivePositions,
     IActivePositionHeadlines,
     ITakeProfitLevelID
 } from "./interfaces";
@@ -63,6 +55,17 @@ export class PositionUtilities implements IPositionUtilities {
 
 
     /**
+     * Maximum Side Notional
+     * Sides can be increased for as long as all the requirements are met.
+     * However, once the position notional reaches maxSideNotional, it 
+     * will not be increased until reductions take place.
+     */
+    private maxSideNotional: number;
+
+
+
+
+    /**
      * Minimum Reduction Amount
      * Exchanges restrict the minimum amount that can be executed on a 
      * single trade. 
@@ -71,6 +74,8 @@ export class PositionUtilities implements IPositionUtilities {
 
 
 
+
+    
 
     constructor() {}
 
@@ -210,7 +215,7 @@ export class PositionUtilities implements IPositionUtilities {
             <number>this._utils.calculatePercentageOutOfTotal(positionAmountNotional, originalNotional);
 
         // If there is less than 30% of the position remaining, close the whole thing
-        if (remaining <= 30) { return 1 }
+        if (remaining <= this.strategy.side_min_percentage) { return 1 }
 
         // Otherwise, calculate the size of the chunk that will be reduced
         else {
@@ -318,8 +323,6 @@ export class PositionUtilities implements IPositionUtilities {
                 take_profit_4: [],
                 take_profit_5: [],
             },
-            stop_loss_price: exit.stop_loss_price,
-            stop_loss_order: undefined,
 
             // Gain Data
             gain: 0,
@@ -341,7 +344,7 @@ export class PositionUtilities implements IPositionUtilities {
      * @param pricePrecision 
      * @returns IPositionExitStrategy
      */
-    private calculatePositionExitStrategy(
+    public calculatePositionExitStrategy(
         side: IBinancePositionSide, 
         entryPrice: number, 
         pricePrecision: number
@@ -370,11 +373,6 @@ export class PositionUtilities implements IPositionUtilities {
             take_profit_price_5: <number>this._utils.alterNumberByPercentage(
                 entryPrice, 
                 side == "LONG" ? this.strategy.take_profit_5.price_change_requirement: -(this.strategy.take_profit_5.price_change_requirement),
-                { dp: pricePrecision }
-            ),
-            stop_loss_price: <number>this._utils.alterNumberByPercentage(
-                entryPrice, 
-                side == "LONG" ? -(this.strategy.stop_loss): this.strategy.stop_loss,
                 { dp: pricePrecision }
             )
         }
@@ -451,18 +449,18 @@ export class PositionUtilities implements IPositionUtilities {
      * @param openTime 
      * @param markPrice 
      * @param gain 
-     * @param intervalSeconds 
+     * @param intervalMinutes 
      * @returns IActivePositionCandlestick
      */
     public buildNewActiveCandlestick(
         openTime: number, 
         markPrice: number, 
         gain: number, 
-        intervalSeconds: number
+        intervalMinutes: number
     ): IActivePositionCandlestick {
         return {
             ot: openTime,
-            ct: moment(openTime).add(intervalSeconds, "seconds").valueOf() - 1,
+            ct: moment(openTime).add(intervalMinutes, "minutes").valueOf() - 1,
             markPrice: { o: markPrice, h: markPrice, l: markPrice, c: markPrice},
             gain: { o: gain, h: gain, l: gain, c: gain},
         }
@@ -496,23 +494,21 @@ export class PositionUtilities implements IPositionUtilities {
 
 
 
+
+
+
     /**
      * Opens a new position for a provided symbol on the given side.
      * @param side 
      * @param symbol 
      * @returns Promise<void>
      */
-    public async openPosition(
-        side: IBinancePositionSide, 
-        symbol: string,
-        positionSize: number,
-        leverage: number
-    ): Promise<void> {
+    public async openPosition(side: IBinancePositionSide, symbol: string): Promise<void> {
         // Firstly, retrieve the coin and the price
         const { coin, price } = this._coin.getInstalledCoinAndPrice(symbol);
 
         // Calculate the notional size
-        const notional: BigNumber = new BigNumber(positionSize).times(leverage);
+        const notional: BigNumber = new BigNumber(this.strategy.position_size).times(this.strategy.leverage);
 
         // Convert the notional into the coin, resulting in the leveraged position amount
         const amount: number = <number>this._utils.outputNumber(notional.dividedBy(price), {dp: coin.quantityPrecision, ru: false});
@@ -592,47 +588,6 @@ export class PositionUtilities implements IPositionUtilities {
 
 
 
-    /**
-     * Attempts to create a STOP_MARKET order for a given symbol. Once it 
-     * completes, it returns the execution payload if returned by Binance.
-     * @param symbol 
-     * @param side 
-     * @param quantity 
-     * @param stopPrice 
-     * @returns Promise<IBinanceTradeExecutionPayload|undefined>
-     */
-    public async createStopMarketOrder(
-        symbol: string, 
-        side: IBinancePositionSide, 
-        quantity: number,
-        stopPrice: number
-    ): Promise<IBinanceTradeExecutionPayload|undefined> {
-        // Derive the action side from the position side
-        let actionSide: IBinancePositionActionSide = side == "LONG" ? "SELL": "BUY";
-
-        // Attempt to create the stop loss order in a persistant way
-        try { return await this._binance.order(symbol, side, actionSide, quantity, stopPrice) }
-        catch (e) {
-            console.log(`1/3 ) Error when creating STOP_MARKET order for ${symbol}: `, e);
-            await this._utils.asyncDelay(3);
-            try { return await this._binance.order(symbol, side, actionSide, quantity, stopPrice) }
-            catch (e) {
-                console.log(`2/3 ) Error when creating STOP_MARKET order for ${symbol}: `, e);
-                await this._utils.asyncDelay(5);
-                try { return await this._binance.order(symbol, side, actionSide, quantity, stopPrice) }
-                catch (e) {
-                    console.log(`3/3 ) Error when creating STOP_MARKET order for ${symbol}: `, e);
-                    await this._utils.asyncDelay(7);
-                    return await this._binance.order(symbol, side, actionSide, quantity, stopPrice);
-                }
-            }
-        }
-    }
-
-
-
-
-
 
 
 
@@ -667,16 +622,14 @@ export class PositionUtilities implements IPositionUtilities {
                 o: long.open,
                 s: long.coin.symbol, 
                 sd: long.side,
-                g: long.gain,
-                slo: long.stop_loss_order && typeof long.stop_loss_order == "object" ? true: false
+                g: long.gain
             }: null,
             SHORT: short ? {
                 id: short.id, 
                 o: short.open,
                 s: short.coin.symbol, 
                 sd: short.side,
-                g: short.gain,
-                slo: short.stop_loss_order && typeof short.stop_loss_order == "object" ? true: false
+                g: short.gain
             }: null,
         };
     }
@@ -705,13 +658,70 @@ export class PositionUtilities implements IPositionUtilities {
 
 
 
+
+
+
+    /**
+     * Checks if a position can be increased for a given side.
+     * @param side 
+     * @param entryPrice 
+     * @param currentPrice 
+     * @param notional 
+     * @returns boolean
+     */
+    public canSideBeIncreased(
+        side: IBinancePositionSide, 
+        entryPrice: number, 
+        currentPrice: number, 
+        notional: number
+    ): boolean { 
+        // Only proceed if the side has not reached its limit
+        if (Math.abs(notional) < this.maxSideNotional) {
+            // Check if a LONG can be increased
+            if (side == "LONG") {
+                // Calculate the price improvement requirement
+                const requirement: number = <number>this._utils.alterNumberByPercentage(
+                    entryPrice, 
+                    -(this.strategy.increase_side_on_price_improvement)
+                );
+
+                // The current price must be less than or equals to the requirement
+                return currentPrice <= requirement;
+            }
+
+            // Otherwise, evaluate a short
+            else {
+                // Calculate the price improvement requirement
+                const requirement: number = <number>this._utils.alterNumberByPercentage(
+                    entryPrice, 
+                    this.strategy.increase_side_on_price_improvement
+                );
+
+                // The current price must be greater than or equals to the requirement
+                return currentPrice >= requirement;
+            }
+        } else { return false }
+    }
+
+
+
+
+
+
+
     /**
      * Sets the strategy on the local property. This function must
      * be invoked when the position module initializes and when
      * the strategy is updated.
      * @param newStrategy 
      */
-    public strategyChanged(newStrategy: IPositionStrategy): void { this.strategy = newStrategy }
+    public strategyChanged(newStrategy: IPositionStrategy): void { 
+        // Update the local copy
+        this.strategy = newStrategy;
+
+        // Update the maximum side notional
+        this.maxSideNotional = this.calculateMaxSideNotional();
+    }
 
 
 
@@ -727,20 +737,37 @@ export class PositionUtilities implements IPositionUtilities {
         return {
             long_status: false,
             short_status: false,
-            bitcoin_only: true,
             leverage: 10,
-            position_size: 50,
-            take_profit_1: { price_change_requirement: 0.30, reduction_size: 0.05,   reduction_interval_minutes: 30.0 },
-            take_profit_2: { price_change_requirement: 0.55, reduction_size: 0.10,   reduction_interval_minutes: 15.0 },
-            take_profit_3: { price_change_requirement: 0.75, reduction_size: 0.15,   reduction_interval_minutes: 10.0 },
-            take_profit_4: { price_change_requirement: 1.00, reduction_size: 0.20,   reduction_interval_minutes:  7.5 },
-            take_profit_5: { price_change_requirement: 1.50, reduction_size: 0.25,   reduction_interval_minutes:  5.0 },
-            stop_loss: 0.5,
-            reopen_if_better_duration_minutes: 300,
-            reopen_if_better_price_adjustment: 0.5,
-            low_volatility_coins: [
-                "BTCUSDT", "BNBUSDT", "ADAUSDT", "BCHUSDT", "ETHUSDT", "XRPUSDT", "TRXUSDT", "SOLUSDT"
-            ]
+            position_size: 25,
+            increase_side_on_price_improvement: 1.5,
+            side_increase_limit: 5,
+            side_min_percentage: 30,
+            take_profit_1: { price_change_requirement: 0.50, reduction_size: 0.05,   reduction_interval_minutes: 30.0 },
+            take_profit_2: { price_change_requirement: 0.80, reduction_size: 0.10,   reduction_interval_minutes: 15.0 },
+            take_profit_3: { price_change_requirement: 1.25, reduction_size: 0.15,   reduction_interval_minutes: 10.0 },
+            take_profit_4: { price_change_requirement: 1.75, reduction_size: 0.20,   reduction_interval_minutes:  7.5 },
+            take_profit_5: { price_change_requirement: 2.50, reduction_size: 0.25,   reduction_interval_minutes:  5.0 }
         }
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Calculates the maximum notional a side can have at a time.
+     * This value is calculated whenever the position strategy is
+     * initialized or updated.
+     * @returns number
+     */
+    public calculateMaxSideNotional(): number {
+        const originalNotional: BigNumber = new BigNumber(this.strategy.position_size).times(this.strategy.leverage);
+        return <number>this._utils.outputNumber(originalNotional.times(this.strategy.side_increase_limit));
     }
 }

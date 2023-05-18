@@ -455,7 +455,7 @@ export class SignalService implements ISignalService {
                     },
                     trend_sum: {
                         enabled: true,
-                        trend_sum: -0.15
+                        trend_sum: -3
                     },
                     trend_state: {
                         enabled: true,
@@ -476,7 +476,7 @@ export class SignalService implements ISignalService {
                     },
                     trend_sum: {
                         enabled: true,
-                        trend_sum: 0.15
+                        trend_sum: 3
                     },
                     trend_state: {
                         enabled: true,
