@@ -70,7 +70,8 @@ export class PositionService implements IPositionService {
      * can be used to reduce positions.
      */
     private currentPrice: number;
-    private windowState: IStateType;
+    private windowStateS2: IStateType;
+    private windowStateS5: IStateType;
     private ms: IMarketState;
     private marketStateSub: Subscription;
 
@@ -155,7 +156,8 @@ export class PositionService implements IPositionService {
         this.marketStateSub = this._ms.active.subscribe(async (ms: IMarketState) => {
             this.ms = ms;
             this.currentPrice = this.ms.window.w.length ? this.ms.window.w.at(-1).c: 0;
-            this.windowState = this.ms.window.ss.s2.s;
+            this.windowStateS2 = this.ms.window.ss.s2.s;
+            this.windowStateS5 = this.ms.window.ss.s5.s;
         });
 
         // Initialize the intervals
@@ -474,8 +476,8 @@ export class PositionService implements IPositionService {
         if (
             gs.active_tp_level !== undefined &&
             (
-                (pos.positionSide == "LONG" && this.windowState > 0) ||
-                (pos.positionSide == "SHORT" && this.windowState < 0)
+                (pos.positionSide == "LONG" && this.windowStateS2 > 0 && this.windowStateS5 > 0) ||
+                (pos.positionSide == "SHORT" && this.windowStateS2 < 0 && this.windowStateS5 < 0)
             ) &&
             (
                 !this.active[pos.positionSide].reductions[gs.active_tp_level].length || 
