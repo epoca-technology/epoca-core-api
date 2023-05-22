@@ -182,14 +182,6 @@ export class PositionValidations implements IPositionValidations {
             Received: ${newStrategy.position_size}`, 30003));
         }
 
-        // Validate the increase price improvement requirement
-        if (
-            typeof newStrategy.increase_side_on_price_improvement != "number" || 
-            !this._validations.numberValid(newStrategy.increase_side_on_price_improvement, 0.1, 100)) {
-            throw new Error(this._utils.buildApiError(`The position size must be a valid number ranging 0.1-100. 
-            Received: ${newStrategy.increase_side_on_price_improvement}`, 30002));
-        }
-
         // Validate the side increase limit
         if (typeof newStrategy.side_increase_limit != "number" || !this._validations.numberValid(newStrategy.side_increase_limit, 1, 1000)) {
             throw new Error(this._utils.buildApiError(`The side_increase_limit must be a valid number ranging 1-1,000. 
@@ -200,6 +192,22 @@ export class PositionValidations implements IPositionValidations {
         if (typeof newStrategy.side_min_percentage != "number" || !this._validations.numberValid(newStrategy.side_min_percentage, 1, 100)) {
             throw new Error(this._utils.buildApiError(`The side_min_percentage must be a valid number ranging 1-100. 
             Received: ${newStrategy.side_min_percentage}`, 30017));
+        }
+
+        // Validate the increase price improvement requirement
+        if (
+            typeof newStrategy.increase_side_on_price_improvement != "number" || 
+            !this._validations.numberValid(newStrategy.increase_side_on_price_improvement, 0.1, 100)) {
+            throw new Error(this._utils.buildApiError(`The increase_side_on_price_improvement must be a valid number ranging 0.1-100. 
+            Received: ${newStrategy.increase_side_on_price_improvement}`, 30002));
+        }
+
+        // Validate the side increase idle hours
+        if (
+            typeof newStrategy.side_increase_idle_hours != "number" || 
+            !this._validations.numberValid(newStrategy.side_increase_idle_hours, 1, 1000)) {
+            throw new Error(this._utils.buildApiError(`The side_increase_idle_hours must be a valid number ranging 1-1000. 
+            Received: ${newStrategy.side_increase_idle_hours}`, 30018));
         }
 
         // Validate the take profit 1

@@ -277,6 +277,9 @@ export class PositionUtilities implements IPositionUtilities {
      * @returns IPositionRecord
      */
     public buildNewPositionRecord(pos: IBinanceActivePosition): IPositionRecord {
+        // Init the time
+        const ts: number = Date.now();
+
         // Retrieve the coin
         const coin: ICoin = this._coin.getInstalledCoin(pos.symbol);
 
@@ -295,7 +298,7 @@ export class PositionUtilities implements IPositionUtilities {
         return {
             // General Data
             id: this._utils.generateID(),
-            open: Date.now(),
+            open: ts,
             close: undefined,
             coin: coin,
             side: pos.positionSide,
@@ -327,6 +330,9 @@ export class PositionUtilities implements IPositionUtilities {
             // Gain Data
             gain: 0,
             highest_gain: 0,
+
+            // Next Increase
+            next_increase: moment(ts).add(this.strategy.side_increase_idle_hours, "hours").valueOf(),
 
             // History
             history: []
@@ -667,16 +673,18 @@ export class PositionUtilities implements IPositionUtilities {
      * @param entryPrice 
      * @param currentPrice 
      * @param notional 
+     * @param nextIncrease 
      * @returns boolean
      */
     public canSideBeIncreased(
         side: IBinancePositionSide, 
         entryPrice: number, 
         currentPrice: number, 
-        notional: number
+        notional: number,
+        nextIncrease: number,
     ): boolean { 
-        // Only proceed if the side has not reached its limit
-        if (Math.abs(notional) < this.maxSideNotional) {
+        // Only proceed if the side has not reached its limit and the idle has faded away
+        if (Math.abs(notional) < this.maxSideNotional && Date.now() >= nextIncrease) {
             // Check if a LONG can be increased
             if (side == "LONG") {
                 // Calculate the price improvement requirement
@@ -739,9 +747,10 @@ export class PositionUtilities implements IPositionUtilities {
             short_status: false,
             leverage: 10,
             position_size: 25,
-            increase_side_on_price_improvement: 1.5,
             side_increase_limit: 5,
             side_min_percentage: 30,
+            increase_side_on_price_improvement: 3,
+            side_increase_idle_hours: 72,
             take_profit_1: { price_change_requirement: 0.50, reduction_size: 0.05,   reduction_interval_minutes: 30.0 },
             take_profit_2: { price_change_requirement: 0.80, reduction_size: 0.10,   reduction_interval_minutes: 15.0 },
             take_profit_3: { price_change_requirement: 1.25, reduction_size: 0.15,   reduction_interval_minutes: 10.0 },

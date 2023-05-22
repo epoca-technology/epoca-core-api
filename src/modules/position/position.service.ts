@@ -241,10 +241,17 @@ export class PositionService implements IPositionService {
                     side, 
                     this.active[side].entry_price, 
                     this.currentPrice,
-                    this.active[side].notional
+                    this.active[side].notional,
+                    this.active[side].next_increase
                 )
             )
         ) {
+            // If the side is being increased, set the date for the next increase
+            if (this.active[side]) {
+                this.active[side].next_increase = moment().add(this.strategy.side_increase_idle_hours, "hours").valueOf()
+            }
+
+            // Open the position
             await this._positionUtils.openPosition(side, this.btcSymbol);
         }
     }

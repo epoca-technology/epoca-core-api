@@ -644,7 +644,7 @@
 
 30017: `The side_min_percentage must be a valid number ranging 1-100. Received: ${newStrategy.side_min_percentage}`
 
-30018: ``
+30018: `The side_increase_idle_hours must be a valid number ranging 0.1-100. Received: ${newStrategy.side_increase_idle_hours}`
 
 30019: ``
 

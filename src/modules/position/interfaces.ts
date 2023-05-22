@@ -84,7 +84,8 @@ export interface IPositionUtilities {
         side: IBinancePositionSide, 
         entryPrice: number, 
         currentPrice: number, 
-        notional: number
+        notional: number,
+        nextIncrease: number
     ): boolean,
     strategyChanged(newStrategy: IPositionStrategy): void,
     buildDefaultStrategy(): IPositionStrategy,
@@ -215,15 +216,6 @@ export interface IPositionStrategy {
     position_size: number,
 
     /**
-     * Increase Side On Price Improvement%
-     * When a side is opened, the entry price is adjusted and stored based on 
-     * increase_side_on_price_improvement%. This will allow the increasing of 
-     * sides only when the price has improved. Keep in mind that this value
-     * will be updated whenever a position increase takes place.
-     */
-    increase_side_on_price_improvement: number
-
-    /**
      * Side Increase Limit
      * The maximum number of times that a side can be increased. This limit is obtained
      * as follows: (position_size * leverage) * side_increase_limit.
@@ -238,6 +230,22 @@ export interface IPositionStrategy {
      * the position will be fully closed instead.
      */
     side_min_percentage: number,
+
+    /**
+     * Increase Side On Price Improvement%
+     * When a side is opened, the entry price is adjusted and stored based on 
+     * increase_side_on_price_improvement%. This will allow the increasing of 
+     * sides only when the price has improved. Keep in mind that this value
+     * will be updated whenever a position increase takes place.
+     */
+    increase_side_on_price_improvement: number,
+
+    /**
+     * Side Increase Idle Hours
+     * The number of hours that comprise the period in which a side cannot
+     * be increased, regardless of the flucturation of the price.
+     */
+    side_increase_idle_hours: number,
 
     /**
      * Profit Optimization Strategy
@@ -347,6 +355,9 @@ export interface IPositionRecord {
     open: number,
     close: number|undefined, // If undefined, the position is active
 
+    // The time at which the position side can be increased
+    next_increase: number,
+
 
     /* Data Provided by Binance */
 
@@ -416,7 +427,7 @@ export interface IPositionRecord {
 
 
 
-
+    
     /* History */
 
     // The list of packed candlesticks that detail the position's history
