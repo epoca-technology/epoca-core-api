@@ -91,7 +91,7 @@ export class VolumeStateService implements IVolumeStateService {
                 state = state > this.state.s ? state: this.state.s;
 
                 // Activate the stateful timer
-                this.statefulUntil = moment().add(90, "seconds").valueOf();
+                this.statefulUntil = moment().add(5, "minutes").valueOf();
             }
 
             // If there is no longer a state, check if the previous one should be preserved

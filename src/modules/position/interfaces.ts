@@ -483,6 +483,9 @@ export interface IPositionHeadline {
     // The side of the position
     sd: IBinancePositionSide,
 
+    // Isolated Wallet: The total margin (USDT) put into the position.
+    iw: number,
+
     // The gain% the price has moved in favor or against. If losing, the value will be a negative number
     g: number
 }

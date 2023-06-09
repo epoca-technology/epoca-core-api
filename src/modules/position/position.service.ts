@@ -101,7 +101,7 @@ export class PositionService implements IPositionService {
         LONG: null,
         SHORT: null
     };
-    private readonly candlestickIntervalMinutes: number = 60; // ~1 hour
+    private readonly candlestickIntervalMinutes: number = 240; // ~4 hours
 
 
 

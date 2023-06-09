@@ -9,8 +9,6 @@ import {
     IBinanceTradeExecutionPayload, 
 } from "../binance";
 import { ICoin, ICoinsService } from "../market-state";
-import { INotificationService } from "../notification";
-import { IApiErrorService } from "../api-error";
 import { IUtilitiesService } from "../utilities";
 import { 
     IActivePositionCandlestick,
@@ -25,7 +23,6 @@ import {
     IActivePositionHeadlines,
     ITakeProfitLevelID
 } from "./interfaces";
-import { ICandlestickService } from "../candlestick";
 
 
 
@@ -35,10 +32,7 @@ export class PositionUtilities implements IPositionUtilities {
     // Inject dependencies
     @inject(SYMBOLS.PositionModel)              private _model: IPositionModel;
     @inject(SYMBOLS.BinanceService)             private _binance: IBinanceService;
-    @inject(SYMBOLS.CandlestickService)         private _candlestick: ICandlestickService;
     @inject(SYMBOLS.CoinsService)               private _coin: ICoinsService;
-    @inject(SYMBOLS.NotificationService)        private _notification: INotificationService;
-    @inject(SYMBOLS.ApiErrorService)            private _apiError: IApiErrorService;
     @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
 
 
@@ -628,6 +622,7 @@ export class PositionUtilities implements IPositionUtilities {
                 o: long.open,
                 s: long.coin.symbol, 
                 sd: long.side,
+                iw: long.isolated_wallet,
                 g: long.gain
             }: null,
             SHORT: short ? {
@@ -635,6 +630,7 @@ export class PositionUtilities implements IPositionUtilities {
                 o: short.open,
                 s: short.coin.symbol, 
                 sd: short.side,
+                iw: short.isolated_wallet,
                 g: short.gain
             }: null,
         };
@@ -752,10 +748,10 @@ export class PositionUtilities implements IPositionUtilities {
             increase_side_on_price_improvement: 3,
             side_increase_idle_hours: 72,
             take_profit_1: { price_change_requirement: 0.50, reduction_size: 0.05,   reduction_interval_minutes: 180.0 },
-            take_profit_2: { price_change_requirement: 0.80, reduction_size: 0.10,   reduction_interval_minutes: 120.0 },
-            take_profit_3: { price_change_requirement: 1.25, reduction_size: 0.15,   reduction_interval_minutes: 60.0 },
-            take_profit_4: { price_change_requirement: 1.75, reduction_size: 0.20,   reduction_interval_minutes: 30.0 },
-            take_profit_5: { price_change_requirement: 2.50, reduction_size: 0.25,   reduction_interval_minutes:  7.5 }
+            take_profit_2: { price_change_requirement: 1.00, reduction_size: 0.10,   reduction_interval_minutes: 120.0 },
+            take_profit_3: { price_change_requirement: 1.50, reduction_size: 0.15,   reduction_interval_minutes: 60.0 },
+            take_profit_4: { price_change_requirement: 2.00, reduction_size: 0.20,   reduction_interval_minutes: 30.0 },
+            take_profit_5: { price_change_requirement: 3.00, reduction_size: 0.25,   reduction_interval_minutes:  7.5 }
         }
     }
 

@@ -71,7 +71,7 @@ export class PositionValidations implements IPositionValidations {
         }
 
         // Make sure the query does not exceed the data limit
-        const dataLimit: number = 730 * 24 * 60 * 60 * 1000; // ~730 days
+        const dataLimit: number = 1825 * 24 * 60 * 60 * 1000; // ~1825 days
         const difference: number = endAt - startAt;
         if (difference > dataLimit) {
             throw new Error(this._utils.buildApiError(`The positions query is larger than the permitted data limit. 

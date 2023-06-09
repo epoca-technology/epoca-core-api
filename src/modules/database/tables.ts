@@ -500,6 +500,7 @@ export const TABLES: IRawTable[] = [
                 o           BIGINT NOT NULL,
                 s           VARCHAR(20) NOT NULL,
                 sd          VARCHAR(10) NOT NULL,
+                iw          NUMERIC(20,2) NOT NULL,
                 g           NUMERIC(4,2) NOT NULL
             );
             CREATE INDEX IF NOT EXISTS ${tableName}_o ON ${tableName}(o);`

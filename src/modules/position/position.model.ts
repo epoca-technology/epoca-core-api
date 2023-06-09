@@ -70,10 +70,10 @@ export class PositionModel implements IPositionModel {
             // Save the position headline
             await client.query({
                 text: `
-                    INSERT INTO ${this._db.tn.position_headlines}(id, o, s, sd, g) 
-                    VALUES ($1, $2, $3, $4, $5)
+                    INSERT INTO ${this._db.tn.position_headlines}(id, o, s, sd, iw, g) 
+                    VALUES ($1, $2, $3, $4, $5, $6)
                 `,
-                values: [position.id, position.open, position.coin.symbol, position.side, position.gain]
+                values: [position.id, position.open, position.coin.symbol, position.side, position.isolated_wallet, position.gain]
             });
 
             // Finally, commit the writes
@@ -135,7 +135,7 @@ export class PositionModel implements IPositionModel {
         // Execute the query
         const { rows } = await this._db.query({ 
             text: `
-                SELECT id, o, s, sd, g FROM ${this._db.tn.position_headlines} 
+                SELECT id, o, s, sd, iw, g FROM ${this._db.tn.position_headlines} 
                 WHERE o BETWEEN $1 AND $2 ORDER BY o ASC;
             `, 
             values: [startAt, endAt]

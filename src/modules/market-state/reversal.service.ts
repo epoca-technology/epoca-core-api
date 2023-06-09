@@ -958,13 +958,13 @@ export class ReversalService implements IReversalService {
      */
     private buildDefaultConfig(): IReversalConfiguration {
         return {
-            min_event_score: 70,
+            min_event_score: 75,
             event_sort_func: "CHANGE_SUM",
             score_weights: {
-                volume: 10,
-                liquidity: 30,
+                volume: 5,
+                liquidity: 32.5,
                 coins: 35,
-                coins_btc: 25
+                coins_btc: 27.5
             }
         }
     }
