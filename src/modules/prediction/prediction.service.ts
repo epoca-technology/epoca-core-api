@@ -62,7 +62,7 @@ export class PredictionService implements IPredictionService {
      * and stored if there is an active epoch.
      */
     private predictionInterval: any;
-    private readonly intervalSeconds: number = 60;
+    private readonly intervalSeconds: number = 180;
 
 
     /**

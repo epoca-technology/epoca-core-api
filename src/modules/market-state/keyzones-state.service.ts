@@ -347,6 +347,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              * 3) The window split states for the 2% & 5% of the dataset must be decreasing
              * 4) The low & the close from the current 15-minute-interval candlestick must be lower than the previous one.
              * 5) The long window states must be less than "Increasing Strongly".
+             * 6) At least one of the long window states must be "Decreasing Strongly".
              */
             if (
                 (!evt || evt.k != "r") &&
@@ -358,6 +359,10 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 (
                     windowSplitStates.s100.s < 2 && windowSplitStates.s75.s < 2 && 
                     windowSplitStates.s50.s < 2 && windowSplitStates.s25.s < 2
+                ) &&
+                (
+                    windowSplitStates.s100.s <= -2 || windowSplitStates.s75.s <= -2 || 
+                    windowSplitStates.s50.s <= -2 || windowSplitStates.s25.s <= -2
                 ) 
             ) {
                 /**
@@ -391,6 +396,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
              * 3) The window split states for the 2% & 5% of the dataset must be increasing
              * 4) The high & close from the current 15-minute-interval candlestick must be higher than the previous one.
              * 5) The long window states must be greater than "Decreasing Strongly".
+             * 6) At least one of the long window states must be "Increasing Strongly".
              */
             else if (
                 (!evt || evt.k != "s") &&
@@ -402,7 +408,11 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                 (
                     windowSplitStates.s100.s > -2 && windowSplitStates.s75.s > -2 && 
                     windowSplitStates.s50.s > -2 && windowSplitStates.s25.s > -2
-                )
+                ) &&
+                (
+                    windowSplitStates.s100.s >= 2 || windowSplitStates.s75.s >= 2 || 
+                    windowSplitStates.s50.s >= 2 || windowSplitStates.s25.s >= 2
+                ) 
             ) {
                 /**
                  * Retrieve the active KeyZone from above (if any). A Resistance KeyZone is active if:
@@ -1355,7 +1365,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             priceSnapshotsLimit: 5, // ~15 seconds worth
             supportEventDurationSeconds: 1200,      // ~20 mins
             resistanceEventDurationSeconds: 1200,   // ~20 mins
-            eventPriceDistanceLimit: 0.5,
+            eventPriceDistanceLimit: 1,
             keyzoneIdleOnEventMinutes: 30,
             eventScoreRequirement: 5
         }

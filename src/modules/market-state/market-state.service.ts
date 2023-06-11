@@ -68,7 +68,7 @@ export class MarketStateService implements IMarketStateService {
     * Whenever a price state (increasing|decreasing) is detected, it will notify the
     * users in a throttled manner.
     */
-    private readonly priceStateThrottleMinutes: number = 90;
+    private readonly priceStateThrottleMinutes: number = 30;
     private priceStateLastNotification: number|undefined = undefined;
 
 

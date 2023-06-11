@@ -764,7 +764,7 @@ export class NotificationService implements INotificationService {
     public positionHasBeenOpened(pos: IPositionRecord): Promise<void> {
         let desc: string = `The ${pos.side} position has been opened `;
         desc += `at ${this._utils.formatNumber(pos.entry_price, pos.coin.pricePrecision)}$ `;
-        desc += `with a margin of $${this._utils.formatNumber(pos.isolated_margin)}, totaling `;
+        desc += `with a margin of $${this._utils.formatNumber(pos.isolated_wallet)}, totaling `;
         desc += `${this._utils.formatNumber(pos.position_amount, pos.coin.quantityPrecision)} ${pos.coin.symbol}.`;
         return this.broadcast({
             sender: "POSITION",
