@@ -4,11 +4,9 @@ import {
     IKeyZonesConfiguration, 
     ILiquidityConfiguration, 
     IReversalConfiguration, 
-    ITrendStateConfiguration, 
     IWindowStateConfiguration 
 } from "../market-state";
 import { IPositionHeadline, IPositionStrategy } from "../position";
-import { ISignalPolicies } from "../signal";
 
 
 
@@ -415,9 +413,6 @@ export interface ICampaignConfigurationsSnapshot {
     // Window Configuration
     window: IWindowStateConfiguration,
 
-    // Trend Configuration
-    trend: ITrendStateConfiguration,
-
     // Liquidity Configuration
     liquidity: ILiquidityConfiguration,
 
@@ -433,9 +428,6 @@ export interface ICampaignConfigurationsSnapshot {
 
     // Position Strategy Configuration
     strategy: IPositionStrategy,
-
-    // Signal Policies
-    signal_policies: ISignalPolicies
 }
 
 

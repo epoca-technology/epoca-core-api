@@ -7,7 +7,6 @@ import {
     IBinancePositionSide, 
     IBinanceService,
 } from "../binance";
-import { ISignalRecord, ISignalService } from "../signal";
 import { IMarketState, IMarketStateService, IStateType } from "../market-state";
 import { INotificationService } from "../notification";
 import { IApiErrorService } from "../api-error";
@@ -39,7 +38,6 @@ export class PositionService implements IPositionService {
     @inject(SYMBOLS.PositionValidations)        private _validations: IPositionValidations;
     @inject(SYMBOLS.PositionModel)              private _model: IPositionModel;
     @inject(SYMBOLS.BinanceService)             private _binance: IBinanceService;
-    @inject(SYMBOLS.SignalService)              private _signal: ISignalService;
     @inject(SYMBOLS.MarketStateService)         private _ms: IMarketStateService;
     @inject(SYMBOLS.NotificationService)        private _notification: INotificationService;
     @inject(SYMBOLS.ApiErrorService)            private _apiError: IApiErrorService;
@@ -56,15 +54,6 @@ export class PositionService implements IPositionService {
 
 
     /**
-     * Signal
-     * A subscription to the active signal records. Whenever signals
-     * are broadcasted, positions will be opened if possible.
-     */
-    private signalSub: Subscription;
-
-
-
-    /**
      * Market State
      * A subscription to the market state that will be up-to-date and
      * can be used to reduce positions.
@@ -75,6 +64,15 @@ export class PositionService implements IPositionService {
     private ms: IMarketState;
     private marketStateSub: Subscription;
 
+
+
+    /**
+     * Last Reversal ID
+     * The reversal module maintains the state until the KeyZone Event fades away.
+     * Therefore, the signal module must ensure that the signal is only emitted 
+     * once.
+     */
+    private lastReversalID: number|undefined;
 
 
     /**
@@ -140,24 +138,33 @@ export class PositionService implements IPositionService {
         // Initialize the active positions
         await this.refreshActivePositions();
 
-        // Subscribe to the signals
-        this.signalSub = this._signal.active.subscribe(async (s: ISignalRecord|null) => {
-            if (s) {
-                try { await this.onNewSignal(s) } 
-                catch (e) {
-                    console.log(e);
-                    this._apiError.log("PositionService.signalSub.onNewSignal", e);
-                    this._notification.onNewSignalError(e);
-                }
-            }
-        });
-
         // Subscribe to the market state
         this.marketStateSub = this._ms.active.subscribe(async (ms: IMarketState) => {
+            // Populate the general market state values
             this.ms = ms;
             this.currentPrice = this.ms.window.w.length ? this.ms.window.w.at(-1).c: 0;
             this.windowStateS2 = this.ms.window.ss.s2.s;
             this.windowStateS5 = this.ms.window.ss.s5.s;
+
+            /**
+             * A reversal state event has taken place if:
+             * - There is an active KeyZone Event
+             * - There is an active Reversal State and an event has been issued
+             * - The Reversal State Event must include BTC in its symbols
+             */
+            if (
+                ms.keyzones.event && 
+                (ms.keyzones.event.k == "s" || ms.keyzones.event.k == "r") &&
+                (ms.reversal.e && ms.reversal.id != this.lastReversalID) &&
+                ms.reversal.e.s.includes(this.btcSymbol)
+            ) {
+                try { await this.onReversalStateEvent(ms.keyzones.event.k  == "s" ? "LONG": "SHORT") } 
+                catch (e) {
+                    console.log(e);
+                    this._apiError.log("PositionService.marketStateSub.onReversalStateEvent", e);
+                    this._notification.onNewSignalError(e);
+                }
+            }
         });
 
         // Initialize the intervals
@@ -182,7 +189,6 @@ export class PositionService implements IPositionService {
      * Stops the position module entirely.
      */
     public stop(): void { 
-        if (this.signalSub) this.signalSub.unsubscribe();
         if (this.marketStateSub) this.marketStateSub.unsubscribe();
         if (this.activePositionsSyncInterval) clearInterval(this.activePositionsSyncInterval);
         this.activePositionsSyncInterval = undefined;
@@ -212,25 +218,20 @@ export class PositionService implements IPositionService {
 
 
     /**
-     * Triggers whenever there is a new signal. Based on the active 
+     * Triggers whenever there is a new reversal state. Based on the active 
      * positions and the strategy, determines if the given position
-     * should be opened.
+     * should be opened/increased.
      * @param signal 
      * @returns Promise<void>
      */
-    private async onNewSignal(signal: ISignalRecord): Promise<void> {
-        // Init the side
-        const side: IBinancePositionSide = signal.r == 1 ? "LONG": "SHORT";
-
+    private async onReversalStateEvent(side: IBinancePositionSide): Promise<void> {
         /**
          * Only proceed if the following is met:
-         * 1) The signal must contain the BTC Symbol.
-         * 2) Trading is enabled for the side.
-         * 3) There isn't an active position for the side or the position
+         * 1) Trading is enabled for the side.
+         * 2) There isn't an active position for the side or the position
          * is inreaseable.
          */
         if (
-            signal.s.includes(this.btcSymbol) &&
             (
                 (side == "LONG" && this.strategy.long_status) ||
                 (side == "SHORT" && this.strategy.short_status)

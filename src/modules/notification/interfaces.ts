@@ -32,9 +32,6 @@ export interface INotificationService {
     highGPUTemperature(): Promise<void>,
     highGPUMemoryTemperature(): Promise<void>,
 
-    // Prediction Notifications
-    predictionGenerationIssue(error: any): Promise<void>,
-
     // Market State Notifications
     windowState(state: IStateType, change: number, price: number): Promise<void>,
 

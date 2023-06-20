@@ -7,11 +7,9 @@ import {
     IKeyZonesStateService, 
     ILiquidityStateService, 
     IReversalService, 
-    ITrendStateService, 
     IWindowStateService 
 } from "../market-state";
 import { IPositionService } from "../position";
-import { ISignalService } from "../signal";
 import { 
     ICampaignConfigurationsSnapshot,
     ICampaignRecord,
@@ -31,11 +29,9 @@ export class CampaignUtilities implements ICampaignUtilities {
     @inject(SYMBOLS.WindowStateService)         private _window: IWindowStateService;
     @inject(SYMBOLS.LiquidityService)           private _liquidity: ILiquidityStateService;
     @inject(SYMBOLS.KeyZonesStateService)       private _keyzones: IKeyZonesStateService;
-    @inject(SYMBOLS.TrendStateService)          private _trend: ITrendStateService;
     @inject(SYMBOLS.CoinsService)               private _coins: ICoinsService;
     @inject(SYMBOLS.ReversalService)            private _reversal: IReversalService;
     @inject(SYMBOLS.PositionService)            private _position: IPositionService;
-    @inject(SYMBOLS.SignalService)              private _signal: ISignalService;
     @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
 
 
@@ -150,14 +146,12 @@ export class CampaignUtilities implements ICampaignUtilities {
         const { installed, supported, scores } = this._coins.getCoinsSummary();
         return {
             window: this._window.config,
-            trend: this._trend.config,
             liquidity: this._liquidity.config,
             keyzones: this._keyzones.config,
             coins: this._coins.config,
             reversal: this._reversal.config,
             installed_coins: installed,
             strategy: this._position.strategy,
-            signal_policies: this._signal.policies
         }
     }
 

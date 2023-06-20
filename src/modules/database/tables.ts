@@ -132,120 +132,6 @@ export const TABLES: IRawTable[] = [
         }
     },
 
-
-    /**
-     * Epochs
-     * 
-     */
-    {
-        name: "epochs",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id              VARCHAR(100) NOT NULL PRIMARY KEY,
-                installed       BIGINT NOT NULL,
-                uninstalled     BIGINT NULL,
-                config          JSONB NOT NULL,
-                model           JSONB NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ${tableName}_installed ON ${tableName}(installed);
-            CREATE INDEX IF NOT EXISTS ${tableName}_uninstalled ON ${tableName}(uninstalled);`
-        }
-    },
-
-
-    /**
-     * Predictions
-     * 
-     */
-    {
-        name: "predictions",
-        sql: (tableName: string): string => {
-            /**
-             * In order to create the foreign key, the epoch"s table name must be derived
-             * based on the mode the API is running in.
-             */
-            const epochsTableName: string = tableName.includes("test_") ? "test_epochs": "epochs";
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                t           BIGINT NOT NULL PRIMARY KEY,
-                epoch_id    VARCHAR(100) NOT NULL REFERENCES ${epochsTableName}(id),
-                r           SMALLINT NOT NULL,
-                f           JSONB NOT NULL,
-                s           NUMERIC(10,6) NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ${tableName}_epoch_id ON ${tableName}(epoch_id);`
-        }
-    },
-
-
-    /**
-     * Epoch Prediction Candlesticks
-     * 
-     */
-    {
-        name: "epoch_prediction_candlesticks",
-        sql: (tableName: string): string => {
-            /**
-             * In order to create the foreign key, the epoch"s table name must be derived
-             * based on the mode the API is running in.
-             */
-            const epochsTableName: string = tableName.includes("test_") ? "test_epochs": "epochs";
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                epoch_id    VARCHAR(100) NOT NULL REFERENCES ${epochsTableName}(id),
-                ot          BIGINT NOT NULL PRIMARY KEY,
-                ct          BIGINT NOT NULL,
-                o           NUMERIC(10,6) NOT NULL,
-                h           NUMERIC(10,6) NOT NULL,
-                l           NUMERIC(10,6) NOT NULL,
-                c           NUMERIC(10,6) NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ${tableName}_epoch_id ON ${tableName}(epoch_id);`
-        }
-    },
-
-
-    /**
-     * Prediction Model Certificates
-     * 
-     */
-    {
-        name: "prediction_model_certificates",
-        sql: (tableName: string): string => {
-            /**
-             * In order to create the foreign key, the epoch"s table name must be derived
-             * based on the mode the API is running in.
-             */
-            const epochsTableName: string = tableName.includes("test_") ? "test_epochs": "epochs";
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id              VARCHAR(200) NOT NULL PRIMARY KEY,
-                epoch_id        VARCHAR(100) NOT NULL REFERENCES ${epochsTableName}(id),
-                certificate     JSONB NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ${tableName}_epoch_id ON ${tableName}(epoch_id);`
-        }
-    },
-
-
-    /**
-     * Regression Certificates
-     * 
-     */
-    {
-        name: "regression_certificates",
-        sql: (tableName: string): string => {
-            /**
-             * In order to create the foreign key, the epoch"s table name must be derived
-             * based on the mode the API is running in.
-             */
-            const epochsTableName: string = tableName.includes("test_") ? "test_epochs": "epochs";
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id              VARCHAR(200) NOT NULL PRIMARY KEY,
-                epoch_id        VARCHAR(100) NOT NULL REFERENCES ${epochsTableName}(id),
-                certificate     JSONB NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ${tableName}_epoch_id ON ${tableName}(epoch_id);`
-        }
-    },
-
     
     /**
      * Window State Configuration
@@ -312,21 +198,6 @@ export const TABLES: IRawTable[] = [
 
     
     /**
-     * Trend State Configuration
-     * 
-     */
-    {
-        name: "trend_state_configuration",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id              SMALLINT NOT NULL PRIMARY KEY,
-                data            JSONB NOT NULL
-            );`
-        }
-    },
-
-    
-    /**
      * Coins Configuration
      * 
      */
@@ -347,21 +218,6 @@ export const TABLES: IRawTable[] = [
      */
     {
         name: "coins",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id              SMALLINT NOT NULL PRIMARY KEY,
-                data            JSONB NOT NULL
-            );`
-        }
-    },
-
-    
-    /**
-     * Signal Policies
-     * 
-     */
-    {
-        name: "signal_policies",
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 id              SMALLINT NOT NULL PRIMARY KEY,
@@ -413,23 +269,6 @@ export const TABLES: IRawTable[] = [
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 id       BIGINT NOT NULL PRIMARY KEY,
                 data     JSONB NOT NULL
-            );`
-        }
-    },
-
-
-
-    /**
-     * Signal Records
-     * 
-     */
-    {
-        name: "signal_records",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                t        BIGINT NOT NULL PRIMARY KEY,
-                r        SMALLINT NOT NULL,
-                s        JSONB NOT NULL
             );`
         }
     },

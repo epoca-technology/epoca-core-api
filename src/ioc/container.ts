@@ -12,10 +12,8 @@ import { bulkDataModule } from "../modules/bulk-data";
 import { campaignModule } from "../modules/campaign";
 import { candlestickModule } from "../modules/candlestick";
 import { databaseModule } from "../modules/database";
-import { epochModule } from "../modules/epoch";
 import { externalRequestModule } from "../modules/external-request";
 import { fileManagerModule } from "../modules/file-manager";
-import { predictionModule } from "../modules/prediction";
 import { guiVersionModule } from "../modules/gui-version";
 import { ipBlacklistModule } from "../modules/ip-blacklist";
 import { marketStateModule } from "../modules/market-state";
@@ -23,7 +21,6 @@ import { notificationModule } from "../modules/notification";
 import { positionModule } from "../modules/position";
 import { requestGuardModule } from "../modules/request-guard";
 import { serverModule } from "../modules/server";
-import { signalModule } from "../modules/signal";
 import { utilitiesModule } from "../modules/utilities";
 
 
@@ -64,17 +61,11 @@ appContainer.load(
     // Database
     databaseModule,
 
-    // Epoch
-    epochModule,
-
     // External Request
     externalRequestModule,
 
     // File Manager
     fileManagerModule,
-
-    // Prediction
-    predictionModule,
 
     // GUI Version
     guiVersionModule,
@@ -96,9 +87,6 @@ appContainer.load(
 
     // Server
     serverModule,
-
-    // Signal,
-    signalModule,
 
     // Utilities
     utilitiesModule,

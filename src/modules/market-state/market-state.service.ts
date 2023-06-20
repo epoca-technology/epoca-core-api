@@ -14,7 +14,6 @@ import {
     IWindowState,
     IKeyZonesStateService,
     ILiquidityStateService,
-    ITrendStateService,
     ICoinsService,
     IKeyZoneState,
     ILiquidityState,
@@ -33,7 +32,6 @@ export class MarketStateService implements IMarketStateService {
     @inject(SYMBOLS.VolumeStateService)                 private _volumeState: IVolumeStateService;
     @inject(SYMBOLS.LiquidityService)                   private _liquidity: ILiquidityStateService;
     @inject(SYMBOLS.KeyZonesStateService)               private _keyZones: IKeyZonesStateService;
-    @inject(SYMBOLS.TrendStateService)                  private _trend: ITrendStateService;
     @inject(SYMBOLS.CoinsService)                       private _coins: ICoinsService;
     @inject(SYMBOLS.ReversalService)                    private _reversal: IReversalService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
@@ -108,9 +106,6 @@ export class MarketStateService implements IMarketStateService {
         // Initialize the KeyZones
         await this._keyZones.initialize();
 
-        // Initialize the trend state
-        await this._trend.initialize();
-
         // Initialize the coins state
         await this._coins.initialize();
 
@@ -139,7 +134,6 @@ export class MarketStateService implements IMarketStateService {
         if (this.candlestickStreamSub) this.candlestickStreamSub.unsubscribe();
         this._liquidity.stop();
         this._keyZones.stop();
-        this._trend.stop();
         this._coins.stop();
         this._reversal.stop();
     }
@@ -192,7 +186,6 @@ export class MarketStateService implements IMarketStateService {
                 volume: volumeState,
                 liquidity: this._liquidity.getMinifiedState(true),
                 keyzones: kzState,
-                trend: this._trend.state,
                 coins: coins,
                 coinsBTC: coinsBTC,
                 reversal: this._reversal.calculateState(
@@ -243,7 +236,6 @@ export class MarketStateService implements IMarketStateService {
             volume: this._volumeState.getDefaultState(),
             liquidity: this._liquidity.getDefaultState(),
             keyzones: this._keyZones.getDefaultState(),
-            trend: this._trend.getDefaultState(),
             coins: coins,
             coinsBTC: coinsBTC,
             reversal: this._reversal.getDefaultState()

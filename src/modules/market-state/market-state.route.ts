@@ -25,7 +25,6 @@ import {
     ICoinsService,
     ICoinsSummary,
     IWindowStateService,
-    ITrendStateService,
     IKeyZoneStateEvent,
     IKeyZoneFullState,
     IReversalService,
@@ -36,7 +35,6 @@ const _window: IWindowStateService = appContainer.get<IWindowStateService>(SYMBO
 const _vol: IVolumeStateService = appContainer.get<IVolumeStateService>(SYMBOLS.VolumeStateService);
 const _liquidity: ILiquidityStateService = appContainer.get<ILiquidityStateService>(SYMBOLS.LiquidityService);
 const _keyZones: IKeyZonesStateService = appContainer.get<IKeyZonesStateService>(SYMBOLS.KeyZonesStateService);
-const _trend: ITrendStateService = appContainer.get<ITrendStateService>(SYMBOLS.TrendStateService);
 const _coins: ICoinsService = appContainer.get<ICoinsService>(SYMBOLS.CoinsService);
 const _reversal: IReversalService = appContainer.get<IReversalService>(SYMBOLS.ReversalService);
 
@@ -191,94 +189,6 @@ MarketStateRoute.route("/getFullVolumeState").get(ultraLowRiskLimit, async (req:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**************************
- * Trend State Management *
- **************************/
-
-
-
-
-
-
-
-/**
-* Retrieves the trend's configuration
-* @requires id-token
-* @requires api-secret
-* @requires authority: 1
-* @returns IAPIResponse<ITrendStateConfiguration>
-*/
-MarketStateRoute.route("/getTrendConfiguration").get(ultraLowRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Init values
-    const idToken: string = req.get("id-token");
-    const apiSecret: string = req.get("api-secret");
-    const ip: string = req.clientIp;
-    let reqUid: string;
-
-    try {
-        // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 1);
-
-        // Return the response
-        res.send(_utils.apiResponse(_trend.config));
-    } catch (e) {
-		console.log(e);
-        _apiError.log("MarketStateRoute.getTrendConfiguration", e, reqUid, ip);
-        res.send(_utils.apiResponse(undefined, e));
-    }
-});
-
-
-
-
-
-
-
-/**
-* Updates the configuration of the Trend.
-* @requires id-token
-* @requires api-secret
-* @requires otp
-* @requires authority: 4
-* @param newConfiguration
-* @returns IAPIResponse<void>
-*/
-MarketStateRoute.route("/updateTrendConfiguration").post(highRiskLimit, async (req: express.Request, res: express.Response) => {
-    // Init values
-    const idToken: string = req.get("id-token");
-    const apiSecret: string = req.get("api-secret");
-    const otp: string = req.get("otp");
-    const ip: string = req.clientIp;
-    let reqUid: string;
-
-    try {
-        // Validate the request
-        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["newConfiguration"], req.body, otp || "");
-
-        // Perform Action
-        await _trend.updateConfiguration(req.body.newConfiguration);
-
-        // Return the response
-        res.send(_utils.apiResponse());
-    } catch (e) {
-		console.log(e);
-        _apiError.log("MarketStateRoute.updateTrendConfiguration", e, reqUid, ip, req.body);
-        res.send(_utils.apiResponse(undefined, e));
-    }
-});
 
 
 

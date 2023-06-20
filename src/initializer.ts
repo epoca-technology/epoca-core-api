@@ -42,18 +42,6 @@ const _server = appContainer.get<IServerService>(SYMBOLS.ServerService);
 import {IIPBlacklistService} from "./modules/ip-blacklist";
 const _ipBlacklist = appContainer.get<IIPBlacklistService>(SYMBOLS.IPBlacklistService);
 
-// Epoch
-import {IEpochService} from "./modules/epoch";
-const _epoch = appContainer.get<IEpochService>(SYMBOLS.EpochService);
-
-// Prediction
-import {IPredictionService} from "./modules/prediction";
-const _prediction = appContainer.get<IPredictionService>(SYMBOLS.PredictionService);
-
-// Signal
-import {ISignalService} from "./modules/signal";
-const _signal = appContainer.get<ISignalService>(SYMBOLS.SignalService);
-
 // Position
 import {IPositionService} from "./modules/position";
 const _position = appContainer.get<IPositionService>(SYMBOLS.PositionService);
@@ -78,12 +66,9 @@ const _bulkData = appContainer.get<IBulkDataService>(SYMBOLS.BulkDataService);
  * 5)  Market State Module
  * 6)  Server Module
  * 7)  IP Blacklist Module
- * 8)  Epoch Module
- * 9)  Prediction Module
- * 10)  Signal Module
- * 11) Position Module
- * 12) Campaign Module
- * 13) Bulk Data Module
+ * 8)  Position Module
+ * 9)  Campaign Module
+ * 10) Bulk Data Module
  * 
  * If any of the initialization actions triggers an error, it crashes the execution and
  * stop the following modules:
@@ -91,12 +76,9 @@ const _bulkData = appContainer.get<IBulkDataService>(SYMBOLS.BulkDataService);
  * 2)  Candlestick Module
  * 3)  Market State Module
  * 4)  Server Module
- * 5)  Epoch Module
- * 6)  Prediction Module
- * 7)  Signal Module
- * 8)  Position Module
- * 9)  Campaign Module
- * 10)  Bulk Data Module
+ * 5)  Position Module
+ * 6)  Campaign Module
+ * 7)  Bulk Data Module
  */
 export async function init(): Promise<void> {
     try { await _init() }
@@ -197,30 +179,6 @@ async function _init(): Promise<void> {
                 throw e;
             }
 
-            // Initialize the Epoch Module
-            try {
-                await _epoch.initialize();
-            } catch (e) {
-                console.error("Error when initializing the Epoch Module: ", e)
-                throw e;
-            }
-
-            // Initialize the Prediction Module
-            try {
-                await _prediction.initialize();
-            } catch (e) {
-                console.error("Error when initializing the Prediction Module: ", e)
-                throw e;
-            }
-
-            // Initialize the Signal Module
-            try {
-                await _signal.initialize();
-            } catch (e) {
-                console.error("Error when initializing the Signal Module: ", e)
-                throw e;
-            }
-
             // Initialize the Position Module after a delay
             await _utils.asyncDelay(60);
             try {
@@ -264,15 +222,6 @@ async function _init(): Promise<void> {
 
         // Stop the Server Module
         _server.stop();
-
-        // Stop the Epoch Module
-        _epoch.stop();
-
-        // Stop the Prediction Module
-        _prediction.stop();
-
-        // Stop the Signal Module
-        _signal.stop();
 
         // Stop the Positions Module
         _position.stop();

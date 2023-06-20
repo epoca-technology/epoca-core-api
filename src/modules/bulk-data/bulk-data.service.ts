@@ -1,8 +1,6 @@
 import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
-import { IEpochRecord, IEpochService } from "../epoch";
-import { IPredictionService } from "../prediction";
 import { IKeyZonesStateService, ILiquidityStateService, IMarketStateService } from "../market-state";
 import { IGuiVersionService } from "../gui-version";
 import { IServerService } from "../server";
@@ -26,8 +24,6 @@ export class BulkDataService implements IBulkDataService {
     // Inject dependencies
     @inject(SYMBOLS.DatabaseService)                private _db: IDatabaseService;
     @inject(SYMBOLS.AuthService)                    private _auth: IAuthService;
-    @inject(SYMBOLS.EpochService)                   private _epoch: IEpochService;
-    @inject(SYMBOLS.PredictionService)              private _prediction: IPredictionService;
     @inject(SYMBOLS.LiquidityService)               private _liquidity: ILiquidityStateService;
     @inject(SYMBOLS.KeyZonesStateService)           private _kz: IKeyZonesStateService;
     @inject(SYMBOLS.MarketStateService)             private _marketState: IMarketStateService;
@@ -62,21 +58,12 @@ export class BulkDataService implements IBulkDataService {
      * and stay in sync with the server.
      * @returns IAppBulk
      */
-    public async getAppBulk(epochID: string): Promise<IAppBulk> {
-        // Build the epoch that will be included in the bulk
-        let epoch: IEpochRecord|undefined|"keep" = undefined;
-        if (this._epoch.active.value) {
-            epoch = this._epoch.active.value.id == epochID ? "keep": this._epoch.active.value;
-        }
-
-        // Finally, return the bulk
+    public async getAppBulk(): Promise<IAppBulk> {
         return {
             serverTime: Date.now(),
             authorities: this._auth.authorities,
             guiVersion: typeof this._guiVersion.activeVersion == "string" ? this._guiVersion.activeVersion: await this._guiVersion.get(),
-            epoch: epoch,
             positions: this._position.getActivePositionHeadlines(),
-            prediction: this._prediction.active.value,
             marketState: this._marketState.active.value,
             apiErrors: this._apiError.count,
             keyzoneEventScoreRequirement: this._kz.config.eventScoreRequirement
@@ -126,7 +113,6 @@ export class BulkDataService implements IBulkDataService {
     private async updateStream(): Promise<void> {
         try {
             await this._db.appBulkRef.update(<IAppBulkStream> {
-                prediction: this._prediction.active.value && typeof this._prediction.active.value == "object" ? this._prediction.active.value: null,
                 positions: this._position.getActivePositionHeadlines(),
                 marketState: <ICompressedMarketState>{
                     window: {
@@ -137,11 +123,6 @@ export class BulkDataService implements IBulkDataService {
                     volume: this._marketState.active.value.volume,
                     liquidity: this._liquidity.getMinifiedState(true),
                     keyzones: this._marketState.active.value.keyzones,
-                    trend: {
-                        s: this._marketState.active.value.trend.s,
-                        ss: this._marketState.active.value.trend.ss,
-                        w: this._marketState.active.value.trend.w.at(-1) || null
-                    },
                     coins: this._marketState.active.value.coins,
                     coinsBTC: this._marketState.active.value.coinsBTC,
                     reversal: this._marketState.active.value.reversal

@@ -90,12 +90,6 @@
 
 
 
-#
-## Forecast (4.000 - 4.999)
-
-4000: ``
-
-
 
 
 #
@@ -324,138 +318,6 @@
 
 
 
-#
-## Epoch Service (16.000 - 16.999)
-
-16000: `The epoch record ${epochID} was not be found in the database.`
-
-16001: ``
-
-
-
-
-
-#
-## Epoch Validations (17.000 - 17.999)
-
-17000: `The provided Epoch ID (${epochID}) is invalid.`
-
-17001: `The provided Unpacked Epoch File is not a valid object.`
-
-17002: `The provided Unpacked Epoch Configuration is not a valid object.`
-
-17003: `The provided Unpacked Prediction Model Certificate is not a valid object.`
-
-17004: `The Unpacked Regression Certificates is not a valid list.`
-
-17005: `The Unpacked Model File Names is not a valid list.`
-
-17006: `The provided Epoch ID (${epochID}) is diferent to the one in the Epoch File (${epochFile.epochConfig.id}).`
-
-17007: `The model file for the regression ${reg.id} was not found.`
-
-17008: `The regression certificate for ${reg.id} was not found.`
-
-17009: `The Epoch ${epochID} cannot be installed because ${activeEpoch.id} is currently running.`
-
-17010: `The Epoch ID ${epochID} has already been used.`
-
-17011: `The Epoch cannot be uninstalled because none is running.`
-
-17012: `The starting point cannot be in the future (${startAt}).`
-
-17013: `The limit must be an integer ranging 1 and 30 (${limit}).`
-
-17014: `The provided Model ID (${modelID}) is invalid.`
-
-17015: `The Epoch cannot be uninstalled because there is an active position.`
-
-
-
-#
-## Epoch Model (18.000 - 18.999)
-
-18000: ``
-
-18001: `The prediction model certificate ${id} could not be found in the database.`
-
-18002: `The regression certificate ${id} could not be found in the database.`
-
-18003: ``
-
-18004: ``
-
-
-
-
-#
-## Epoch File (19.000 - 19.999)
-
-19000: ``
-
-19001: ``
-
-
-
-
-
-
-#
-## Prediction Service (20.000 - 20.999)
-
-20000: `A prediction cannot be generated if there isn't an active epoch.`
-
-20001: `The candlestick's lookback is not big enough in order to generate the input dataset in order for the model to generate predictions. Has ${this._candlestick.predictionLookback.length}. Needs: ${listSize}`
-
-20002: `New predictions cannot be generated as the candlesticks stream is out of sync.`
-
-20003: ``
-
-
-
-
-
-
-#
-## Prediction Validations (21.000 - 21.999)
-
-21000: `The Prediction API returned an invalid API Response when predicting.`
-
-21001: `The provided Epoch ID (${epochID}) is invalid.`
-
-21002: `The predictions range is invalid. Received: ${startAt} - ${endAt}.`
-
-21003: `The predictions starting point must be less than the end. Received: ${startAt} - ${endAt}.`
-
-21004: ``
-
-21005: ``
-
-21006: `The predictions query is larger than the permitted data limit. Limit: ${dataLimit}, Received: ${difference}`
-
-21007: ``
-
-21008: ``
-
-21009: ``
-
-21010: ``
-
-
-
-
-#
-## Prediction Model (22.000 - 22.999)
-
-22000: ``
-
-22001: ``
-
-22002: ``
-
-
-
-
 
 
 
@@ -546,23 +408,6 @@
 27013: `The provided eventPriceDistanceLimit (${config.eventPriceDistanceLimit}) is invalid.`
 
 27014: ``
-
-
-
-
-
-
-#
-## Trend State Service (28.000 - 28.100)
-
-28000: `The provided trend config object is invalid.`
-
-28001: `The provided requirement (${newConfiguration.requirement}) is invalid.`
-
-28002: `The provided strongRequirement (${newConfiguration.strongRequirement}) is invalid.`
-
-28003: `The requirement cannot be greater than or equals to the strongRequirement. Received: ${newConfiguration.requirement} | ${newConfiguration.strongRequirement}.`
-
 
 
 
@@ -689,63 +534,6 @@
 
 
 
-
-
-
-
-#
-## Signal Service (35.000 - 35.499)
-
-35000: ``
-
-35001: ``
-
-35002: ``
-
-
-#
-## Signal Validations (35.500 - 35.999)
-
-35500: `The signal records range is invalid. Received: ${startAt} - ${endAt}.`
-
-35501: `The signal records starting point must be less than the end. Received: ${startAt} - ${endAt}.`
-
-35502: `The signal records query is larger than the permitted data limit. Limit: ${dataLimit}, Received: ${difference}`
-
-35503: `The provided signal policies object is invalid.`
-
-35504: `The provided long issuance.enabled is invalid.`
-
-35505: `The provided long trend_state.enabled is invalid.`
-
-35506: ``
-
-35507: ``
-
-35508: ``
-
-35509: `The provided long window_state.enabled is invalid.`
-
-35510: `The provided long window_state.window_state is invalid.`
-
-35511: `The provided long trend_state.enabled is invalid.`
-
-35512: `The provided long trend.trend_sum is invalid.`
-
-35513: ``
-
-35514: `The provided short trend.trend_sum is invalid.`
-
-35515: ``
-
-
-
-
-
-#
-## Signal Model (36.000 - 36.499)
-
-36000: ``
 
 
 

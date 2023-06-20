@@ -1,6 +1,6 @@
 # EPOCA CORE API
 
-Epoca Core is an API designed to manage the system as well as communicating with the GUI and the Prediction API.
+Epoca Core is an API designed to manage the trading system and can be interacted with through the GUI.
 
 
 [API Errors](./API_ERRORS.md)

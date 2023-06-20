@@ -469,36 +469,6 @@ export class NotificationService implements INotificationService {
 
 
 
-    
-
-    /****************************
-     * Prediction Notifications *
-     ****************************/
-
-
-
-
-
-
-
-    /**
-     * Prediction Generation Issue
-     * @param error 
-     * @returns Promise<void>
-     */
-     public predictionGenerationIssue(error: any): Promise<void> {
-        return this.broadcast({
-            sender: "PREDICTION",
-            title: "Error when predicting:",
-            description: this._utils.getErrorMessage(error)
-        });
-    }
-
-
-
-
-
-
 
 
 
