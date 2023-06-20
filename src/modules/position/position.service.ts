@@ -158,7 +158,13 @@ export class PositionService implements IPositionService {
                 (ms.reversal.e && ms.reversal.id != this.lastReversalID) &&
                 ms.reversal.e.s.includes(this.btcSymbol)
             ) {
-                try { await this.onReversalStateEvent(ms.keyzones.event.k  == "s" ? "LONG": "SHORT") } 
+                try { 
+                    // Save the ID of the reversal temporarily
+                    this.lastReversalID = ms.reversal.id;
+
+                    // Handle the reversal state event
+                    await this.onReversalStateEvent(ms.keyzones.event.k  == "s" ? "LONG": "SHORT");
+                } 
                 catch (e) {
                     console.log(e);
                     this._apiError.log("PositionService.marketStateSub.onReversalStateEvent", e);
