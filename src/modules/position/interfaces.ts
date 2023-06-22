@@ -19,6 +19,10 @@ export interface IPositionService {
     initialize(): Promise<void>,
     stop(): void,
 
+    // Position Actions
+    onReversalStateEvent(side: IBinancePositionSide): Promise<void>,
+    closePosition(side: IBinancePositionSide, chunkSize?: number): Promise<void>,
+
     // Retrievers
     getActivePositionHeadlines(): IActivePositionHeadlines,
     getPositionRecord(id: string): Promise<IPositionRecord>,
@@ -29,9 +33,6 @@ export interface IPositionService {
         endAt: number
     ): Promise<IPositionActionRecord[]>,
 
-    // Position Actions
-    closePosition(side: IBinancePositionSide, chunkSize?: number): Promise<void>,
-
     // Position Strategy
     updateStrategy(newStrategy: IPositionStrategy): Promise<void>,
 }
@@ -40,6 +41,9 @@ export interface IPositionService {
 
 // Utilities
 export interface IPositionUtilities {
+    // Properties
+    btcSymbol: string,
+
     // Position Management Helpers
     calculateGainState(
         side: IBinancePositionSide, 
@@ -73,7 +77,7 @@ export interface IPositionUtilities {
 
 
     // Position Actions
-    openPosition(side: IBinancePositionSide, symbol: string): Promise<void>,
+    openPosition(side: IBinancePositionSide): Promise<void>,
     closePosition(position: IPositionRecord, chunkSize?: number): Promise<void>,
 
     // Active Position Headlines Helper

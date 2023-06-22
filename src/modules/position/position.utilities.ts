@@ -47,6 +47,13 @@ export class PositionUtilities implements IPositionUtilities {
 
 
 
+    /**
+     * Bitcoin Symbol
+     * Even though Epoca could manage positions for any symbol, the selected
+     * strategy focuses only on Bitcoin.
+     */
+    public readonly btcSymbol: string = "BTCUSDT";
+
 
     /**
      * Maximum Side Notional
@@ -500,12 +507,11 @@ export class PositionUtilities implements IPositionUtilities {
     /**
      * Opens a new position for a provided symbol on the given side.
      * @param side 
-     * @param symbol 
      * @returns Promise<void>
      */
-    public async openPosition(side: IBinancePositionSide, symbol: string): Promise<void> {
+    public async openPosition(side: IBinancePositionSide): Promise<void> {
         // Firstly, retrieve the coin and the price
-        const { coin, price } = this._coin.getInstalledCoinAndPrice(symbol);
+        const { coin, price } = this._coin.getInstalledCoinAndPrice(this.btcSymbol);
 
         // Calculate the notional size
         const notional: BigNumber = new BigNumber(this.strategy.position_size).times(this.strategy.leverage);
@@ -515,7 +521,7 @@ export class PositionUtilities implements IPositionUtilities {
 
         // Execute the trade
         const payload: IBinanceTradeExecutionPayload|undefined = await this._binance.order(
-            symbol,
+            this.btcSymbol,
             side,
             side == "LONG" ? "BUY": "SELL",
             amount
@@ -523,7 +529,7 @@ export class PositionUtilities implements IPositionUtilities {
 
         // Store the payload if provided
         if (payload && typeof payload == "object") {
-            await this._model.savePositionActionPayload("POSITION_OPEN", symbol, side, payload);
+            await this._model.savePositionActionPayload("POSITION_OPEN", this.btcSymbol, side, payload);
         }
     }
 
@@ -742,10 +748,10 @@ export class PositionUtilities implements IPositionUtilities {
             long_status: false,
             short_status: false,
             leverage: 3,
-            position_size: 25,
+            position_size: 200,
             side_increase_limit: 5,
             side_min_percentage: 30,
-            increase_side_on_price_improvement: 5,
+            increase_side_on_price_improvement: 6,
             side_increase_idle_hours: 72,
             take_profit_1: { price_change_requirement: 0.50, reduction_size: 0.05,   reduction_interval_minutes: 180.0 },
             take_profit_2: { price_change_requirement: 1.00, reduction_size: 0.10,   reduction_interval_minutes: 120.0 },

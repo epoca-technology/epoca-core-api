@@ -80,7 +80,6 @@ export class PositionService implements IPositionService {
      * Epoca is capable of managing up to 2 positions (1 per side) simultaneous.
      * Additionally, it can increase or close them accordingly.
      */
-    private readonly btcSymbol: string = "BTCUSDT";
     private active: IActivePositions = { LONG: null, SHORT: null };
     private activePositionsSyncInterval: any;
     private readonly activePositionsIntervalSeconds: number = 1.6;
@@ -156,7 +155,7 @@ export class PositionService implements IPositionService {
                 ms.keyzones.event && 
                 (ms.keyzones.event.k == "s" || ms.keyzones.event.k == "r") &&
                 (ms.reversal.e && ms.reversal.id != this.lastReversalID) &&
-                ms.reversal.e.s.includes(this.btcSymbol)
+                ms.reversal.e.s.includes(this._positionUtils.btcSymbol)
             ) {
                 try { 
                     // Save the ID of the reversal temporarily
@@ -215,9 +214,11 @@ export class PositionService implements IPositionService {
 
 
 
-    /***************************
-     * Signal Event Management *
-     ***************************/
+
+
+    /********************
+     * Position Actions *
+     ********************/
 
 
 
@@ -227,10 +228,10 @@ export class PositionService implements IPositionService {
      * Triggers whenever there is a new reversal state. Based on the active 
      * positions and the strategy, determines if the given position
      * should be opened/increased.
-     * @param signal 
+     * @param side 
      * @returns Promise<void>
      */
-    private async onReversalStateEvent(side: IBinancePositionSide): Promise<void> {
+    public async onReversalStateEvent(side: IBinancePositionSide): Promise<void> {
         /**
          * Only proceed if the following is met:
          * 1) Trading is enabled for the side.
@@ -259,9 +260,30 @@ export class PositionService implements IPositionService {
             }
 
             // Open the position
-            await this._positionUtils.openPosition(side, this.btcSymbol);
+            await this._positionUtils.openPosition(side);
         }
     }
+    
+
+
+
+
+
+
+
+
+    /**
+     * Closes an active position based on the given side.
+     * @param side 
+     * @param chunkSize 
+     * @returns Promise<void>
+     */
+    public async closePosition(side: IBinancePositionSide, chunkSize?: number): Promise<void> {
+        return this._positionUtils.closePosition(this.active[side], chunkSize);
+    }
+
+
+
 
 
 
@@ -366,6 +388,9 @@ export class PositionService implements IPositionService {
 
 
 
+    
+    /* On Position Open Event */
+
 
 
 
@@ -415,6 +440,9 @@ export class PositionService implements IPositionService {
 
 
 
+
+
+    /* On Position Change Event */
 
 
 
@@ -520,14 +548,6 @@ export class PositionService implements IPositionService {
 
 
 
-
-
-
-
-
-
-
-    
 
 
 
@@ -704,38 +724,6 @@ export class PositionService implements IPositionService {
 
 
 
-
-
-
-
-
-
-
-
-
-    
-
-
-    /********************
-     * Position Actions *
-     ********************/
-
-
-
-
-
-
-
-
-    /**
-     * Closes an active position based on the given side.
-     * @param side 
-     * @param chunkSize 
-     * @returns Promise<void>
-     */
-    public async closePosition(side: IBinancePositionSide, chunkSize?: number): Promise<void> {
-        return this._positionUtils.closePosition(this.active[side], chunkSize);
-    }
 
 
 

@@ -178,6 +178,51 @@ PositionRoute.route("/listPositionActionPayloads").get(lowRiskLimit, async (req:
 
 
 
+
+
+
+/**
+ * Simulates a reversal state event for a given side and opens/increases
+ * the position if possible.
+ * @requires id-token
+ * @requires api-secret
+ * @requires otp
+ * @requires authority: 4
+ * @param side
+ * @returns IAPIResponse<void>
+*/
+PositionRoute.route("/onReversalStateEvent").post(ultraHighRiskLimit, async (req: express.Request, res: express.Response) => {
+    // Init values
+    const idToken: string = req.get("id-token");
+    const apiSecret: string = req.get("api-secret");
+    const otp: string = req.get("otp");
+    const ip: string = req.clientIp;
+    let reqUid: string;
+
+    try {
+        // Validate the request
+        reqUid = await _guard.validateRequest(idToken, apiSecret, ip, 4, ["side"], req.body, otp || "");
+
+        // Perform Action
+        await _position.onReversalStateEvent(req.body.side);
+
+        // Return the response
+        res.send(_utils.apiResponse());
+    } catch (e) {
+		console.log(e);
+        _apiError.log("PositionRoute.onReversalStateEvent", e, reqUid, ip, req.body);
+        res.send(_utils.apiResponse(undefined, e));
+    }
+});
+
+
+
+
+
+
+
+
+
 /**
  * Closes an active position for the given symbol.
  * @requires id-token
