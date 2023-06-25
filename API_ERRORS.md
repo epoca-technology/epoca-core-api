@@ -606,7 +606,7 @@
 
 
 #
-## Campaign Service (38.000 - 38.999)
+## Transaction Service (38.000 - 38.999)
 
 38000: `The USDT balance could not be retrieved from the Binance API. Received ${balances.length}`
 
@@ -614,7 +614,7 @@
 
 38002: ``
 
-38003: `The list of shareholders could not be retrieved because there are no users.`
+38003: ``
 
 38004: ``
 
@@ -632,64 +632,15 @@
 
 
 #
-## Campaign Validations (39.000 - 39.999)
+## Transaction Validations (39.000 - 39.999)
 
-39000: `The campaign skeleton cannot be built because there is an active campaign.`
+39000: `The provided date range is invalid.`
 
-39001: `The campaign skeleton cannot be built because the account balance is 0.`
+39001: `The end of the query must be greater than the beginning.`
 
-39002: `The campaign skeleton cannot be built because there is balance on active positions.`
+39002: ``
 
-39003: `The campaign cannot be created because there is an active campaign.`
-
-39004: `The shareholders list is invalid, the uid ${existingShareHolders[i].uid} was not provided.`
-
-39005: `The campaign object did not contain the required data.`
-
-39006: `The provided performance object is invalid.`
-
-39007: `The provided name is invalid. Received: ${newCampaign.name}`
-
-39008: `The provided description is invalid. Received: ${newCampaign.description}`
-
-39009: `The provided start date is invalid.`
-
-39010: `The end of the campaign cannot exists as it has not even stated.`
-
-39011: `The provided max loss is invalid`
-
-39012: `The provided campaign id is invalid.`
-
-39013: `The campaign skeleton cannot be built because there is an active position.`
-
-39014: `The provided trading_disabled is invalid.`
-
-39015: `The campaign cannot be created because there are less than 10 USDT in the account.`
-
-39016: `The provided campaign id is invalid.`
-
-39017: `The provided note title is invalid.`
-
-39018: `The provided note description is invalid.`
-
-39019: `The provided date range is invalid.`
-
-39020: `The end of the query must be greater than the beginning.`
-
-39021: ``
-
-39022: ``
-
-39023: ``
-
-39024: ``
-
-39025: ``
-
-39026: ``
-
-39027: ``
-
+39003: ``
 
 
 
@@ -698,16 +649,10 @@
 
 
 #
-## Campaign Model (40.000 - 40.999)
+## Transaction Model (40.000 - 40.999)
 
-40000: `The configs snapshot for the campaign ${campaignID} was not found in the database.`
+40000: ``
 
-40001: `The record for the campaign ${campaignID} was not found in the database.`
+40001: ``
 
 40002: ``
-
-40003: ``
-
-40004: ``
-
-40005: ``

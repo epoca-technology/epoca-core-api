@@ -352,129 +352,16 @@ export const TABLES: IRawTable[] = [
 
 
 
-
-
     /**
-     * Campaign Records
+     * Income Records
      * 
      */
     {
-        name: "campaign_records",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id          uuid NOT NULL PRIMARY KEY,
-                start       BIGINT NOT NULL,
-                data        JSONB NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ${tableName}_start ON ${tableName}(start);`
-        }
-    },
-
-
-
-
-
-    /**
-     * Campaign Notes
-     * 
-     */
-    {
-        name: "campaign_notes",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                cid         uuid NOT NULL,
-                t           BIGINT NOT NULL,
-                ti          VARCHAR(500) NOT NULL,
-                d           TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ${tableName}_cid ON ${tableName}(cid);
-            CREATE INDEX IF NOT EXISTS ${tableName}_t ON ${tableName}(t);`
-        }
-    },
-
-
-
-
-    /**
-     * Campaign Configurations Snapshot
-     * 
-     */
-    {
-        name: "campaign_configurations_snapshots",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id          uuid NOT NULL PRIMARY KEY,
-                data        JSONB NOT NULL
-            );`
-        }
-    },
-
-
-
-
-    /**
-     * Campaign Headlines
-     * 
-     */
-    {
-        name: "campaign_headlines",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                id          uuid NOT NULL PRIMARY KEY,
-                s           BIGINT NOT NULL,
-                e           BIGINT NULL,
-                n           VARCHAR(500) NOT NULL,
-                td          BOOLEAN NOT NULL,
-                r           NUMERIC(20,2) NOT NULL,
-                p           NUMERIC(20,2) NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ${tableName}_s ON ${tableName}(s);`
-        }
-    },
-
-
-
-
-    /**
-     * Campaign ShareHolders' Transactions
-     * 
-     */
-    {
-        name: "campaign_shareholders_transactions",
-        sql: (tableName: string): string => {
-            return `CREATE TABLE IF NOT EXISTS ${tableName} (
-                uid         uuid NOT NULL,
-                t           BIGINT NOT NULL,
-                cid         uuid NOT NULL,
-                cn          VARCHAR(500) NOT NULL,
-                ps          NUMERIC(4,2) NOT NULL,
-                s           NUMERIC(4,2) NOT NULL,
-                ob          NUMERIC(20,2) NOT NULL,
-                r           NUMERIC(20,2) NOT NULL,
-                p           NUMERIC(20,2) NOT NULL,
-                b           NUMERIC(20,2) NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ${tableName}_uid ON ${tableName}(uid);
-            CREATE INDEX IF NOT EXISTS ${tableName}_t ON ${tableName}(t);`
-        }
-    },
-
-
-
-
-
-
-    /**
-     * Campaign Income Records
-     * 
-     */
-    {
-        name: "campaign_income_records",
+        name: "income_records",
         sql: (tableName: string): string => {
             return `CREATE TABLE IF NOT EXISTS ${tableName} (
                 id          VARCHAR(100) NOT NULL,
                 t           BIGINT NOT NULL,
-                s           VARCHAR(20) NOT NULL,
                 it          VARCHAR(100) NOT NULL,
                 v           NUMERIC(20,2) NOT NULL
             );
@@ -482,5 +369,4 @@ export const TABLES: IRawTable[] = [
             CREATE INDEX IF NOT EXISTS ${tableName}_it ON ${tableName}(it);`
         }
     },
-
 ];

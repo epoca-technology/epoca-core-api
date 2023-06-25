@@ -9,7 +9,6 @@ import { apiErrorModule } from "../modules/api-error";
 import { authModule } from "../modules/auth";
 import { binanceModule } from "../modules/binance";
 import { bulkDataModule } from "../modules/bulk-data";
-import { campaignModule } from "../modules/campaign";
 import { candlestickModule } from "../modules/candlestick";
 import { databaseModule } from "../modules/database";
 import { externalRequestModule } from "../modules/external-request";
@@ -21,6 +20,7 @@ import { notificationModule } from "../modules/notification";
 import { positionModule } from "../modules/position";
 import { requestGuardModule } from "../modules/request-guard";
 import { serverModule } from "../modules/server";
+import { transactionModule } from "../modules/transaction";
 import { utilitiesModule } from "../modules/utilities";
 
 
@@ -51,9 +51,6 @@ appContainer.load(
 
     // Bulk Data
     bulkDataModule,
-
-    // Campaign
-    campaignModule,
 
     // Candlestick
     candlestickModule,
@@ -87,6 +84,9 @@ appContainer.load(
 
     // Server
     serverModule,
+
+    // Transaction
+    transactionModule,
 
     // Utilities
     utilitiesModule,

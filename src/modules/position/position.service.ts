@@ -167,7 +167,7 @@ export class PositionService implements IPositionService {
                 catch (e) {
                     console.log(e);
                     this._apiError.log("PositionService.marketStateSub.onReversalStateEvent", e);
-                    this._notification.onNewSignalError(e);
+                    this._notification.onReversalStateEventError(e);
                 }
             }
         });

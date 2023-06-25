@@ -18,12 +18,6 @@
     // Bulk Data
     BulkDataService: Symbol.for("BulkDataService"),
 
-    // Campaign
-    CampaignService: Symbol.for("CampaignService"),
-    CampaignModel: Symbol.for("CampaignModel"),
-    CampaignValidations: Symbol.for("CampaignValidations"),
-    CampaignUtilities: Symbol.for("CampaignUtilities"),
-
     // Candlestick
     CandlestickService: Symbol.for("CandlestickService"),
     CandlestickModel: Symbol.for("CandlestickModel"),
@@ -34,22 +28,11 @@
     DatabaseService: Symbol.for("DatabaseService"),
     DatabaseFileService: Symbol.for("DatabaseFileService"),
 
-    // Epoch
-    EpochService: Symbol.for("EpochService"),
-    EpochValidations: Symbol.for("EpochValidations"),
-    EpochModel: Symbol.for("EpochModel"),
-    EpochFile: Symbol.for("EpochFile"),
-
     // External Request
     ExternalRequestService: Symbol.for("ExternalRequestService"),
 
     // File Manager
     FileManagerService: Symbol.for("FileManagerService"),
-
-    // Prediction
-    PredictionService: Symbol.for("PredictionService"),
-    PredictionValidations: Symbol.for("PredictionValidations"),
-    PredictionModel: Symbol.for("PredictionModel"),
 
     // GUI Version
     GuiVersionService: Symbol.for("GuiVersionService"),
@@ -65,7 +48,6 @@
     VolumeStateService: Symbol.for("VolumeStateService"),
     KeyZonesStateService: Symbol.for("KeyZonesStateService"),
     LiquidityService: Symbol.for("LiquidityService"),
-    TrendStateService: Symbol.for("TrendStateService"),
     CoinsService: Symbol.for("CoinsService"),
     ReversalService: Symbol.for("ReversalService"),
     StateUtilitiesService: Symbol.for("StateUtilitiesService"),
@@ -86,10 +68,10 @@
     ServerService: Symbol.for("ServerService"),
     ServerValidations: Symbol.for("ServerValidations"),
 
-    // Signal
-    SignalService: Symbol.for("SignalService"),
-    SignalValidations: Symbol.for("SignalValidations"),
-    SignalModel: Symbol.for("SignalModel"),
+    // Transaction
+    TransactionService: Symbol.for("TransactionService"),
+    TransactionValidations: Symbol.for("TransactionValidations"),
+    TransactionModel: Symbol.for("TransactionModel"),
 
     // Utilities
     UtilitiesService: Symbol.for("UtilitiesService"),
@@ -113,12 +95,6 @@ export interface ISymbols {
     BulkDataService: symbol,
 
 
-    CampaignService: symbol,
-    CampaignModel: symbol,
-    CampaignValidations: symbol,
-    CampaignUtilities: symbol,
-
-
     CandlestickService: symbol,
     CandlestickModel: symbol,
     CandlestickValidations: symbol,
@@ -127,23 +103,12 @@ export interface ISymbols {
 
     DatabaseService: symbol,
     DatabaseFileService: symbol,
-
-
-    EpochService: symbol,
-    EpochValidations: symbol,
-    EpochModel: symbol,
-    EpochFile: symbol,
     
 
     ExternalRequestService: symbol,
 
 
     FileManagerService: symbol,
-
-
-    PredictionService: symbol,
-    PredictionValidations: symbol,
-    PredictionModel: symbol,
 
 
     GuiVersionService: symbol,
@@ -159,7 +124,6 @@ export interface ISymbols {
     VolumeStateService: symbol,
     KeyZonesStateService: symbol,
     LiquidityService: symbol,
-    TrendStateService: symbol,
     CoinsService: symbol,
     ReversalService: symbol,
     StateUtilitiesService: symbol,
@@ -179,10 +143,12 @@ export interface ISymbols {
 
     ServerService: symbol,
     ServerValidations: symbol,
-    
-    SignalService: symbol,
-    SignalValidations: symbol,
-    SignalModel: symbol,
+
+
+    TransactionService: symbol,
+    TransactionValidations: symbol,
+    TransactionModel: symbol,
+
 
     UtilitiesService: symbol,
     ValidationsService: symbol,

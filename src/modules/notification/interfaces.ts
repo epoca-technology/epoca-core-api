@@ -1,5 +1,4 @@
 import { IBinanceMarginType } from "../binance";
-import { ICampaignRecord } from "../campaign";
 import { IStateType } from "../market-state";
 import { IPositionRecord } from "../position";
 
@@ -47,18 +46,12 @@ export interface INotificationService {
     coinWebsocketConnectionIssue(): Promise<void>,
 
     // Position Notifications
-    onNewSignalError(error: any): Promise<void>,
+    onReversalStateEventError(error: any): Promise<void>,
     onRefreshActivePositionsError(msg: string): Promise<void>,
     positionHasBeenOpened(pos: IPositionRecord): Promise<void>,
     positionHasBeenOpenedWithInvalidLeverage(pos: IPositionRecord, correctLeverage: number): Promise<void>,
     positionHasBeenOpenedWithInvalidMarginType(pos: IPositionRecord, correctMarginType: IBinanceMarginType): Promise<void>,
-    positionHasBeenClosed(pos: IPositionRecord): Promise<void>,
-
-    // Campaign Notifications
-    campaignStarted(campaign: ICampaignRecord): Promise<void>,
-    campaignEnded(campaign: ICampaignRecord): Promise<void>,
-    campaignReachedMaximumLoss(campaign: ICampaignRecord): Promise<void>,
-
+    positionHasBeenClosed(pos: IPositionRecord): Promise<void>
 }
 
 

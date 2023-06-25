@@ -58,7 +58,6 @@ const port: number = Number(process.env.PORT) || 5075;
 import {ApiErrorRoute} from "./modules/api-error/api-error.route";
 import {AuthRoute} from "./modules/auth/auth.route";
 import {BulkDataRoute} from "./modules/bulk-data/bulk-data.route";
-import {CampaignRoute} from "./modules/campaign/campaign.routes";
 import {CandlestickRoute} from "./modules/candlestick/candlestick.route";
 import {DatabaseRoute} from "./modules/database/database.route";
 import {GuiVersionRoute} from "./modules/gui-version/gui-version.route";
@@ -66,12 +65,12 @@ import {IPBlacklistRoute} from "./modules/ip-blacklist/ip-blacklist.route";
 import {MarketStateRoute} from "./modules/market-state/market-state.route";
 import {PositionRoute} from "./modules/position/position.route";
 import {ServerRoute} from "./modules/server/server.route";
+import {TransactionRoute} from "./modules/transaction/transaction.route";
 
 // Register Routes
 app.use("/apiError", ApiErrorRoute);
 app.use("/auth", AuthRoute);
 app.use("/bulkData", BulkDataRoute);
-app.use("/campaign", CampaignRoute);
 app.use("/candlestick", CandlestickRoute);
 app.use("/database", DatabaseRoute);
 app.use("/guiVersion", GuiVersionRoute);
@@ -79,6 +78,7 @@ app.use("/ipBlacklist", IPBlacklistRoute);
 app.use("/marketState", MarketStateRoute);
 app.use("/position", PositionRoute);
 app.use("/server", ServerRoute);
+app.use("/transaction", TransactionRoute);
 
 
 

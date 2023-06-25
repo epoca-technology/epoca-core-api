@@ -46,9 +46,9 @@ const _ipBlacklist = appContainer.get<IIPBlacklistService>(SYMBOLS.IPBlacklistSe
 import {IPositionService} from "./modules/position";
 const _position = appContainer.get<IPositionService>(SYMBOLS.PositionService);
 
-// Campaign
-import {ICampaignService} from "./modules/campaign";
-const _campaign = appContainer.get<ICampaignService>(SYMBOLS.CampaignService);
+// Transaction
+import {ITransactionService} from "./modules/transaction";
+const _transaction = appContainer.get<ITransactionService>(SYMBOLS.TransactionService);
 
 // App Bulk Stream
 import {IBulkDataService} from "./modules/bulk-data";
@@ -67,7 +67,7 @@ const _bulkData = appContainer.get<IBulkDataService>(SYMBOLS.BulkDataService);
  * 6)  Server Module
  * 7)  IP Blacklist Module
  * 8)  Position Module
- * 9)  Campaign Module
+ * 9)  Transaction Module
  * 10) Bulk Data Module
  * 
  * If any of the initialization actions triggers an error, it crashes the execution and
@@ -77,7 +77,7 @@ const _bulkData = appContainer.get<IBulkDataService>(SYMBOLS.BulkDataService);
  * 3)  Market State Module
  * 4)  Server Module
  * 5)  Position Module
- * 6)  Campaign Module
+ * 6)  Transaction Module
  * 7)  Bulk Data Module
  */
 export async function init(): Promise<void> {
@@ -188,11 +188,11 @@ async function _init(): Promise<void> {
                 throw e;
             }
 
-            // Initialize the Campaign Module after a delay
+            // Initialize the Transaction Module after a delay
             try {
-                await _campaign.initialize();
+                await _transaction.initialize();
             } catch (e) {
-                console.error("Error when initializing the Campaign Module: ", e)
+                console.error("Error when initializing the Transaction Module: ", e)
                 throw e;
             }
 
@@ -226,8 +226,8 @@ async function _init(): Promise<void> {
         // Stop the Positions Module
         _position.stop();
 
-        // Stop the Campaign Module
-        _campaign.stop();
+        // Stop the Transaction Module
+        _transaction.stop();
 
         // Stop the Bulk Data Module
         _bulkData.stop();
