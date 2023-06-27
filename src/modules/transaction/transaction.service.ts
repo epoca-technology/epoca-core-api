@@ -304,7 +304,7 @@ export class TransactionService implements ITransactionService {
         if (endAt > currentTS) { endAt = currentTS }
 
         // Retrieve the latest records
-        const rawIncomeRecords: IBinanceIncomeRecord[] = await this._binance.getIncome(incomeType, startAt, endAt);
+        const rawIncomeRecords: IBinanceIncomeRecord[] = await this._binance.getIncome(incomeType, startAt + 1, endAt);
 
         // If there are any new trades, store them
         if (rawIncomeRecords.length) {
