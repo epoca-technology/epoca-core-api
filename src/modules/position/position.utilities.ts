@@ -751,7 +751,7 @@ export class PositionUtilities implements IPositionUtilities {
             position_size: 200,
             side_increase_limit: 5,
             side_min_percentage: 30,
-            increase_side_on_price_improvement: 6,
+            increase_side_on_price_improvement: 7.5,
             side_increase_idle_hours: 72,
             take_profit_1: { price_change_requirement: 0.50, reduction_size: 0.05,   reduction_interval_minutes: 180.0 },
             take_profit_2: { price_change_requirement: 1.00, reduction_size: 0.10,   reduction_interval_minutes: 120.0 },
