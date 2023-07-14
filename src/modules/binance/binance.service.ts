@@ -267,7 +267,37 @@ export class BinanceService implements IBinanceService {
      * @param stopPrice?
      * @returns Promise<IBinanceTradeExecutionPayload|undefined>
      */
-     public async order(
+    public async order(
+        symbol: string,
+        positionSide: IBinancePositionSide, 
+        actionSide: IBinancePositionActionSide, 
+        quantity: number,
+        stopPrice?: number,
+    ): Promise<IBinanceTradeExecutionPayload|undefined> {
+        try {
+            return await this._order(symbol, positionSide, actionSide, quantity, stopPrice);
+        } catch (e) {
+            if (this.isBinanceInternalError(e)) {
+                await this._utils.asyncDelay(2);
+                try {
+                    return await this._order(symbol, positionSide, actionSide, quantity, stopPrice);
+                } catch (e) {
+                    if (this.isBinanceInternalError(e)) {
+                        await this._utils.asyncDelay(4);
+                        try {
+                            return await this._order(symbol, positionSide, actionSide, quantity, stopPrice);
+                        } catch (e) {
+                            if (this.isBinanceInternalError(e)) {
+                                await this._utils.asyncDelay(8);
+                                return await this._order(symbol, positionSide, actionSide, quantity, stopPrice);
+                            } else { throw e }
+                        }
+                    } else { throw e }
+                }
+            } else { throw e }
+        }
+    }
+    private async _order(
         symbol: string,
         positionSide: IBinancePositionSide, 
         actionSide: IBinancePositionActionSide, 
@@ -320,7 +350,6 @@ export class BinanceService implements IBinanceService {
         // Return the series
         return response.data;
     }
-
 
 
 
@@ -652,5 +681,27 @@ export class BinanceService implements IBinanceService {
             console.log(e);
             return defaultError;
         }
+    }
+
+
+
+
+
+
+    /**
+     * Verifies if an error instance is an internal binance error when
+     * processing a position action.
+     * @param err 
+     * @returns boolean
+     */
+    private isBinanceInternalError(err: any): boolean {
+        // Extract the error message
+        const msg: string = this._utils.getErrorMessage(err);
+
+        // Ensure it includes the internal error message text
+        return (
+            msg.includes("Internal error; unable to process your request. Please try again.") && 
+            msg.includes("-1001")
+        );
     }
 }
