@@ -1240,7 +1240,7 @@ export class CoinsService implements ICoinsService {
      */
     private buildDefaultConfig(): ICoinsConfiguration {
         return {
-            supportedCoinsIntervalHours: 3,
+            supportedCoinsIntervalHours: 8,
             priceWindowSize: 128,
             priceIntervalSeconds: 15,
             requirement: 0.01,
