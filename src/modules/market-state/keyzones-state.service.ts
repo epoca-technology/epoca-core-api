@@ -1358,8 +1358,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         return {
             buildFrequencyHours: 6,
             buildLookbackSize: 2880, // ~30 days
-            zoneSize: 0.03,
-            zoneMergeDistanceLimit: 0.05,
+            zoneSize: 0.05,
+            zoneMergeDistanceLimit: 0.025,
             scoreWeights: {
                 volume_intensity: 5,
                 liquidity_share: 5
