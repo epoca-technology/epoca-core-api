@@ -1,6 +1,6 @@
 {
   "name": "api-development",
-  "version": "1.7.4",
+  "version": "1.7.5",
   "description": "Epoca is an automated trading system designed to operate in the Bitcoin Futures Market.",
   "main": "index.js",
   "scripts": {

@@ -747,17 +747,17 @@ export class PositionUtilities implements IPositionUtilities {
         return {
             long_status: false,
             short_status: false,
-            leverage: 3,
-            position_size: 150,
+            leverage: 5,
+            position_size: 100,
             side_increase_limit: 3,
             side_min_percentage: 30,
-            increase_side_on_price_improvement: 7.5,
+            increase_side_on_price_improvement: 2,
             side_increase_idle_hours: 72,
             take_profit_1: { price_change_requirement: 0.50, reduction_size: 0.05,   reduction_interval_minutes: 180.0 },
             take_profit_2: { price_change_requirement: 1.00, reduction_size: 0.10,   reduction_interval_minutes: 120.0 },
-            take_profit_3: { price_change_requirement: 1.50, reduction_size: 0.15,   reduction_interval_minutes: 60.0 },
-            take_profit_4: { price_change_requirement: 2.00, reduction_size: 0.20,   reduction_interval_minutes: 30.0 },
-            take_profit_5: { price_change_requirement: 3.00, reduction_size: 0.25,   reduction_interval_minutes:  7.5 }
+            take_profit_3: { price_change_requirement: 1.50, reduction_size: 0.175,  reduction_interval_minutes:  60.0 },
+            take_profit_4: { price_change_requirement: 2.00, reduction_size: 0.25,   reduction_interval_minutes:  30.0 },
+            take_profit_5: { price_change_requirement: 3.00, reduction_size: 0.35,   reduction_interval_minutes:   7.5 }
         }
     }
 
