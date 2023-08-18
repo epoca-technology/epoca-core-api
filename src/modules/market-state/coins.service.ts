@@ -1244,7 +1244,7 @@ export class CoinsService implements ICoinsService {
             priceWindowSize: 128,
             priceIntervalSeconds: 15,
             requirement: 0.01,
-            strongRequirement: 0.2
+            strongRequirement: 0.3
         }
     }
 }

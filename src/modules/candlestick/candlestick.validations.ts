@@ -16,7 +16,7 @@ export class CandlestickValidations implements ICandlestickValidations {
      * The limit of data in milliseconds that can be read per request.
      */
     private readonly defaultLimit: number = 72 * 60 * 60 * 1000;           // 72 Hours
-    private readonly predictionLimit: number = 365 * 24 * 60 * 60 * 1000;  // 365 days
+    private readonly predictionLimit: number = 120 * 24 * 60 * 60 * 1000;  // 120 days
 
 
     constructor() {}
