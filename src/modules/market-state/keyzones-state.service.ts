@@ -1356,8 +1356,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private buildDefaultConfig(): IKeyZonesConfiguration {
         return {
-            buildFrequencyHours: 6,
-            buildLookbackSize: 2880, // ~30 days
+            buildFrequencyHours: 8,
+            buildLookbackSize: 10000, // ~104.16 days (15m interval)
             zoneSize: 0.065,
             zoneMergeDistanceLimit: 0.025,
             scoreWeights: {
@@ -1368,7 +1368,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             priceSnapshotsLimit: 5, // ~15 seconds worth
             supportEventDurationSeconds: 1800,      // ~30 mins
             resistanceEventDurationSeconds: 1800,   // ~30 mins
-            eventPriceDistanceLimit: 1,
+            eventPriceDistanceLimit: 3,
             keyzoneIdleOnEventMinutes: 30,
             eventScoreRequirement: 5
         }
