@@ -953,9 +953,12 @@ export class KeyZonesStateService implements IKeyZonesStateService {
     /**
      * Once all the zones have been calculated, the ones that are closer than
      * zone_merge_distance_limit% are merged. Once the merge is complete,
-     * it will clear the temporary zones and update the active ones.
+     * it will clear the temporary zones and update the final ones.
+     * Keep in mind this process will be executed twice to make sure there 
+     * are no overlapping zones.
+     * @param secondMergeRound?
      */
-    private mergeNearbyTempZones(): void {
+    private mergeNearbyTempZones(secondMergeRound?: boolean): void {
         // Init the final zones
         let finalZones: IKeyZone[] = [];
 
@@ -994,9 +997,17 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             else { merged = false }
         }
 
-        // Clear the temp keyzones and update the active ones
-        this.tempZones = [];
-        this.zones = finalZones;
+        // If it is the first round, update the temp zones and run it again
+        if (!secondMergeRound) {
+            this.tempZones = finalZones.slice();
+            this.mergeNearbyTempZones(true);
+        }
+
+        // Otherwise, clean the temp zones and assign them to the final list
+        else {
+            this.tempZones = [];
+            this.zones = finalZones;
+        }
     }
 
 
