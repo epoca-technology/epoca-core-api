@@ -674,12 +674,12 @@ export interface IKeyZonesConfiguration {
 
     /**
      * Event Duration
-     * The number of seconds a KeyZone event will remain active after being
+     * The number of minutes a KeyZone event will remain active after being
      * issued based on its kind. A KeyZone Event can also be terminated by the
      * price based on eventPriceDistanceLimit.
      */
-    supportEventDurationSeconds: number,
-    resistanceEventDurationSeconds: number,
+    supportEventDurationMinutes: number,
+    resistanceEventDurationMinutes: number,
 
     /**
      * Event Price Distance Limit

@@ -23,7 +23,6 @@ import {
     IKeyZoneStateEventKind,
     ISplitStates,
     IKeyZonesConfiguration,
-    IStateType
 } from "./interfaces";
 
 
@@ -476,7 +475,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             kz: zone,
             t: Date.now(),
             e: moment().add(
-                kind == "s" ? this.config.supportEventDurationSeconds: this.config.resistanceEventDurationSeconds, "seconds"
+                kind == "s" ? this.config.supportEventDurationMinutes: this.config.resistanceEventDurationMinutes, "minutes"
             ).valueOf(),
             pl: priceLimit
         };
@@ -1268,11 +1267,11 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         if (!this._val.numberValid(config.priceSnapshotsLimit, 3, 50)) {
             throw new Error(this._utils.buildApiError(`The provided priceSnapshotsLimit (${config.priceSnapshotsLimit}) is invalid.`, 27006));
         }
-        if (!this._val.numberValid(config.supportEventDurationSeconds, 5, 3600)) {
-            throw new Error(this._utils.buildApiError(`The provided supportEventDurationSeconds (${config.supportEventDurationSeconds}) is invalid.`, 27011));
+        if (!this._val.numberValid(config.supportEventDurationMinutes, 1, 1440)) {
+            throw new Error(this._utils.buildApiError(`The provided supportEventDurationMinutes (${config.supportEventDurationMinutes}) is invalid.`, 27011));
         }
-        if (!this._val.numberValid(config.resistanceEventDurationSeconds, 5, 3600)) {
-            throw new Error(this._utils.buildApiError(`The provided resistanceEventDurationSeconds (${config.resistanceEventDurationSeconds}) is invalid.`, 27012));
+        if (!this._val.numberValid(config.resistanceEventDurationMinutes, 1, 1440)) {
+            throw new Error(this._utils.buildApiError(`The provided resistanceEventDurationMinutes (${config.resistanceEventDurationMinutes}) is invalid.`, 27012));
         }
         if (!this._val.numberValid(config.eventPriceDistanceLimit, 0.1, 10)) {
             throw new Error(this._utils.buildApiError(`The provided eventPriceDistanceLimit (${config.eventPriceDistanceLimit}) is invalid.`, 27013));
@@ -1377,8 +1376,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             },
             stateLimit: 10,
             priceSnapshotsLimit: 5, // ~15 seconds worth
-            supportEventDurationSeconds: 3600,      // ~60 mins
-            resistanceEventDurationSeconds: 3600,   // ~60 mins
+            supportEventDurationMinutes: 60,      // ~1 hour
+            resistanceEventDurationMinutes: 60,   // ~1 hour
             eventPriceDistanceLimit: 3,
             keyzoneIdleOnEventMinutes: 30,
             eventScoreRequirement: 5
