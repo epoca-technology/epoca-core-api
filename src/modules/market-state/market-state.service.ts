@@ -7,19 +7,18 @@ import { ICandlestick, ICandlestickService, ICandlestickStream } from "../candle
 import { INotificationService } from "../notification";
 import { IUtilitiesService } from "../utilities";
 import { 
-    IMarketStateService,
-    IMarketState,
-    IWindowStateService,
-    IVolumeStateService,
-    IWindowState,
-    IKeyZonesStateService,
-    ILiquidityStateService,
     ICoinsService,
     IKeyZoneState,
+    IKeyZonesService,
+    ILiquidityService,
     ILiquidityState,
     IReversalService,
-    IVolumeStateIntensity
-} from "./interfaces";
+    IVolumeService,
+    IVolumeStateIntensity,
+    IWindowService,
+    IWindowState,
+} from "./submodules";
+import {  IMarketStateService, IMarketState } from "./interfaces";
 
 
 
@@ -28,10 +27,10 @@ import {
 export class MarketStateService implements IMarketStateService {
     // Inject dependencies
     @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
-    @inject(SYMBOLS.WindowStateService)                 private _windowState: IWindowStateService;
-    @inject(SYMBOLS.VolumeStateService)                 private _volumeState: IVolumeStateService;
-    @inject(SYMBOLS.LiquidityService)                   private _liquidity: ILiquidityStateService;
-    @inject(SYMBOLS.KeyZonesStateService)               private _keyZones: IKeyZonesStateService;
+    @inject(SYMBOLS.WindowService)                      private _window: IWindowService;
+    @inject(SYMBOLS.VolumeService)                      private _volume: IVolumeService;
+    @inject(SYMBOLS.LiquidityService)                   private _liquidity: ILiquidityService;
+    @inject(SYMBOLS.KeyZonesService)                    private _keyZones: IKeyZonesService;
     @inject(SYMBOLS.CoinsService)                       private _coins: ICoinsService;
     @inject(SYMBOLS.ReversalService)                    private _reversal: IReversalService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
@@ -98,7 +97,7 @@ export class MarketStateService implements IMarketStateService {
      */
     public async initialize(): Promise<void> {
         // Initialize the window module
-        await this._windowState.initialize();
+        await this._window.initialize();
         
         // Initialize the Liquidity Module
         await this._liquidity.initialize();
@@ -166,10 +165,10 @@ export class MarketStateService implements IMarketStateService {
         // Broadcast the new state as long as there are enough candlesticks
         if (window.length == this.windowSize) {
             // Calculate the window state
-            const windowState: IWindowState = this._windowState.calculateState(window);
+            const windowState: IWindowState = this._window.calculateState(window);
 
             // Calculate the volume state
-            const volumeState: IVolumeStateIntensity = this._volumeState.calculateState();
+            const volumeState: IVolumeStateIntensity = this._volume.calculateState();
 
             // Calculate the liquidity state
             const liqState: ILiquidityState = this._liquidity.calculateState(window.at(-1).c);
@@ -202,10 +201,17 @@ export class MarketStateService implements IMarketStateService {
                 (windowState.s == 2 || windowState.s == -2) && 
                 (
                     this.priceStateLastNotification == undefined ||
-                    this.priceStateLastNotification < moment().subtract(this.priceStateThrottleMinutes, "minutes").valueOf()
+                    this.priceStateLastNotification < moment().subtract(
+                        this.priceStateThrottleMinutes, 
+                        "minutes"
+                    ).valueOf()
                 )
             ) {
-                await this._notification.windowState(windowState.s, windowState.ss.s100.c, windowState.w.at(-1).c);
+                await this._notification.windowState(
+                    windowState.s, 
+                    windowState.ss.s100.c, 
+                    windowState.w.at(-1).c
+                );
                 this.priceStateLastNotification = Date.now();
             }
         } else {
@@ -232,8 +238,8 @@ export class MarketStateService implements IMarketStateService {
      private getDefaultState(): IMarketState {
         const { coins, coinsBTC } = this._coins.getDefaultState();
         return {
-            window: this._windowState.getDefaultState(),
-            volume: this._volumeState.getDefaultState(),
+            window: this._window.getDefaultState(),
+            volume: this._volume.getDefaultState(),
             liquidity: this._liquidity.getDefaultState(),
             keyzones: this._keyZones.getDefaultState(),
             coins: coins,

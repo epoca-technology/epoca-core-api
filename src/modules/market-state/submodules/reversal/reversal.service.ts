@@ -1,19 +1,19 @@
 import {injectable, inject} from "inversify";
-import { SYMBOLS } from "../../ioc";
-import { IDatabaseService, IPoolClient } from "../database";
-import { IUtilitiesService, IValidationsService } from "../utilities";
+import { SYMBOLS } from "../../../../ioc";
+import { IUtilitiesService } from "../../../utilities";
+import { ISplitStateID, IStateType } from "../_shared";
+import { IVolumeStateIntensity } from "../volume";
+import { IKeyZoneState } from "../keyzones";
+import { ILiquidityState } from "../liquidity";
+import { ICoinsCompressedState } from "../coins";
 import {
-    ICoinsCompressedState,
-    IKeyZoneState,
-    ILiquidityState,
     IMinifiedReversalState,
     IReversalCoinsStates,
     IReversalConfiguration,
+    IReversalModel,
     IReversalService,
     IReversalState,
-    ISplitStateID,
-    IStateType,
-    IVolumeStateIntensity,
+    IReversalValidations,
 } from "./interfaces";
 
 
@@ -22,8 +22,8 @@ import {
 @injectable()
 export class ReversalService implements IReversalService {
     // Inject dependencies
-    @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
-    @inject(SYMBOLS.ValidationsService)                 private _val: IValidationsService;
+    @inject(SYMBOLS.ReversalModel)                      private _model: IReversalModel;
+    @inject(SYMBOLS.ReversalValidations)                private _validations: IReversalValidations;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
 
@@ -49,7 +49,7 @@ export class ReversalService implements IReversalService {
      * The state splits that will be used in order to calculate the coins'
      * score.
      */
-    private readonly stateSplits: ISplitStateID[] = [ "s15", "s10", "s5", "s2" ]
+    private readonly stateSplits: ISplitStateID[] = [ "s15", "s10", "s5", "s2" ];
 
 
     constructor() { }
@@ -226,7 +226,7 @@ export class ReversalService implements IReversalService {
         this.coinsStates.final = coins;
 
         // Store the state in the db
-        this.saveState(this.state, this.coinsStates);
+        this._model.saveState(this.state, this.coinsStates);
 
         // Reset the values
         this.state = this.getDefaultFullState();
@@ -273,7 +273,10 @@ export class ReversalService implements IReversalService {
         currentScore += coinsScore;
 
         // Calculate the coins' BTC score
-        const coinsBTCScore: number = this.calculateCoinsScore(coinsBTC, this.config.score_weights.coins_btc);
+        const coinsBTCScore: number = this.calculateCoinsScore(
+            coinsBTC, 
+            this.config.score_weights.coins_btc
+        );
         currentScore += coinsBTCScore;
 
         // Set the new scores on the state
@@ -322,10 +325,17 @@ export class ReversalService implements IReversalService {
      * @returns number
      */
     private calculateVolumeScore(volumeState: IVolumeStateIntensity): number {
-        if      (volumeState == 3) { return this.config.score_weights.volume }
-        else if (volumeState == 2) { return <number>this._utils.outputNumber(this.config.score_weights.volume * 0.85) }
-        else if (volumeState == 1) { return <number>this._utils.outputNumber(this.config.score_weights.volume * 0.6) }
-        else                       { return 0 }
+        if          (volumeState == 4) { 
+            return this.config.score_weights.volume 
+        } else if   (volumeState == 3) { 
+            return <number>this._utils.outputNumber(this.config.score_weights.volume * 0.85) 
+        } else if   (volumeState == 2) { 
+            return <number>this._utils.outputNumber(this.config.score_weights.volume * 0.70) 
+        } else if   (volumeState == 1) { 
+            return <number>this._utils.outputNumber(this.config.score_weights.volume * 0.55) 
+        } else { 
+            return 0 
+        }
     }
 
 
@@ -430,7 +440,10 @@ export class ReversalService implements IReversalService {
          * splits that will be analyzed.
          */
         const maxPoints: number = symbols.length * this.stateSplits.length;
-        const pointsShare: number = <number>this._utils.calculatePercentageOutOfTotal(points, maxPoints);
+        const pointsShare: number = <number>this._utils.calculatePercentageOutOfTotal(
+            points, 
+            maxPoints
+        );
 
         // Finally, return the score
         return <number>this._utils.outputNumber((pointsShare / 100) * weight);
@@ -492,7 +505,9 @@ export class ReversalService implements IReversalService {
                     compliantCoins.push({
                         symbol: symbol,
                         changeSum: <number>this._utils.calculateSum(
-                            this.stateSplits.map((ss) => this.coinsStates.initial.csbs[symbol].ss[ss].c)
+                            this.stateSplits.map(
+                                (ss) => this.coinsStates.initial.csbs[symbol].ss[ss].c
+                            )
                         )
                     });
                 }
@@ -507,7 +522,9 @@ export class ReversalService implements IReversalService {
                     compliantCoins.push({
                         symbol: symbol,
                         changeSum: <number>this._utils.calculateSum(
-                            this.stateSplits.map((ss) => this.coinsStates.initial.csbs[symbol].ss[ss].c)
+                            this.stateSplits.map(
+                                (ss) => this.coinsStates.initial.csbs[symbol].ss[ss].c
+                            )
                         )
                     });
                 }
@@ -666,28 +683,14 @@ export class ReversalService implements IReversalService {
      */
     public async getReversalState(id: number): Promise<IReversalState> {
         // Validate the request
-        if (!this._val.numberValid(id)) {
-            throw new Error(this._utils.buildApiError(`The provided reversal id (${id}) is invalid.`, 37505));
-        }
+        this._validations.validateReversalID(id);
 
         // Check if the queried state is active
         if (this.state.id == id) { return this.state }
 
         // Otherwise, check the db
         else {
-            // Retrieve the state
-            const { rows } = await this._db.query({
-                text: `SELECT data FROM  ${this._db.tn.reversal_states} WHERE id = $1`,
-                values: [ id ]
-            });
-
-            // Ensure it was found
-            if (!rows.length) {
-                throw new Error(this._utils.buildApiError(`The provided reversal id (${id}) was not found in the database.`, 37506));
-            }
-
-            // Return the state
-            return rows[0].data;
+            return await this._model.getReversalState(id);
         }
     }
 
@@ -705,79 +708,16 @@ export class ReversalService implements IReversalService {
      */
     public async getReversalCoinsStates(id: number): Promise<IReversalCoinsStates> {
         // Validate the request
-        if (!this._val.numberValid(id)) {
-            throw new Error(this._utils.buildApiError(`The provided reversal id (${id}) is invalid.`, 37505));
-        }
+        this._validations.validateReversalID(id);
 
         // Check if the queried state is active
         if (this.state.id == id) { return this.coinsStates }
 
         // Otherwise, check the db
         else {
-            // Retrieve the state
-            const { rows } = await this._db.query({
-                text: `SELECT data FROM  ${this._db.tn.reversal_coins_states} WHERE id = $1`,
-                values: [ id ]
-            });
-
-            // Ensure it was found
-            if (!rows.length) {
-                throw new Error(this._utils.buildApiError(`The provided reversal id (${id}) was not found in the database.`, 37506));
-            }
-
-            // Return the state
-            return rows[0].data;
+            return await this._model.getReversalCoinsStates(id);
         }
     }
-
-
-
-
-
-
-
-
-    /**
-     * Saves a reversal and the coins state into the db.
-     * @param state 
-     * @param coinsStates 
-     * @returns Promise<void>
-     */
-    private async saveState(state: IReversalState, coinsStates: IReversalCoinsStates): Promise<void> {
-        // Initialize the client
-        const client: IPoolClient = await this._db.pool.connect();
-        try {
-            // Begin the transaction
-            await client.query({text: "BEGIN"});
-
-            // Save the state
-            await client.query({
-                text: `INSERT INTO ${this._db.tn.reversal_states}(id, data) VALUES($1, $2)`,
-                values: [ state.id, state ]
-            });
-
-            // Save the coins' state
-            await client.query({
-                text: `INSERT INTO ${this._db.tn.reversal_coins_states}(id, data) VALUES($1, $2)`,
-                values: [ state.id, coinsStates ]
-            });
-
-            // Finally, commit the writes
-            await client.query({text: "COMMIT"});
-        } catch (e) {
-            // Rollback and rethrow the error
-            await client.query("ROLLBACK");
-            throw e;
-        } finally {
-            client.release();
-        }
-    }
-
-
-
-
-
-
 
 
 
@@ -813,7 +753,7 @@ export class ReversalService implements IReversalService {
      */
     private async initializeConfiguration(): Promise<void> {
         // Retrieve the config stored in the db
-        const config: IReversalConfiguration|undefined = await this.getConfigurationRecord();
+        const config: IReversalConfiguration|undefined = await this._model.getConfigurationRecord();
 
         // If they have been set, unpack them into the local property
         if (config) {
@@ -823,7 +763,7 @@ export class ReversalService implements IReversalService {
         // Otherwise, set the default policies and save them
         else {
             this.config = this.buildDefaultConfig();
-            await this.createConfigurationRecord(this.config);
+            await this._model.createConfigurationRecord(this.config);
         }
     }
 
@@ -833,46 +773,16 @@ export class ReversalService implements IReversalService {
 
 
     /**
-     * Updates the Window's Configuration on the db and the local property.
+     * Updates the Reversal's Configuration on the db and the local property.
      * @param newConfiguration 
      * @returns Promise<void>
      */
     public async updateConfiguration(newConfiguration: IReversalConfiguration): Promise<void> {
         // Validate the request
-        if (!newConfiguration || typeof newConfiguration != "object") {
-            console.log(newConfiguration);
-            throw new Error(this._utils.buildApiError(`The provided reversal config object is invalid.`, 37500));
-        }
-        if (!this._val.numberValid(newConfiguration.min_event_score, 10, 100)) {
-            throw new Error(this._utils.buildApiError(`The provided min_event_score (${newConfiguration.min_event_score}) is invalid.`, 37501));
-        }
-        if (newConfiguration.event_sort_func != "CHANGE_SUM" && newConfiguration.event_sort_func != "SHUFFLE") {
-            throw new Error(this._utils.buildApiError(`The provided event_sort_func (${newConfiguration.event_sort_func}) is invalid.`, 37507));
-        }
-        if (!newConfiguration.score_weights || typeof newConfiguration.score_weights != "object") {
-            console.log(newConfiguration);
-            throw new Error(this._utils.buildApiError(`The provided reversal score_weights object is invalid.`, 37502));
-        }
-        if (
-            !this._val.numberValid(newConfiguration.score_weights.volume, 1, 100) ||
-            !this._val.numberValid(newConfiguration.score_weights.liquidity, 1, 100) ||
-            !this._val.numberValid(newConfiguration.score_weights.coins, 1, 100) ||
-            !this._val.numberValid(newConfiguration.score_weights.coins_btc, 1, 100)
-        ) {
-            console.log(newConfiguration);
-            throw new Error(this._utils.buildApiError(`The provided score weights object must contain valid numbers randing 1-100.`, 37503));
-        }
-        const weightsSum: number = 
-            newConfiguration.score_weights.volume + 
-            newConfiguration.score_weights.liquidity + 
-            newConfiguration.score_weights.coins +
-            newConfiguration.score_weights.coins_btc;
-        if (weightsSum != 100) {
-            throw new Error(this._utils.buildApiError(`The sum of the weights must be equals to 100. Received: ${weightsSum}.`, 37504));
-        }
+        this._validations.validateConfiguration(newConfiguration);
 
         // Store the new config on the db and update the local property
-        await this.updateConfigurationRecord(newConfiguration);
+        await this._model.updateConfigurationRecord(newConfiguration);
         this.config = newConfiguration;
     }
 
@@ -881,79 +791,8 @@ export class ReversalService implements IReversalService {
 
 
 
-
-
-
-
-
-    /* Configuration Record Management */
-
-
-
-
-
-
     /**
-     * Retrieves the Reversal's Configuration from the db. If there is
-     * no record, it returns undefined.
-     * @returns Promise<IReversalConfiguration|undefined>
-     */
-    private async getConfigurationRecord(): Promise<IReversalConfiguration|undefined> {
-        // Retrieve the data
-        const { rows } = await this._db.query({
-            text: `SELECT data FROM  ${this._db.tn.reversal_configuration} WHERE id = 1`,
-            values: []
-        });
-
-        // Return the result
-        return rows.length ? rows[0].data: undefined;
-    }
-
-
-
-
-
-    /**
-     * Creates the Reversal's Configuration on the db.
-     * @param defaultConfiguration 
-     * @returns Promise<void>
-     */
-    private async createConfigurationRecord(defaultConfiguration: IReversalConfiguration): Promise<void> {
-        await this._db.query({
-            text: `INSERT INTO ${this._db.tn.reversal_configuration}(id, data) VALUES(1, $1)`,
-            values: [defaultConfiguration]
-        });
-    }
-
-
-
-
-
-    /**
-     * Updates the Reversal's Configuration on the db.
-     * @param newConfiguration 
-     * @returns Promise<void>
-     */
-    private async updateConfigurationRecord(newConfiguration: IReversalConfiguration): Promise<void> {
-        await this._db.query({
-            text: `UPDATE ${this._db.tn.reversal_configuration} SET data=$1 WHERE id=1`,
-            values: [newConfiguration]
-        });
-    }
-
-
-
-
-
-
-
-    /* Misc Helpers */
-
-
-
-    /**
-     * Builds the default configuration object in order
-     * of the db record to be initialized.
+     * Builds the default configuration object in order of the db record to be initialized.
      * @returns IReversalConfiguration
      */
     private buildDefaultConfig(): IReversalConfiguration {

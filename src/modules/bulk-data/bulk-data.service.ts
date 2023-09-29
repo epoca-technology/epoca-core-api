@@ -1,7 +1,7 @@
 import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../ioc";
 import { IApiErrorService } from "../api-error";
-import { IKeyZonesStateService, ILiquidityStateService, IMarketStateService } from "../market-state";
+import { IKeyZonesService, ILiquidityService, IMarketStateService } from "../market-state";
 import { IGuiVersionService } from "../gui-version";
 import { IServerService } from "../server";
 import { IPositionService } from "../position";
@@ -24,8 +24,8 @@ export class BulkDataService implements IBulkDataService {
     // Inject dependencies
     @inject(SYMBOLS.DatabaseService)                private _db: IDatabaseService;
     @inject(SYMBOLS.AuthService)                    private _auth: IAuthService;
-    @inject(SYMBOLS.LiquidityService)               private _liquidity: ILiquidityStateService;
-    @inject(SYMBOLS.KeyZonesStateService)           private _kz: IKeyZonesStateService;
+    @inject(SYMBOLS.LiquidityService)               private _liquidity: ILiquidityService;
+    @inject(SYMBOLS.KeyZonesService)                private _kz: IKeyZonesService;
     @inject(SYMBOLS.MarketStateService)             private _marketState: IMarketStateService;
     @inject(SYMBOLS.GuiVersionService)              private _guiVersion: IGuiVersionService;
     @inject(SYMBOLS.ServerService)                  private _server: IServerService;

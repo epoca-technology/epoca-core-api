@@ -18,23 +18,23 @@ const _apiError: IApiErrorService = appContainer.get<IApiErrorService>(SYMBOLS.A
 
 
 // State Services
-import {
-    IKeyZonesStateService, 
-    IVolumeStateService, 
-    ILiquidityStateService,
+import { 
     ICoinsService,
     ICoinsSummary,
-    IWindowStateService,
-    IKeyZoneStateEvent,
     IKeyZoneFullState,
+    IKeyZonesService,
+    IKeyZoneStateEvent,
+    ILiquidityService,
+    IReversalCoinsStates,
     IReversalService,
     IReversalState,
-    IReversalCoinsStates
-} from "./interfaces";
-const _window: IWindowStateService = appContainer.get<IWindowStateService>(SYMBOLS.WindowStateService);
-const _vol: IVolumeStateService = appContainer.get<IVolumeStateService>(SYMBOLS.VolumeStateService);
-const _liquidity: ILiquidityStateService = appContainer.get<ILiquidityStateService>(SYMBOLS.LiquidityService);
-const _keyZones: IKeyZonesStateService = appContainer.get<IKeyZonesStateService>(SYMBOLS.KeyZonesStateService);
+    IVolumeService,
+    IWindowService,
+} from "./submodules";
+const _window: IWindowService = appContainer.get<IWindowService>(SYMBOLS.WindowService);
+const _vol: IVolumeService = appContainer.get<IVolumeService>(SYMBOLS.VolumeService);
+const _liquidity: ILiquidityService = appContainer.get<ILiquidityService>(SYMBOLS.LiquidityService);
+const _keyZones: IKeyZonesService = appContainer.get<IKeyZonesService>(SYMBOLS.KeyZonesService);
 const _coins: ICoinsService = appContainer.get<ICoinsService>(SYMBOLS.CoinsService);
 const _reversal: IReversalService = appContainer.get<IReversalService>(SYMBOLS.ReversalService);
 

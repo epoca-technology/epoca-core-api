@@ -1,10 +1,10 @@
-import { ICoin } from "../market-state";
 import { 
     IBinanceActivePosition,
     IBinanceMarginType, 
     IBinancePositionSide, 
     IBinanceTradeExecutionPayload 
 } from "../binance";
+import { ICoin } from "../market-state";
 
 
 

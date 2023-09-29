@@ -407,7 +407,11 @@
 
 27013: `The provided eventPriceDistanceLimit (${config.eventPriceDistanceLimit}) is invalid.`
 
-27014: ``
+27014: `The provided startAt (${startAt}) is invalid.`
+
+27015: `The provided startAt (${endAt}) is invalid.`
+
+27016: `The beginning of the range must be less than the end.`
 
 
 

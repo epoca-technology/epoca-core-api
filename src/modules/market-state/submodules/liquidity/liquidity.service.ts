@@ -1,15 +1,18 @@
-import {injectable, inject} from "inversify";
+import {injectable, inject, postConstruct} from "inversify";
 import { WebSocket } from "ws";
 import * as moment from "moment";
-import { SYMBOLS } from "../../ioc";
-import { IDatabaseService } from "../database";
-import { IApiErrorService } from "../api-error";
-import { IBinanceOrderBook, IBinanceService, IOrderBookStreamDataItem } from "../binance";
-import { IUtilitiesService, IValidationsService } from "../utilities";
+import { SYMBOLS } from "../../../../ioc";
+import { IApiErrorService } from "../../../api-error";
+import { 
+    IBinanceOrderBook, 
+    IBinanceService, 
+    IOrderBookStreamDataItem 
+} from "../../../binance";
+import { INotificationService } from "../../../notification";
+import { IUtilitiesService } from "../../../utilities";
 import { 
     ILiquidityPriceLevel,
     ILiquidityState,
-    ILiquidityStateService,
     ILiquiditySideBuild,
     ILiquiditySide,
     ILiquidityConfiguration,
@@ -20,22 +23,24 @@ import {
     ILiquidityIntensity,
     ILiquidityPeaksPriceRange,
     ILiquidityPeaksState,
-    ILiquidityRawOrders
+    ILiquidityRawOrders,
+    ILiquidityService,
+    ILiquidityModel,
+    ILiquidityValidations,
 } from "./interfaces";
-import { INotificationService } from "../notification";
 
 
 
 
 @injectable()
-export class LiquidityStateService implements ILiquidityStateService {
+export class LiquidityService implements ILiquidityService {
     // Inject dependencies
-    @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
-    @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
-    @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
-    @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
-    @inject(SYMBOLS.ValidationsService)                 private _val: IValidationsService;
-    @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
+    @inject(SYMBOLS.LiquidityModel)                 private _model: ILiquidityModel;
+    @inject(SYMBOLS.LiquidityValidations)           private _validations: ILiquidityValidations;
+    @inject(SYMBOLS.BinanceService)                 private _binance: IBinanceService;
+    @inject(SYMBOLS.NotificationService)            private _notification: INotificationService;
+    @inject(SYMBOLS.ApiErrorService)                private _apiError: IApiErrorService;
+    @inject(SYMBOLS.UtilitiesService)               private _utils: IUtilitiesService;
 
 
     /**
@@ -62,16 +67,7 @@ export class LiquidityStateService implements ILiquidityStateService {
      * The full state of the build that is used to calculate the state and is 
      * rebuilt every time new data comes in.
      */
-    public state: IFullLiquidityState = {
-        blp: 0,
-        ap: {},
-        bp: {},
-        a: { t: 0, l: [] },
-        b: { t: 0, l: [] },
-        ppr: { current: 0, lower: 0, upper: 0},
-        r: { low: 0, medium: 0, high: 0, veryHigh: 0 },
-        ts: 0
-    };
+    public state: IFullLiquidityState;
     private nextRequirementsCalculation: number|undefined = undefined;
     private readonly requirementsCalculationFrequencyMinutes: number = 2;
 
@@ -105,6 +101,13 @@ export class LiquidityStateService implements ILiquidityStateService {
 
 
 
+    @postConstruct()
+    public onInit(): void {
+        // Set the default full state
+        this.state = this.getDefaultFullState();
+
+        // ...
+    }
 
 
 
@@ -246,8 +249,14 @@ export class LiquidityStateService implements ILiquidityStateService {
     private calculatePeaksPriceRange(currentPrice: number): ILiquidityPeaksPriceRange {
         return {
             current: currentPrice,
-            lower: <number>this._utils.alterNumberByPercentage(currentPrice, -(this.config.max_peak_distance_from_price)),
-            upper: <number>this._utils.alterNumberByPercentage(currentPrice, this.config.max_peak_distance_from_price)
+            lower: <number>this._utils.alterNumberByPercentage(
+                currentPrice, 
+                -(this.config.max_peak_distance_from_price)
+            ),
+            upper: <number>this._utils.alterNumberByPercentage(
+                currentPrice, 
+                this.config.max_peak_distance_from_price
+            )
         }
     }
 
@@ -264,7 +273,10 @@ export class LiquidityStateService implements ILiquidityStateService {
      * @param side 
      * @returns ILiquiditySideBuild
      */
-    private buildLiquidityForSide(levels: ILiquidityPriceLevel[], side: ILiquiditySide): ILiquiditySideBuild {
+    private buildLiquidityForSide(
+        levels: ILiquidityPriceLevel[], 
+        side: ILiquiditySide
+    ): ILiquiditySideBuild {
         // Init values
         let total: number = 0;
         let finalLevels: ILiquidityPriceLevel[] = [];
@@ -332,7 +344,10 @@ export class LiquidityStateService implements ILiquidityStateService {
 
         // Finally, return the state
         return { 
-            bidLiquidityPower: <number>this._utils.calculatePercentageOutOfTotal(bidPoints, (askPoints + bidPoints)), 
+            bidLiquidityPower: <number>this._utils.calculatePercentageOutOfTotal(
+                bidPoints, 
+                (askPoints + bidPoints)
+            ), 
             bidPeaks: bidPeaks, 
             askPeaks: askPeaks 
         };
@@ -386,6 +401,30 @@ export class LiquidityStateService implements ILiquidityStateService {
         return { blp: this.state.blp, ap: askPeaks, bp: bidPeaks }
     }
 
+
+
+
+
+
+
+
+
+    /**
+     * Retrieves the default full liquidity state object.
+     * @returns IFullLiquidityState
+     */
+    public getDefaultFullState(): IFullLiquidityState {
+        return {
+            blp: 0,
+            ap: {},
+            bp: {},
+            a: { t: 0, l: [] },
+            b: { t: 0, l: [] },
+            ppr: { current: 0, lower: 0, upper: 0},
+            r: { low: 0, medium: 0, high: 0, veryHigh: 0 },
+            ts: 0
+        }
+    }
 
 
 
@@ -470,13 +509,21 @@ export class LiquidityStateService implements ILiquidityStateService {
         // Check if the requirements have to be calculated
         if (!this.nextRequirementsCalculation || Date.now() >= this.nextRequirementsCalculation) {
             this.state.r = this.calculateRequirements(asks.concat(bids));
-            this.nextRequirementsCalculation = moment().add(this.requirementsCalculationFrequencyMinutes, "minutes").valueOf();
+            this.nextRequirementsCalculation = moment().add(
+                this.requirementsCalculationFrequencyMinutes, "minutes"
+            ).valueOf();
         }
 
         // Finally, calculate the intensities per level and return the build
         return {
-            asks: asks.map((ask) => { return { ...ask, li: this.calculateIntesity(ask.l, this.state.r)} }),
-            bids: bids.map((bid) => { return { ...bid, li: this.calculateIntesity(bid.l, this.state.r)} })
+            asks: asks.map((ask) => { return { ...ask, li: this.calculateIntesity(
+                ask.l, 
+                this.state.r
+            )} }),
+            bids: bids.map((bid) => { return { ...bid, li: this.calculateIntesity(
+                bid.l, 
+                this.state.r
+            )} })
         }
     }
 
@@ -582,7 +629,10 @@ export class LiquidityStateService implements ILiquidityStateService {
 	 * @param requirements 
 	 * @returns ILiquidityIntensity
 	 */
-	private calculateIntesity(liq: number, requirements: ILiquidityIntensityRequirements): ILiquidityIntensity {
+	private calculateIntesity(
+        liq: number, 
+        requirements: ILiquidityIntensityRequirements
+    ): ILiquidityIntensity {
 		if 		(liq >= requirements.veryHigh) 	{ return 4 }
 		else if (liq >= requirements.high)  	{ return 3 }
 		else if (liq >= requirements.medium)  	{ return 2 }
@@ -647,7 +697,10 @@ export class LiquidityStateService implements ILiquidityStateService {
                         // Update the asks if the price is greater than or equals to the 
                         for (let ask of processedData.a) {
                             // Init the price so it matches the keys extracted from the REST endpoint
-                            const askPrice: string = <string>this._utils.outputNumber(ask[0], {dp: 2, of: "s"});
+                            const askPrice: string = <string>this._utils.outputNumber(ask[0], {
+                                dp: 2, 
+                                of: "s"
+                            });
 
                             // If the liquidity is zero, delete the level
                             if (ask[1] == "0.00000000") {
@@ -663,7 +716,10 @@ export class LiquidityStateService implements ILiquidityStateService {
                         // Update the bids
                         for (let bid of processedData.b) {
                             // Init the price so it matches the keys extracted from the REST endpoint
-                            const bidPrice: string = <string>this._utils.outputNumber(bid[0], {dp: 2, of: "s"});
+                            const bidPrice: string = <string>this._utils.outputNumber(bid[0], {
+                                dp: 2, 
+                                of: "s"
+                            });
 
                             // If the liquidity is zero, delete the level
                             if (bid[1] == "0.00000000") {
@@ -767,7 +823,7 @@ export class LiquidityStateService implements ILiquidityStateService {
      */
     private async initializeConfiguration(): Promise<void> {
         // Retrieve the config stored in the db
-        const config: ILiquidityConfiguration|undefined = await this.getConfigurationRecord();
+        const config: ILiquidityConfiguration|undefined = await this._model.getConfigurationRecord();
 
         // If they have been set, unpack them into the local property
         if (config) {
@@ -777,7 +833,7 @@ export class LiquidityStateService implements ILiquidityStateService {
         // Otherwise, set the default policies and save them
         else {
             this.config = this.buildDefaultConfig();
-            await this.createConfigurationRecord(this.config);
+            await this._model.createConfigurationRecord(this.config);
         }
     }
 
@@ -793,107 +849,15 @@ export class LiquidityStateService implements ILiquidityStateService {
      */
     public async updateConfiguration(newConfiguration: ILiquidityConfiguration): Promise<void> {
         // Validate the request
-        if (!newConfiguration || typeof newConfiguration != "object") {
-            console.log(newConfiguration);
-            throw new Error(this._utils.buildApiError(`The provided liquidity config object is invalid.`, 26500));
-        }
-        if (!this._val.numberValid(newConfiguration.appbulk_stream_min_intensity, 1, 4)) {
-            throw new Error(this._utils.buildApiError(`The provided appbulk_stream_min_intensity (${newConfiguration.appbulk_stream_min_intensity}) is invalid.`, 26504));
-        }
-        if (!this._val.numberValid(newConfiguration.max_peak_distance_from_price, 0.01, 5)) {
-            throw new Error(this._utils.buildApiError(`The provided max_peak_distance_from_price (${newConfiguration.max_peak_distance_from_price}) is invalid.`, 26501));
-        }
-        if (!newConfiguration.intensity_weights || typeof newConfiguration.intensity_weights != "object") {
-            console.log(newConfiguration);
-            throw new Error(this._utils.buildApiError(`The provided intensity_weights config object is invalid.`, 26502));
-        }
-        if (
-            !this._val.numberValid(newConfiguration.intensity_weights[1], 1, 100) ||
-            !this._val.numberValid(newConfiguration.intensity_weights[2], 1, 100) ||
-            !this._val.numberValid(newConfiguration.intensity_weights[3], 1, 100) ||
-            !this._val.numberValid(newConfiguration.intensity_weights[4], 1, 100)
-        ) {
-            console.log(newConfiguration);
-            throw new Error(this._utils.buildApiError(`One of the provided intensity weights is invalid.`, 26503));
-        }
+        this._validations.validateConfiguration(newConfiguration);
 
         // Store the new config on the db and update the local property
-        await this.updateConfigurationRecord(newConfiguration);
+        await this._model.updateConfigurationRecord(newConfiguration);
         this.config = newConfiguration;
     }
 
 
 
-
-
-
-
-
-
-
-
-    /* Configuration Record Management */
-
-
-
-
-
-
-    /**
-     * Retrieves the Liquidity's Configuration from the db. If there is
-     * no record, it returns undefined.
-     * @returns Promise<ILiquidityConfiguration|undefined>
-     */
-    private async getConfigurationRecord(): Promise<ILiquidityConfiguration|undefined> {
-        // Retrieve the data
-        const { rows } = await this._db.query({
-            text: `SELECT data FROM  ${this._db.tn.liquidity_configuration} WHERE id = 1`,
-            values: []
-        });
-
-        // Return the result
-        return rows.length ? rows[0].data: undefined;
-    }
-
-
-
-
-
-    /**
-     * Creates the Liquidity's Configuration on the db.
-     * @param defaultConfiguration 
-     * @returns Promise<void>
-     */
-    private async createConfigurationRecord(defaultConfiguration: ILiquidityConfiguration): Promise<void> {
-        await this._db.query({
-            text: `INSERT INTO ${this._db.tn.liquidity_configuration}(id, data) VALUES(1, $1)`,
-            values: [defaultConfiguration]
-        });
-    }
-
-
-
-
-
-    /**
-     * Updates the Liquidity's Configuration on the db.
-     * @param newConfiguration 
-     * @returns Promise<void>
-     */
-    private async updateConfigurationRecord(newConfiguration: ILiquidityConfiguration): Promise<void> {
-        await this._db.query({
-            text: `UPDATE ${this._db.tn.liquidity_configuration} SET data=$1 WHERE id=1`,
-            values: [newConfiguration]
-        });
-    }
-
-
-
-
-
-
-
-    /* Misc Helpers */
 
 
 

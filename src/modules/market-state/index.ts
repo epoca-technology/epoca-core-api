@@ -1,33 +1,79 @@
 import {ContainerModule, interfaces} from "inversify";
 import { SYMBOLS } from "../../ioc";
-import { MarketStateService } from "./market-state.service";
-import { WindowStateService } from "./window-state.service";
-import { VolumeStateService } from "./volume-state.service";
-import { LiquidityStateService } from "./liquidity-state.service";
-import { KeyZonesStateService } from "./keyzones-state.service";
-import { CoinsService } from "./coins.service";
-import { ReversalService } from "./reversal.service";
-import { StateUtilitiesService } from "./state-utilities.service";
 import { 
-    IMarketStateService, 
-    IWindowStateService, 
-    IVolumeStateService,
-    ILiquidityStateService,
-    IKeyZonesStateService,
-    IStateUtilitiesService,
-    ICoinsService,
-    IReversalService
-} from "./interfaces";
+    IStateUtilities, StateUtilities,
 
-export const marketStateModule: ContainerModule = new ContainerModule((bind: interfaces.Bind, unbind: interfaces.Unbind) => {
-    bind<IMarketStateService>(SYMBOLS.MarketStateService).to(MarketStateService);
-    bind<IWindowStateService>(SYMBOLS.WindowStateService).to(WindowStateService);
-    bind<IVolumeStateService>(SYMBOLS.VolumeStateService).to(VolumeStateService);
-    bind<ILiquidityStateService>(SYMBOLS.LiquidityService).to(LiquidityStateService);
-    bind<IKeyZonesStateService>(SYMBOLS.KeyZonesStateService).to(KeyZonesStateService);
-    bind<ICoinsService>(SYMBOLS.CoinsService).to(CoinsService);
-    bind<IReversalService>(SYMBOLS.ReversalService).to(ReversalService);
-    bind<IStateUtilitiesService>(SYMBOLS.StateUtilitiesService).to(StateUtilitiesService);
-});
+    IWindowValidations, WindowValidations,
+    IWindowModel, WindowModel,
+    IWindowService, WindowService,
 
-export * from './interfaces';
+    IVolumeValidations, VolumeValidations,
+    IVolumeModel, VolumeModel,
+    IVolumeService, VolumeService,
+
+    ILiquidityValidations, LiquidityValidations,
+    ILiquidityModel, LiquidityModel,
+    ILiquidityService, LiquidityService,
+
+    IKeyZonesValidations, KeyZonesValidations,
+    IKeyZonesModel, KeyZonesModel,
+    IKeyZonesService, KeyZonesService,
+
+    ICoinsValidations, CoinsValidations,
+    ICoinsModel, CoinsModel,
+    ICoinsService, CoinsService,
+
+    IReversalValidations, ReversalValidations,
+    IReversalModel, ReversalModel,
+    IReversalService, ReversalService
+} from "./submodules";
+import { MarketStateService } from "./market-state.service";
+import { IMarketStateService } from "./interfaces";
+
+
+// Export the module
+export const marketStateModule: ContainerModule = new ContainerModule(
+    (bind: interfaces.Bind, unbind: interfaces.Unbind) => {
+        // State Utilities
+        bind<IStateUtilities>(SYMBOLS.StateUtilities).to(StateUtilities);
+
+        // Window
+        bind<IWindowValidations>(SYMBOLS.WindowValidations).to(WindowValidations);
+        bind<IWindowModel>(SYMBOLS.WindowModel).to(WindowModel);
+        bind<IWindowService>(SYMBOLS.WindowService).to(WindowService);
+
+        // Volume
+        bind<IVolumeValidations>(SYMBOLS.VolumeValidations).to(VolumeValidations);
+        bind<IVolumeModel>(SYMBOLS.VolumeModel).to(VolumeModel);
+        bind<IVolumeService>(SYMBOLS.VolumeService).to(VolumeService);
+
+        // Liquidity
+        bind<ILiquidityValidations>(SYMBOLS.LiquidityValidations).to(LiquidityValidations);
+        bind<ILiquidityModel>(SYMBOLS.LiquidityModel).to(LiquidityModel);
+        bind<ILiquidityService>(SYMBOLS.LiquidityService).to(LiquidityService);
+
+        // KeyZones
+        bind<IKeyZonesValidations>(SYMBOLS.KeyZonesValidations).to(KeyZonesValidations);
+        bind<IKeyZonesModel>(SYMBOLS.KeyZonesModel).to(KeyZonesModel);
+        bind<IKeyZonesService>(SYMBOLS.KeyZonesService).to(KeyZonesService);
+
+        // Coins
+        bind<ICoinsValidations>(SYMBOLS.CoinsValidations).to(CoinsValidations);
+        bind<ICoinsModel>(SYMBOLS.CoinsModel).to(CoinsModel);
+        bind<ICoinsService>(SYMBOLS.CoinsService).to(CoinsService);
+
+        // Reversal
+        bind<IReversalValidations>(SYMBOLS.ReversalValidations).to(ReversalValidations);
+        bind<IReversalModel>(SYMBOLS.ReversalModel).to(ReversalModel);
+        bind<IReversalService>(SYMBOLS.ReversalService).to(ReversalService);
+
+        // Market State
+        bind<IMarketStateService>(SYMBOLS.MarketStateService).to(MarketStateService);
+    }
+);
+
+// Export the types
+export * from "./interfaces";
+
+// Export the submodules
+export * from "./submodules";

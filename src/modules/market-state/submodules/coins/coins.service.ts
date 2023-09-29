@@ -2,18 +2,19 @@ import {injectable, inject} from "inversify";
 import { WebSocket } from "ws";
 import * as moment from "moment";
 import { BigNumber } from "bignumber.js";
-import { SYMBOLS } from "../../ioc";
-import { IApiErrorService } from "../api-error";
+import { SYMBOLS } from "../../../../ioc";
+import { IApiErrorService } from "../../../api-error";
 import { 
     IBinanceService, 
     IBinanceExchangeInformation, 
     IBinanceExchangeInformationSymbol, 
     IMarkPriceStreamDataItem, 
     IBinanceCoinTicker
-} from "../binance";
-import { IDatabaseService } from "../database";
-import { INotificationService } from "../notification";
-import { IUtilitiesService, IValidationsService } from "../utilities";
+} from "../../../binance";
+import { INotificationService } from "../../../notification";
+import { ICandlestickService } from "../../../candlestick";
+import { IUtilitiesService } from "../../../utilities";
+import { IStateUtilities, IStateType, ISplitStates } from "../_shared";
 import { 
     ICoinsService,
     ICoinsState,
@@ -21,16 +22,14 @@ import {
     ICoinsSummary,
     ICoinsObject,
     ICoin,
-    IStateUtilitiesService,
-    IStateType,
     ICoinsScores,
     ICoinScore,
     ICoinsConfiguration,
     ICoinsCompressedState,
     ICoinCompressedState,
-    ISplitStates
+    ICoinsModel,
+    ICoinsValidations
 } from "./interfaces";
-import { ICandlestickService } from "../candlestick";
 
 
 
@@ -38,14 +37,14 @@ import { ICandlestickService } from "../candlestick";
 @injectable()
 export class CoinsService implements ICoinsService {
     // Inject dependencies
-    @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
-    @inject(SYMBOLS.BinanceService)                     private _binance: IBinanceService;
-    @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
-    @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
-    @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
-    @inject(SYMBOLS.StateUtilitiesService)              private _stateUtils: IStateUtilitiesService;
-    @inject(SYMBOLS.ValidationsService)                 private _val: IValidationsService;
-    @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
+    @inject(SYMBOLS.CoinsModel)                 private _model: ICoinsModel;
+    @inject(SYMBOLS.CoinsValidations)           private _validations: ICoinsValidations;
+    @inject(SYMBOLS.BinanceService)             private _binance: IBinanceService;
+    @inject(SYMBOLS.CandlestickService)         private _candlestick: ICandlestickService;
+    @inject(SYMBOLS.NotificationService)        private _notification: INotificationService;
+    @inject(SYMBOLS.ApiErrorService)            private _apiError: IApiErrorService;
+    @inject(SYMBOLS.StateUtilities)             private _stateUtils: IStateUtilities;
+    @inject(SYMBOLS.UtilitiesService)           private _utils: IUtilitiesService;
 
 
     /**
@@ -222,7 +221,7 @@ export class CoinsService implements ICoinsService {
      * @returns ICoin
      */
     public getInstalledCoin(symbol: string): ICoin {
-        this.validateSymbol(symbol);
+        this._validations.validateSymbol(symbol);
         if (this.installed[symbol]) {
             return this.installed[symbol];
         } else {
@@ -278,7 +277,7 @@ export class CoinsService implements ICoinsService {
      */
     public async installCoin(symbol: string): Promise<ICoinsSummary> {
         // Vallidate the request
-        this.validateSymbol(symbol);
+        this._validations.validateSymbol(symbol);
         if (this.installed[symbol]) {
             throw new Error(this._utils.buildApiError(`The coin ${symbol} cannot be installed because it already is.`, 37001));
         }
@@ -290,7 +289,7 @@ export class CoinsService implements ICoinsService {
         this.installed[symbol] = this.supported[symbol];
         this.states[symbol] = this.getDefaultFullCoinState();
         if (symbol != this.btcSymbol) this.statesBTC[symbol] = this.getDefaultFullCoinState();
-        await this.updateInstalledCoins(this.installed);
+        await this._model.updateInstalledCoins(this.installed);
 
         // Finally, return the summary of the coins
         return this.getCoinsSummary();
@@ -307,7 +306,7 @@ export class CoinsService implements ICoinsService {
      */
     public async uninstallCoin(symbol: string): Promise<ICoinsSummary> {
         // Vallidate the request
-        this.validateSymbol(symbol);
+        this._validations.validateSymbol(symbol);
         if (!this.installed[symbol]) {
             throw new Error(this._utils.buildApiError(`The coin ${symbol} cannot be uninstalled because it is not currently installed.`, 37003));
         }
@@ -316,7 +315,7 @@ export class CoinsService implements ICoinsService {
         delete this.installed[symbol];
         delete this.states[symbol];
         if (symbol != this.btcSymbol) delete this.statesBTC[symbol];
-        await this.updateInstalledCoins(this.installed);
+        await this._model.updateInstalledCoins(this.installed);
 
         // Finally, return the summary of the coins
         return this.getCoinsSummary();
@@ -347,10 +346,10 @@ export class CoinsService implements ICoinsService {
      */
     private async initializeInstalledCoins(): Promise<void> {
         // Initialize the installed object
-        this.installed = await this.getInstalledCoins();
+        this.installed = await this._model.getInstalledCoins();
         if (this.installed === undefined) {
             this.installed = {};
-            this.createInstalledCoins(this.installed);
+            this._model.createInstalledCoins(this.installed);
         }
 
         // Initialize the states
@@ -358,62 +357,11 @@ export class CoinsService implements ICoinsService {
         this.statesBTC = {};
         for (let coinSymbol in this.installed) {
             this.states[coinSymbol] = this.getDefaultFullCoinState();
-            if (coinSymbol != this.btcSymbol)  this.statesBTC[coinSymbol] = this.getDefaultFullCoinState();
+            if (coinSymbol != this.btcSymbol)  {
+                this.statesBTC[coinSymbol] = this.getDefaultFullCoinState();
+            }
         }
     }
-
-
-
-
-    /**
-     * Retrieves the currently installed coins. If none has been installed
-     * it returns undefined.
-     * @returns Promise<ICoinsObject|undefined>
-     */
-    private async getInstalledCoins(): Promise<ICoinsObject|undefined> {
-        // Retrieve the user
-        const { rows } = await this._db.query({
-            text: `SELECT data FROM  ${this._db.tn.coins} WHERE id = 1`,
-            values: []
-        });
-
-        // Return the result
-        return rows.length ? rows[0].data: undefined;
-    }
-
-
-
-
-
-
-    /**
-     * Creates the installed coins row. Only invoke this function
-     * when the installed coins db record is undefined.
-     * @param coins 
-     * @returns Promise<void>
-     */
-    private async createInstalledCoins(coins: ICoinsObject): Promise<void> {
-        await this._db.query({
-            text: `INSERT INTO ${this._db.tn.coins}(id, data) VALUES(1, $1)`,
-            values: [coins]
-        });
-    }
-
-
-
-
-    /**
-     * Updates the currently installed coins.
-     * @param coins 
-     * @returns Promise<void>
-     */
-    private async updateInstalledCoins(coins: ICoinsObject): Promise<void> {
-        await this._db.query({
-            text: `UPDATE ${this._db.tn.coins} SET data=$1 WHERE id=1`,
-            values: [coins]
-        });
-    }
-
 
 
 
@@ -568,7 +516,13 @@ export class CoinsService implements ICoinsService {
                 // Iterate over each supported ticker once again
                 for (let ticker of supported) {
                     // Calculate the score
-                    const score: ICoinScore = this.calculateCoinScore(ticker.vol, low, medium, high, mean);
+                    const score: ICoinScore = this.calculateCoinScore(
+                        ticker.vol, 
+                        low, 
+                        medium, 
+                        high, 
+                        mean
+                    );
 
                     // Set the score on the object
                     this.scores[ticker.symbol] = score;
@@ -579,8 +533,14 @@ export class CoinsService implements ICoinsService {
                     }
 
                     // If the symbol is installed and the price has decreased 20%, notify users
-                    if (this.installed[ticker.symbol] && priceChangePercentBySymbol[ticker.symbol] <= -20) {
-                        await this._notification.installedCoinIsCrashing(ticker.symbol, priceChangePercentBySymbol[ticker.symbol]);
+                    if (
+                        this.installed[ticker.symbol] && 
+                        priceChangePercentBySymbol[ticker.symbol] <= -20
+                    ) {
+                        await this._notification.installedCoinIsCrashing(
+                            ticker.symbol, 
+                            priceChangePercentBySymbol[ticker.symbol]
+                        );
                     }
                 }
             }
@@ -604,45 +564,19 @@ export class CoinsService implements ICoinsService {
      * @param mean 
      * @returns ICoinScore
      */
-    private calculateCoinScore(coinVolume: number, low: number, medium: number, high: number, mean: number): ICoinScore {
+    private calculateCoinScore(
+        coinVolume: number, 
+        low: number, 
+        medium: number, 
+        high: number, 
+        mean: number
+    ): ICoinScore {
         if      (coinVolume >= mean)    { return 5 }
         else if (coinVolume >= high)    { return 4 }
         else if (coinVolume >= medium)  { return 3 }
         else if (coinVolume >= low)     { return 2 }
         else                            { return 1 }
     }
-
-
-
-
-
-
-
-
-
-
-
-    /* Misc Helpers */
-
-
-
-
-
-
-    /**
-     * Validates a given symbol. If it is invalid, it throws
-     * an error.
-     * @param symbol 
-     */
-    private validateSymbol(symbol: string): void {
-        if (typeof symbol !== "string" || symbol.length < 5 || symbol.slice(-4) != "USDT") {
-            throw new Error(this._utils.buildApiError(`The provided symbol ${symbol} is invalid.`, 37000));
-        }
-    }
-
-
-
-
 
 
 
@@ -729,14 +663,22 @@ export class CoinsService implements ICoinsService {
         if (this.states[symbol] && this.states[symbol].w.length == this.config.priceWindowSize) {
             // Calculate and update the state based on USDT
             const usdtState: { averageState: IStateType, splitStates: ISplitStates } = 
-                this._stateUtils.calculateCurrentState(this.states[symbol].w, this.config.requirement, this.config.strongRequirement);
+                this._stateUtils.calculateCurrentState(
+                    this.states[symbol].w, 
+                    this.config.requirement, 
+                    this.config.strongRequirement
+                );
             this.states[symbol].s = usdtState.averageState;
             this.states[symbol].ss = usdtState.splitStates;
 
             // Calculate and update the state based on BTC if applies
             if (symbol != this.btcSymbol) {
                 const btcState: { averageState: IStateType, splitStates: ISplitStates } = 
-                    this._stateUtils.calculateCurrentState(this.statesBTC[symbol].w, this.config.requirement, this.config.strongRequirement);
+                    this._stateUtils.calculateCurrentState(
+                        this.statesBTC[symbol].w, 
+                        this.config.requirement, 
+                        this.config.strongRequirement
+                    );
                 this.statesBTC[symbol].s = btcState.averageState;
                 this.statesBTC[symbol].ss = btcState.splitStates;
             }
@@ -774,14 +716,16 @@ export class CoinsService implements ICoinsService {
      */
     public getCoinFullState(symbol: string, btcPrice?: boolean|string): ICoinState {
         // Validate the request
-        this.validateSymbol(symbol);
+        this._validations.validateSymbol(symbol);
         if (!this.installed[symbol]) {
             throw new Error(this._utils.buildApiError(`The full state of the coin cannot be retrieved because ${symbol} is not installed.`, 37000));
         }
         
         // Finally, return the state if it exists
         if (this.states[symbol]) { 
-            return btcPrice === true || btcPrice === "true" ? this.statesBTC[symbol]: this.states[symbol];
+            return btcPrice === true || btcPrice === "true" ? 
+                this.statesBTC[symbol]: 
+                this.states[symbol];
         }
 
         // Otherwise, return the default build
@@ -892,12 +836,16 @@ export class CoinsService implements ICoinsService {
                             // Handle installed symbols
                             if (this.installed[item.s]) {
                                 // Init the mark price
-                                const markPrice: number = <number>this._utils.outputNumber(item.p, {dp: this.installed[item.s].pricePrecision});
+                                const markPrice: number = <number>this._utils.outputNumber(item.p, {
+                                    dp: this.installed[item.s].pricePrecision
+                                });
 
                                 // Set the state in case it hasn't been
                                 if (!this.states[item.s]) {
                                     this.states[item.s] = this.getDefaultFullCoinState();
-                                    if (item.s != this.btcSymbol) this.statesBTC[item.s] = this.getDefaultFullCoinState();
+                                    if (item.s != this.btcSymbol) {
+                                        this.statesBTC[item.s] = this.getDefaultFullCoinState();
+                                    }
                                 }
 
                                 // Handle a state that already has prices in the window
@@ -905,15 +853,25 @@ export class CoinsService implements ICoinsService {
                                     
                                     // Check if the last period ended
                                     const periodClose: number = 
-                                        moment(this.states[item.s].w.at(-1).x).add(this.config.priceIntervalSeconds, "seconds").valueOf();
+                                        moment(this.states[item.s].w.at(-1).x).add(
+                                            this.config.priceIntervalSeconds, 
+                                            "seconds"
+                                        ).valueOf();
 
                                     // If it ended, append the new price and slice the list
                                     if (currentTS > periodClose) {
                                         this.states[item.s].w.push({ x: item.E, y: markPrice});
-                                        this.states[item.s].w = this.states[item.s].w.slice(-this.config.priceWindowSize);
+                                        this.states[item.s].w = 
+                                            this.states[item.s].w.slice(-this.config.priceWindowSize);
                                         if (item.s != this.btcSymbol) {
-                                            this.statesBTC[item.s].w.push({ x: item.E, y: this.calculatePriceInBTC(btcPrice, markPrice)});
-                                            this.statesBTC[item.s].w = this.statesBTC[item.s].w.slice(-this.config.priceWindowSize);
+                                            this.statesBTC[item.s].w.push({ 
+                                                x: item.E, 
+                                                y: this.calculatePriceInBTC(btcPrice, markPrice)
+                                            });
+                                            this.statesBTC[item.s].w = 
+                                                this.statesBTC[item.s].w.slice(
+                                                    -this.config.priceWindowSize
+                                                );
                                         }
                                     }
 
@@ -921,7 +879,8 @@ export class CoinsService implements ICoinsService {
                                     else { 
                                         this.states[item.s].w.at(-1).y = markPrice;
                                         if (item.s != this.btcSymbol) {
-                                            this.statesBTC[item.s].w.at(-1).y = this.calculatePriceInBTC(btcPrice, markPrice);
+                                            this.statesBTC[item.s].w.at(-1).y = 
+                                                this.calculatePriceInBTC(btcPrice, markPrice);
                                         }
                                     }
                                 }
@@ -930,7 +889,10 @@ export class CoinsService implements ICoinsService {
                                 else { 
                                     this.states[item.s].w.push({ x: item.E, y: markPrice});
                                     if (item.s != this.btcSymbol) {
-                                        this.statesBTC[item.s].w.push({ x: item.E, y: this.calculatePriceInBTC(btcPrice, markPrice)});
+                                        this.statesBTC[item.s].w.push({ 
+                                            x: item.E, 
+                                            y: this.calculatePriceInBTC(btcPrice, markPrice)
+                                        });
                                     }
                                 }
                             }
@@ -956,7 +918,10 @@ export class CoinsService implements ICoinsService {
      * @returns number
      */
     private calculatePriceInBTC(btcPrice: number, coinPrice: number): number {
-        return <number>this._utils.outputNumber(new BigNumber(coinPrice).dividedBy(btcPrice), {dp: 12, ru: true});
+        return <number>this._utils.outputNumber(new BigNumber(coinPrice).dividedBy(btcPrice), {
+            dp: 12, 
+            ru: true
+        });
     }
 
 
@@ -1102,7 +1067,7 @@ export class CoinsService implements ICoinsService {
      */
     private async initializeConfiguration(): Promise<void> {
         // Retrieve the config stored in the db
-        const config: ICoinsConfiguration|undefined = await this.getConfigurationRecord();
+        const config: ICoinsConfiguration|undefined = await this._model.getConfigurationRecord();
 
         // If they have been set, unpack them into the local property
         if (config) {
@@ -1112,7 +1077,7 @@ export class CoinsService implements ICoinsService {
         // Otherwise, set the default policies and save them
         else {
             this.config = this.buildDefaultConfig();
-            await this.createConfigurationRecord(this.config);
+            await this._model.createConfigurationRecord(this.config);
         }
     }
 
@@ -1128,108 +1093,16 @@ export class CoinsService implements ICoinsService {
      */
     public async updateConfiguration(newConfiguration: ICoinsConfiguration): Promise<void> {
         // Validate the request
-        if (!newConfiguration || typeof newConfiguration != "object") {
-            console.log(newConfiguration);
-            throw new Error(this._utils.buildApiError(`The provided coins config object is invalid.`, 37007));
-        }
-        if (!this._val.numberValid(newConfiguration.requirement, 0.01, 100)) {
-            throw new Error(this._utils.buildApiError(`The provided requirement (${newConfiguration.requirement}) is invalid.`, 37008));
-        }
-        if (!this._val.numberValid(newConfiguration.strongRequirement, 0.01, 100)) {
-            throw new Error(this._utils.buildApiError(`The provided strongRequirement (${newConfiguration.strongRequirement}) is invalid.`, 37009));
-        }
-        if (newConfiguration.requirement >= newConfiguration.strongRequirement) {
-            throw new Error(this._utils.buildApiError(`The requirement cannot be greater than or equals to the 
-            strongRequirement. Received: ${newConfiguration.requirement} | ${newConfiguration.strongRequirement}.`, 37010));
-        }
-        if (!this._val.numberValid(newConfiguration.supportedCoinsIntervalHours, 1, 48)) {
-            throw new Error(this._utils.buildApiError(`The provided supportedCoinsIntervalHours (${newConfiguration.supportedCoinsIntervalHours}) is invalid.`, 37011));
-        }
-        if (!this._val.numberValid(newConfiguration.priceWindowSize, 32, 1024)) {
-            throw new Error(this._utils.buildApiError(`The provided priceWindowSize (${newConfiguration.priceWindowSize}) is invalid.`, 37012));
-        }
-        if (!this._val.numberValid(newConfiguration.priceIntervalSeconds, 1, 128)) {
-            throw new Error(this._utils.buildApiError(`The provided priceIntervalSeconds (${newConfiguration.priceIntervalSeconds}) is invalid.`, 37013));
-        }
-
+        this._validations.validateConfiguration(newConfiguration);
 
         // Store the new config on the db and update the local property
-        await this.updateConfigurationRecord(newConfiguration);
+        await this._model.updateConfigurationRecord(newConfiguration);
         this.config = newConfiguration;
     }
 
 
 
 
-
-
-
-
-
-
-
-    /* Configuration Record Management */
-
-
-
-
-
-
-    /**
-     * Retrieves the Coins's Configuration from the db. If there is
-     * no record, it returns undefined.
-     * @returns Promise<ICoinsConfiguration|undefined>
-     */
-    private async getConfigurationRecord(): Promise<ICoinsConfiguration|undefined> {
-        // Retrieve the data
-        const { rows } = await this._db.query({
-            text: `SELECT data FROM  ${this._db.tn.coins_configuration} WHERE id = 1`,
-            values: []
-        });
-
-        // Return the result
-        return rows.length ? rows[0].data: undefined;
-    }
-
-
-
-
-
-    /**
-     * Creates the Coins' Configuration on the db.
-     * @param defaultConfiguration 
-     * @returns Promise<void>
-     */
-    private async createConfigurationRecord(defaultConfiguration: ICoinsConfiguration): Promise<void> {
-        await this._db.query({
-            text: `INSERT INTO ${this._db.tn.coins_configuration}(id, data) VALUES(1, $1)`,
-            values: [defaultConfiguration]
-        });
-    }
-
-
-
-
-
-    /**
-     * Updates the Coins's Configuration on the db.
-     * @param newConfiguration 
-     * @returns Promise<void>
-     */
-    private async updateConfigurationRecord(newConfiguration: ICoinsConfiguration): Promise<void> {
-        await this._db.query({
-            text: `UPDATE ${this._db.tn.coins_configuration} SET data=$1 WHERE id=1`,
-            values: [newConfiguration]
-        });
-    }
-
-
-
-
-
-
-
-    /* Misc Helpers */
 
 
 
@@ -1240,7 +1113,7 @@ export class CoinsService implements ICoinsService {
      */
     private buildDefaultConfig(): ICoinsConfiguration {
         return {
-            supportedCoinsIntervalHours: 8,
+            supportedCoinsIntervalHours: 24,
             priceWindowSize: 128,
             priceIntervalSeconds: 15,
             requirement: 0.01,

@@ -146,7 +146,7 @@ async function _init(): Promise<void> {
                 throw e;
             }
 
-            // Initialize the Candlestick Syncing
+            // Initialize the Candlestick Module
             try {
                 await _candlestick.initialize();
             } catch (e) {
@@ -154,8 +154,7 @@ async function _init(): Promise<void> {
                 throw e;
             }
 
-            // Initialize the Market State after a delay
-            await _utils.asyncDelay(60);
+            // Initialize the Market State Module
             try {
                 await _marketState.initialize();
             } catch (e) {
@@ -188,7 +187,7 @@ async function _init(): Promise<void> {
                 throw e;
             }
 
-            // Initialize the Transaction Module after a delay
+            // Initialize the Transaction Module
             try {
                 await _transaction.initialize();
             } catch (e) {

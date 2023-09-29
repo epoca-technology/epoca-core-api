@@ -1,13 +1,15 @@
 import {injectable, inject, postConstruct} from "inversify";
 import * as moment from "moment";
-import { SYMBOLS } from "../../ioc";
-import { IApiErrorService } from "../api-error";
-import { ICandlestick, ICandlestickService } from "../candlestick";
-import { IDatabaseService } from "../database";
-import { INumberConfig, IUtilitiesService, IValidationsService } from "../utilities";
+import { SYMBOLS } from "../../../../ioc";
+import { IApiErrorService } from "../../../api-error";
+import { ICandlestick, ICandlestickService } from "../../../candlestick";
+import { INumberConfig, IUtilitiesService } from "../../../utilities";
+import { ISplitStates } from "../_shared";
+import { ILiquidityState, ILiquiditySideBuild } from "../liquidity";
 import { 
     IKeyZone,
-    IKeyZonesStateService, 
+    IKeyZonesService, 
+    IKeyZonesModel,
     IKeyZoneState,
     IKeyZoneFullState,
     IKeyZonePriceRange,
@@ -15,28 +17,25 @@ import {
     IReversal,
     IMinifiedKeyZone,
     IKeyZoneVolumeIntensity,
-    ILiquidityStateService,
-    ILiquidityState,
     IKeyZoneStateEvent,
-    ILiquiditySideBuild,
     IIdleKeyZones,
     IKeyZoneStateEventKind,
-    ISplitStates,
     IKeyZonesConfiguration,
+    IKeyZonesValidations,
 } from "./interfaces";
 
 
 
 
 @injectable()
-export class KeyZonesStateService implements IKeyZonesStateService {
+export class KeyZonesService implements IKeyZonesService {
     // Inject dependencies
-    @inject(SYMBOLS.DatabaseService)                    private _db: IDatabaseService;
+    @inject(SYMBOLS.KeyZonesModel)                      private _model: IKeyZonesModel;
+    @inject(SYMBOLS.KeyZonesValidations)                private _validations: IKeyZonesValidations;
     @inject(SYMBOLS.CandlestickService)                 private _candlestick: ICandlestickService;
-    @inject(SYMBOLS.LiquidityService)                   private _liquidity: ILiquidityStateService;
     @inject(SYMBOLS.ApiErrorService)                    private _apiError: IApiErrorService;
-    @inject(SYMBOLS.ValidationsService)                 private _val: IValidationsService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
+
 
     /**
      * The configuration that will be used in order to output numbers.
@@ -148,7 +147,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             try { this.updateBuild() } 
             catch (e) { 
                 console.error(e);
-                this._apiError.log("KeyZonesState.initialize.interval", e)
+                this._apiError.log("KeyZonesService.initialize.interval", e)
             }
         }, this.config.buildFrequencyHours * 60 * 60 * 1000);
     }
@@ -199,12 +198,17 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * @param liquidityState? <- Must be provided unless calculating the full state
      * @returns IKeyZoneState|IKeyZoneFullState
      */
-    public calculateState(windowSplitStates?: ISplitStates, liquidityState?: ILiquidityState): IKeyZoneState|IKeyZoneFullState {
+    public calculateState(
+        windowSplitStates?: ISplitStates, 
+        liquidityState?: ILiquidityState
+    ): IKeyZoneState|IKeyZoneFullState {
         // Firstly, update the price
         this.updatePrice();
 
         // Check if the price is currently in a keyzone
-        const active: IKeyZone|undefined = this.zones.filter((z) => this.currentPrice >= z.s && this.currentPrice <= z.e)[0];
+        const active: IKeyZone|undefined = this.zones.filter(
+            (z) => this.currentPrice >= z.s && this.currentPrice <= z.e
+        )[0];
 
         // Check if the window & liquidity states have been provided
         if (windowSplitStates && liquidityState) {
@@ -249,40 +253,95 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private getStateKeyZonesFromCurrentPrice(): {above: IKeyZone[], below: IKeyZone[]} {
         // Init the zones
-        let above: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, true, this.config.stateLimit);
-        let below: IKeyZone[] = this.getZonesFromPrice(this.currentPrice, false, this.config.stateLimit);
+        let above: IKeyZone[] = this.getZonesFromPrice(
+            this.currentPrice, 
+            true, 
+            this.config.stateLimit
+        );
+        let below: IKeyZone[] = this.getZonesFromPrice(
+            this.currentPrice, 
+            false, 
+            this.config.stateLimit
+        );
 
+        // Calculate the volume requirements
+        const { lowReq, mediumReq, highReq, veryHighReq } = this.calculateVolumeRequirements(
+            above, 
+            below
+        );
+
+        
+        // Iterate over each KeyZone above and calculate the volume intensity
+        for (let i = 0; i < above.length; i++) {
+            above[i].vi = this.calculateVolumeIntensity(
+                above[i].vm, 
+                lowReq, 
+                mediumReq, 
+                highReq, 
+                veryHighReq
+            );
+        }
+        
+        // Iterate over each KeyZone below and calculate the volume intensity
+        for (let i = 0; i < below.length; i++) {
+            below[i].vi = this.calculateVolumeIntensity(
+                below[i].vm, 
+                lowReq, 
+                mediumReq, 
+                highReq, 
+                veryHighReq
+            );
+        }
+
+        // Finally, return the build
+        return { above: above, below: below };
+    }
+
+
+
+
+
+
+    /**
+     * Calculates the volume requirements based on the trading volume that took place in
+     * the KeyZones above and below.
+     * @param zonesAbove 
+     * @param zonesBelow 
+     * @returns 
+     */
+    private calculateVolumeRequirements(
+        zonesAbove: IKeyZone[],
+        zonesBelow: IKeyZone[]
+    ): {lowReq: number, mediumReq: number, highReq: number, veryHighReq: number} {
         // Iterate over each zone and calculate the required volume values
         let volSum: number = 0;
         let volLow: number = 0;
         let volHigh: number = 0;
-        for (let zone of above.concat(below)) {
+        for (let zone of zonesAbove.concat(zonesBelow)) {
             volSum += zone.vm;
             volLow = volLow == 0 || zone.vm < volLow ? zone.vm: volLow;
             volHigh = zone.vm > volHigh ? zone.vm: volHigh;
         }
 
         // Calculate the requirements
-        const volMean: number = volSum  / (above.length + below.length);
-        const lowRequirement: number = <number>this._utils.calculateAverage([volMean, volLow]);
-        const mediumRequirement: number = <number>this._utils.calculateAverage([volMean, lowRequirement]);
-        const highRequirement: number = <number>this._utils.calculateAverage([volMean, volHigh]);
-        const veryHighRequirement: number = <number>this._utils.calculateAverage([highRequirement, volHigh]);
-        
-        // Iterate over each KeyZone above and calculate the volume intensity
-        for (let i = 0; i < above.length; i++) {
-            above[i].vi = this.calculateVolumeIntensity(above[i].vm, lowRequirement, mediumRequirement, highRequirement, veryHighRequirement);
-        }
-        
-        // Iterate over each KeyZone below and calculate the volume intensity
-        for (let i = 0; i < below.length; i++) {
-            below[i].vi = this.calculateVolumeIntensity(below[i].vm, lowRequirement, mediumRequirement, highRequirement, veryHighRequirement);
-        }
+        const volMean: number = volSum  / (zonesAbove.length + zonesBelow.length);
+        const lowRequirement: number = 
+            <number>this._utils.calculateAverage([volMean, volLow]);
+        const mediumRequirement: number = 
+            <number>this._utils.calculateAverage([volMean, lowRequirement]);
+        const highRequirement: number = 
+            <number>this._utils.calculateAverage([volMean, volHigh]);
+        const veryHighRequirement: number = 
+            <number>this._utils.calculateAverage([highRequirement, volHigh]);
 
-        // Finally, return the build
-        return { above: above, below: below};
+        // Return the requirements
+        return {
+            lowReq: lowRequirement,
+            mediumReq: mediumRequirement,
+            highReq: highRequirement,
+            veryHighReq: veryHighRequirement
+        }
     }
-
 
 
 
@@ -299,7 +358,13 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * @param veryHigh 
      * @returns IKeyZoneVolumeIntensity
      */
-    private calculateVolumeIntensity(vol: number, low: number, medium: number, high: number, veryHigh: number): IKeyZoneVolumeIntensity {
+    private calculateVolumeIntensity(
+        vol: number, 
+        low: number, 
+        medium: number, 
+        high: number, 
+        veryHigh: number
+    ): IKeyZoneVolumeIntensity {
         if      (vol >= veryHigh)   { return 4 }
         else if (vol >= high)       { return 3 }
         else if (vol >= medium)     { return 2 }
@@ -328,10 +393,10 @@ export class KeyZonesStateService implements IKeyZonesStateService {
     /**
      * Manages the detecting and management of state events. If no event is found
      * or one has expired, it returns null.
-     * @param windowSplitStates
+     * @param wSplitStates
      * @returns IKeyZoneStateEvent|null
      */
-    private buildStateEvent(windowSplitStates: ISplitStates): IKeyZoneStateEvent|null {
+    private buildStateEvent(wSplitStates: ISplitStates): IKeyZoneStateEvent|null {
         // Initialize the event (if any)
         let evt: IKeyZoneStateEvent|null = this.state && this.state.event ? this.state.event: null;
 
@@ -342,13 +407,13 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         if (this.priceSnapshots.length == this.config.priceSnapshotsLimit) {
             // Calculate the number of long splits that are increasing and decreasing strongly
             const increasingStronglyNum: number = 
-                [windowSplitStates.s100.s, windowSplitStates.s75.s, windowSplitStates.s50.s, windowSplitStates.s25.s]
+                [wSplitStates.s100.s, wSplitStates.s75.s, wSplitStates.s50.s, wSplitStates.s25.s]
                 .reduce(
                     (accumulator, currentValue) => currentValue == 2 ? accumulator + 1: accumulator,
                     0
                 );
             const decreasingStronglyNum: number = 
-                [windowSplitStates.s100.s, windowSplitStates.s75.s, windowSplitStates.s50.s, windowSplitStates.s25.s]
+                [wSplitStates.s100.s, wSplitStates.s75.s, wSplitStates.s50.s, wSplitStates.s25.s]
                 .reduce(
                     (accumulator, currentValue) => currentValue == -2 ? accumulator + 1: accumulator,
                     0
@@ -366,8 +431,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             if (
                 (!evt || evt.k != "r") &&
                 this.priceSnapshots[0].o > this.priceSnapshots.at(-1).c &&
-                windowSplitStates.s5.s <= -1 &&
-                windowSplitStates.s2.s <= -1 &&
+                wSplitStates.s5.s <= -1 &&
+                wSplitStates.s2.s <= -1 &&
                 this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
                 this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c &&
                 increasingStronglyNum == 0 &&
@@ -409,8 +474,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             else if (
                 (!evt || evt.k != "s") &&
                 this.priceSnapshots[0].o < this.priceSnapshots.at(-1).c &&
-                windowSplitStates.s5.s >= 1 &&
-                windowSplitStates.s2.s >= 1 &&
+                wSplitStates.s5.s >= 1 &&
+                wSplitStates.s2.s >= 1 &&
                 this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
                 this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c &&
                 decreasingStronglyNum == 0 &&
@@ -428,8 +493,14 @@ export class KeyZonesStateService implements IKeyZonesStateService {
                  */
                 const active: IMinifiedKeyZone|undefined = this.state.above.filter(
                     (z) =>  (
-                        (this.priceSnapshots.at(-1).c >= z.s && this.priceSnapshots.at(-1).c <= z.e) ||
-                        (this.priceSnapshots.at(-1).h >= z.s && this.priceSnapshots.at(-1).h <= z.e)
+                        (
+                            this.priceSnapshots.at(-1).c >= z.s && 
+                            this.priceSnapshots.at(-1).c <= z.e
+                        ) ||
+                        (
+                            this.priceSnapshots.at(-1).h >= z.s && 
+                            this.priceSnapshots.at(-1).h <= z.e
+                        )
                     ) &&
                     z.scr >= this.config.eventScoreRequirement &&
                     !this.isIdle(z.id) &&
@@ -450,6 +521,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
 
 
+
+
+
     /**
      * Builds the KeyZone State event object and activates the idle when an
      * event is detected.
@@ -464,9 +538,15 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         // Calculate the price limit based on the kind of event
         let priceLimit: number;
         if (kind == "s") {
-            priceLimit = <number>this._utils.alterNumberByPercentage(zone.e, this.config.eventPriceDistanceLimit);
+            priceLimit = <number>this._utils.alterNumberByPercentage(
+                zone.e, 
+                this.config.eventPriceDistanceLimit
+            );
         } else {
-            priceLimit = <number>this._utils.alterNumberByPercentage(zone.s, -(this.config.eventPriceDistanceLimit));
+            priceLimit = <number>this._utils.alterNumberByPercentage(
+                zone.s, 
+                -(this.config.eventPriceDistanceLimit)
+            );
         }
 
         // Build the event
@@ -475,13 +555,16 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             kz: zone,
             t: Date.now(),
             e: moment().add(
-                kind == "s" ? this.config.supportEventDurationMinutes: this.config.resistanceEventDurationMinutes, "minutes"
+                kind == "s" ? 
+                    this.config.supportEventDurationMinutes: 
+                    this.config.resistanceEventDurationMinutes, 
+                "minutes"
             ).valueOf(),
             pl: priceLimit
         };
 
         // Store it in the db
-        this.saveKeyZoneEvent(build);
+        this._model.saveKeyZoneEvent(build);
 
         // Return the event's build
         return build;
@@ -529,7 +612,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * @param id 
      */
     private activateIdle(id: number): void {
-        this.idleKeyZones[id] = moment().add(this.config.keyzoneIdleOnEventMinutes, "minutes").valueOf();
+        this.idleKeyZones[id] = moment().add(
+            this.config.keyzoneIdleOnEventMinutes, "minutes"
+        ).valueOf();
     }
 
 
@@ -560,7 +645,10 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * @param sideLiquidity 
      * @returns IMinifiedKeyZone[]
      */
-    private buildStateKeyZones(zones: IKeyZone[], sideLiquidity: ILiquiditySideBuild): IMinifiedKeyZone[] {
+    private buildStateKeyZones(
+        zones: IKeyZone[], 
+        sideLiquidity: ILiquiditySideBuild
+    ): IMinifiedKeyZone[] {
         // Init the list of zones
         let finalZones: IMinifiedKeyZone[] = [];
 
@@ -571,10 +659,16 @@ export class KeyZonesStateService implements IKeyZonesStateService {
             const end: number = Math.ceil(zone.e + 1);
 
             // Calculate the accum liquidity
-            const accumulatedLiquidity: number = sideLiquidity.l.reduce((a, b) => a + (b.p >= start && b.p <= end ? b.l: 0), 0);
+            const accumulatedLiquidity: number = sideLiquidity.l.reduce(
+                (a, b) => a + (b.p >= start && b.p <= end ? b.l: 0), 
+                0
+            );
 
             // Calculate the liquidity share
-            const liquidityShare: number = <number>this._utils.calculatePercentageOutOfTotal(accumulatedLiquidity, sideLiquidity.t);
+            const liquidityShare: number = <number>this._utils.calculatePercentageOutOfTotal(
+                accumulatedLiquidity, 
+                sideLiquidity.t
+            );
 
             // Calculate the KeyZone's Score
             const score: number = this.calculateKeyZoneScore(zone.vi, liquidityShare);
@@ -717,7 +811,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private getZonesFromPrice(price: number, above: boolean, limit?: number): IKeyZone[] {
         // Init the zones below or above
-        let zones: IKeyZone[] = this.zones.filter((z) => (above && z.s > price) || (!above && z.e < price));
+        let zones: IKeyZone[] = this.zones.filter(
+            (z) => (above && z.s > price) || (!above && z.e < price)
+        );
 
         /**
          * Order the zones based on the proximity to the price.
@@ -764,7 +860,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * Retrieves the module's default active state.
      * @returns IKeyZoneState
      */
-    public getDefaultState(): IKeyZoneState { return { event: null, active: null, above: [], below: [] } }
+    public getDefaultState(): IKeyZoneState { 
+        return { event: null, active: null, above: [], below: [] };
+    }
     
 
 
@@ -816,6 +914,9 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
 
 
+
+
+
     /************************************
      * KeyZones Event Record Management *
      ************************************/
@@ -832,42 +933,15 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * @returns Promise<IKeyZoneStateEvent[]>
      */
     public async listKeyZoneEvents(startAt: number, endAt: number): Promise<IKeyZoneStateEvent[]> {
-        // Execute the query
-        const { rows } = await this._db.query({ 
-            text: `
-                SELECT * FROM ${this._db.tn.keyzones_events}  
-                WHERE t BETWEEN $1 AND $2 ORDER BY t ASC;
-            `, 
-            values: [startAt, endAt]
-        });
+        // Validate the request
+        this._validations.canKeyZoneEventsBeListed(startAt, endAt);
 
-        // Finally, return the result of the query
-        return rows;
+        // Return the list of events
+        return await this._model.listKeyZoneEvents(startAt, endAt);
     }
 
 
 
-
-
-    /**
-     * Saves a KeyZone Event into the database safely.
-     * @param evt 
-     * @returns Promise<void>
-     */
-    private async saveKeyZoneEvent(evt: IKeyZoneStateEvent): Promise<void> {
-        try {
-            await this._db.query({
-                text: `
-                    INSERT INTO ${this._db.tn.keyzones_events}(k, kz, t, e, pl) 
-                    VALUES ($1, $2, $3, $4, $5)
-                `,
-                values: [evt.k, evt.kz, evt.t, evt.e, evt.pl]
-            });
-        } catch (e) {
-            console.log(e);
-            this._apiError.log("KeyZonesService.saveKeyZoneEvent", e);
-        }
-    }
 
 
 
@@ -898,7 +972,8 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private updateBuild(): void {
         // Retrieve the candlesticks
-        const candlesticks: ICandlestick[] = this._candlestick.predictionLookback.slice(-this.config.buildLookbackSize);
+        const candlesticks: ICandlestick[] = 
+            this._candlestick.predictionLookback.slice(-this.config.buildLookbackSize);
 
         /**
          * Iterate over each candlestick scanning for reversals. The loop starts on the fourth 
@@ -1030,7 +1105,11 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         // If an index was found, update the zone with the new data
         if (typeof zoneIndex == "number") {
             // Add the new reversal
-            this.tempZones[zoneIndex].r.push({ id: candlestick.ot, t: reversalType, v: candlestick.v });
+            this.tempZones[zoneIndex].r.push({ 
+                id: candlestick.ot, 
+                t: reversalType, 
+                v: candlestick.v 
+            });
 
             // Update the mutated state
             this.tempZones[zoneIndex].m = this.zoneMutated(this.tempZones[zoneIndex].r);
@@ -1134,11 +1213,18 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      * @param reversalType 
      * @returns IKeyZonePriceRange
      */
-    private calculatePriceRange(candlestick: ICandlestick, reversalType: IReversalType): IKeyZonePriceRange {
+    private calculatePriceRange(
+        candlestick: ICandlestick, 
+        reversalType: IReversalType
+    ): IKeyZonePriceRange {
         // Check if it was a resistance
         if (reversalType == "r") {
             return {
-                s: <number>this._utils.alterNumberByPercentage(candlestick.h, -(this.config.zoneSize), this.numberConfig),
+                s: <number>this._utils.alterNumberByPercentage(
+                    candlestick.h, 
+                    -(this.config.zoneSize), 
+                    this.numberConfig
+                ),
                 e: candlestick.h
             }
         }
@@ -1147,7 +1233,11 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         else {
             return {
                 s: candlestick.l,
-                e: <number>this._utils.alterNumberByPercentage(candlestick.l, this.config.zoneSize, this.numberConfig)
+                e: <number>this._utils.alterNumberByPercentage(
+                    candlestick.l, 
+                    this.config.zoneSize, 
+                    this.numberConfig
+                )
             }
         }
     }
@@ -1188,7 +1278,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     private async initializeConfiguration(): Promise<void> {
         // Retrieve the config stored in the db
-        const config: IKeyZonesConfiguration|undefined = await this.getConfigurationRecord();
+        const config: IKeyZonesConfiguration|undefined = await this._model.getConfigurationRecord();
 
         // If they have been set, unpack them into the local property
         if (config) {
@@ -1198,7 +1288,7 @@ export class KeyZonesStateService implements IKeyZonesStateService {
         // Otherwise, set the default policies and save them
         else {
             this.config = this.buildDefaultConfig();
-            await this.createConfigurationRecord(this.config);
+            await this._model.createConfigurationRecord(this.config);
         }
     }
 
@@ -1215,10 +1305,10 @@ export class KeyZonesStateService implements IKeyZonesStateService {
      */
     public async updateConfiguration(newConfiguration: IKeyZonesConfiguration): Promise<void> {
         // Validate the request
-        this.validateConfiguration(newConfiguration);
+        this._validations.validateConfiguration(newConfiguration);
 
         // Store the new config on the db and update the local property
-        await this.updateConfigurationRecord(newConfiguration);
+        await this._model.updateConfigurationRecord(newConfiguration);
         this.config = newConfiguration;
 
         // Update the build
@@ -1228,135 +1318,6 @@ export class KeyZonesStateService implements IKeyZonesStateService {
 
 
 
-
-
-
-    /**
-     * Validates all the properties in a given configuration.
-     * @param config 
-     */
-    private validateConfiguration(config: IKeyZonesConfiguration): void {
-        if (!config || typeof config != "object") {
-            console.log(config);
-            throw new Error(this._utils.buildApiError(`The provided keyzones config object is invalid.`, 27000));
-        }
-        if (!this._val.numberValid(config.buildFrequencyHours, 1, 24)) {
-            throw new Error(this._utils.buildApiError(`The provided buildFrequencyHours (${config.buildFrequencyHours}) is invalid.`, 27001));
-        }
-        if (!this._val.numberValid(config.buildLookbackSize, 150, 150000)) {
-            throw new Error(this._utils.buildApiError(`The provided buildLookbackSize (${config.buildLookbackSize}) is invalid.`, 27010));
-        }
-        if (!this._val.numberValid(config.zoneSize, 0.01, 10)) {
-            throw new Error(this._utils.buildApiError(`The provided zoneSize (${config.zoneSize}) is invalid.`, 27002));
-        }
-        if (!this._val.numberValid(config.zoneMergeDistanceLimit, 0.01, 10)) {
-            throw new Error(this._utils.buildApiError(`The provided zoneMergeDistanceLimit (${config.zoneMergeDistanceLimit}) is invalid.`, 27003));
-        }
-        if (!this._val.numberValid(config.stateLimit, 2, 20)) {
-            throw new Error(this._utils.buildApiError(`The provided stateLimit (${config.stateLimit}) is invalid.`, 27004));
-        }
-        if (
-            !config.scoreWeights || typeof this.config.scoreWeights != "object" ||
-            !this._val.numberValid(config.scoreWeights.volume_intensity, 1, 10) ||
-            !this._val.numberValid(config.scoreWeights.liquidity_share, 1, 10) ||
-            config.scoreWeights.volume_intensity + config.scoreWeights.liquidity_share != 10
-        ) {
-            console.log(config.scoreWeights);
-            throw new Error(this._utils.buildApiError(`The provided scoreWeights are invalid.`, 27005));
-        }
-        if (!this._val.numberValid(config.priceSnapshotsLimit, 3, 50)) {
-            throw new Error(this._utils.buildApiError(`The provided priceSnapshotsLimit (${config.priceSnapshotsLimit}) is invalid.`, 27006));
-        }
-        if (!this._val.numberValid(config.supportEventDurationMinutes, 1, 1440)) {
-            throw new Error(this._utils.buildApiError(`The provided supportEventDurationMinutes (${config.supportEventDurationMinutes}) is invalid.`, 27011));
-        }
-        if (!this._val.numberValid(config.resistanceEventDurationMinutes, 1, 1440)) {
-            throw new Error(this._utils.buildApiError(`The provided resistanceEventDurationMinutes (${config.resistanceEventDurationMinutes}) is invalid.`, 27012));
-        }
-        if (!this._val.numberValid(config.eventPriceDistanceLimit, 0.1, 10)) {
-            throw new Error(this._utils.buildApiError(`The provided eventPriceDistanceLimit (${config.eventPriceDistanceLimit}) is invalid.`, 27013));
-        }
-        if (!this._val.numberValid(config.keyzoneIdleOnEventMinutes, 1, 1440)) {
-            throw new Error(this._utils.buildApiError(`The provided keyzoneIdleOnEventMinutes (${config.keyzoneIdleOnEventMinutes}) is invalid.`, 27008));
-        }
-        if (!this._val.numberValid(config.eventScoreRequirement, 1, 10)) {
-            throw new Error(this._utils.buildApiError(`The provided eventScoreRequirement (${config.eventScoreRequirement}) is invalid.`, 27009));
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-    /* Configuration Record Management */
-
-
-
-
-
-
-    /**
-     * Retrieves the KeyZones' Configuration from the db. If there is
-     * no record, it returns undefined.
-     * @returns Promise<IKeyZonesConfiguration|undefined>
-     */
-    private async getConfigurationRecord(): Promise<IKeyZonesConfiguration|undefined> {
-        // Retrieve the data
-        const { rows } = await this._db.query({
-            text: `SELECT data FROM  ${this._db.tn.keyzones_configuration} WHERE id = 1`,
-            values: []
-        });
-
-        // Return the result
-        return rows.length ? rows[0].data: undefined;
-    }
-
-
-
-
-
-    /**
-     * Creates the KeyZones' Configuration on the db.
-     * @param defaultConfiguration 
-     * @returns Promise<void>
-     */
-    private async createConfigurationRecord(defaultConfiguration: IKeyZonesConfiguration): Promise<void> {
-        await this._db.query({
-            text: `INSERT INTO ${this._db.tn.keyzones_configuration}(id, data) VALUES(1, $1)`,
-            values: [defaultConfiguration]
-        });
-    }
-
-
-
-
-
-    /**
-     * Updates the KeyZones' Configuration on the db.
-     * @param newConfiguration 
-     * @returns Promise<void>
-     */
-    private async updateConfigurationRecord(newConfiguration: IKeyZonesConfiguration): Promise<void> {
-        await this._db.query({
-            text: `UPDATE ${this._db.tn.keyzones_configuration} SET data=$1 WHERE id=1`,
-            values: [newConfiguration]
-        });
-    }
-
-
-
-
-
-
-
-
-
-    /* Misc Helpers */
 
 
     /**

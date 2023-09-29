@@ -1,7 +1,6 @@
 /**
  * API Symbols
  */
-
  export const SYMBOLS: ISymbols = {
     // API Error
     ApiErrorService: Symbol.for("ApiErrorService"),
@@ -43,14 +42,34 @@
     IPBlacklistValidations: Symbol.for("IPBlacklistValidations"),
 
     // Market State
-    MarketStateService: Symbol.for("MarketStateService"),
-    WindowStateService: Symbol.for("WindowStateService"),
-    VolumeStateService: Symbol.for("VolumeStateService"),
-    KeyZonesStateService: Symbol.for("KeyZonesStateService"),
+    StateUtilities: Symbol.for("StateUtilities"),
+
+    WindowService: Symbol.for("WindowService"),
+    WindowModel: Symbol.for("WindowModel"),
+    WindowValidations: Symbol.for("WindowValidations"),
+
+    VolumeService: Symbol.for("VolumeService"),
+    VolumeModel: Symbol.for("VolumeModel"),
+    VolumeValidations: Symbol.for("VolumeValidations"),
+
     LiquidityService: Symbol.for("LiquidityService"),
+    LiquidityModel: Symbol.for("LiquidityModel"),
+    LiquidityValidations: Symbol.for("LiquidityValidations"),
+
+    KeyZonesService: Symbol.for("KeyZonesService"),
+    KeyZonesModel: Symbol.for("KeyZonesModel"),
+    KeyZonesValidations: Symbol.for("KeyZonesValidations"),
+
     CoinsService: Symbol.for("CoinsService"),
+    CoinsModel: Symbol.for("CoinsModel"),
+    CoinsValidations: Symbol.for("CoinsValidations"),
+
     ReversalService: Symbol.for("ReversalService"),
-    StateUtilitiesService: Symbol.for("StateUtilitiesService"),
+    ReversalModel: Symbol.for("ReversalModel"),
+    ReversalValidations: Symbol.for("ReversalValidations"),
+
+    MarketStateService: Symbol.for("MarketStateService"),
+
 
     // Notifications
     NotificationService: Symbol.for("NotificationService"),
@@ -119,14 +138,33 @@ export interface ISymbols {
     IPBlacklistValidations: symbol,
 
 
-    MarketStateService: symbol,
-    WindowStateService: symbol,
-    VolumeStateService: symbol,
-    KeyZonesStateService: symbol,
+    StateUtilities: symbol,
+
+    WindowService: symbol,
+    WindowModel: symbol,
+    WindowValidations: symbol,
+
+    VolumeService: symbol,
+    VolumeModel: symbol,
+    VolumeValidations: symbol,
+
     LiquidityService: symbol,
+    LiquidityModel: symbol,
+    LiquidityValidations: symbol,
+
+    KeyZonesService: symbol,
+    KeyZonesModel: symbol,
+    KeyZonesValidations: symbol,
+
     CoinsService: symbol,
+    CoinsModel: symbol,
+    CoinsValidations: symbol,
+
     ReversalService: symbol,
-    StateUtilitiesService: symbol,
+    ReversalModel: symbol,
+    ReversalValidations: symbol,
+
+    MarketStateService: symbol,
 
 
     NotificationService: symbol,

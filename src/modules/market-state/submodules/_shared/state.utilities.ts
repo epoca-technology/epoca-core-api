@@ -1,21 +1,21 @@
 import {injectable, inject} from "inversify";
 import { BigNumber } from "bignumber.js";
-import { SYMBOLS } from "../../ioc";
-import { IUtilitiesService } from "../utilities";
+import { SYMBOLS } from "../../../../ioc";
+import { IUtilitiesService } from "../../../utilities";
+import { ICandlestick } from "../../../candlestick";
 import { 
-    ISplitStateResult,
-    ISplitStates,
-    ISplitStateSeriesItem,
-    IStateType,
-    IStateUtilitiesService,
+    IStateUtilities,
+    ISplitStateResult, 
+    ISplitStateSeriesItem, 
+    ISplitStates, 
+    IStateType 
 } from "./interfaces";
-import { ICandlestick } from "../candlestick";
 
 
 
 
 @injectable()
-export class StateUtilitiesService implements IStateUtilitiesService {
+export class StateUtilities implements IStateUtilities {
     // Inject dependencies
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
@@ -48,14 +48,46 @@ export class StateUtilitiesService implements IStateUtilitiesService {
     ): { averageState: IStateType, splitStates: ISplitStates } {
         // Build the split states
         const states: ISplitStates = {
-            s100: this.calculateSplitStateResult(series, requirement, strongRequirement),
-            s75: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.75)), requirement, strongRequirement),
-            s50: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.5)), requirement, strongRequirement),
-            s25: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.25)), requirement, strongRequirement),
-            s15: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.15)), requirement, strongRequirement),
-            s10: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.10)), requirement, strongRequirement),
-            s5: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.05)), requirement, strongRequirement),
-            s2: this.calculateSplitStateResult(series.slice(series.length - Math.ceil(series.length * 0.02)), requirement, strongRequirement),
+            s100: this.calculateSplitStateResult(
+                series, 
+                requirement, 
+                strongRequirement
+            ),
+            s75: this.calculateSplitStateResult(
+                series.slice(series.length - Math.ceil(series.length * 0.75)), 
+                requirement, 
+                strongRequirement
+            ),
+            s50: this.calculateSplitStateResult(
+                series.slice(series.length - Math.ceil(series.length * 0.5)), 
+                requirement, 
+                strongRequirement
+            ),
+            s25: this.calculateSplitStateResult(
+                series.slice(series.length - Math.ceil(series.length * 0.25)), 
+                requirement, 
+                strongRequirement
+            ),
+            s15: this.calculateSplitStateResult(
+                series.slice(series.length - Math.ceil(series.length * 0.15)), 
+                requirement, 
+                strongRequirement
+            ),
+            s10: this.calculateSplitStateResult(
+                series.slice(series.length - Math.ceil(series.length * 0.10)), 
+                requirement, 
+                strongRequirement
+            ),
+            s5: this.calculateSplitStateResult(
+                series.slice(series.length - Math.ceil(series.length * 0.05)), 
+                requirement, 
+                strongRequirement
+            ),
+            s2: this.calculateSplitStateResult(
+                series.slice(series.length - Math.ceil(series.length * 0.02)), 
+                requirement, 
+                strongRequirement
+            )
         }
 
         // Finally, return the average state and the split results
@@ -74,6 +106,8 @@ export class StateUtilitiesService implements IStateUtilitiesService {
         }
     }
 
+
+    
 
 
 

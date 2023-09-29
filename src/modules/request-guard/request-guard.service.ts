@@ -35,8 +35,8 @@ export class RequestGuardService implements IRequestGuardService {
 
 
     /**
-     * Checks if an authenticated request meets all the requirements in order to interact with the API.
-     * If not, it will throw an error. If successful, it returns the uid of the client.
+     * Checks if an authenticated request meets all the requirements in order to interact with 
+     * the API. If not, it will throw an error. If successful, it returns the uid of the client.
      * @param idToken 
      * @param apiSecret 
      * @param clientIP 
@@ -113,7 +113,12 @@ export class RequestGuardService implements IRequestGuardService {
         requiredParams = requiredParams || [];
         params = params || {};
         for (let paramKey of requiredParams) {
-            if (params[paramKey] === undefined || params[paramKey] === null || params[paramKey] === '' || Number.isNaN(params[paramKey])) {
+            if (
+                params[paramKey] === undefined || 
+                params[paramKey] === null || 
+                params[paramKey] === '' || 
+                Number.isNaN(params[paramKey])
+            ) {
                 throw new Error(this._utils.buildApiError(`The param (${paramKey}) is required but was not provided.`, 12002));
             }
         }
