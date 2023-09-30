@@ -81,7 +81,7 @@ export type IReversalKind = -1|0|1;
  * Reversal Score Weights
  * In order to determine if a reversal is taking place, a score system that makes
  * use of all other relevant modules will be frequently calculated and is capable
- * of issuing a reversal state once the score reaches min_event_score.
+ * of issuing a reversal state once the score reaches reversal_score_requirement.
  */
 export interface IReversalScoreWeights {
     // The maximum score that can be obtained by the volume module
@@ -105,8 +105,9 @@ export interface IReversalScoreWeights {
  */
 export type IReversalEventSortFunction = "SHUFFLE"|"CHANGE_SUM";
 export interface IReversalConfiguration {
-    // The minimum score required for a resistance event to be issued
-    min_event_score: number,
+    // The minimum score required for a support/resistance  reversal event to be issued
+    support_reversal_score_requirement: number,
+    resistance_reversal_score_requirement: number,
 
     /**
      * The sorting mechanism that will be used to order the symbols that are
@@ -149,7 +150,7 @@ export interface IReversalScoreHistory {
 
 /**
  * Reversal Event
- * The event that is issued once the general score reaches min_event_score and
+ * The event that is issued once the general score reaches reversal_score_requirement and
  * there are coins that followed the reversal. Note that if there aren't coins
  * that followed, no reversal event will be issued.
  */

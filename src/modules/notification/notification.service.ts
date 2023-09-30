@@ -5,7 +5,7 @@ import { getMessaging, Messaging, MulticastMessage } from "firebase-admin/messag
 import { IUtilitiesService } from "../utilities";
 import { IAuthService } from "../auth";
 import { IApiErrorService } from "../api-error";
-import { IStateType } from "../market-state";
+import { IReversalKind, IStateType } from "../market-state";
 import { IPositionRecord } from "../position";
 import { IBinanceMarginType } from "../binance";
 import { INotificationService, INotification, INotificationChannel } from "./interfaces";
@@ -657,6 +657,44 @@ export class NotificationService implements INotificationService {
             description: "The websocket has not broadcasted data in an irregular period of time. The system will attempt to restore the connection in a few seconds."
         });
     }
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+    /**************************
+     * Reversal Notifications *
+     **************************/
+
+
+
+
+
+
+
+    /**
+     * Triggers when a Reversal Event is issued by the Market State Module.
+     * @param reversalKind
+     * @param score
+     * @returns Promise<void>
+     */
+    public onReversalEvent(reversalKind: IReversalKind, score: number): Promise<void> {
+        return this.broadcast({
+            sender: "REVERSAL",
+            title: `${reversalKind == 1 ? 'Support': 'Resistance'} Reversal Event`,
+            description: `The Reversal Module has issued a ${reversalKind == 1 ? 'Support': 'Resistance'} Reversal Event with an accumulated score of ${score} points.`
+        });
+    }
+
 
 
 

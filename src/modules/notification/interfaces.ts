@@ -1,5 +1,5 @@
 import { IBinanceMarginType } from "../binance";
-import { IStateType } from "../market-state";
+import { IReversalKind, IStateType } from "../market-state";
 import { IPositionRecord } from "../position";
 
 
@@ -45,12 +45,21 @@ export interface INotificationService {
     coinWebsocketError(error: any): Promise<void>,
     coinWebsocketConnectionIssue(): Promise<void>,
 
+    // Reversal Notifications
+    onReversalEvent(reversalKind: IReversalKind, score: number): Promise<void>,
+
     // Position Notifications
     onReversalStateEventError(error: any): Promise<void>,
     onRefreshActivePositionsError(msg: string): Promise<void>,
     positionHasBeenOpened(pos: IPositionRecord): Promise<void>,
-    positionHasBeenOpenedWithInvalidLeverage(pos: IPositionRecord, correctLeverage: number): Promise<void>,
-    positionHasBeenOpenedWithInvalidMarginType(pos: IPositionRecord, correctMarginType: IBinanceMarginType): Promise<void>,
+    positionHasBeenOpenedWithInvalidLeverage(
+        pos: IPositionRecord, 
+        correctLeverage: number
+        ): Promise<void>,
+    positionHasBeenOpenedWithInvalidMarginType(
+        pos: IPositionRecord, 
+        correctMarginType: IBinanceMarginType
+    ): Promise<void>,
     positionHasBeenClosed(pos: IPositionRecord): Promise<void>
 }
 
@@ -73,9 +82,11 @@ export type INotificationSender =
 "INITIALIZER"|
 "SERVER"|
 "CANDLESTICK"|
-"PREDICTION"|
 "MARKET_STATE"|
 "LIQUIDITY"|
 "COIN"|
+"REVERSAL"|
+
+
 "POSITION"|
 "CAMPAIGN";

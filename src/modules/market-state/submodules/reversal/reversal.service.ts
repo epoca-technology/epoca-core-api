@@ -1,11 +1,12 @@
 import {injectable, inject} from "inversify";
 import { SYMBOLS } from "../../../../ioc";
-import { IUtilitiesService } from "../../../utilities";
 import { ISplitStateID, IStateType } from "../_shared";
 import { IVolumeStateIntensity } from "../volume";
 import { IKeyZoneState } from "../keyzones";
 import { ILiquidityState } from "../liquidity";
 import { ICoinsCompressedState } from "../coins";
+import { INotificationService } from "../../../notification";
+import { IUtilitiesService } from "../../../utilities";
 import {
     IMinifiedReversalState,
     IReversalCoinsStates,
@@ -24,6 +25,7 @@ export class ReversalService implements IReversalService {
     // Inject dependencies
     @inject(SYMBOLS.ReversalModel)                      private _model: IReversalModel;
     @inject(SYMBOLS.ReversalValidations)                private _validations: IReversalValidations;
+    @inject(SYMBOLS.NotificationService)                private _notification: INotificationService;
     @inject(SYMBOLS.UtilitiesService)                   private _utils: IUtilitiesService;
 
 
@@ -43,6 +45,7 @@ export class ReversalService implements IReversalService {
      */
     private state: IReversalState;
     private coinsStates: IReversalCoinsStates;
+    private scoreRequirement: number;
 
     /**
      * Coin State Splits
@@ -206,7 +209,16 @@ export class ReversalService implements IReversalService {
             initial: coins,
             event: null,
             final: null
-        }
+        };
+
+        /**
+         * Sets the score requirement for the reversal event to be issued based on its kind.
+         * If it is a support reversal (1) it will make use of support_reversal_score_requirement.
+         * A resistance reversal (-1) on the other hand, makes use of resistance_reversal_score_requirement.
+         */
+        this.state.k == 1 ? 
+            this.config.support_reversal_score_requirement: 
+            this.config.resistance_reversal_score_requirement;
     }
 
 
@@ -288,7 +300,7 @@ export class ReversalService implements IReversalService {
         this.state.scr.cb.push(coinsBTCScore);
 
         // If an event hasn't been issued and the score has met the requirements, issue it
-        if (!this.state.e && currentScore >= this.config.min_event_score) {
+        if (!this.state.e && currentScore >= this.scoreRequirement) {
             // Retrieve the event compliant symbols (if any)
             const compliantSymbols: string[] = this.getEventCompliantSymbols(coins);
 
@@ -302,6 +314,9 @@ export class ReversalService implements IReversalService {
 
                 // Store the state of all the coins
                 this.coinsStates.event = coins;
+
+                // Send a notification
+                this._notification.onReversalEvent(this.state.k, currentScore);
             }
         }
     }
@@ -316,6 +331,8 @@ export class ReversalService implements IReversalService {
     /* Score Calculations */
 
 
+
+    
 
 
 
@@ -797,7 +814,8 @@ export class ReversalService implements IReversalService {
      */
     private buildDefaultConfig(): IReversalConfiguration {
         return {
-            min_event_score: 78,
+            support_reversal_score_requirement: 78,
+            resistance_reversal_score_requirement: 70,
             event_sort_func: "CHANGE_SUM",
             score_weights: {
                 volume: 5,

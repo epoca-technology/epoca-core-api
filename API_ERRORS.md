@@ -585,7 +585,7 @@
 
 37500: `The provided reversal config object is invalid.`
 
-37501: `The provided min_event_score (${newConfiguration.min_event_score}) is invalid.`
+37501: ``
 
 37502: `The provided reversal score_weights object is invalid.`
 
@@ -600,6 +600,10 @@
 37507: `The provided event_sort_func (${newConfiguration.event_sort_func}) is invalid.`
 
 37508: `The reversal compliant symbols could not be sorted because the function is invalid.`
+
+37509: `The provided support_reversal_score_requirement (${newConfiguration.support_reversal_score_requirement}) is invalid.`
+
+37510: ``
 
 
 

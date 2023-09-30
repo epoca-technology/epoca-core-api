@@ -76,8 +76,11 @@ export class ReversalValidations implements IReversalValidations {
             console.log(newConfiguration);
             throw new Error(this._utils.buildApiError(`The provided reversal config object is invalid.`, 37500));
         }
-        if (!this._val.numberValid(newConfiguration.min_event_score, 10, 100)) {
-            throw new Error(this._utils.buildApiError(`The provided min_event_score (${newConfiguration.min_event_score}) is invalid.`, 37501));
+        if (!this._val.numberValid(newConfiguration.support_reversal_score_requirement, 10, 100)) {
+            throw new Error(this._utils.buildApiError(`The provided support_reversal_score_requirement (${newConfiguration.support_reversal_score_requirement}) is invalid.`, 37509));
+        }
+        if (!this._val.numberValid(newConfiguration.resistance_reversal_score_requirement, 10, 100)) {
+            throw new Error(this._utils.buildApiError(`The provided resistance_reversal_score_requirement (${newConfiguration.resistance_reversal_score_requirement}) is invalid.`, 37510));
         }
         if (
             newConfiguration.event_sort_func != "CHANGE_SUM" && 
