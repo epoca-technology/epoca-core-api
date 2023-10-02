@@ -565,7 +565,6 @@ export interface IActivePositionCandlestick {
  * The properties within data contain lists with the following indexes:
  * 0 = Mark Price
  * 1 = Gain%
- * 2 = Gain Drawdown%
  */
 export interface IPositionCandlestickRecord {
     // The time at which the candlestick first came into existance

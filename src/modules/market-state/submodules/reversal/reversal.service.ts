@@ -216,9 +216,9 @@ export class ReversalService implements IReversalService {
          * If it is a support reversal (1) it will make use of support_reversal_score_requirement.
          * A resistance reversal (-1) on the other hand, makes use of resistance_reversal_score_requirement.
          */
-        this.state.k == 1 ? 
-            this.config.support_reversal_score_requirement: 
-            this.config.resistance_reversal_score_requirement;
+        this.scoreRequirement = this.state.k == 1 ? 
+                this.config.support_reversal_score_requirement: 
+                this.config.resistance_reversal_score_requirement;
     }
 
 
