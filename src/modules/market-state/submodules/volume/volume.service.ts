@@ -101,7 +101,6 @@ export class VolumeService implements IVolumeService {
             m: this.requirements.mean,
             mm: this.requirements.meanMedium,
             mh: this.requirements.meanHigh,
-            muh: this.requirements.meanUltraHigh,
             v: current.v
         };
 
@@ -124,8 +123,7 @@ export class VolumeService implements IVolumeService {
         currentVolume: number, 
         requirements: IVolumeStateRequirements
     ): IVolumeStateIntensity {
-        if      (currentVolume >= requirements.meanUltraHigh)   { return 4 }
-        else if (currentVolume >= requirements.meanHigh)        { return 3 }
+        if (currentVolume >= requirements.meanHigh)             { return 3 }
         else if (currentVolume >= requirements.meanMedium)      { return 2 }
         else if (currentVolume >= requirements.mean)            { return 1 }
         else                                                    { return 0 }
@@ -146,7 +144,6 @@ export class VolumeService implements IVolumeService {
             m: 0,
             mm: 0,
             mh: 0,
-            muh: 0,
             v: 0
         }
     }
@@ -210,7 +207,6 @@ export class VolumeService implements IVolumeService {
             mean: mean,
             meanMedium: meanMedium,
             meanHigh: meanHigh,
-            meanUltraHigh: meanUltraHigh,
             nextRequirementCalculation: moment().add(1, "hour").valueOf()
         }
     }
@@ -230,7 +226,6 @@ export class VolumeService implements IVolumeService {
             mean: 0,
             meanMedium: 0,
             meanHigh: 0,
-            meanUltraHigh: 0,
             nextRequirementCalculation: 0
         }
     }

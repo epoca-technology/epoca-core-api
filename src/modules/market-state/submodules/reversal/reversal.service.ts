@@ -342,15 +342,16 @@ export class ReversalService implements IReversalService {
      * @returns number
      */
     private calculateVolumeScore(volumeState: IVolumeStateIntensity): number {
-        if          (volumeState == 4) { 
+        if      (volumeState == 3) { 
             return this.config.score_weights.volume 
-        } else if   (volumeState == 3) { 
+        }
+        else if (volumeState == 2) { 
             return <number>this._utils.outputNumber(this.config.score_weights.volume * 0.85) 
-        } else if   (volumeState == 2) { 
-            return <number>this._utils.outputNumber(this.config.score_weights.volume * 0.70) 
-        } else if   (volumeState == 1) { 
-            return <number>this._utils.outputNumber(this.config.score_weights.volume * 0.55) 
-        } else { 
+        }
+        else if (volumeState == 1) { 
+            return <number>this._utils.outputNumber(this.config.score_weights.volume * 0.6) 
+        }
+        else                       { 
             return 0 
         }
     }

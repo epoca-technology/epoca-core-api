@@ -36,7 +36,6 @@ export interface IVolumeStateRequirements {
     mean: number,
     meanMedium: number,
     meanHigh: number,
-    meanUltraHigh: number,
 
     // The time at which the requirements need to be recalculated
     nextRequirementCalculation: number
@@ -49,7 +48,7 @@ export interface IVolumeStateRequirements {
  * Volume State Intensity
  * The intensity of the volume's state based on the requirements.
  */
-export type IVolumeStateIntensity = 0|1|2|3|4;
+export type IVolumeStateIntensity = 0|1|2|3;
 
 
 
@@ -67,7 +66,6 @@ export interface IVolumeState {
     m: number,      // Mean
     mm: number,     // Mean Medium
     mh: number,     // Mean High
-    muh: number,    // Mean Ultra High
 
     // The volume within the current 1m interval
     v: number
