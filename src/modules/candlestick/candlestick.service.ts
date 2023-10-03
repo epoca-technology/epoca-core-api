@@ -1,5 +1,5 @@
 import {inject, injectable} from "inversify";
-import { environment, SYMBOLS } from "../../ioc";
+import { SYMBOLS } from "../../ioc";
 import * as moment from "moment";
 import { BehaviorSubject } from "rxjs";
 import { IUtilitiesService } from "../utilities";
@@ -22,10 +22,6 @@ export class CandlestickService implements ICandlestickService {
 
     // Candlestick Syncing Interval
     private readonly syncIntervalSeconds: number = 2.5;
-
-
-    // Debug Mode
-    private readonly debugMode: boolean = environment.debugMode;
 
 
     // Real Time Candlesticks Stream

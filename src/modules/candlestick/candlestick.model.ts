@@ -1,5 +1,5 @@
 import {inject, injectable} from "inversify";
-import { environment, SYMBOLS } from "../../ioc";
+import { SYMBOLS } from "../../ioc";
 import BigNumber from "bignumber.js";
 import * as moment from 'moment';
 import { IDatabaseService, IPoolClient, IQueryResult } from "../database";
@@ -29,9 +29,6 @@ export class CandlestickModel implements ICandlestickModel {
         alias: '15m'
     };
 
-
-    // Debug Mode
-    private readonly debugMode: boolean = environment.debugMode;
 
 
 

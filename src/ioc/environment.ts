@@ -2,7 +2,6 @@
 export interface IEnvironment {
     production: boolean,
     testMode: boolean,
-    debugMode: boolean,
     restoreMode: boolean,
     POSTGRES_HOST: string,
     POSTGRES_USER: string,
@@ -73,7 +72,6 @@ export interface IFirebaseConfig {
 const environment: IEnvironment = {
     production: getString("NODE_ENV", process.env.NODE_ENV) == "production",
     testMode: process.env.testMode == "true",
-    debugMode: process.env.debugMode == "true",
     restoreMode: process.env.restoreMode == "true",
     POSTGRES_HOST: getString("POSTGRES_HOST", process.env.POSTGRES_HOST),
     POSTGRES_USER: getString("POSTGRES_USER", process.env.POSTGRES_USER),

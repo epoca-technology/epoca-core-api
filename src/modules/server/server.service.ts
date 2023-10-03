@@ -69,7 +69,6 @@ export class ServerService implements IServerService {
 
     // Test & Debug Modes
     private readonly testMode: boolean = environment.testMode;
-    private readonly debugMode: boolean = environment.debugMode;
 
 
 

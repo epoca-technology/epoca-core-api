@@ -1,5 +1,5 @@
 import {inject, injectable} from "inversify";
-import { environment, SYMBOLS } from "../../ioc";
+import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { IApiErrorService } from "../api-error";
 import { ICloudFile, IFileExtension, IFileManagerService, ILocalPathItem } from "../file-manager";
@@ -22,9 +22,6 @@ export class DatabaseFileService implements IDatabaseFileService {
 
     // Max Cloud Files
     private readonly maxFiles: number = 5;
-
-    // Debug Mode
-    private readonly debugMode: boolean = environment.debugMode;
 
 
 

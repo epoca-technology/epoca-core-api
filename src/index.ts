@@ -125,7 +125,6 @@ init()
     console.log(`Port: ${port}`);
     console.log(`Production: ${environment.production}`);
     if (environment.testMode) console.log("Test Mode: true");
-    if (environment.debugMode) console.log("Debug Mode: true");
     if (environment.restoreMode) console.log("Restore Mode: true");
 })
 .catch(e => { throw new Error("The API could not be initialized. Please restart it.") });

@@ -1,5 +1,5 @@
 import {inject, injectable} from "inversify";
-import { environment, SYMBOLS } from "../../ioc";
+import { SYMBOLS } from "../../ioc";
 import { IUtilitiesService } from "../utilities";
 import { IApiErrorService } from "../api-error";
 import { ICloudFile, IFileExtension, IFileManagerService } from "../file-manager";
@@ -29,10 +29,6 @@ export class CandlestickFileService implements ICandlestickFileService {
     // Tasks
     public preditionFileTask: IBackgroundTask = new BackgroundTask("Prediction Candlesticks File");
     public bundleFileTask: IBackgroundTask = new BackgroundTask("Candlesticks Bundle File");
-
-
-    // Debug Mode
-    private readonly debugMode: boolean = environment.debugMode;
 
 
 
