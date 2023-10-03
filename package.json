@@ -1,7 +1,7 @@
 {
   "name": "api-development",
   "version": "2.0.0",
-  "description": "Epoca is an automated trading platform that operates in the Bitcoin Spot Market, utilizing of a proprietary implementation of the Value Averaging Strategy.",
+  "description": "Epoca is a complete technological infrastructure that runs a proprietary implementation of the Value Averaging Strategy and operates in the Bitcoin Spot Market.",
   "main": "index.js",
   "scripts": {
     "start": "node dist/index.js",
