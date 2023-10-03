@@ -17,11 +17,12 @@
     "test-server": "jasmine-ts --config=./jasmine/server.json",
     "test-utils": "jasmine-ts --config=./jasmine/utils.json"
   },
+  "private": true,
   "repository": {
     "type": "git",
     "url": "git+ssh://git@bitbucket.org/projectplutus/api-development.git"
   },
-  "author": "Epoca",
+  "author": "Jesus Graterol",
   "license": "ISC",
   "homepage": "https://bitbucket.org/projectplutus/api-development#readme",
   "dependencies": {

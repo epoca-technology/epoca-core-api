@@ -591,10 +591,10 @@ describe('Candlestick Essentials: ',  function() {
      * This test needs to be adjusted manually whenever the prediction interval is changed.
      */
     it('-Can calculate the close time of a prediction candlestick: ', function() {
-        expect(_model.getPredictionCandlestickCloseTime(1502942400000)).toBe(1502944199999);
-        expect(_model.getPredictionCandlestickCloseTime(1502944200000)).toBe(1502945999999);
-        expect(_model.getPredictionCandlestickCloseTime(1502946000000)).toBe(1502947799999);
-        expect(_model.getPredictionCandlestickCloseTime(1502947800000)).toBe(1502949599999);
-        expect(_model.getPredictionCandlestickCloseTime(1502949600000)).toBe(1502951399999);
+        expect(_model.getPredictionCandlestickCloseTime(1502942400000)).toBe(1502943299999);
+        expect(_model.getPredictionCandlestickCloseTime(1502944200000)).toBe(1502945099999);
+        expect(_model.getPredictionCandlestickCloseTime(1502946000000)).toBe(1502946899999);
+        expect(_model.getPredictionCandlestickCloseTime(1502947800000)).toBe(1502948699999);
+        expect(_model.getPredictionCandlestickCloseTime(1502949600000)).toBe(1502950499999);
     });
 });
