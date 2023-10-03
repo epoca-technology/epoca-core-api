@@ -868,7 +868,7 @@ export class LiquidityService implements ILiquidityService {
      */
     private buildDefaultConfig(): ILiquidityConfiguration {
         return {
-            appbulk_stream_min_intensity: 3,
+            appbulk_stream_min_intensity: 4,
             max_peak_distance_from_price: 0.35,
             intensity_weights: {
                 1: 1,
