@@ -1,6 +1,6 @@
-# EPOCA CORE API
+# EPOCA CORE
 
-Epoca Core is an API designed to manage the trading system and can be interacted with through the GUI.
+Epoca Core is a RESTful API that can be interacted with through the GUI. It is designed to manage the platform as well as the implementation of the Value Averaging Strategy.
 
 
 [API Errors](./API_ERRORS.md)
