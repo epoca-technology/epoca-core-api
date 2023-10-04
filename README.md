@@ -29,7 +29,6 @@ Epoca Core is a RESTful API that can be interacted with through the GUI. It is d
 
 #
 ## CLI
-#
 
 ### Database Management Script
 
@@ -41,7 +40,6 @@ This script provides a series of functionalities that enable the database backup
 
 #
 ## Tests
-#
 
 *IMPORTANT: These unit tests are designed to be executed inside of the containerized infrastructure. For more information goto `compose/README.md#ContainerizedUnitTests`*
 
