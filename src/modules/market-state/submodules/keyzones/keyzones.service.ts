@@ -1337,8 +1337,8 @@ export class KeyZonesService implements IKeyZonesService {
             },
             stateLimit: 10,
             priceSnapshotsLimit: 5, // ~15 seconds worth
-            supportEventDurationMinutes: 60,      // ~1 hour
-            resistanceEventDurationMinutes: 60,   // ~1 hour
+            supportEventDurationMinutes: 90,      // ~1.5 hours
+            resistanceEventDurationMinutes: 90,   // ~1.5 hours
             eventPriceDistanceLimit: 3,
             keyzoneIdleOnEventMinutes: 30,
             eventScoreRequirement: 5
