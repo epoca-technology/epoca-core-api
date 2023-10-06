@@ -1,6 +1,6 @@
-# EPOCA CORE
+# EPOCA CORE API
 
-Epoca Core is a RESTful API that can be interacted with through the GUI. It is designed to manage the platform as well as the implementation of the Value Averaging Strategy.
+Epoca Core API is a RESTful API that can be interacted with through the GUI. It is designed to manage the platform as well as the implementation of the Value Averaging Strategy.
 
 
 [API Errors](./API_ERRORS.md)
@@ -29,11 +29,10 @@ Epoca Core is a RESTful API that can be interacted with through the GUI. It is d
 
 #
 ## CLI
-#
 
 ### Database Management Script
 
-This script provides a series of functionalities that enable the database backup and restores. It is only meant to be invoked from `compose`.
+This script provides a series of functionalities that enable the database backup and restores. It is only meant to be invoked from `epoca-compose`.
 
 
 
@@ -41,9 +40,8 @@ This script provides a series of functionalities that enable the database backup
 
 #
 ## Tests
-#
 
-*IMPORTANT: These unit tests are designed to be executed inside of the containerized infrastructure. For more information goto `compose/README.md#ContainerizedUnitTests`*
+*IMPORTANT: These unit tests are designed to be executed inside of the containerized infrastructure. For more information goto `epoca-compose/README.md#ContainerizedUnitTests`*
 
 **End-to-end:** `npm run test`
 

@@ -1,7 +1,7 @@
 {
-  "name": "epoca-api",
+  "name": "epoca-core-api",
   "version": "2.0.0",
-  "description": "Epoca Core is a RESTful API that can be interacted with through the GUI. It is designed to manage the platform as well as the implementation of the Value Averaging Strategy.",
+  "description": "Epoca Core API is a RESTful API that can be interacted with through the GUI. It is designed to manage the platform as well as the implementation of the Value Averaging Strategy.",
   "main": "index.js",
   "scripts": {
     "start": "node dist/index.js",
@@ -17,14 +17,14 @@
     "test-server": "jasmine-ts --config=./jasmine/server.json",
     "test-utils": "jasmine-ts --config=./jasmine/utils.json"
   },
-  "private": true,
+  "private": false,
   "repository": {
     "type": "git",
-    "url": "git@github.com:epoca-technology/epoca-api.git"
+    "url": "git@github.com:epoca-technology/epoca-core-api.git"
   },
   "author": "Jesus Graterol",
   "license": "ISC",
-  "homepage": "https://github.com/epoca-technology/epoca-api",
+  "homepage": "https://github.com/epoca-technology/epoca-core-api",
   "dependencies": {
     "@getvim/execute": "1.0.0",
     "adm-zip": "0.5.9",
