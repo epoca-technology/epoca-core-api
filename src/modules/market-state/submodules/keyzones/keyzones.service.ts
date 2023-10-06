@@ -432,11 +432,11 @@ export class KeyZonesService implements IKeyZonesService {
                 (!evt || evt.k != "r") &&
                 this.priceSnapshots[0].o > this.priceSnapshots.at(-1).c &&
                 wSplitStates.s5.s <= -1 &&
-                wSplitStates.s2.s <= -1
-                //this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
-                //this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c &&
-                //increasingStronglyNum == 0 &&
-                //decreasingStronglyNum >= 2
+                wSplitStates.s2.s <= -1 &&
+                this._candlestick.predictionLookback.at(-1).l < this._candlestick.predictionLookback.at(-2).l &&
+                this._candlestick.predictionLookback.at(-1).c < this._candlestick.predictionLookback.at(-2).c &&
+                increasingStronglyNum == 0 &&
+                decreasingStronglyNum >= 2
             ) {
                 /**
                  * Retrieve the active KeyZone from below (if any). A Support KeyZone is active if:
@@ -475,11 +475,11 @@ export class KeyZonesService implements IKeyZonesService {
                 (!evt || evt.k != "s") &&
                 this.priceSnapshots[0].o < this.priceSnapshots.at(-1).c &&
                 wSplitStates.s5.s >= 1 &&
-                wSplitStates.s2.s >= 1
-                //this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
-                //this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c &&
-                //decreasingStronglyNum == 0 &&
-                //increasingStronglyNum >= 2
+                wSplitStates.s2.s >= 1 &&
+                this._candlestick.predictionLookback.at(-1).h > this._candlestick.predictionLookback.at(-2).h &&
+                this._candlestick.predictionLookback.at(-1).c > this._candlestick.predictionLookback.at(-2).c &&
+                decreasingStronglyNum == 0 &&
+                increasingStronglyNum >= 2
             ) {
                 /**
                  * Retrieve the active KeyZone from above (if any). A Resistance KeyZone is active if:
